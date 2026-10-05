@@ -1,0 +1,32 @@
+{
+	# Ports match the host mapping in docker-compose.yml.
+	http_port 8080
+	https_port 8443
+	auto_https disable_redirects
+}
+
+# Explicit redirect: the automatic one drops the non-standard port.
+http://{$KWAK_HOST:localhost}:8080 {
+	redir https://{host}:8443{uri} permanent
+}
+
+https://{$KWAK_HOST:localhost}:8443 {
+	encode zstd gzip
+
+	handle /api/* {
+		reverse_proxy api:8000
+	}
+
+	handle {
+		root * /srv
+		try_files {path} /index.html
+		file_server
+	}
+
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options nosniff
+		Referrer-Policy same-origin
+		X-Frame-Options SAMEORIGIN
+	}
+}

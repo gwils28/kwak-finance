@@ -1,0 +1,92 @@
+/*
+ * Kwak Finance design tokens — palette copied from https://gwils28.github.io/ (Blowfish theme).
+ * Components must use the semantic tokens (bg, surface, fg, …), never raw hex values.
+ */
+@import "tailwindcss";
+
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+@theme {
+  --font-display: "Archivo", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+
+  --color-neutral-50: rgb(247 248 246);
+  --color-neutral-100: rgb(236 239 235);
+  --color-neutral-200: rgb(215 221 213);
+  --color-neutral-300: rgb(181 190 177);
+  --color-neutral-400: rgb(145 156 139);
+  --color-neutral-500: rgb(104 116 99);
+  --color-neutral-600: rgb(59 67 56);
+  --color-neutral-700: rgb(39 45 37);
+  --color-neutral-800: rgb(24 29 22);
+  --color-neutral-900: rgb(15 17 13);
+
+  --color-primary-50: rgb(243 249 240);
+  --color-primary-100: rgb(228 242 222);
+  --color-primary-200: rgb(201 229 189);
+  --color-primary-300: rgb(159 209 138);
+  --color-primary-400: rgb(115 194 81);
+  --color-primary-500: rgb(84 166 48);
+  --color-primary-600: rgb(65 133 35);
+  --color-primary-700: rgb(46 98 24);
+  --color-primary-800: rgb(36 78 18);
+  --color-primary-900: rgb(27 57 14);
+
+  --color-secondary-50: rgb(254 248 236);
+  --color-secondary-100: rgb(253 240 211);
+  --color-secondary-200: rgb(250 222 158);
+  --color-secondary-300: rgb(247 206 110);
+  --color-secondary-400: rgb(243 183 63);
+  --color-secondary-500: rgb(236 156 19);
+  --color-secondary-600: rgb(197 125 17);
+  --color-secondary-700: rgb(155 94 13);
+  --color-secondary-800: rgb(121 70 12);
+  --color-secondary-900: rgb(92 51 10);
+
+  /* Danger is not in the blog palette: a red harmonised with the blog's admonition colours. */
+  --color-danger-500: oklch(63.7% 0.237 25.331);
+  --color-danger-700: oklch(44.4% 0.177 26.899);
+
+  /* Semantic tokens (light). Overridden for dark below. */
+  --color-bg: var(--color-neutral-50);
+  --color-surface: #fff;
+  --color-fg: var(--color-neutral-900);
+  --color-muted: var(--color-neutral-500);
+  --color-border: var(--color-neutral-200);
+  --color-accent: var(--color-primary-600);
+  --color-positive: var(--color-primary-600);
+  --color-negative: var(--color-danger-700);
+  --color-warning: var(--color-secondary-700);
+}
+
+@layer base {
+  :root[data-theme="dark"] {
+    --color-bg: var(--color-neutral-900);
+    --color-surface: var(--color-neutral-800);
+    --color-fg: var(--color-neutral-50);
+    --color-muted: var(--color-neutral-400);
+    --color-border: var(--color-neutral-700);
+    --color-accent: var(--color-primary-400);
+    --color-positive: var(--color-primary-400);
+    --color-negative: var(--color-danger-500);
+    --color-warning: var(--color-secondary-400);
+  }
+
+  body {
+    background: var(--color-bg);
+    color: var(--color-fg);
+    font-family: var(--font-sans);
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display);
+  }
+
+  .tabular {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+  }
+}
