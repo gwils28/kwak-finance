@@ -1,0 +1,48 @@
+[project]
+name = "kwak-finance"
+version = "0.0.0"
+description = "Kwak Finance backend workspace"
+requires-python = ">=3.13,<3.14"
+dependencies = ["kwak-core", "kwak-api", "kwak-analytics"]
+
+[dependency-groups]
+dev = [
+    "httpx2>=2.13.1",
+    "hypothesis>=6.140",
+    "mypy>=1.18",
+    "pytest>=8.4",
+    "pytest-cov>=7.0",
+    "ruff>=0.14",
+]
+
+[tool.uv]
+package = false
+
+[tool.uv.workspace]
+members = ["packages/*"]
+
+[tool.uv.sources]
+kwak-core = { workspace = true }
+kwak-api = { workspace = true }
+kwak-analytics = { workspace = true }
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+
+[tool.ruff.lint]
+select = ["E", "W", "F", "I", "B", "UP", "SIM", "RUF", "N", "S", "DTZ", "PT", "TID"]
+ignore = []
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101"]
+
+[tool.mypy]
+strict = true
+python_version = "3.13"
+packages = ["kwak_core", "kwak_api", "kwak_analytics"]
+plugins = ["pydantic.mypy"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = ["--strict-markers", "--import-mode=importlib"]

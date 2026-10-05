@@ -1,0 +1,13 @@
+[project]
+name = "kwak-analytics"
+version = "0.0.0"
+description = "Kwak Finance analytics, forecasting and simulation (phase 4)"
+requires-python = ">=3.13,<3.14"
+dependencies = ["kwak-core"]
+
+[tool.uv.sources]
+kwak-core = { workspace = true }
+
+[build-system]
+requires = ["uv_build>=0.9,<1"]
+build-backend = "uv_build"

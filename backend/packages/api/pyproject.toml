@@ -1,0 +1,18 @@
+[project]
+name = "kwak-api"
+version = "0.0.0"
+description = "Kwak Finance HTTP API"
+requires-python = ">=3.13,<3.14"
+dependencies = [
+    "kwak-core",
+    "fastapi>=0.120",
+    "pydantic-settings>=2.11",
+    "uvicorn[standard]>=0.38",
+]
+
+[tool.uv.sources]
+kwak-core = { workspace = true }
+
+[build-system]
+requires = ["uv_build>=0.9,<1"]
+build-backend = "uv_build"
