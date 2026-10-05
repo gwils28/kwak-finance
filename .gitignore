@@ -1,0 +1,35 @@
+# Real financial data and backups: never committed
+/data/*
+!/data/.gitkeep
+*.ofx
+*.qif
+!backend/tests/fixtures/**
+
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+.hypothesis/
+.coverage
+htmlcov/
+
+# Node
+node_modules/
+dist/
+*.tsbuildinfo
+
+# Editors / OS
+.idea/
+.vscode/
+.DS_Store
+
+# Claude Code local overrides
+.claude/settings.local.json
