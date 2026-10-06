@@ -25,5 +25,5 @@ Kwak Finance — self-hosted household budget and net-worth web app. FastAPI + P
 - Business rules go in `backend/packages/core` (pure, no I/O) and are tested there, including hypothesis property tests for the invariants in `docs/SPECIFICATIONS.md` §8.
 - Write the failing test first, check it fails for the right reason, then implement.
 - `data/` holds real financial data: never read it into the conversation unless asked, and never write to it. Test fixtures must be synthetic.
-- The TS API client is generated from the FastAPI OpenAPI schema. Do not hand-edit it.
+- The TS API client is generated from the FastAPI OpenAPI schema into `frontend/src/api/generated` by `make openapi` (run it after any API change; CI fails on drift). Do not hand-edit it.
 - UI colours come from the blog palette tokens (`docs/SPECIFICATIONS.md` §7). Do not introduce ad-hoc hex values.

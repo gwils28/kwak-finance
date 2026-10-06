@@ -20,6 +20,10 @@ migrate: ## Apply database migrations (KWAK_DATABASE_URL)
 migration: ## New migration from model changes: make migration m="add user table"
 	cd $(BACKEND) && KWAK_ENV=dev uv run alembic revision --autogenerate -m "$(m)"
 
+openapi: ## Regenerate the TS API client from the backend schema (commit the result)
+	cd $(BACKEND) && KWAK_ENV=dev uv run kwak openapi > ../$(FRONTEND)/openapi.json
+	cd $(FRONTEND) && pnpm -s openapi
+
 dev-api: ## Run the API with reload on :8000
 	cd $(BACKEND) && KWAK_ENV=dev uv run uvicorn kwak_api.main:app --reload --port 8000
 
