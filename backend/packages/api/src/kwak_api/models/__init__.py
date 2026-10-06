@@ -2,6 +2,7 @@
 
 from kwak_api.models.account import Account, Institution
 from kwak_api.models.auth_failure import AuthFailure
+from kwak_api.models.budget import BudgetTarget
 from kwak_api.models.category import Category
 from kwak_api.models.household import Household, Role, User
 from kwak_api.models.invite import Invite
@@ -13,6 +14,7 @@ from kwak_api.models.transaction import ImportBatch, Transaction
 __all__ = [
     "Account",
     "AuthFailure",
+    "BudgetTarget",
     "CategorizationRule",
     "Category",
     "Household",

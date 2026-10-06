@@ -188,6 +188,31 @@ export type BodyPreviewImport = {
 };
 
 /**
+ * BudgetMatrix
+ */
+export type BudgetMatrix = {
+    /**
+     * Band
+     */
+    band: string;
+    /**
+     * Months
+     */
+    months: Array<string>;
+    /**
+     * Rows
+     */
+    rows: Array<RowOut>;
+    total: RowOut;
+    uncategorised: RowOut;
+};
+
+/**
+ * BudgetStatus
+ */
+export type BudgetStatus = 'under' | 'on' | 'over' | 'none';
+
+/**
  * Categorise
  */
 export type Categorise = {
@@ -264,6 +289,33 @@ export type CategoryPatch = {
      * Parent Id
      */
     parent_id?: string | null;
+};
+
+/**
+ * CellOut
+ */
+export type CellOut = {
+    /**
+     * Gap
+     */
+    gap: string | null;
+    /**
+     * Gap Ratio
+     */
+    gap_ratio: string | null;
+    /**
+     * Month
+     */
+    month: string;
+    /**
+     * Spent
+     */
+    spent: string;
+    status: BudgetStatus;
+    /**
+     * Target
+     */
+    target: string | null;
 };
 
 /**
@@ -619,6 +671,36 @@ export type RowErrorOut = {
 };
 
 /**
+ * RowOut
+ */
+export type RowOut = {
+    /**
+     * Category Id
+     */
+    category_id: string | null;
+    /**
+     * Cells
+     */
+    cells: Array<CellOut>;
+    /**
+     * Level
+     */
+    level: number;
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Parent Id
+     */
+    parent_id: string | null;
+    /**
+     * Target
+     */
+    target: string | null;
+};
+
+/**
  * RowStatus
  */
 export type RowStatus = 'new' | 'duplicate' | 'before_opening';
@@ -735,6 +817,43 @@ export type RulePreview = {
      * Uncategorised
      */
     uncategorised: number;
+};
+
+/**
+ * Scope
+ */
+export type Scope = 'household' | 'mine';
+
+/**
+ * TargetIn
+ */
+export type TargetIn = {
+    /**
+     * Amount
+     */
+    amount: number | string | null;
+    /**
+     * From Month
+     */
+    from_month: string;
+};
+
+/**
+ * TargetOut
+ */
+export type TargetOut = {
+    /**
+     * Amount
+     */
+    amount: string | null;
+    /**
+     * Category Id
+     */
+    category_id: string;
+    /**
+     * Valid From
+     */
+    valid_from: string;
 };
 
 /**
@@ -1308,6 +1427,113 @@ export type TotpVerifyResponses = {
 };
 
 export type TotpVerifyResponse = TotpVerifyResponses[keyof TotpVerifyResponses];
+
+export type BudgetMatrixData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Start
+         *
+         * YYYY-MM; default: 11 months before end
+         */
+        start?: string | null;
+        /**
+         * End
+         *
+         * YYYY-MM; default: this month
+         */
+        end?: string | null;
+        scope?: Scope;
+        /**
+         * Band
+         */
+        band?: number | string;
+    };
+    url: '/api/budget/matrix';
+};
+
+export type BudgetMatrixErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type BudgetMatrixError = BudgetMatrixErrors[keyof BudgetMatrixErrors];
+
+export type BudgetMatrixResponses = {
+    /**
+     * Successful Response
+     */
+    200: BudgetMatrix;
+};
+
+export type BudgetMatrixResponse = BudgetMatrixResponses[keyof BudgetMatrixResponses];
+
+export type ListTargetsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Month
+         *
+         * Default: this month
+         */
+        month?: string | null;
+    };
+    url: '/api/budget/targets';
+};
+
+export type ListTargetsErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ListTargetsError = ListTargetsErrors[keyof ListTargetsErrors];
+
+export type ListTargetsResponses = {
+    /**
+     * Response Listtargets
+     *
+     * Successful Response
+     */
+    200: Array<TargetOut>;
+};
+
+export type ListTargetsResponse = ListTargetsResponses[keyof ListTargetsResponses];
+
+export type SetTargetData = {
+    body: TargetIn;
+    path: {
+        /**
+         * Category Id
+         */
+        category_id: string;
+    };
+    query?: never;
+    url: '/api/budget/targets/{category_id}';
+};
+
+export type SetTargetErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type SetTargetError = SetTargetErrors[keyof SetTargetErrors];
+
+export type SetTargetResponses = {
+    /**
+     * Successful Response
+     */
+    200: TargetOut;
+};
+
+export type SetTargetResponse = SetTargetResponses[keyof SetTargetResponses];
 
 export type ListCategoriesData = {
     body?: never;
