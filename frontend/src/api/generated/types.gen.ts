@@ -538,6 +538,94 @@ export type TotpSetupOut = {
 };
 
 /**
+ * TransactionIn
+ */
+export type TransactionIn = {
+    /**
+     * Account Id
+     */
+    account_id: string;
+    /**
+     * Amount
+     */
+    amount: number | string;
+    /**
+     * Booked On
+     */
+    booked_on: string;
+    /**
+     * Label
+     */
+    label: string;
+};
+
+/**
+ * TransactionOut
+ */
+export type TransactionOut = {
+    /**
+     * Account Id
+     */
+    account_id: string;
+    /**
+     * Account Name
+     */
+    account_name: string;
+    /**
+     * Amount
+     */
+    amount: string;
+    /**
+     * Booked On
+     */
+    booked_on: string;
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Label
+     */
+    label: string;
+    /**
+     * Source
+     */
+    source: 'import' | 'manual';
+};
+
+/**
+ * TransactionPage
+ */
+export type TransactionPage = {
+    /**
+     * Items
+     */
+    items: Array<TransactionOut>;
+    /**
+     * Total
+     */
+    total: number;
+};
+
+/**
+ * TransactionPatch
+ */
+export type TransactionPatch = {
+    /**
+     * Amount
+     */
+    amount?: number | string | null;
+    /**
+     * Booked On
+     */
+    booked_on?: string | null;
+    /**
+     * Label
+     */
+    label?: string | null;
+};
+
+/**
  * UserOut
  */
 export type UserOut = {
@@ -1213,3 +1301,140 @@ export type RevokeInviteResponses = {
 };
 
 export type RevokeInviteResponse = RevokeInviteResponses[keyof RevokeInviteResponses];
+
+export type ListTransactionsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Account Id
+         */
+        account_id?: string | null;
+        /**
+         * Date From
+         */
+        date_from?: string | null;
+        /**
+         * Date To
+         */
+        date_to?: string | null;
+        /**
+         * Q
+         *
+         * Words in the label
+         */
+        q?: string | null;
+        /**
+         * Limit
+         */
+        limit?: number;
+        /**
+         * Offset
+         */
+        offset?: number;
+    };
+    url: '/api/transactions';
+};
+
+export type ListTransactionsErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ListTransactionsError = ListTransactionsErrors[keyof ListTransactionsErrors];
+
+export type ListTransactionsResponses = {
+    /**
+     * Successful Response
+     */
+    200: TransactionPage;
+};
+
+export type ListTransactionsResponse = ListTransactionsResponses[keyof ListTransactionsResponses];
+
+export type CreateTransactionData = {
+    body: TransactionIn;
+    path?: never;
+    query?: never;
+    url: '/api/transactions';
+};
+
+export type CreateTransactionErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type CreateTransactionError = CreateTransactionErrors[keyof CreateTransactionErrors];
+
+export type CreateTransactionResponses = {
+    /**
+     * Successful Response
+     */
+    201: TransactionOut;
+};
+
+export type CreateTransactionResponse = CreateTransactionResponses[keyof CreateTransactionResponses];
+
+export type DeleteTransactionData = {
+    body?: never;
+    path: {
+        /**
+         * Transaction Id
+         */
+        transaction_id: string;
+    };
+    query?: never;
+    url: '/api/transactions/{transaction_id}';
+};
+
+export type DeleteTransactionErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type DeleteTransactionError = DeleteTransactionErrors[keyof DeleteTransactionErrors];
+
+export type DeleteTransactionResponses = {
+    /**
+     * Successful Response
+     */
+    204: void;
+};
+
+export type DeleteTransactionResponse = DeleteTransactionResponses[keyof DeleteTransactionResponses];
+
+export type UpdateTransactionData = {
+    body: TransactionPatch;
+    path: {
+        /**
+         * Transaction Id
+         */
+        transaction_id: string;
+    };
+    query?: never;
+    url: '/api/transactions/{transaction_id}';
+};
+
+export type UpdateTransactionErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type UpdateTransactionError = UpdateTransactionErrors[keyof UpdateTransactionErrors];
+
+export type UpdateTransactionResponses = {
+    /**
+     * Successful Response
+     */
+    200: TransactionOut;
+};
+
+export type UpdateTransactionResponse = UpdateTransactionResponses[keyof UpdateTransactionResponses];
