@@ -35,7 +35,7 @@ class Kpis(BaseModel):
     """net / income, e.g. 0.3564; null without income."""
     previous_spent: Decimal
     average_spent: Decimal
-    """Average monthly spending over the 12 previous months."""
+    """Average monthly spending over the previous 12 months that have transactions."""
     spent_change_vs_previous: Decimal | None
     spent_change_vs_average: Decimal | None
 
