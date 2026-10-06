@@ -9,7 +9,7 @@ from kwak_api.settings import Settings
 from sqlalchemy import Engine, text
 from sqlalchemy.orm import Session
 
-from .conftest import PASSWORD
+from tests.api.conftest import PASSWORD
 
 
 @pytest.fixture

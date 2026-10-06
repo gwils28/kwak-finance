@@ -3,7 +3,7 @@ from datetime import timedelta
 import pytest
 from fastapi.testclient import TestClient
 
-from .conftest import PASSWORD, Clock, csrf, totp_code
+from tests.api.conftest import PASSWORD, Clock, csrf, totp_code
 
 
 def _login(client: TestClient, email: str = "owner@example.com", password: str = PASSWORD) -> int:

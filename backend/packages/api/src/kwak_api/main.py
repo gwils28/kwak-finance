@@ -7,6 +7,7 @@ from sqlalchemy.orm import sessionmaker
 
 from kwak_api.auth.routes import router as auth_router
 from kwak_api.db import make_engine
+from kwak_api.household.routes import router as household_router
 from kwak_api.settings import Settings
 
 
@@ -41,6 +42,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.sessionmaker = sessionmaker(make_engine(settings.database_url))
     app.include_router(router)
     app.include_router(auth_router)
+    app.include_router(household_router)
     return app
 
 

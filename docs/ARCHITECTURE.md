@@ -100,7 +100,7 @@ The React app is the product. Dash is used only for **exploratory analytics page
 
 ## 4. Data model (initial sketch)
 
-- `household`, `user` (table `app_user`: `user` is reserved in Postgres; + encrypted TOTP seed), `recovery_code` (SHA-256 only), `user_session` (only the SHA-256 of the cookie token is stored), `auth_failure` (failed login/TOTP attempts, kept 24 h for rate limiting), `invite`
+- `household`, `user` (table `app_user`: `user` is reserved in Postgres; + encrypted TOTP seed), `recovery_code` (SHA-256 only), `user_session` (only the SHA-256 of the cookie token is stored), `invite` (single-use, 7 days, token hashed), `auth_failure` (failed login/TOTP attempts, kept 24 h for rate limiting)
 - `institution`, `account` (type, owner_id, visibility, opened_at, closed_at)
 - `import_batch` (file_sha256, profile_id, row_count, status), `import_profile`
 - `transaction` (account_id, booked_at, amount NUMERIC(14,2), label_raw, label_norm, fingerprint UNIQUE per account, category_id, transfer_group_id, import_batch_id, recurring_id), `transaction_split`

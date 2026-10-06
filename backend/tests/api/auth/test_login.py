@@ -7,7 +7,7 @@ from kwak_api.models import User, UserSession
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from .conftest import PASSWORD, Clock, csrf, log_in
+from tests.api.conftest import PASSWORD, Clock, csrf, log_in
 
 INVALID = {"detail": "invalid email or password"}
 

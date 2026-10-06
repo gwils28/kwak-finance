@@ -7,7 +7,7 @@ from kwak_api.models import User
 from kwak_core.totp import STEP, hotp
 from sqlalchemy.orm import Session
 
-from .conftest import PASSWORD, Clock, csrf, totp_code
+from tests.api.conftest import PASSWORD, Clock, csrf, totp_code
 
 
 def _password_step(client: TestClient) -> str:

@@ -7,7 +7,7 @@ from kwak_core.totp import STEP, hotp
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from .conftest import PASSWORD, Clock, csrf, log_in
+from tests.api.conftest import PASSWORD, Clock, csrf, log_in
 
 
 def _password_step(client: TestClient) -> None:
