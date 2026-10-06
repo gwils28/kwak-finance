@@ -137,7 +137,7 @@ def create_transaction(body: TransactionIn, user_session: CurrentSession, db: Db
         )
     except ValueError as exc:
         raise _unprocessable(exc) from None
-    return TransactionOut.of(transaction, account, {})
+    return TransactionOut.of(transaction, account, _categories(db, user_session.user.household_id))
 
 
 @router.patch("/transactions/{transaction_id}")

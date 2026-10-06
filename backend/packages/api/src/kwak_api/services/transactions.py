@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session
 
 from kwak_api.models import Account, Category, Transaction, User
 from kwak_api.services.accounts import find_visible_account, visible_accounts
+from kwak_api.services.rules import categorise_new
 
 
 class ImportedTransactionError(Exception):
@@ -98,6 +99,7 @@ def create(
         label_raw=label,
         label_norm=normalize_label(label),
     )
+    categorise_new(db, account.household_id, [transaction])
     db.add(transaction)
     db.flush()
     return transaction

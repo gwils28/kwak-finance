@@ -11,6 +11,7 @@ from kwak_api.categories.routes import router as categories_router
 from kwak_api.db import make_engine
 from kwak_api.household.routes import router as household_router
 from kwak_api.imports.routes import router as imports_router
+from kwak_api.rules.routes import router as rules_router
 from kwak_api.settings import Settings
 from kwak_api.transactions.routes import router as transactions_router
 
@@ -51,6 +52,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(imports_router)
     app.include_router(transactions_router)
     app.include_router(categories_router)
+    app.include_router(rules_router)
     return app
 
 
