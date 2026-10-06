@@ -108,7 +108,13 @@ function AccountRow({ account, onEdit }: { account: AccountOut; onEdit: () => vo
     <li className="flex flex-wrap items-center justify-between gap-4 px-4 py-3">
       <div>
         <p className="font-medium">
-          {account.name}
+          <Link
+            to="/transactions"
+            search={{ account: account.id }}
+            className="hover:text-accent hover:underline"
+          >
+            {account.name}
+          </Link>
           {account.closed_on && (
             <span className="ml-2 text-sm text-muted">Closed {formatDate(account.closed_on)}</span>
           )}
