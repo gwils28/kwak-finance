@@ -15,6 +15,7 @@ import { HomePage } from "./HomePage";
 import { AcceptInvitePage } from "./household/AcceptInvitePage";
 import { MembersPage } from "./household/MembersPage";
 import { ImportPage } from "./imports/ImportPage";
+import { parseTransactionSearch, TransactionsPage } from "./transactions/TransactionsPage";
 
 const rootRoute = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   component: Outlet,
@@ -59,6 +60,13 @@ const importRoute = createRoute({
   component: ImportPage,
 });
 
+const transactionsRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: "/transactions",
+  validateSearch: parseTransactionSearch,
+  component: TransactionsPage,
+});
+
 const loginRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/login",
@@ -75,7 +83,7 @@ const acceptInviteRoute = createRoute({
 });
 
 const routeTree = rootRoute.addChildren([
-  appRoute.addChildren([homeRoute, accountsRoute, importRoute, membersRoute]),
+  appRoute.addChildren([homeRoute, accountsRoute, importRoute, transactionsRoute, membersRoute]),
   loginRoute,
   acceptInviteRoute,
 ]);
