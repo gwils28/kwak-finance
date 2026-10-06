@@ -132,3 +132,11 @@ def test_the_total_target_is_the_sum_of_top_level_targets() -> None:
     matrix = _matrix({}, {GROCERIES: [(JAN, D("400"))], HOUSING: [(JAN, D("800"))]})
     assert matrix.total.target == D("1200")
     assert _matrix({}, {}).total.target is None
+
+
+def test_a_row_says_when_its_target_is_its_childrens_sum() -> None:
+    children = _matrix({}, {GROCERIES: [(JAN, D("300"))]})
+    food = next(r for r in children.rows if r.category_id == FOOD)
+    assert (food.target, food.target_from_children) == (D("300"), True)
+    own = _matrix({}, {FOOD: [(JAN, D("500"))]})
+    assert next(r for r in own.rows if r.category_id == FOOD).target_from_children is False
