@@ -299,6 +299,28 @@ export type CategoryPatch = {
 };
 
 /**
+ * CategorySpending
+ */
+export type CategorySpending = {
+    /**
+     * Category Id
+     */
+    category_id: string;
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Share
+     */
+    share: string | null;
+    /**
+     * Spent
+     */
+    spent: string;
+};
+
+/**
  * CellOut
  */
 export type CellOut = {
@@ -323,6 +345,48 @@ export type CellOut = {
      * Target
      */
     target: string | null;
+};
+
+/**
+ * DashboardOut
+ */
+export type DashboardOut = {
+    /**
+     * Budget Target
+     */
+    budget_target: string | null;
+    /**
+     * Cumulative
+     */
+    cumulative: Array<DayPoint>;
+    kpis: Kpis;
+    /**
+     * Month
+     */
+    month: string;
+    /**
+     * Monthly
+     */
+    monthly: Array<MonthPoint>;
+    to_categorise: ToCategorise;
+    /**
+     * Top Categories
+     */
+    top_categories: Array<CategorySpending>;
+};
+
+/**
+ * DayPoint
+ */
+export type DayPoint = {
+    /**
+     * Day
+     */
+    day: string;
+    /**
+     * Spent
+     */
+    spent: string;
 };
 
 /**
@@ -504,6 +568,44 @@ export type InvitePreview = {
 export type InviteState = 'pending' | 'accepted' | 'revoked' | 'expired';
 
 /**
+ * Kpis
+ */
+export type Kpis = {
+    /**
+     * Average Spent
+     */
+    average_spent: string;
+    /**
+     * Income
+     */
+    income: string;
+    /**
+     * Net
+     */
+    net: string;
+    /**
+     * Previous Spent
+     */
+    previous_spent: string;
+    /**
+     * Savings Rate
+     */
+    savings_rate: string | null;
+    /**
+     * Spent
+     */
+    spent: string;
+    /**
+     * Spent Change Vs Average
+     */
+    spent_change_vs_average: string | null;
+    /**
+     * Spent Change Vs Previous
+     */
+    spent_change_vs_previous: string | null;
+};
+
+/**
  * Linked
  */
 export type Linked = {
@@ -555,6 +657,28 @@ export type MemberOut = {
      */
     id: string;
     role: Role;
+};
+
+/**
+ * MonthPoint
+ */
+export type MonthPoint = {
+    /**
+     * By Category
+     */
+    by_category: Array<CategorySpending>;
+    /**
+     * Income
+     */
+    income: string;
+    /**
+     * Month
+     */
+    month: string;
+    /**
+     * Spent
+     */
+    spent: string;
 };
 
 /**
@@ -875,6 +999,20 @@ export type TargetOut = {
      * Valid From
      */
     valid_from: string;
+};
+
+/**
+ * ToCategorise
+ */
+export type ToCategorise = {
+    /**
+     * Count
+     */
+    count: number;
+    /**
+     * Spent
+     */
+    spent: string;
 };
 
 /**
@@ -1737,6 +1875,39 @@ export type UpdateCategoryResponses = {
 };
 
 export type UpdateCategoryResponse = UpdateCategoryResponses[keyof UpdateCategoryResponses];
+
+export type DashboardData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Month
+         *
+         * YYYY-MM; default: this month
+         */
+        month?: string | null;
+        scope?: Scope;
+    };
+    url: '/api/dashboard';
+};
+
+export type DashboardErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type DashboardError = DashboardErrors[keyof DashboardErrors];
+
+export type DashboardResponses = {
+    /**
+     * Successful Response
+     */
+    200: DashboardOut;
+};
+
+export type DashboardResponse = DashboardResponses[keyof DashboardResponses];
 
 export type HealthData = {
     body?: never;
