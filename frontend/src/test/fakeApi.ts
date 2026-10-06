@@ -9,8 +9,10 @@ export function fakeApi(handlers: Record<string, Handler>) {
     "fetch",
     vi.fn(async (request: Request) => {
       const route = `${request.method} ${new URL(request.url).pathname}`;
+      // Multipart bodies stay raw text: undici cannot parse them back under jsdom's File class.
+      const isForm = request.headers.get("Content-Type")?.startsWith("multipart/form-data");
       const text = await request.text();
-      const body: unknown = text ? JSON.parse(text) : undefined;
+      const body: unknown = isForm ? text : text ? JSON.parse(text) : undefined;
       calls.push({ route, body, headers: request.headers });
       const handler = handlers[route];
       return handler ? handler(body) : Response.json({ detail: "not found" }, { status: 404 });
