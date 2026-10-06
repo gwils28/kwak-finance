@@ -8,6 +8,7 @@ import {
   redirect,
 } from "@tanstack/react-router";
 import { AppLayout } from "./AppLayout";
+import { AccountsPage } from "./accounts/AccountsPage";
 import { LoginPage } from "./auth/LoginPage";
 import { meQuery } from "./auth/session";
 import { HomePage } from "./HomePage";
@@ -45,6 +46,12 @@ const membersRoute = createRoute({
   component: MembersPage,
 });
 
+const accountsRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: "/accounts",
+  component: AccountsPage,
+});
+
 const loginRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/login",
@@ -61,7 +68,7 @@ const acceptInviteRoute = createRoute({
 });
 
 const routeTree = rootRoute.addChildren([
-  appRoute.addChildren([homeRoute, membersRoute]),
+  appRoute.addChildren([homeRoute, accountsRoute, membersRoute]),
   loginRoute,
   acceptInviteRoute,
 ]);
