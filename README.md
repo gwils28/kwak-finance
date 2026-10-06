@@ -40,6 +40,8 @@ docker compose exec -it api kwak create-owner --household "Home" --email you@exa
 
 Single maintainer. Conventional Commits are required and enforced by `.githooks/commit-msg` and CI.
 
+From a topic branch, `scripts/ship-pr.sh "<subject>" "<body>" <paths>...` commits the paths, opens the PR, waits until GitHub reports it mergeable (every required check green), squash-merges it and returns to an up-to-date `main`. It stops, without merging, when a check fails or the branch is behind or conflicts with `main`.
+
 ## Corrections to the plan
 
 Deviations from the original specifications are logged here as they happen.
