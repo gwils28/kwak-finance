@@ -126,7 +126,7 @@ def apply(db: Session, viewer: User, *, only_uncategorised: bool) -> int:
     rules = rule_set(db, viewer.household_id)
     changed = 0
     for t in _visible_transactions(db, viewer):
-        if only_uncategorised and t.category_id is not None:
+        if t.transfer_group_id is not None or (only_uncategorised and t.category_id is not None):
             continue
         category = rules.category_for(label=t.label_raw, amount=t.amount, account_id=t.account_id)
         if category is not None and category != t.category_id:

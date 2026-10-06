@@ -12,6 +12,7 @@ from kwak_api.models import Account, Category, Transaction
 from kwak_api.services import accounts as account_service
 from kwak_api.services import categories as category_service
 from kwak_api.services import transactions as service
+from kwak_api.services import transfers as transfer_service
 
 router = APIRouter(prefix="/api", tags=["transactions"])
 
@@ -30,10 +31,18 @@ class TransactionOut(BaseModel):
     """Imported transactions mirror the bank: only their category can change."""
     category_id: UUID | None
     category_name: str | None
+    transfer_group_id: UUID | None
+    """Set when this is one side of a transfer between own accounts."""
+    transfer_account_name: str | None
+    """The account on the other side of the transfer."""
 
     @classmethod
     def of(
-        cls, transaction: Transaction, account: Account, categories: dict[UUID, Category]
+        cls,
+        transaction: Transaction,
+        account: Account,
+        categories: dict[UUID, Category],
+        counterparts: dict[UUID, str] | None = None,
     ) -> "TransactionOut":
         category = categories.get(transaction.category_id) if transaction.category_id else None
         return cls(
@@ -46,6 +55,8 @@ class TransactionOut(BaseModel):
             source="import" if transaction.fingerprint else "manual",
             category_id=category.id if category else None,
             category_name=category.name if category else None,
+            transfer_group_id=transaction.transfer_group_id,
+            transfer_account_name=(counterparts or {}).get(transaction.id),
         )
 
 
@@ -121,8 +132,9 @@ def list_transactions(
     )
     rows, total = service.search(db, user_session.user, filters, limit=limit, offset=offset)
     categories = _categories(db, user_session.user.household_id)
+    others = transfer_service.counterparts(db, user_session.user, [t for t, _ in rows])
     return TransactionPage(
-        items=[TransactionOut.of(t, a, categories) for t, a in rows], total=total
+        items=[TransactionOut.of(t, a, categories, others) for t, a in rows], total=total
     )
 
 
@@ -158,7 +170,12 @@ def update_transaction(
     except ValueError as exc:
         raise _unprocessable(exc) from None
     if "category_id" in body.model_fields_set:
-        service.set_category(db, transaction, _category(db, household_id, body.category_id))
+        try:
+            service.set_category(db, transaction, _category(db, household_id, body.category_id))
+        except service.TransferCategoryError:
+            raise HTTPException(
+                status.HTTP_409_CONFLICT, "a transfer has no category: unlink it first"
+            ) from None
     return TransactionOut.of(transaction, account, _categories(db, household_id))
 
 
