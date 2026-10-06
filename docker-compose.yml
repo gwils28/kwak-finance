@@ -24,6 +24,22 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
+  backup:
+    build: ./ops/backup
+    env_file: .env
+    environment:
+      KWAK_BACKUP_DIR: /backups
+      TZ: ${TZ:-Europe/Paris}
+    # Your user, so the backup files are yours on the host (not root's).
+    user: "${KWAK_UID:-1000}:${KWAK_GID:-1000}"
+    volumes:
+      # Create the directory first (mkdir -p data/backups), or Docker creates it as root.
+      - ${KWAK_BACKUP_DIR:-./data/backups}:/backups
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
   web:
     build: ./frontend
     env_file: .env

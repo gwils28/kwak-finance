@@ -176,5 +176,5 @@ Budget status colours (F-BUD-6) are semantic tokens built from the palette, defi
 - **Q4** — Life insurance: track UC positions line by line, or only the contract's total value?
 - **Q5** — ✅ Runs on the development machine (RTX 5070 Laptop, 8 GB VRAM, 30 GB RAM): Ollama limited to ~7–8B models (quantised).
 - **Q6** — Remote access: LAN only, or VPN later (not in MVP)?
-- **Q7** — Backup destination: local disk only, or an extra copy (external drive, NAS)?
+- **Q7** — Backup destination: local disk only, or an extra copy (external drive, NAS)? Local daily backups exist (docs/OPERATIONS.md); an off-machine copy is still manual.
 - **Q8** — Data history to import at start (how many years, how many accounts)?
