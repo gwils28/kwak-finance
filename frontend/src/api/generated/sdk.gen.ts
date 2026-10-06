@@ -2,7 +2,7 @@
 
 import { type Client, type ClientMeta, formDataBodySerializer, type Options as Options2, type RequestResult, type TDataShape } from './client';
 import { client } from './client.gen';
-import type { AcceptInviteData, AcceptInviteErrors, AcceptInviteResponses, CategoriseTransactionsData, CategoriseTransactionsErrors, CategoriseTransactionsResponses, CreateAccountData, CreateAccountErrors, CreateAccountResponses, CreateCategoryData, CreateCategoryErrors, CreateCategoryResponses, CreateImportData, CreateImportErrors, CreateImportResponses, CreateInviteData, CreateInviteErrors, CreateInviteResponses, CreateTransactionData, CreateTransactionErrors, CreateTransactionResponses, DeleteCategoryData, DeleteCategoryErrors, DeleteCategoryResponses, DeleteTransactionData, DeleteTransactionErrors, DeleteTransactionResponses, HealthData, HealthResponses, ListAccountsData, ListAccountsErrors, ListAccountsResponses, ListCategoriesData, ListCategoriesErrors, ListCategoriesResponses, ListImportsData, ListImportsErrors, ListImportsResponses, ListInstitutionsData, ListInstitutionsErrors, ListInstitutionsResponses, ListInvitesData, ListInvitesErrors, ListInvitesResponses, ListMembersData, ListMembersErrors, ListMembersResponses, ListTransactionsData, ListTransactionsErrors, ListTransactionsResponses, LoginData, LoginErrors, LoginResponses, LogoutData, LogoutErrors, LogoutResponses, MeData, MeErrors, MeResponses, PreviewImportData, PreviewImportErrors, PreviewImportResponses, PreviewInviteData, PreviewInviteErrors, PreviewInviteResponses, RecoveryData, RecoveryErrors, RecoveryResponses, RegenerateRecoveryCodesData, RegenerateRecoveryCodesErrors, RegenerateRecoveryCodesResponses, RevokeInviteData, RevokeInviteErrors, RevokeInviteResponses, RollbackImportData, RollbackImportErrors, RollbackImportResponses, TotpConfirmData, TotpConfirmErrors, TotpConfirmResponses, TotpSetupData, TotpSetupErrors, TotpSetupResponses, TotpVerifyData, TotpVerifyErrors, TotpVerifyResponses, UpdateAccountData, UpdateAccountErrors, UpdateAccountResponses, UpdateCategoryData, UpdateCategoryErrors, UpdateCategoryResponses, UpdateTransactionData, UpdateTransactionErrors, UpdateTransactionResponses } from './types.gen';
+import type { AcceptInviteData, AcceptInviteErrors, AcceptInviteResponses, ApplyRulesData, ApplyRulesErrors, ApplyRulesResponses, CategoriseTransactionsData, CategoriseTransactionsErrors, CategoriseTransactionsResponses, CreateAccountData, CreateAccountErrors, CreateAccountResponses, CreateCategoryData, CreateCategoryErrors, CreateCategoryResponses, CreateImportData, CreateImportErrors, CreateImportResponses, CreateInviteData, CreateInviteErrors, CreateInviteResponses, CreateRuleData, CreateRuleErrors, CreateRuleResponses, CreateTransactionData, CreateTransactionErrors, CreateTransactionResponses, DeleteCategoryData, DeleteCategoryErrors, DeleteCategoryResponses, DeleteRuleData, DeleteRuleErrors, DeleteRuleResponses, DeleteTransactionData, DeleteTransactionErrors, DeleteTransactionResponses, HealthData, HealthResponses, ListAccountsData, ListAccountsErrors, ListAccountsResponses, ListCategoriesData, ListCategoriesErrors, ListCategoriesResponses, ListImportsData, ListImportsErrors, ListImportsResponses, ListInstitutionsData, ListInstitutionsErrors, ListInstitutionsResponses, ListInvitesData, ListInvitesErrors, ListInvitesResponses, ListMembersData, ListMembersErrors, ListMembersResponses, ListRulesData, ListRulesErrors, ListRulesResponses, ListTransactionsData, ListTransactionsErrors, ListTransactionsResponses, LoginData, LoginErrors, LoginResponses, LogoutData, LogoutErrors, LogoutResponses, MeData, MeErrors, MeResponses, PreviewImportData, PreviewImportErrors, PreviewImportResponses, PreviewInviteData, PreviewInviteErrors, PreviewInviteResponses, PreviewRuleData, PreviewRuleErrors, PreviewRuleResponses, RecoveryData, RecoveryErrors, RecoveryResponses, RegenerateRecoveryCodesData, RegenerateRecoveryCodesErrors, RegenerateRecoveryCodesResponses, RevokeInviteData, RevokeInviteErrors, RevokeInviteResponses, RollbackImportData, RollbackImportErrors, RollbackImportResponses, TotpConfirmData, TotpConfirmErrors, TotpConfirmResponses, TotpSetupData, TotpSetupErrors, TotpSetupResponses, TotpVerifyData, TotpVerifyErrors, TotpVerifyResponses, UpdateAccountData, UpdateAccountErrors, UpdateAccountResponses, UpdateCategoryData, UpdateCategoryErrors, UpdateCategoryResponses, UpdateRuleData, UpdateRuleErrors, UpdateRuleResponses, UpdateTransactionData, UpdateTransactionErrors, UpdateTransactionResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -269,6 +269,72 @@ export const acceptInvite = <ThrowOnError extends boolean = false>(options: Opti
  * Revoke Invite
  */
 export const revokeInvite = <ThrowOnError extends boolean = false>(options: Options<RevokeInviteData, ThrowOnError>): RequestResult<RevokeInviteResponses, RevokeInviteErrors, ThrowOnError> => (options.client ?? client).delete<RevokeInviteResponses, RevokeInviteErrors, ThrowOnError>({ url: '/api/invites/{invite_id}', ...options });
+
+/**
+ * List Rules
+ *
+ * In the order they run.
+ */
+export const listRules = <ThrowOnError extends boolean = false>(options?: Options<ListRulesData, ThrowOnError>): RequestResult<ListRulesResponses, ListRulesErrors, ThrowOnError> => (options?.client ?? client).get<ListRulesResponses, ListRulesErrors, ThrowOnError>({ url: '/api/rules', ...options });
+
+/**
+ * Create Rule
+ *
+ * New rules run after the existing ones.
+ */
+export const createRule = <ThrowOnError extends boolean = false>(options: Options<CreateRuleData, ThrowOnError>): RequestResult<CreateRuleResponses, CreateRuleErrors, ThrowOnError> => (options.client ?? client).post<CreateRuleResponses, CreateRuleErrors, ThrowOnError>({
+    url: '/api/rules',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Apply Rules
+ *
+ * Re-run every rule on past transactions the user can see.
+ */
+export const applyRules = <ThrowOnError extends boolean = false>(options: Options<ApplyRulesData, ThrowOnError>): RequestResult<ApplyRulesResponses, ApplyRulesErrors, ThrowOnError> => (options.client ?? client).post<ApplyRulesResponses, ApplyRulesErrors, ThrowOnError>({
+    url: '/api/rules/apply',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Preview Rule
+ *
+ * What a rule with these conditions would catch, without saving it.
+ */
+export const previewRule = <ThrowOnError extends boolean = false>(options: Options<PreviewRuleData, ThrowOnError>): RequestResult<PreviewRuleResponses, PreviewRuleErrors, ThrowOnError> => (options.client ?? client).post<PreviewRuleResponses, PreviewRuleErrors, ThrowOnError>({
+    url: '/api/rules/preview',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Delete Rule
+ */
+export const deleteRule = <ThrowOnError extends boolean = false>(options: Options<DeleteRuleData, ThrowOnError>): RequestResult<DeleteRuleResponses, DeleteRuleErrors, ThrowOnError> => (options.client ?? client).delete<DeleteRuleResponses, DeleteRuleErrors, ThrowOnError>({ url: '/api/rules/{rule_id}', ...options });
+
+/**
+ * Update Rule
+ */
+export const updateRule = <ThrowOnError extends boolean = false>(options: Options<UpdateRuleData, ThrowOnError>): RequestResult<UpdateRuleResponses, UpdateRuleErrors, ThrowOnError> => (options.client ?? client).patch<UpdateRuleResponses, UpdateRuleErrors, ThrowOnError>({
+    url: '/api/rules/{rule_id}',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
 
 /**
  * List Transactions

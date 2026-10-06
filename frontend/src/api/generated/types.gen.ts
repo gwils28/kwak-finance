@@ -108,6 +108,26 @@ export type AccountPatch = {
 export type AccountType = 'checking' | 'savings' | 'brokerage' | 'life_insurance' | 'employee_savings' | 'crypto' | 'loan' | 'real_estate' | 'use_asset' | 'other';
 
 /**
+ * Applied
+ */
+export type Applied = {
+    /**
+     * Updated
+     */
+    updated: number;
+};
+
+/**
+ * ApplyRules
+ */
+export type ApplyRules = {
+    /**
+     * Only Uncategorised
+     */
+    only_uncategorised?: boolean;
+};
+
+/**
  * BalanceCheckOut
  */
 export type BalanceCheckOut = {
@@ -515,6 +535,28 @@ export type PreviewCounts = {
 };
 
 /**
+ * PreviewExample
+ */
+export type PreviewExample = {
+    /**
+     * Amount
+     */
+    amount: string;
+    /**
+     * Booked On
+     */
+    booked_on: string;
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Label
+     */
+    label: string;
+};
+
+/**
  * PreviewRow
  */
 export type PreviewRow = {
@@ -580,6 +622,120 @@ export type RowErrorOut = {
  * RowStatus
  */
 export type RowStatus = 'new' | 'duplicate' | 'before_opening';
+
+/**
+ * RuleIn
+ */
+export type RuleIn = {
+    /**
+     * Account Id
+     */
+    account_id?: string | null;
+    /**
+     * Amount Max
+     */
+    amount_max?: number | string | null;
+    /**
+     * Amount Min
+     */
+    amount_min?: number | string | null;
+    /**
+     * Category Id
+     */
+    category_id: string;
+    /**
+     * Label Contains
+     */
+    label_contains?: string | null;
+};
+
+/**
+ * RuleOut
+ */
+export type RuleOut = {
+    /**
+     * Account Id
+     */
+    account_id: string | null;
+    /**
+     * Amount Max
+     */
+    amount_max: string | null;
+    /**
+     * Amount Min
+     */
+    amount_min: string | null;
+    /**
+     * Category Id
+     */
+    category_id: string;
+    /**
+     * Category Name
+     */
+    category_name: string;
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Label Contains
+     */
+    label_contains: string | null;
+    /**
+     * Priority
+     */
+    priority: number;
+};
+
+/**
+ * RulePatch
+ *
+ * Only the fields present change; null clears a condition.
+ */
+export type RulePatch = {
+    /**
+     * Account Id
+     */
+    account_id?: string | null;
+    /**
+     * Amount Max
+     */
+    amount_max?: number | string | null;
+    /**
+     * Amount Min
+     */
+    amount_min?: number | string | null;
+    /**
+     * Category Id
+     */
+    category_id?: string | null;
+    /**
+     * Label Contains
+     */
+    label_contains?: string | null;
+    /**
+     * Priority
+     */
+    priority?: number | null;
+};
+
+/**
+ * RulePreview
+ */
+export type RulePreview = {
+    /**
+     * Examples
+     */
+    examples: Array<PreviewExample>;
+    /**
+     * Matching
+     */
+    matching: number;
+    /**
+     * Uncategorised
+     */
+    uncategorised: number;
+};
 
 /**
  * TotpCode
@@ -1506,6 +1662,168 @@ export type RevokeInviteResponses = {
 };
 
 export type RevokeInviteResponse = RevokeInviteResponses[keyof RevokeInviteResponses];
+
+export type ListRulesData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/rules';
+};
+
+export type ListRulesErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ListRulesError = ListRulesErrors[keyof ListRulesErrors];
+
+export type ListRulesResponses = {
+    /**
+     * Response Listrules
+     *
+     * Successful Response
+     */
+    200: Array<RuleOut>;
+};
+
+export type ListRulesResponse = ListRulesResponses[keyof ListRulesResponses];
+
+export type CreateRuleData = {
+    body: RuleIn;
+    path?: never;
+    query?: never;
+    url: '/api/rules';
+};
+
+export type CreateRuleErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type CreateRuleError = CreateRuleErrors[keyof CreateRuleErrors];
+
+export type CreateRuleResponses = {
+    /**
+     * Successful Response
+     */
+    201: RuleOut;
+};
+
+export type CreateRuleResponse = CreateRuleResponses[keyof CreateRuleResponses];
+
+export type ApplyRulesData = {
+    body: ApplyRules;
+    path?: never;
+    query?: never;
+    url: '/api/rules/apply';
+};
+
+export type ApplyRulesErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ApplyRulesError = ApplyRulesErrors[keyof ApplyRulesErrors];
+
+export type ApplyRulesResponses = {
+    /**
+     * Successful Response
+     */
+    200: Applied;
+};
+
+export type ApplyRulesResponse = ApplyRulesResponses[keyof ApplyRulesResponses];
+
+export type PreviewRuleData = {
+    body: RuleIn;
+    path?: never;
+    query?: never;
+    url: '/api/rules/preview';
+};
+
+export type PreviewRuleErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type PreviewRuleError = PreviewRuleErrors[keyof PreviewRuleErrors];
+
+export type PreviewRuleResponses = {
+    /**
+     * Successful Response
+     */
+    200: RulePreview;
+};
+
+export type PreviewRuleResponse = PreviewRuleResponses[keyof PreviewRuleResponses];
+
+export type DeleteRuleData = {
+    body?: never;
+    path: {
+        /**
+         * Rule Id
+         */
+        rule_id: string;
+    };
+    query?: never;
+    url: '/api/rules/{rule_id}';
+};
+
+export type DeleteRuleErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type DeleteRuleError = DeleteRuleErrors[keyof DeleteRuleErrors];
+
+export type DeleteRuleResponses = {
+    /**
+     * Successful Response
+     */
+    204: void;
+};
+
+export type DeleteRuleResponse = DeleteRuleResponses[keyof DeleteRuleResponses];
+
+export type UpdateRuleData = {
+    body: RulePatch;
+    path: {
+        /**
+         * Rule Id
+         */
+        rule_id: string;
+    };
+    query?: never;
+    url: '/api/rules/{rule_id}';
+};
+
+export type UpdateRuleErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type UpdateRuleError = UpdateRuleErrors[keyof UpdateRuleErrors];
+
+export type UpdateRuleResponses = {
+    /**
+     * Successful Response
+     */
+    200: RuleOut;
+};
+
+export type UpdateRuleResponse = UpdateRuleResponses[keyof UpdateRuleResponses];
 
 export type ListTransactionsData = {
     body?: never;

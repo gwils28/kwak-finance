@@ -23,6 +23,7 @@ from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
 
 from kwak_api.models import Account, ImportBatch, Transaction, User
+from kwak_api.services.rules import categorise_new
 
 MAX_FILE_BYTES = 2_000_000  # a year of daily card payments is ~50 kB
 
@@ -133,7 +134,7 @@ def commit(
     )
     db.add(batch)
     db.flush()
-    db.add_all(
+    new = [
         Transaction(
             account_id=account.id,
             booked_on=row.booked_on,
@@ -145,7 +146,9 @@ def commit(
         )
         for row, status, fp in analysis.rows
         if status is RowStatus.NEW
-    )
+    ]
+    categorise_new(db, account.household_id, new)
+    db.add_all(new)
     db.flush()
     return batch, balance_check(db, account, batch)
 
