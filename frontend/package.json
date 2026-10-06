@@ -15,8 +15,11 @@
     "openapi": "pnpm dlx --package=@hey-api/openapi-ts@0.99.0 --package=typescript@6.0.3 openapi-ts"
   },
   "dependencies": {
+    "@tanstack/react-query": "^5.104.1",
+    "@tanstack/react-router": "^1.170.41",
     "react": "^19.3.0",
-    "react-dom": "^19.3.0"
+    "react-dom": "^19.3.0",
+    "react-qr-code": "^2.2.0"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.15",
