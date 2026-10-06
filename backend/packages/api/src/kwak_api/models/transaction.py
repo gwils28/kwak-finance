@@ -62,3 +62,7 @@ class Transaction(UUIDPrimaryKey, Timestamps, Base):
     import_batch_id: Mapped[UUID | None] = mapped_column(
         ForeignKey("import_batch.id", ondelete="SET NULL"), index=True
     )
+    # NULL = "to categorise" (F-BUD-5). Deleting a category uncategorises its transactions.
+    category_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("category.id", ondelete="SET NULL"), index=True
+    )

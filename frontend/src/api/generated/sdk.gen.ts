@@ -2,7 +2,7 @@
 
 import { type Client, type ClientMeta, formDataBodySerializer, type Options as Options2, type RequestResult, type TDataShape } from './client';
 import { client } from './client.gen';
-import type { AcceptInviteData, AcceptInviteErrors, AcceptInviteResponses, CreateAccountData, CreateAccountErrors, CreateAccountResponses, CreateImportData, CreateImportErrors, CreateImportResponses, CreateInviteData, CreateInviteErrors, CreateInviteResponses, CreateTransactionData, CreateTransactionErrors, CreateTransactionResponses, DeleteTransactionData, DeleteTransactionErrors, DeleteTransactionResponses, HealthData, HealthResponses, ListAccountsData, ListAccountsErrors, ListAccountsResponses, ListImportsData, ListImportsErrors, ListImportsResponses, ListInstitutionsData, ListInstitutionsErrors, ListInstitutionsResponses, ListInvitesData, ListInvitesErrors, ListInvitesResponses, ListMembersData, ListMembersErrors, ListMembersResponses, ListTransactionsData, ListTransactionsErrors, ListTransactionsResponses, LoginData, LoginErrors, LoginResponses, LogoutData, LogoutErrors, LogoutResponses, MeData, MeErrors, MeResponses, PreviewImportData, PreviewImportErrors, PreviewImportResponses, PreviewInviteData, PreviewInviteErrors, PreviewInviteResponses, RecoveryData, RecoveryErrors, RecoveryResponses, RegenerateRecoveryCodesData, RegenerateRecoveryCodesErrors, RegenerateRecoveryCodesResponses, RevokeInviteData, RevokeInviteErrors, RevokeInviteResponses, RollbackImportData, RollbackImportErrors, RollbackImportResponses, TotpConfirmData, TotpConfirmErrors, TotpConfirmResponses, TotpSetupData, TotpSetupErrors, TotpSetupResponses, TotpVerifyData, TotpVerifyErrors, TotpVerifyResponses, UpdateAccountData, UpdateAccountErrors, UpdateAccountResponses, UpdateTransactionData, UpdateTransactionErrors, UpdateTransactionResponses } from './types.gen';
+import type { AcceptInviteData, AcceptInviteErrors, AcceptInviteResponses, CategoriseTransactionsData, CategoriseTransactionsErrors, CategoriseTransactionsResponses, CreateAccountData, CreateAccountErrors, CreateAccountResponses, CreateCategoryData, CreateCategoryErrors, CreateCategoryResponses, CreateImportData, CreateImportErrors, CreateImportResponses, CreateInviteData, CreateInviteErrors, CreateInviteResponses, CreateTransactionData, CreateTransactionErrors, CreateTransactionResponses, DeleteCategoryData, DeleteCategoryErrors, DeleteCategoryResponses, DeleteTransactionData, DeleteTransactionErrors, DeleteTransactionResponses, HealthData, HealthResponses, ListAccountsData, ListAccountsErrors, ListAccountsResponses, ListCategoriesData, ListCategoriesErrors, ListCategoriesResponses, ListImportsData, ListImportsErrors, ListImportsResponses, ListInstitutionsData, ListInstitutionsErrors, ListInstitutionsResponses, ListInvitesData, ListInvitesErrors, ListInvitesResponses, ListMembersData, ListMembersErrors, ListMembersResponses, ListTransactionsData, ListTransactionsErrors, ListTransactionsResponses, LoginData, LoginErrors, LoginResponses, LogoutData, LogoutErrors, LogoutResponses, MeData, MeErrors, MeResponses, PreviewImportData, PreviewImportErrors, PreviewImportResponses, PreviewInviteData, PreviewInviteErrors, PreviewInviteResponses, RecoveryData, RecoveryErrors, RecoveryResponses, RegenerateRecoveryCodesData, RegenerateRecoveryCodesErrors, RegenerateRecoveryCodesResponses, RevokeInviteData, RevokeInviteErrors, RevokeInviteResponses, RollbackImportData, RollbackImportErrors, RollbackImportResponses, TotpConfirmData, TotpConfirmErrors, TotpConfirmResponses, TotpSetupData, TotpSetupErrors, TotpSetupResponses, TotpVerifyData, TotpVerifyErrors, TotpVerifyResponses, UpdateAccountData, UpdateAccountErrors, UpdateAccountResponses, UpdateCategoryData, UpdateCategoryErrors, UpdateCategoryResponses, UpdateTransactionData, UpdateTransactionErrors, UpdateTransactionResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -166,6 +166,44 @@ export const totpVerify = <ThrowOnError extends boolean = false>(options: Option
 });
 
 /**
+ * List Categories
+ *
+ * Parents first, each followed by its subcategories.
+ */
+export const listCategories = <ThrowOnError extends boolean = false>(options?: Options<ListCategoriesData, ThrowOnError>): RequestResult<ListCategoriesResponses, ListCategoriesErrors, ThrowOnError> => (options?.client ?? client).get<ListCategoriesResponses, ListCategoriesErrors, ThrowOnError>({ url: '/api/categories', ...options });
+
+/**
+ * Create Category
+ */
+export const createCategory = <ThrowOnError extends boolean = false>(options: Options<CreateCategoryData, ThrowOnError>): RequestResult<CreateCategoryResponses, CreateCategoryErrors, ThrowOnError> => (options.client ?? client).post<CreateCategoryResponses, CreateCategoryErrors, ThrowOnError>({
+    url: '/api/categories',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Delete Category
+ *
+ * Its transactions go back to "to categorise".
+ */
+export const deleteCategory = <ThrowOnError extends boolean = false>(options: Options<DeleteCategoryData, ThrowOnError>): RequestResult<DeleteCategoryResponses, DeleteCategoryErrors, ThrowOnError> => (options.client ?? client).delete<DeleteCategoryResponses, DeleteCategoryErrors, ThrowOnError>({ url: '/api/categories/{category_id}', ...options });
+
+/**
+ * Update Category
+ */
+export const updateCategory = <ThrowOnError extends boolean = false>(options: Options<UpdateCategoryData, ThrowOnError>): RequestResult<UpdateCategoryResponses, UpdateCategoryErrors, ThrowOnError> => (options.client ?? client).patch<UpdateCategoryResponses, UpdateCategoryErrors, ThrowOnError>({
+    url: '/api/categories/{category_id}',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
  * Health
  */
 export const health = <ThrowOnError extends boolean = false>(options?: Options<HealthData, ThrowOnError>): RequestResult<HealthResponses, unknown, ThrowOnError> => (options?.client ?? client).get<HealthResponses, unknown, ThrowOnError>({ url: '/api/health', ...options });
@@ -242,6 +280,20 @@ export const listTransactions = <ThrowOnError extends boolean = false>(options?:
  */
 export const createTransaction = <ThrowOnError extends boolean = false>(options: Options<CreateTransactionData, ThrowOnError>): RequestResult<CreateTransactionResponses, CreateTransactionErrors, ThrowOnError> => (options.client ?? client).post<CreateTransactionResponses, CreateTransactionErrors, ThrowOnError>({
     url: '/api/transactions',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Categorise Transactions
+ *
+ * Bulk categorisation (F-CAT-3).
+ */
+export const categoriseTransactions = <ThrowOnError extends boolean = false>(options: Options<CategoriseTransactionsData, ThrowOnError>): RequestResult<CategoriseTransactionsResponses, CategoriseTransactionsErrors, ThrowOnError> => (options.client ?? client).post<CategoriseTransactionsResponses, CategoriseTransactionsErrors, ThrowOnError>({
+    url: '/api/transactions/categorise',
     ...options,
     headers: {
         'Content-Type': 'application/json',
