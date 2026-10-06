@@ -164,7 +164,7 @@ Light and dark themes (the dark theme uses `neutral-900` / `neutral-800` surface
 ## 9. Open questions
 
 - **Q1** — ✅ Name: **Kwak Finance**; Python packages `kwak_core`, `kwak_api`, `kwak_analytics`.
-- **Q2** — ✅ First import profiles: **Société Générale** (checking, Livret A, LDDS) and **Fortuneo** (checking), the cash accounts of phase 1. Investment accounts (Fortuneo PEA/CTO, Lynxéa Spirit 2 life insurance, Amundi PERCOL/PEG, Trade Republic CTO, Kraken) come with phase 3. Fixtures are synthetic files that copy each bank's exact layout.
+- **Q2** — ✅ First import profiles: **Société Générale** (checking, Livret A, LDDS), the cash accounts of phase 1. SG exports two CSV layouts: checking (summary line with the balance, 5 columns) and savings (newer snake_case header, trailing `;`). The Fortuneo checking account is unused and out of scope. Investment accounts (Fortuneo PEA/CTO, Lynxéa Spirit 2 life insurance, Amundi PERCOL/PEG, Trade Republic CTO, Kraken) come with phase 3. Fixtures are synthetic files that copy each bank's exact layout.
 - **Q3** — ✅ Securities quoted in USD/GBP: store an FX rate (ECB reference rate) per price point, used only for market valuation; everything else stays EUR.
 - **Q4** — Life insurance: track UC positions line by line, or only the contract's total value?
 - **Q5** — ✅ Runs on the development machine (RTX 5070 Laptop, 8 GB VRAM, 30 GB RAM): Ollama limited to ~7–8B models (quantised).

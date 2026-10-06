@@ -5,6 +5,7 @@ from fastapi.routing import APIRoute
 from pydantic import BaseModel
 from sqlalchemy.orm import sessionmaker
 
+from kwak_api.accounts.routes import router as accounts_router
 from kwak_api.auth.routes import router as auth_router
 from kwak_api.db import make_engine
 from kwak_api.household.routes import router as household_router
@@ -43,6 +44,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(router)
     app.include_router(auth_router)
     app.include_router(household_router)
+    app.include_router(accounts_router)
     return app
 
 

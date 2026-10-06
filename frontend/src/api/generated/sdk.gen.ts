@@ -2,7 +2,7 @@
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { AcceptInviteData, AcceptInviteErrors, AcceptInviteResponses, CreateInviteData, CreateInviteErrors, CreateInviteResponses, HealthData, HealthResponses, ListInvitesData, ListInvitesErrors, ListInvitesResponses, ListMembersData, ListMembersErrors, ListMembersResponses, LoginData, LoginErrors, LoginResponses, LogoutData, LogoutErrors, LogoutResponses, MeData, MeErrors, MeResponses, PreviewInviteData, PreviewInviteErrors, PreviewInviteResponses, RecoveryData, RecoveryErrors, RecoveryResponses, RegenerateRecoveryCodesData, RegenerateRecoveryCodesErrors, RegenerateRecoveryCodesResponses, RevokeInviteData, RevokeInviteErrors, RevokeInviteResponses, TotpConfirmData, TotpConfirmErrors, TotpConfirmResponses, TotpSetupData, TotpSetupErrors, TotpSetupResponses, TotpVerifyData, TotpVerifyErrors, TotpVerifyResponses } from './types.gen';
+import type { AcceptInviteData, AcceptInviteErrors, AcceptInviteResponses, CreateAccountData, CreateAccountErrors, CreateAccountResponses, CreateInviteData, CreateInviteErrors, CreateInviteResponses, HealthData, HealthResponses, ListAccountsData, ListAccountsErrors, ListAccountsResponses, ListInstitutionsData, ListInstitutionsErrors, ListInstitutionsResponses, ListInvitesData, ListInvitesErrors, ListInvitesResponses, ListMembersData, ListMembersErrors, ListMembersResponses, LoginData, LoginErrors, LoginResponses, LogoutData, LogoutErrors, LogoutResponses, MeData, MeErrors, MeResponses, PreviewInviteData, PreviewInviteErrors, PreviewInviteResponses, RecoveryData, RecoveryErrors, RecoveryResponses, RegenerateRecoveryCodesData, RegenerateRecoveryCodesErrors, RegenerateRecoveryCodesResponses, RevokeInviteData, RevokeInviteErrors, RevokeInviteResponses, TotpConfirmData, TotpConfirmErrors, TotpConfirmResponses, TotpSetupData, TotpSetupErrors, TotpSetupResponses, TotpVerifyData, TotpVerifyErrors, TotpVerifyResponses, UpdateAccountData, UpdateAccountErrors, UpdateAccountResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -17,6 +17,35 @@ export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends 
      */
     meta?: keyof ClientMeta extends never ? Record<string, unknown> : ClientMeta;
 };
+
+/**
+ * List Accounts
+ */
+export const listAccounts = <ThrowOnError extends boolean = false>(options?: Options<ListAccountsData, ThrowOnError>): RequestResult<ListAccountsResponses, ListAccountsErrors, ThrowOnError> => (options?.client ?? client).get<ListAccountsResponses, ListAccountsErrors, ThrowOnError>({ url: '/api/accounts', ...options });
+
+/**
+ * Create Account
+ */
+export const createAccount = <ThrowOnError extends boolean = false>(options: Options<CreateAccountData, ThrowOnError>): RequestResult<CreateAccountResponses, CreateAccountErrors, ThrowOnError> => (options.client ?? client).post<CreateAccountResponses, CreateAccountErrors, ThrowOnError>({
+    url: '/api/accounts',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Update Account
+ */
+export const updateAccount = <ThrowOnError extends boolean = false>(options: Options<UpdateAccountData, ThrowOnError>): RequestResult<UpdateAccountResponses, UpdateAccountErrors, ThrowOnError> => (options.client ?? client).patch<UpdateAccountResponses, UpdateAccountErrors, ThrowOnError>({
+    url: '/api/accounts/{account_id}',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
 
 /**
  * Login
@@ -110,6 +139,13 @@ export const health = <ThrowOnError extends boolean = false>(options?: Options<H
  * List Members
  */
 export const listMembers = <ThrowOnError extends boolean = false>(options?: Options<ListMembersData, ThrowOnError>): RequestResult<ListMembersResponses, ListMembersErrors, ThrowOnError> => (options?.client ?? client).get<ListMembersResponses, ListMembersErrors, ThrowOnError>({ url: '/api/household/members', ...options });
+
+/**
+ * List Institutions
+ *
+ * Names already used in the household, for autocompletion.
+ */
+export const listInstitutions = <ThrowOnError extends boolean = false>(options?: Options<ListInstitutionsData, ThrowOnError>): RequestResult<ListInstitutionsResponses, ListInstitutionsErrors, ThrowOnError> => (options?.client ?? client).get<ListInstitutionsResponses, ListInstitutionsErrors, ThrowOnError>({ url: '/api/institutions', ...options });
 
 /**
  * List Invites

@@ -5,6 +5,105 @@ export type ClientOptions = {
 };
 
 /**
+ * AccountIn
+ */
+export type AccountIn = {
+    /**
+     * Institution Name
+     */
+    institution_name: string;
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Opening Balance
+     */
+    opening_balance: number | string;
+    /**
+     * Opening Date
+     */
+    opening_date: string;
+    type: AccountType;
+    visibility: Visibility;
+};
+
+/**
+ * AccountOut
+ */
+export type AccountOut = {
+    /**
+     * Closed On
+     */
+    closed_on: string | null;
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Institution
+     */
+    institution: string;
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Opening Balance
+     */
+    opening_balance: string;
+    /**
+     * Opening Date
+     */
+    opening_date: string;
+    /**
+     * Owner Id
+     */
+    owner_id: string;
+    /**
+     * Owner Name
+     */
+    owner_name: string;
+    type: AccountType;
+    visibility: Visibility;
+};
+
+/**
+ * AccountPatch
+ *
+ * Only the fields present are changed. `closed_on: null` reopens the account.
+ */
+export type AccountPatch = {
+    /**
+     * Closed On
+     */
+    closed_on?: string | null;
+    /**
+     * Institution Name
+     */
+    institution_name?: string | null;
+    /**
+     * Name
+     */
+    name?: string | null;
+    /**
+     * Opening Balance
+     */
+    opening_balance?: number | string | null;
+    /**
+     * Opening Date
+     */
+    opening_date?: string | null;
+    type?: AccountType | null;
+    visibility?: Visibility | null;
+};
+
+/**
+ * AccountType
+ */
+export type AccountType = 'checking' | 'savings' | 'brokerage' | 'life_insurance' | 'employee_savings' | 'crypto' | 'loan' | 'real_estate' | 'use_asset' | 'other';
+
+/**
  * HTTPValidationError
  */
 export type HttpValidationError = {
@@ -274,6 +373,98 @@ export type ValidationError = {
     type: string;
 };
 
+/**
+ * Visibility
+ */
+export type Visibility = 'private' | 'shared';
+
+export type ListAccountsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Include Closed
+         */
+        include_closed?: boolean;
+    };
+    url: '/api/accounts';
+};
+
+export type ListAccountsErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ListAccountsError = ListAccountsErrors[keyof ListAccountsErrors];
+
+export type ListAccountsResponses = {
+    /**
+     * Response Listaccounts
+     *
+     * Successful Response
+     */
+    200: Array<AccountOut>;
+};
+
+export type ListAccountsResponse = ListAccountsResponses[keyof ListAccountsResponses];
+
+export type CreateAccountData = {
+    body: AccountIn;
+    path?: never;
+    query?: never;
+    url: '/api/accounts';
+};
+
+export type CreateAccountErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type CreateAccountError = CreateAccountErrors[keyof CreateAccountErrors];
+
+export type CreateAccountResponses = {
+    /**
+     * Successful Response
+     */
+    201: AccountOut;
+};
+
+export type CreateAccountResponse = CreateAccountResponses[keyof CreateAccountResponses];
+
+export type UpdateAccountData = {
+    body: AccountPatch;
+    path: {
+        /**
+         * Account Id
+         */
+        account_id: string;
+    };
+    query?: never;
+    url: '/api/accounts/{account_id}';
+};
+
+export type UpdateAccountErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type UpdateAccountError = UpdateAccountErrors[keyof UpdateAccountErrors];
+
+export type UpdateAccountResponses = {
+    /**
+     * Successful Response
+     */
+    200: AccountOut;
+};
+
+export type UpdateAccountResponse = UpdateAccountResponses[keyof UpdateAccountResponses];
+
 export type LoginData = {
     body: LoginRequest;
     path?: never;
@@ -516,6 +707,33 @@ export type ListMembersResponses = {
 };
 
 export type ListMembersResponse = ListMembersResponses[keyof ListMembersResponses];
+
+export type ListInstitutionsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/institutions';
+};
+
+export type ListInstitutionsErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ListInstitutionsError = ListInstitutionsErrors[keyof ListInstitutionsErrors];
+
+export type ListInstitutionsResponses = {
+    /**
+     * Response Listinstitutions
+     *
+     * Successful Response
+     */
+    200: Array<string>;
+};
+
+export type ListInstitutionsResponse = ListInstitutionsResponses[keyof ListInstitutionsResponses];
 
 export type ListInvitesData = {
     body?: never;
