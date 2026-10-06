@@ -47,3 +47,4 @@ Deviations from the original specifications are logged here as they happen.
 - 2026-10-06 — SQLAlchemy is used synchronously (FastAPI runs handlers in its threadpool); async can come later if needed.
 - 2026-10-06 — The sign-in screens use a few in-house Tailwind primitives (`frontend/src/components/ui.tsx`) instead of shadcn/ui. shadcn will come with the first data-heavy screens (tables, dialogs).
 - 2026-10-06 — The TS client generator runs through `pnpm dlx` with TypeScript 6: it needs the JS compiler API, which the native TypeScript 7 used by the project no longer has.
+- 2026-10-06 — Bank formats are defined in code (`kwak_core/imports/`), one per export layout, with tests on synthetic fixtures, instead of user-configurable column mappings (F-TX-1). A generic configurable CSV profile can come later for banks without a built-in format.

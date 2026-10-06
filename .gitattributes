@@ -1,3 +1,5 @@
 * text=auto eol=lf
 *.lock linguist-generated
 pnpm-lock.yaml linguist-generated
+# Bank export fixtures must keep their exact bytes (CRLF, ISO-8859-1): no normalisation.
+backend/tests/fixtures/import/** -text
