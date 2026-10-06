@@ -21,6 +21,7 @@ Models live in `backend/packages/api/src/kwak_api/` and inherit `Base` from `kwa
 4. **Review the generated file line by line.** Autogenerate misses or gets wrong:
    - renames (it emits drop + add, which loses data: rewrite with `op.alter_column` / `op.rename_table`);
    - server defaults, `CHECK` constraints, enum type creation and removal;
+   - non-native `Enum` columns: it renders the CHECK twice. Keep `sa.String(n)` plus one `CheckConstraint` named with `op.f("ck_<table>_<name>")`;
    - data migrations (write them by hand, with plain SQL, not with the ORM models, which change over time).
    Make sure `downgrade()` really reverses `upgrade()`.
 5. **Test.** `cd backend && uv run pytest tests/api/db`. `test_migrations.py` runs upgrade → downgrade → upgrade and fails if the models and migrations differ. Then `make check-fast`.

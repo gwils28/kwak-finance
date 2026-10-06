@@ -100,7 +100,7 @@ The React app is the product. Dash is used only for **exploratory analytics page
 
 ## 4. Data model (initial sketch)
 
-- `household`, `user` (+ `totp_secret`, `recovery_code`), `session`, `invite`
+- `household`, `user` (table `app_user`: `user` is reserved in Postgres; + `totp_secret`, `recovery_code`), `session`, `invite`
 - `institution`, `account` (type, owner_id, visibility, opened_at, closed_at)
 - `import_batch` (file_sha256, profile_id, row_count, status), `import_profile`
 - `transaction` (account_id, booked_at, amount NUMERIC(14,2), label_raw, label_norm, fingerprint UNIQUE per account, category_id, transfer_group_id, import_batch_id, recurring_id), `transaction_split`
