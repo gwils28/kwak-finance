@@ -1,8 +1,9 @@
-"""Admin command line: `kwak migrate`, `kwak create-owner`, `kwak generate-key`."""
+"""Admin command line: `kwak migrate`, `kwak create-owner`, `kwak generate-key`, `kwak openapi`."""
 
 import argparse
 import base64
 import getpass
+import json
 import secrets
 import sys
 from collections.abc import Callable, Sequence
@@ -25,6 +26,7 @@ def _parser() -> argparse.ArgumentParser:
     commands = parser.add_subparsers(dest="command", required=True)
     commands.add_parser("migrate", help="apply database migrations")
     commands.add_parser("generate-key", help="print a new KWAK_SECRET_KEY")
+    commands.add_parser("openapi", help="print the OpenAPI schema (input of the TS client)")
     owner = commands.add_parser("create-owner", help="create the household and its owner")
     owner.add_argument("--household", required=True, help="household name")
     owner.add_argument("--email", required=True)
@@ -42,6 +44,13 @@ def main(
 
     if args.command == "generate-key":
         print(base64.urlsafe_b64encode(secrets.token_bytes(32)).decode())
+        return 0
+
+    if args.command == "openapi":
+        # Lazy: importing kwak_api.main builds the app, which needs a full configuration.
+        from kwak_api.main import create_app
+
+        print(json.dumps(create_app().openapi(), indent=2, sort_keys=True))
         return 0
 
     if args.command == "migrate":

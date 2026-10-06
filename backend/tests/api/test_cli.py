@@ -1,3 +1,4 @@
+import json
 from collections.abc import Iterator
 
 import pytest
@@ -52,3 +53,8 @@ def test_generate_key_prints_a_valid_secret_key(capsys: pytest.CaptureFixture[st
     assert main(["generate-key"]) == 0
     key = capsys.readouterr().out.strip()
     assert len(Settings(secret_key=key).encryption_key) == 32
+
+
+def test_openapi_prints_the_schema(capsys: pytest.CaptureFixture[str]) -> None:
+    assert main(["openapi"]) == 0
+    assert json.loads(capsys.readouterr().out)["info"]["title"] == "Kwak Finance API"

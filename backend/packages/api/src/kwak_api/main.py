@@ -1,6 +1,7 @@
 from importlib.metadata import version
 
 from fastapi import APIRouter, FastAPI
+from fastapi.routing import APIRoute
 from pydantic import BaseModel
 from sqlalchemy.orm import sessionmaker
 
@@ -22,9 +23,19 @@ def health() -> Health:
     return Health(status="ok", version=version("kwak-api"))
 
 
+def _operation_id(route: APIRoute) -> str:
+    """`totp_verify` -> `totpVerify`: the function name in the generated TypeScript SDK."""
+    head, *rest = route.name.split("_")
+    return head + "".join(word.capitalize() for word in rest)
+
+
 def create_app(settings: Settings | None = None) -> FastAPI:
     settings = settings or Settings()
-    app = FastAPI(title="Kwak Finance API", version=version("kwak-api"))
+    app = FastAPI(
+        title="Kwak Finance API",
+        version=version("kwak-api"),
+        generate_unique_id_function=_operation_id,
+    )
     app.state.settings = settings
     # The engine connects lazily, on the first request that needs the database.
     app.state.sessionmaker = sessionmaker(make_engine(settings.database_url))
