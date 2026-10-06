@@ -11,3 +11,11 @@ export function apiErrorMessage(
   }
   return (response && byStatus[response.status]) ?? "Something went wrong. Please try again.";
 }
+
+/** The API's `detail` string as a sentence: "password too short" -> "Password too short." */
+export function detailSentence(error: unknown): string | null {
+  const detail = (error as { detail?: unknown } | undefined)?.detail;
+  if (typeof detail !== "string" || detail === "") return null;
+  const sentence = detail.charAt(0).toUpperCase() + detail.slice(1);
+  return sentence.endsWith(".") ? sentence : `${sentence}.`;
+}
