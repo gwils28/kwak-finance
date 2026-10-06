@@ -169,7 +169,8 @@ function AccountForm({ account, onDone }: { account: AccountOut | null; onDone: 
   const [type, setType] = useState<AccountType>(account?.type ?? "checking");
   const [visibility, setVisibility] = useState<Visibility>(account?.visibility ?? "private");
   const [balance, setBalance] = useState(account ? account.opening_balance.replace(".", ",") : "0");
-  const [openedOn, setOpenedOn] = useState(account?.opening_date ?? todayIso());
+  // No default: "today" would put every operation of the first import before the opening.
+  const [openedOn, setOpenedOn] = useState(account?.opening_date ?? "");
   const [invalidAmount, setInvalidAmount] = useState(false);
   const institutionsId = useId();
   const visibilityId = useId();
@@ -295,8 +296,9 @@ function AccountForm({ account, onDone }: { account: AccountOut | null; onDone: 
         onChange={(e) => setOpenedOn(e.target.value)}
       />
       <p className="text-xs text-muted sm:col-span-2">
-        The opening balance is the account balance on the opening date, before the first transaction
-        you will import or enter.
+        The opening date is the first day of the first statement you will import; the opening
+        balance is the account balance on that day, before its first operation. Operations dated
+        earlier are ignored.
       </p>
       <div className="sm:col-span-2">
         <ErrorAlert

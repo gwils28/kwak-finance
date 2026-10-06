@@ -9,6 +9,7 @@ import {
   listImports,
   previewImport,
   rollbackImport,
+  updateAccount,
 } from "../api/generated";
 import { apiErrorMessage, detailSentence } from "../auth/errors";
 import { Button, ErrorAlert } from "../components/ui";
@@ -74,6 +75,19 @@ export function ImportPage() {
     },
   });
 
+  const openOn = useMutation({
+    mutationFn: async (openingDate: string) =>
+      updateAccount({
+        path: { account_id: accountId },
+        body: { opening_date: openingDate },
+        throwOnError: true,
+      }),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["accounts"] });
+      if (file) preview.mutate(file);
+    },
+  });
+
   const choose = (event: ChangeEvent<HTMLInputElement>) => {
     const chosen = event.target.files?.[0] ?? null;
     setFile(chosen);
@@ -114,8 +128,10 @@ export function ImportPage() {
       {preview.data && file && (
         <Preview
           preview={preview.data}
-          busy={commit.isPending}
+          openingDate={account?.opening_date}
+          busy={commit.isPending || openOn.isPending}
           onImport={() => commit.mutate(file)}
+          onOpenOn={(day) => openOn.mutate(day)}
         />
       )}
       <History accountId={accountId} />
@@ -125,14 +141,22 @@ export function ImportPage() {
 
 function Preview({
   preview,
+  openingDate,
   busy,
   onImport,
+  onOpenOn,
 }: {
   preview: ImportPreview;
+  openingDate: string | undefined;
   busy: boolean;
   onImport: () => void;
+  onOpenOn: (day: string) => void;
 }) {
   const { counts } = preview;
+  const earliest = preview.rows
+    .filter((r) => r.status === "before_opening")
+    .map((r) => r.booked_on)
+    .sort()[0];
   const summary = [
     `${counts.new} new`,
     counts.duplicate > 0 && `${counts.duplicate} already imported`,
@@ -161,6 +185,24 @@ function Preview({
             : `Import ${plural(counts.new, "new operation")}`}
         </Button>
       </div>
+      {counts.before_opening > 0 && earliest && (
+        <div className="flex flex-col gap-2 rounded-md border border-warning px-3 py-2 text-sm">
+          <p>
+            {plural(counts.before_opening, "operation")}{" "}
+            {counts.before_opening === 1 ? "is" : "are"} before the account's opening date
+            {openingDate && ` (${formatDate(openingDate)})`}: skipped, because the opening balance
+            already includes {counts.before_opening === 1 ? "it" : "them"}.
+          </p>
+          <div className="flex flex-wrap items-center gap-3">
+            <Button variant="ghost" disabled={busy} onClick={() => onOpenOn(earliest)}>
+              Open the account on {formatDate(earliest)}
+            </Button>
+            <span className="text-xs text-muted">
+              Then check the opening balance in Accounts: it must be the balance on that day.
+            </span>
+          </div>
+        </div>
+      )}
       {preview.already_imported_at && (
         <p className="rounded-md border border-warning px-3 py-2 text-sm">
           This file was already imported on {formatDate(preview.already_imported_at)}.

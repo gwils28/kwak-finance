@@ -192,3 +192,14 @@ test("the header links to the accounts page", async () => {
   await user.click(await screen.findByRole("link", { name: "Accounts" }));
   expect(await screen.findByRole("heading", { name: "Accounts" })).toBeInTheDocument();
 });
+
+test("a new account has no opening date until one is chosen", async () => {
+  api([]);
+  render(<TestApp path="/accounts" />);
+
+  await openForm();
+
+  expect(screen.getByLabelText("Opening date")).toHaveValue("");
+  expect(screen.getByLabelText("Opening date")).toBeRequired();
+  expect(screen.getByText(/first day of the first statement you will import/)).toBeInTheDocument();
+});
