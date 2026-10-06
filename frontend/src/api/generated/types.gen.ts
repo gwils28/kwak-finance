@@ -33,6 +33,10 @@ export type AccountIn = {
  */
 export type AccountOut = {
     /**
+     * Balance
+     */
+    balance: string;
+    /**
      * Closed On
      */
     closed_on: string | null;
@@ -104,6 +108,66 @@ export type AccountPatch = {
 export type AccountType = 'checking' | 'savings' | 'brokerage' | 'life_insurance' | 'employee_savings' | 'crypto' | 'loan' | 'real_estate' | 'use_asset' | 'other';
 
 /**
+ * BalanceCheckOut
+ */
+export type BalanceCheckOut = {
+    /**
+     * Bank
+     */
+    bank: string;
+    /**
+     * Computed
+     */
+    computed: string;
+    /**
+     * Difference
+     */
+    difference: string;
+    /**
+     * On
+     */
+    on: string;
+};
+
+/**
+ * BankBalance
+ */
+export type BankBalance = {
+    /**
+     * Amount
+     */
+    amount: string;
+    /**
+     * On
+     */
+    on: string;
+};
+
+/**
+ * Body_createImport
+ */
+export type BodyCreateImport = {
+    /**
+     * File
+     *
+     * Bank export (CSV)
+     */
+    file: Blob | File;
+};
+
+/**
+ * Body_previewImport
+ */
+export type BodyPreviewImport = {
+    /**
+     * File
+     *
+     * Bank export (CSV)
+     */
+    file: Blob | File;
+};
+
+/**
  * HTTPValidationError
  */
 export type HttpValidationError = {
@@ -125,6 +189,79 @@ export type Health = {
      * Version
      */
     version: string;
+};
+
+/**
+ * ImportBatchOut
+ */
+export type ImportBatchOut = {
+    balance_check?: BalanceCheckOut | null;
+    /**
+     * Created At
+     */
+    created_at: string;
+    /**
+     * Duplicate Count
+     */
+    duplicate_count: number;
+    /**
+     * Error Count
+     */
+    error_count: number;
+    /**
+     * File Name
+     */
+    file_name: string;
+    /**
+     * Format
+     */
+    format: string;
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Imported Count
+     */
+    imported_count: number;
+    period: Period | null;
+    /**
+     * Rolled Back At
+     */
+    rolled_back_at: string | null;
+    /**
+     * Skipped Count
+     */
+    skipped_count: number;
+};
+
+/**
+ * ImportPreview
+ */
+export type ImportPreview = {
+    /**
+     * Already Imported At
+     */
+    already_imported_at: string | null;
+    bank_balance: BankBalance | null;
+    counts: PreviewCounts;
+    /**
+     * Errors
+     */
+    errors: Array<RowErrorOut>;
+    /**
+     * Format
+     */
+    format: string;
+    /**
+     * Format Label
+     */
+    format_label: string;
+    period: Period | null;
+    /**
+     * Rows
+     */
+    rows: Array<PreviewRow>;
 };
 
 /**
@@ -263,6 +400,65 @@ export type PasswordConfirmation = {
 };
 
 /**
+ * Period
+ */
+export type Period = {
+    /**
+     * End
+     */
+    end: string;
+    /**
+     * Start
+     */
+    start: string;
+};
+
+/**
+ * PreviewCounts
+ */
+export type PreviewCounts = {
+    /**
+     * Before Opening
+     */
+    before_opening: number;
+    /**
+     * Duplicate
+     */
+    duplicate: number;
+    /**
+     * Error
+     */
+    error: number;
+    /**
+     * New
+     */
+    new: number;
+};
+
+/**
+ * PreviewRow
+ */
+export type PreviewRow = {
+    /**
+     * Amount
+     */
+    amount: string;
+    /**
+     * Booked On
+     */
+    booked_on: string;
+    /**
+     * Label
+     */
+    label: string;
+    /**
+     * Line
+     */
+    line: number;
+    status: RowStatus;
+};
+
+/**
  * RecoveryCodeIn
  */
 export type RecoveryCodeIn = {
@@ -286,6 +482,25 @@ export type RecoveryCodesOut = {
  * Role
  */
 export type Role = 'owner' | 'member';
+
+/**
+ * RowErrorOut
+ */
+export type RowErrorOut = {
+    /**
+     * Line
+     */
+    line: number;
+    /**
+     * Message
+     */
+    message: string;
+};
+
+/**
+ * RowStatus
+ */
+export type RowStatus = 'new' | 'duplicate' | 'before_opening';
 
 /**
  * TotpCode
@@ -464,6 +679,98 @@ export type UpdateAccountResponses = {
 };
 
 export type UpdateAccountResponse = UpdateAccountResponses[keyof UpdateAccountResponses];
+
+export type ListImportsData = {
+    body?: never;
+    path: {
+        /**
+         * Account Id
+         */
+        account_id: string;
+    };
+    query?: never;
+    url: '/api/accounts/{account_id}/imports';
+};
+
+export type ListImportsErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ListImportsError = ListImportsErrors[keyof ListImportsErrors];
+
+export type ListImportsResponses = {
+    /**
+     * Response Listimports
+     *
+     * Successful Response
+     */
+    200: Array<ImportBatchOut>;
+};
+
+export type ListImportsResponse = ListImportsResponses[keyof ListImportsResponses];
+
+export type CreateImportData = {
+    body: BodyCreateImport;
+    path: {
+        /**
+         * Account Id
+         */
+        account_id: string;
+    };
+    query?: never;
+    url: '/api/accounts/{account_id}/imports';
+};
+
+export type CreateImportErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type CreateImportError = CreateImportErrors[keyof CreateImportErrors];
+
+export type CreateImportResponses = {
+    /**
+     * Successful Response
+     */
+    201: ImportBatchOut;
+};
+
+export type CreateImportResponse = CreateImportResponses[keyof CreateImportResponses];
+
+export type PreviewImportData = {
+    body: BodyPreviewImport;
+    path: {
+        /**
+         * Account Id
+         */
+        account_id: string;
+    };
+    query?: never;
+    url: '/api/accounts/{account_id}/imports/preview';
+};
+
+export type PreviewImportErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type PreviewImportError = PreviewImportErrors[keyof PreviewImportErrors];
+
+export type PreviewImportResponses = {
+    /**
+     * Successful Response
+     */
+    200: ImportPreview;
+};
+
+export type PreviewImportResponse = PreviewImportResponses[keyof PreviewImportResponses];
 
 export type LoginData = {
     body: LoginRequest;
@@ -707,6 +1014,36 @@ export type ListMembersResponses = {
 };
 
 export type ListMembersResponse = ListMembersResponses[keyof ListMembersResponses];
+
+export type RollbackImportData = {
+    body?: never;
+    path: {
+        /**
+         * Batch Id
+         */
+        batch_id: string;
+    };
+    query?: never;
+    url: '/api/imports/{batch_id}';
+};
+
+export type RollbackImportErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type RollbackImportError = RollbackImportErrors[keyof RollbackImportErrors];
+
+export type RollbackImportResponses = {
+    /**
+     * Successful Response
+     */
+    204: void;
+};
+
+export type RollbackImportResponse = RollbackImportResponses[keyof RollbackImportResponses];
 
 export type ListInstitutionsData = {
     body?: never;

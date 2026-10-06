@@ -6,15 +6,18 @@ from kwak_api.models.household import Household, Role, User
 from kwak_api.models.invite import Invite
 from kwak_api.models.recovery_code import RecoveryCode
 from kwak_api.models.session import UserSession
+from kwak_api.models.transaction import ImportBatch, Transaction
 
 __all__ = [
     "Account",
     "AuthFailure",
     "Household",
+    "ImportBatch",
     "Institution",
     "Invite",
     "RecoveryCode",
     "Role",
+    "Transaction",
     "User",
     "UserSession",
 ]
