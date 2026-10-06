@@ -40,6 +40,9 @@ export function AppLayout() {
             <Link to="/budget" className={NAV_LINK} activeProps={{ className: "text-accent" }}>
               Budget
             </Link>
+            <Link to="/categories" className={NAV_LINK} activeProps={{ className: "text-accent" }}>
+              Categories
+            </Link>
             <Link to="/members" className={NAV_LINK} activeProps={{ className: "text-accent" }}>
               Members
             </Link>
