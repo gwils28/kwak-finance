@@ -28,6 +28,7 @@ export const owner = {
   email: "owner@example.com",
   display_name: "Wilson",
   role: "owner",
+  language: "en",
 };
 
 export const unauthenticated = () =>

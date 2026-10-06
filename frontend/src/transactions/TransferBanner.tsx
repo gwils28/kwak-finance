@@ -7,6 +7,7 @@ import {
   transferSuggestions,
 } from "../api/generated";
 import { Button } from "../components/ui";
+import { useI18n } from "../i18n";
 import { formatDate } from "../lib/dates";
 import { formatEur } from "../lib/money";
 
@@ -17,12 +18,9 @@ export async function afterTransferChange(queryClient: ReturnType<typeof useQuer
   }
 }
 
-function plural(n: number, word: string): string {
-  return `${n} ${word}${n === 1 ? "" : "s"}`;
-}
-
 /** "N transfers between your accounts found": review and link them (F-TX-5). */
 export function TransferBanner({ onNotice }: { onNotice: (message: string) => void }) {
+  const { t } = useI18n();
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const suggestions = useQuery({
@@ -41,9 +39,7 @@ export function TransferBanner({ onNotice }: { onNotice: (message: string) => vo
     mutationFn: async () =>
       (await acceptTransferSuggestions({ body: {}, throwOnError: true })).data.linked,
     onSuccess: async (linked) => {
-      onNotice(
-        `${plural(linked, "transfer")} linked: ${linked === 1 ? "it no longer counts" : "they no longer count"} as spending.`,
-      );
+      onNotice(t.transactions.transfersLinked(linked));
       await afterTransferChange(queryClient);
     },
   });
@@ -52,22 +48,20 @@ export function TransferBanner({ onNotice }: { onNotice: (message: string) => vo
   if (list.length === 0) return null;
   return (
     <section
-      aria-label="Transfers between your accounts"
+      aria-label={t.transactions.transfersRegion}
       className="flex flex-col gap-3 rounded-lg border border-warning bg-surface px-4 py-3"
     >
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm">
-          <span className="font-medium">
-            {plural(list.length, "transfer")} between your accounts found
-          </span>
-          . Linked, they count neither as spending nor as income.
+          <span className="font-medium">{t.transactions.transfersFound(list.length)}</span>
+          {t.transactions.transfersHelp}
         </p>
         <div className="flex gap-2">
           <Button variant="ghost" onClick={() => setOpen((o) => !o)}>
-            {open ? "Hide" : "Review"}
+            {open ? t.transactions.hide : t.transactions.review}
           </Button>
           <Button disabled={linkAll.isPending} onClick={() => linkAll.mutate()}>
-            Link all
+            {t.transactions.linkAll}
           </Button>
         </div>
       </div>
@@ -79,11 +73,13 @@ export function TransferBanner({ onNotice }: { onNotice: (message: string) => vo
               className="flex flex-wrap items-center justify-between gap-3 py-2"
             >
               <span>
-                <span className="tabular">{formatEur(s.inflow.amount)}</span> from{" "}
-                <span className="font-medium">{s.outflow.account_name}</span> (
-                {formatDate(s.outflow.booked_on)}) to{" "}
-                <span className="font-medium">{s.inflow.account_name}</span> (
-                {formatDate(s.inflow.booked_on)})
+                {t.transactions.transferLine(
+                  formatEur(s.inflow.amount),
+                  s.outflow.account_name,
+                  formatDate(s.outflow.booked_on),
+                  s.inflow.account_name,
+                  formatDate(s.inflow.booked_on),
+                )}
                 <span className="block text-xs text-muted">
                   {s.outflow.label} → {s.inflow.label}
                 </span>
@@ -93,7 +89,7 @@ export function TransferBanner({ onNotice }: { onNotice: (message: string) => vo
                 disabled={linkOne.isPending}
                 onClick={() => linkOne.mutate(s)}
               >
-                Link
+                {t.transactions.link}
               </Button>
             </li>
           ))}

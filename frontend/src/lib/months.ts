@@ -1,6 +1,8 @@
 /** Months as the API writes them: "2026-03". */
 
-const MONTH_LABEL = new Intl.DateTimeFormat("en-GB", { month: "short", year: "numeric" });
+import { dateFormat } from "./locale";
+
+const MONTH_LABEL: Intl.DateTimeFormatOptions = { month: "short", year: "numeric" };
 
 export function thisMonth(): string {
   const now = new Date();
@@ -13,10 +15,10 @@ export function shiftMonth(month: string, delta: number): string {
   return `${Math.floor(index / 12)}-${String((index % 12) + 1).padStart(2, "0")}`;
 }
 
-/** "2026-03" -> "Mar 2026". */
+/** "2026-03" -> "Mar 2026" (en) or "mars 2026" (fr). */
 export function monthLabel(month: string): string {
   const [year, m] = month.split("-").map(Number) as [number, number];
-  return MONTH_LABEL.format(new Date(year, m - 1, 1));
+  return dateFormat(MONTH_LABEL).format(new Date(year, m - 1, 1));
 }
 
 export function daysInMonth(month: string): number {

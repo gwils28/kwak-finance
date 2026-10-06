@@ -19,6 +19,7 @@ import {
   YAxis,
 } from "recharts";
 import type { CategorySpending, DayPoint, MonthPoint } from "../api/generated";
+import { useI18n } from "../i18n";
 import { formatDate } from "../lib/dates";
 import { formatEurWhole, formatPercent } from "../lib/money";
 import { daysInMonth, monthLabel, thisMonth } from "../lib/months";
@@ -79,9 +80,10 @@ function Card({
 }
 
 function DataTable({ label, head, rows }: { label: string; head: string[]; rows: string[][] }) {
+  const { t } = useI18n();
   return (
     <details className="text-sm">
-      <summary className="cursor-pointer text-muted">Show the data</summary>
+      <summary className="cursor-pointer text-muted">{t.common.showData}</summary>
       <table aria-label={label} className="mt-2 w-full">
         <thead className="text-left text-muted">
           <tr>
@@ -119,12 +121,13 @@ export function SpendingByCategory({
   month: string;
   categories: CategorySpending[];
 }) {
+  const { t } = useI18n();
   const data = categories.map((c) => ({ name: c.name, spent: Number(c.spent) }));
   const height = Math.max(120, data.length * 36 + 40);
   return (
-    <Card title="Spending by category" subtitle={monthLabel(month)}>
+    <Card title={t.dashboard.byCategory} subtitle={monthLabel(month)}>
       {data.length === 0 ? (
-        <p className="text-sm text-muted">No categorised spending this month.</p>
+        <p className="text-sm text-muted">{t.dashboard.noCategorised}</p>
       ) : (
         <div style={{ height }}>
           <ResponsiveContainer width="100%" height="100%">
@@ -144,7 +147,7 @@ export function SpendingByCategory({
               <Tooltip {...TOOLTIP} cursor={{ fill: GRID, opacity: 0.4 }} />
               <Bar
                 dataKey="spent"
-                name="Spent"
+                name={t.dashboard.spent}
                 fill={ACCENT}
                 barSize={20}
                 radius={[0, 4, 4, 0]}
@@ -162,8 +165,8 @@ export function SpendingByCategory({
         </div>
       )}
       <DataTable
-        label={`Spending by category, ${monthLabel(month)}`}
-        head={["Category", "Spent", "Share"]}
+        label={t.dashboard.byCategoryOf(monthLabel(month))}
+        head={[t.dashboard.category, t.dashboard.spent, t.dashboard.share]}
         rows={categories.map((c) => [
           c.name,
           formatEurWhole(c.spent),
@@ -176,6 +179,7 @@ export function SpendingByCategory({
 
 /** Spending columns (accent) against the income line (grey), one euro axis. */
 export function SpendingOverMonths({ monthly }: { monthly: MonthPoint[] }) {
+  const { t } = useI18n();
   // Months before the first transaction are not months of zero: leave them out.
   const first = monthly.findIndex((m) => Number(m.spent) !== 0 || Number(m.income) !== 0);
   const shown = first === -1 ? monthly : monthly.slice(first);
@@ -186,9 +190,11 @@ export function SpendingOverMonths({ monthly }: { monthly: MonthPoint[] }) {
   }));
   return (
     <Card
-      title="Spending and income"
+      title={t.dashboard.overMonths}
       subtitle={
-        shown.length === 12 ? "Last 12 months" : `Since ${monthLabel(shown[0]?.month ?? "")}`
+        shown.length === 12
+          ? t.dashboard.last12
+          : t.dashboard.since(monthLabel(shown[0]?.month ?? ""))
       }
     >
       <div style={{ height: 280 }}>
@@ -207,7 +213,7 @@ export function SpendingOverMonths({ monthly }: { monthly: MonthPoint[] }) {
             <Legend wrapperStyle={{ fontSize: 12 }} formatter={legendText} />
             <Bar
               dataKey="spent"
-              name="Spent"
+              name={t.dashboard.spent}
               fill={ACCENT}
               barSize={20}
               radius={[4, 4, 0, 0]}
@@ -215,7 +221,7 @@ export function SpendingOverMonths({ monthly }: { monthly: MonthPoint[] }) {
             />
             <Line
               dataKey="income"
-              name="Income"
+              name={t.dashboard.income}
               stroke={CONTEXT}
               strokeWidth={2}
               dot={{ r: 4, fill: CONTEXT, stroke: "var(--color-surface)", strokeWidth: 2 }}
@@ -225,8 +231,8 @@ export function SpendingOverMonths({ monthly }: { monthly: MonthPoint[] }) {
         </ResponsiveContainer>
       </div>
       <DataTable
-        label="Spending and income, last 12 months"
-        head={["Month", "Spent", "Income"]}
+        label={t.dashboard.overMonthsTable}
+        head={[t.dashboard.monthColumn, t.dashboard.spent, t.dashboard.income]}
         rows={monthly.map((m) => [
           monthLabel(m.month),
           formatEurWhole(m.spent),
@@ -247,6 +253,7 @@ export function SpendingPace({
   cumulative: DayPoint[];
   target: string | null;
 }) {
+  const { t } = useI18n();
   const days = daysInMonth(month);
   const pace = (index: number) => (target === null ? null : (Number(target) * (index + 1)) / days);
   // The current month stops at today: the days to come have no spending yet, not zero.
@@ -258,11 +265,9 @@ export function SpendingPace({
   }));
   return (
     <Card
-      title="This month so far"
+      title={t.dashboard.pace}
       subtitle={
-        target === null
-          ? "Set monthly targets in Budget to compare with your pace."
-          : `Against a budget of ${formatEurWhole(target)} spread evenly over the month`
+        target === null ? t.dashboard.noTarget : t.dashboard.againstBudget(formatEurWhole(target))
       }
     >
       <div style={{ height: 260 }}>
@@ -279,13 +284,13 @@ export function SpendingPace({
             />
             <Tooltip
               {...TOOLTIP}
-              labelFormatter={(d: unknown) => `Day ${String(d)}`}
+              labelFormatter={(d: unknown) => t.dashboard.dayNumber(String(d))}
               cursor={{ stroke: GRID }}
             />
             <Legend wrapperStyle={{ fontSize: 12 }} formatter={legendText} />
             <Area
               dataKey="spent"
-              name="Spent so far"
+              name={t.dashboard.spentSoFar}
               stroke={ACCENT}
               strokeWidth={2}
               fill={ACCENT}
@@ -295,7 +300,7 @@ export function SpendingPace({
             {target !== null && (
               <Line
                 dataKey="pace"
-                name="Budget pace"
+                name={t.dashboard.budgetPace}
                 stroke={CONTEXT}
                 strokeWidth={2}
                 dot={false}
@@ -306,8 +311,12 @@ export function SpendingPace({
         </ResponsiveContainer>
       </div>
       <DataTable
-        label="Spending so far against the budget pace"
-        head={target === null ? ["Day", "Spent so far"] : ["Day", "Spent so far", "Budget pace"]}
+        label={t.dashboard.paceTable}
+        head={
+          target === null
+            ? [t.dashboard.day, t.dashboard.spentSoFar]
+            : [t.dashboard.day, t.dashboard.spentSoFar, t.dashboard.budgetPace]
+        }
         rows={cumulative.map((p, i) => {
           const row = [formatDate(p.day), formatEurWhole(p.spent)];
           const expected = pace(i);

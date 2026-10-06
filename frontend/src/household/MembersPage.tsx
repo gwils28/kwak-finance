@@ -10,6 +10,7 @@ import {
 import { apiErrorMessage } from "../auth/errors";
 import { meQuery } from "../auth/session";
 import { Button, ErrorAlert, TextField } from "../components/ui";
+import { useI18n } from "../i18n";
 import { formatDate } from "../lib/dates";
 
 const membersQuery = {
@@ -24,18 +25,19 @@ const invitesQuery = {
 
 export function MembersPage() {
   const { data: user } = useSuspenseQuery(meQuery);
+  const { t } = useI18n();
   const members = useQuery(membersQuery);
   const isOwner = user.role === "owner";
 
   return (
     <div className="flex flex-col gap-10">
       <section>
-        <h1 className="text-3xl font-black tracking-tight">Members</h1>
-        {members.isPending && <p className="mt-4 text-sm text-muted">Loading…</p>}
-        {members.isError && <ErrorAlert message="Could not load the members." />}
+        <h1 className="text-3xl font-black tracking-tight">{t.household.members}</h1>
+        {members.isPending && <p className="mt-4 text-sm text-muted">{t.common.loading}</p>}
+        {members.isError && <ErrorAlert message={t.household.loadFailed} />}
         {members.data && (
           <ul
-            aria-label="Members"
+            aria-label={t.household.members}
             className="mt-4 divide-y divide-border rounded-lg border border-border bg-surface"
           >
             {members.data.map((m) => (
@@ -45,7 +47,7 @@ export function MembersPage() {
                   <p className="text-sm text-muted">{m.email}</p>
                 </div>
                 <span className="text-sm text-muted">
-                  {m.role === "owner" ? "Owner" : "Member"}
+                  {m.role === "owner" ? t.household.owner : t.household.member}
                 </span>
               </li>
             ))}
@@ -59,6 +61,7 @@ export function MembersPage() {
 
 function Invitations() {
   const queryClient = useQueryClient();
+  const { t } = useI18n();
   const invites = useQuery(invitesQuery);
   const [email, setEmail] = useState("");
   const [link, setLink] = useState<string | null>(null);
@@ -69,9 +72,9 @@ function Invitations() {
       const { data, response } = await createInvite({ body: { email: address } });
       if (!data)
         throw new Error(
-          apiErrorMessage(response, {
-            409: "An account already uses this email.",
-            422: "This email address is not valid.",
+          apiErrorMessage(t, response, {
+            409: t.household.emailTaken,
+            422: t.household.emailInvalid,
           }),
         );
       return data;
@@ -104,15 +107,11 @@ function Invitations() {
 
   return (
     <section className="flex flex-col gap-4">
-      <h2 className="text-2xl font-black tracking-tight">Invite someone</h2>
-      <p className="text-sm text-muted">
-        Kwak Finance sends no email: create a link, then send it yourself (message, SMS…). It works
-        once and expires after 7 days. The new member sets up two-step verification at first
-        sign-in.
-      </p>
+      <h2 className="text-2xl font-black tracking-tight">{t.household.inviteTitle}</h2>
+      <p className="text-sm text-muted">{t.household.inviteHelp}</p>
       <form onSubmit={submit} className="flex max-w-md flex-col gap-3">
         <TextField
-          label="Email to invite"
+          label={t.household.emailToInvite}
           type="email"
           required
           value={email}
@@ -120,44 +119,46 @@ function Invitations() {
         />
         <ErrorAlert message={create.error?.message ?? null} />
         <Button type="submit" disabled={create.isPending} className="self-start">
-          Create invitation
+          {t.household.createInvite}
         </Button>
       </form>
       {link && (
         <div className="flex max-w-xl flex-col gap-2 rounded-lg border border-accent p-4">
           <TextField
-            label="Invitation link"
+            label={t.household.inviteLink}
             readOnly
             value={link}
             onFocus={(e) => e.target.select()}
             className="tabular text-sm"
           />
           <Button variant="ghost" onClick={copy} className="self-start">
-            {copied ? "Copied" : "Copy the link"}
+            {copied ? t.common.copied : t.household.copyLink}
           </Button>
-          <p className="text-sm text-muted">This link is shown only once.</p>
+          <p className="text-sm text-muted">{t.household.shownOnce}</p>
         </div>
       )}
-      <h3 className="mt-4 text-lg font-bold">Pending invitations</h3>
-      {invites.data?.length === 0 && <p className="text-sm text-muted">No pending invitations.</p>}
+      <h3 className="mt-4 text-lg font-bold">{t.household.pending}</h3>
+      {invites.data?.length === 0 && <p className="text-sm text-muted">{t.household.noPending}</p>}
       {invites.data && invites.data.length > 0 && (
         <ul
-          aria-label="Pending invitations"
+          aria-label={t.household.pending}
           className="divide-y divide-border rounded-lg border border-border bg-surface"
         >
           {invites.data.map((invite) => (
             <li key={invite.id} className="flex items-center justify-between gap-4 px-4 py-3">
               <div>
                 <p className="font-medium">{invite.email}</p>
-                <p className="text-sm text-muted">Expires {formatDate(invite.expires_at)}</p>
+                <p className="text-sm text-muted">
+                  {t.household.expires(formatDate(invite.expires_at))}
+                </p>
               </div>
               <Button
                 variant="ghost"
-                aria-label={`Revoke invitation for ${invite.email}`}
+                aria-label={t.household.revokeFor(invite.email)}
                 disabled={revoke.isPending}
                 onClick={() => revoke.mutate(invite)}
               >
-                Revoke
+                {t.household.revoke}
               </Button>
             </li>
           ))}

@@ -9,6 +9,7 @@ import {
 } from "../api/generated";
 import { apiErrorMessage, detailSentence } from "../auth/errors";
 import { Button, ErrorAlert, TextField } from "../components/ui";
+import { useI18n } from "../i18n";
 import { suggestRuleText } from "../lib/ruleText";
 import { CategoryOptions } from "./categories";
 
@@ -31,6 +32,7 @@ export function RuleForm({
   categories: CategoryOut[];
   onDone: (message: string) => void;
 }) {
+  const { t } = useI18n();
   const queryClient = useQueryClient();
   const [text, setText] = useState(() => suggestRuleText(transaction.label));
   const [categoryId, setCategoryId] = useState(transaction.category_id ?? "");
@@ -55,7 +57,7 @@ export function RuleForm({
         body: { category_id: categoryId, label_contains: text.trim() },
       });
       if (!created.data) {
-        throw new Error(detailSentence(created.error) ?? apiErrorMessage(created.response));
+        throw new Error(detailSentence(created.error) ?? apiErrorMessage(t, created.response));
       }
       const applied = await applyRules({ body: { only_uncategorised: true }, throwOnError: true });
       return applied.data.updated;
@@ -63,7 +65,7 @@ export function RuleForm({
     onSuccess: async (updated) => {
       await queryClient.invalidateQueries({ queryKey: ["transactions"] });
       await queryClient.invalidateQueries({ queryKey: ["toCategorise"] });
-      onDone(`Rule created: ${updated} transaction${updated === 1 ? "" : "s"} categorised.`);
+      onDone(t.transactions.ruleCreated(updated));
     },
   });
 
@@ -74,16 +76,16 @@ export function RuleForm({
 
   return (
     <form
-      aria-label="New rule"
+      aria-label={t.transactions.newRule}
       onSubmit={submit}
       className="grid gap-4 rounded-lg border border-accent bg-surface p-4 sm:grid-cols-2"
     >
       <div className="sm:col-span-2">
-        <h2 className="text-lg font-bold">New rule</h2>
-        <p className="text-sm text-muted">From: {transaction.label}</p>
+        <h2 className="text-lg font-bold">{t.transactions.newRule}</h2>
+        <p className="text-sm text-muted">{t.transactions.ruleSource(transaction.label)}</p>
       </div>
       <TextField
-        label="Label contains"
+        label={t.transactions.labelContains}
         required
         maxLength={100}
         value={text}
@@ -91,7 +93,7 @@ export function RuleForm({
       />
       <div className="flex flex-col gap-1">
         <label htmlFor={categorySelect} className="text-sm font-medium">
-          Category
+          {t.transactions.category}
         </label>
         <select
           id={categorySelect}
@@ -101,28 +103,25 @@ export function RuleForm({
           onChange={(e) => setCategoryId(e.target.value)}
         >
           <option value="" disabled>
-            Choose a category
+            {t.transactions.chooseCategory}
           </option>
           <CategoryOptions categories={categories} />
         </select>
       </div>
       <p className="text-sm sm:col-span-2" aria-live="polite">
         {preview.data &&
-          `${preview.data.matching} transaction${preview.data.matching === 1 ? "" : "s"} match, ${preview.data.uncategorised} not yet categorised.`}
+          t.transactions.ruleMatches(preview.data.matching, preview.data.uncategorised)}
       </p>
-      <p className="text-xs text-muted sm:col-span-2">
-        Case, spacing and accents are ignored. The rule also runs on every future import, and only
-        on money moving the category's way (spending for an expense category).
-      </p>
+      <p className="text-xs text-muted sm:col-span-2">{t.transactions.ruleHelp}</p>
       <div className="sm:col-span-2">
         <ErrorAlert message={save.error?.message ?? null} />
       </div>
       <div className="flex gap-3 sm:col-span-2">
         <Button type="submit" disabled={save.isPending || !categoryId || !text.trim()}>
-          Create the rule and apply it
+          {t.transactions.createRule}
         </Button>
         <Button variant="ghost" onClick={() => onDone("")}>
-          Cancel
+          {t.common.cancel}
         </Button>
       </div>
     </form>

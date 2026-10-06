@@ -59,7 +59,7 @@ test("suggested transfers are announced and can be linked one by one", async () 
   const pair = within(banner).getByRole("listitem");
   expect(pair).toHaveTextContent("Compte courant");
   expect(pair).toHaveTextContent("Livret A");
-  expect(pair).toHaveTextContent("150,00 €");
+  expect(pair).toHaveTextContent("€150.00");
   await user.click(within(pair).getByRole("button", { name: "Link" }));
 
   await vi.waitFor(() =>

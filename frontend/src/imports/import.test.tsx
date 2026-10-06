@@ -78,8 +78,8 @@ test("the accounts page shows the current balance and an import link", async () 
   render(<TestApp path="/accounts" />);
 
   const row = (await screen.findByRole("list", { name: "Société Générale" })).querySelector("li");
-  expect(row).toHaveTextContent("1 234,56 €");
-  expect(row).toHaveTextContent("opening 336,95 € on 1 Mar 2026");
+  expect(row).toHaveTextContent("€1,234.56");
+  expect(row).toHaveTextContent("opening €336.95 on 1 Mar 2026");
   const user = userEvent.setup();
   await user.click(screen.getByRole("link", { name: "Import into Compte courant" }));
   expect(
@@ -99,7 +99,7 @@ test("the preview shows what will be imported, skipped and why", async () => {
   ).toBeInTheDocument();
   const table = screen.getByRole("table", { name: "Rows in the file" });
   expect(within(table).getAllByRole("row")).toHaveLength(5);
-  expect(within(table).getByText("2 480,15 €")).toBeInTheDocument();
+  expect(within(table).getByText("€2,480.15")).toBeInTheDocument();
   expect(screen.getByText(/Line 8: invalid date/)).toBeInTheDocument();
   const sent = calls.find((c) => c.route === "POST /api/accounts/a1/imports/preview")?.body;
   // jsdom's File reaches undici as a nameless Blob; browsers keep the name (checked in Chrome).
@@ -117,7 +117,7 @@ test("importing reports the result and the balance check", async () => {
 
   expect(await screen.findByText("2 operations imported.")).toBeInTheDocument();
   expect(
-    screen.getByText(/The balance matches the bank: 1 234,56 € on 14 Mar 2026/),
+    screen.getByText(/The balance matches the bank: €1,234.56 on 14 Mar 2026/),
   ).toBeInTheDocument();
   expect(calls.some((c) => c.route === "POST /api/accounts/a1/imports")).toBe(true);
 });
@@ -144,7 +144,7 @@ test("a balance that differs from the bank is flagged", async () => {
   await user.click(await screen.findByRole("button", { name: "Import 2 new operations" }));
 
   expect(await screen.findByRole("alert")).toHaveTextContent(
-    "The computed balance (1 197,61 €) differs from the bank's (1 234,56 €) by -36,95 €",
+    "The computed balance (€1,197.61) differs from the bank's (€1,234.56) by -€36.95",
   );
 });
 

@@ -11,7 +11,15 @@ import {
 } from "../api/generated";
 import { apiErrorMessage, detailSentence } from "../auth/errors";
 import { ErrorAlert } from "../components/ui";
-import { formatEurSigned, formatEurWhole, formatPercentSigned, parseEurInput } from "../lib/money";
+import { useI18n } from "../i18n";
+import {
+  amountInput,
+  formatEurSigned,
+  formatEurWhole,
+  formatPercent,
+  formatPercentSigned,
+  parseEurInput,
+} from "../lib/money";
 import { monthBounds, monthLabel, shiftMonth, thisMonth } from "../lib/months";
 
 const STATUS_CLASS: Record<BudgetStatus, string> = {
@@ -23,11 +31,11 @@ const STATUS_CLASS: Record<BudgetStatus, string> = {
 
 export { thisMonth };
 
-/** "60.00" -> "60", "12.50" -> "12,50": how a target reads in its input. */
+/** "60.00" -> "60", "12.50" -> "12,50" (fr): how a target reads in its input. */
 function targetText(row: RowOut): string {
   const target = row.target_from_children ? null : row.target;
   if (target === null) return "";
-  return target.endsWith(".00") ? target.slice(0, -3) : target.replace(".", ",");
+  return target.endsWith(".00") ? target.slice(0, -3) : amountInput(target);
 }
 
 const fieldClass = "rounded-md border border-border bg-surface px-3 py-2";
@@ -36,6 +44,7 @@ const STICKY_NAME = "sticky left-0 z-10 w-52 min-w-52 bg-surface";
 const STICKY_TARGET = "sticky left-52 z-10 w-40 min-w-40 bg-surface border-r border-border";
 
 export function BudgetPage() {
+  const { t } = useI18n();
   const ids = { period: useId(), scope: useId(), band: useId() };
   const [period, setPeriod] = useState(12);
   const [scope, setScope] = useState<Scope>("household");
@@ -52,54 +61,56 @@ export function BudgetPage() {
     placeholderData: keepPreviousData,
   });
 
-  const bandPercent = `${Math.round(Number(band) * 100)} %`;
+  const bandPercent = formatPercent(band);
 
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-black tracking-tight">Budget</h1>
-          <p className="text-sm text-muted">
-            Spending per category and month against your monthly targets.
-          </p>
+          <h1 className="text-3xl font-black tracking-tight">{t.budget.title}</h1>
+          <p className="text-sm text-muted">{t.budget.intro}</p>
         </div>
         <div className="flex flex-wrap gap-3">
           <label htmlFor={ids.period} className="flex flex-col gap-1 text-sm font-medium">
-            Period
+            {t.budget.period}
             <select
               id={ids.period}
               className={fieldClass}
               value={period}
               onChange={(e) => setPeriod(Number(e.target.value))}
             >
-              <option value={3}>Last 3 months</option>
-              <option value={6}>Last 6 months</option>
-              <option value={12}>Last 12 months</option>
+              {[3, 6, 12].map((n) => (
+                <option key={n} value={n}>
+                  {t.budget.lastMonths(n)}
+                </option>
+              ))}
             </select>
           </label>
           <label htmlFor={ids.scope} className="flex flex-col gap-1 text-sm font-medium">
-            Accounts
+            {t.dashboard.scope}
             <select
               id={ids.scope}
               className={fieldClass}
               value={scope}
               onChange={(e) => setScope(e.target.value as Scope)}
             >
-              <option value="household">Household</option>
-              <option value="mine">Only mine</option>
+              <option value="household">{t.dashboard.household}</option>
+              <option value="mine">{t.dashboard.mine}</option>
             </select>
           </label>
           <label htmlFor={ids.band} className="flex flex-col gap-1 text-sm font-medium">
-            Margin
+            {t.budget.margin}
             <select
               id={ids.band}
               className={fieldClass}
               value={band}
               onChange={(e) => setBand(e.target.value)}
             >
-              <option value="0.05">± 5 %</option>
-              <option value="0.10">± 10 %</option>
-              <option value="0.15">± 15 %</option>
+              {["0.05", "0.10", "0.15"].map((value) => (
+                <option key={value} value={value}>
+                  ± {formatPercent(value)}
+                </option>
+              ))}
             </select>
           </label>
         </div>
@@ -112,19 +123,21 @@ export function BudgetPage() {
             checked={showEmpty}
             onChange={(e) => setShowEmpty(e.target.checked)}
           />
-          Show categories with no spending or target
+          {t.budget.showEmpty}
         </label>
       </div>
       <ErrorAlert message={error} />
-      {matrix.isError && <ErrorAlert message="Could not load the budget." />}
-      {matrix.isPending && <p className="text-sm text-muted">Loading…</p>}
+      {matrix.isError && <ErrorAlert message={t.budget.loadFailed} />}
+      {matrix.isPending && <p className="text-sm text-muted">{t.common.loading}</p>}
       {matrix.data && (
         <div className="overflow-x-auto rounded-lg border border-border bg-surface">
-          <table aria-label="Budget by category and month" className="w-full text-sm">
+          <table aria-label={t.budget.table} className="w-full text-sm">
             <thead className="text-left text-muted">
               <tr>
-                <th className={`${STICKY_NAME} px-3 py-2 font-medium`}>Category</th>
-                <th className={`${STICKY_TARGET} px-3 py-2 font-medium`}>Monthly target</th>
+                <th className={`${STICKY_NAME} px-3 py-2 font-medium`}>{t.budget.category}</th>
+                <th className={`${STICKY_TARGET} px-3 py-2 font-medium`}>
+                  {t.budget.monthlyTarget}
+                </th>
                 {matrix.data.months.map((m) => (
                   <th key={m} className="whitespace-nowrap px-3 py-2 text-right font-medium">
                     {monthLabel(m)}
@@ -165,19 +178,20 @@ function visibleRows(rows: RowOut[], showEmpty: boolean): RowOut[] {
 }
 
 function Legend({ band }: { band: string }) {
+  const { t } = useI18n();
   const swatch = "inline-block h-3 w-3 rounded-sm align-middle";
   return (
     <p className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted">
       <span>
-        <span className={`${swatch} bg-budget-under-bg`} /> Green: more than {band} below the target
+        <span className={`${swatch} bg-budget-under-bg`} /> {t.budget.legendUnder(band)}
       </span>
       <span>
-        <span className={`${swatch} bg-budget-on-bg`} /> Grey: within ±{band}
+        <span className={`${swatch} bg-budget-on-bg`} /> {t.budget.legendOn(band)}
       </span>
       <span>
-        <span className={`${swatch} bg-budget-over-bg`} /> Burnt orange: more than {band} above
+        <span className={`${swatch} bg-budget-over-bg`} /> {t.budget.legendOver(band)}
       </span>
-      <span>No colour: no target.</span>
+      <span>{t.budget.legendNone}</span>
     </p>
   );
 }
@@ -273,6 +287,7 @@ function TargetInput({
   categoryId: string;
   onError: (message: string | null) => void;
 }) {
+  const { t } = useI18n();
   const queryClient = useQueryClient();
   const [text, setText] = useState(targetText(row));
   const save = useMutation({
@@ -281,7 +296,7 @@ function TargetInput({
         path: { category_id: categoryId },
         body: { amount, from_month: thisMonth() },
       });
-      if (!data) throw new Error(detailSentence(error) ?? apiErrorMessage(response));
+      if (!data) throw new Error(detailSentence(error) ?? apiErrorMessage(t, response));
       return data;
     },
     onSuccess: () => {
@@ -299,7 +314,7 @@ function TargetInput({
     }
     const amount = parseEurInput(text);
     if (amount === null || amount.startsWith("-")) {
-      onError(`${row.name}: enter a positive amount in euros, e.g. 300 or 12,50.`);
+      onError(`${row.name}: ${t.budget.invalidTarget}`);
       return;
     }
     save.mutate(amount);
@@ -307,18 +322,14 @@ function TargetInput({
 
   return (
     <input
-      aria-label={`Monthly target for ${row.name}`}
+      aria-label={t.budget.targetFor(row.name)}
       inputMode="decimal"
       placeholder={
         row.target_from_children && row.target !== null
-          ? `${formatEurWhole(row.target)} (sum)`
+          ? t.budget.sum(formatEurWhole(row.target))
           : "—"
       }
-      title={
-        row.target_from_children
-          ? "Sum of the subcategories' targets. Type an amount to set one for the whole category."
-          : undefined
-      }
+      title={row.target_from_children ? t.budget.sumHelp : undefined}
       className="tabular w-32 rounded-md border border-border bg-surface px-2 py-1 text-right"
       value={text}
       onChange={(e) => setText(e.target.value)}

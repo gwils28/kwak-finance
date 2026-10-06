@@ -66,11 +66,11 @@ test("accounts are grouped by institution with their opening balance", async () 
   expect(rows[0]).toHaveTextContent("Compte courant");
   expect(rows[0]).toHaveTextContent("Checking");
   expect(rows[0]).toHaveTextContent("Shared");
-  expect(rows[0]).toHaveTextContent("1 234,56 €");
+  expect(rows[0]).toHaveTextContent("€1,234.56");
   expect(rows[0]).not.toHaveTextContent("Partner");
   expect(rows[1]).toHaveTextContent("Savings");
   expect(rows[1]).toHaveTextContent("Partner");
-  expect(rows[1]).toHaveTextContent("-20,00 €");
+  expect(rows[1]).toHaveTextContent("-€20.00");
 });
 
 test("an empty household is invited to add its first account", async () => {
@@ -112,7 +112,7 @@ test("an amount with more than two decimals is refused before sending", async ()
   await fillForm(user, "12,345");
 
   expect(await screen.findByRole("alert")).toHaveTextContent(
-    "Enter an amount in euros with at most 2 decimals, e.g. 1234,56.",
+    "Enter an amount in euros with at most 2 decimals, e.g. 1234.56.",
   );
   expect(calls.some((c) => c.route === "POST /api/accounts")).toBe(false);
 });
