@@ -11,6 +11,7 @@ from pydantic import AfterValidator, BaseModel, StringConstraints
 from kwak_api.auth.routes import CurrentSession, Db
 from kwak_api.models import Account
 from kwak_api.services import accounts as service
+from kwak_api.services import imports
 
 router = APIRouter(prefix="/api", tags=["accounts"])
 
@@ -52,9 +53,11 @@ class AccountOut(BaseModel):
     opening_balance: Decimal
     opening_date: date
     closed_on: date | None
+    balance: Decimal
+    """Current balance: the opening balance plus every transaction."""
 
     @classmethod
-    def of(cls, account: Account) -> "AccountOut":
+    def of(cls, account: Account, movements: Decimal) -> "AccountOut":
         return cls(
             id=account.id,
             name=account.name,
@@ -66,6 +69,7 @@ class AccountOut(BaseModel):
             opening_balance=account.opening_balance,
             opening_date=account.opening_date,
             closed_on=account.closed_on,
+            balance=account.opening_balance + movements,
         )
 
 
@@ -83,7 +87,8 @@ def list_accounts(
     user_session: CurrentSession, db: Db, include_closed: Annotated[bool, Query()] = False
 ) -> list[AccountOut]:
     accounts = service.visible_accounts(db, user_session.user, include_closed=include_closed)
-    return [AccountOut.of(a) for a in accounts]
+    movements = imports.balances(db, [a.id for a in accounts])
+    return [AccountOut.of(a, movements[a.id]) for a in accounts]
 
 
 @router.post("/accounts", status_code=status.HTTP_201_CREATED)
@@ -96,7 +101,7 @@ def create_account(body: AccountIn, user_session: CurrentSession, db: Db) -> Acc
         raise _unprocessable(exc) from None
     except service.DuplicateAccountError:
         raise DUPLICATE from None
-    return AccountOut.of(account)
+    return AccountOut.of(account, imports.balances(db, [account.id])[account.id])
 
 
 @router.patch("/accounts/{account_id}")
@@ -125,7 +130,7 @@ def update_account(
         raise _unprocessable(exc) from None
     except service.DuplicateAccountError:
         raise DUPLICATE from None
-    return AccountOut.of(account)
+    return AccountOut.of(account, imports.balances(db, [account.id])[account.id])
 
 
 @router.get("/institutions")
