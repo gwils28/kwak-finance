@@ -10,8 +10,7 @@ import {
 import { apiErrorMessage } from "../auth/errors";
 import { meQuery } from "../auth/session";
 import { Button, ErrorAlert, TextField } from "../components/ui";
-
-const DATE = new Intl.DateTimeFormat("en-GB", { dateStyle: "medium" });
+import { formatDate } from "../lib/dates";
 
 const membersQuery = {
   queryKey: ["members"],
@@ -150,9 +149,7 @@ function Invitations() {
             <li key={invite.id} className="flex items-center justify-between gap-4 px-4 py-3">
               <div>
                 <p className="font-medium">{invite.email}</p>
-                <p className="text-sm text-muted">
-                  Expires {DATE.format(new Date(invite.expires_at))}
-                </p>
+                <p className="text-sm text-muted">Expires {formatDate(invite.expires_at)}</p>
               </div>
               <Button
                 variant="ghost"
