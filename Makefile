@@ -5,7 +5,7 @@ export PATH := $(HOME)/.local/share/fnm/aliases/default/bin:$(PATH)
 BACKEND := backend
 FRONTEND := frontend
 
-.PHONY: setup hooks dev-api dev-web check check-fast check-backend check-frontend fmt test up down logs openapi
+.PHONY: setup hooks migrate migration dev-api dev-web check check-fast check-backend check-frontend fmt test up down logs openapi
 
 setup: hooks ## Install all dependencies
 	cd $(BACKEND) && uv sync
@@ -13,6 +13,12 @@ setup: hooks ## Install all dependencies
 
 hooks: ## Enable the repo git hooks (commit-msg guard)
 	git config core.hooksPath .githooks
+
+migrate: ## Apply database migrations (KWAK_DATABASE_URL)
+	cd $(BACKEND) && uv run alembic upgrade head
+
+migration: ## New migration from model changes: make migration m="add user table"
+	cd $(BACKEND) && uv run alembic revision --autogenerate -m "$(m)"
 
 dev-api: ## Run the API with reload on :8000
 	cd $(BACKEND) && uv run uvicorn kwak_api.main:app --reload --port 8000

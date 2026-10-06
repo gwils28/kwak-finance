@@ -13,6 +13,7 @@ dev = [
     "pytest>=8.4",
     "pytest-cov>=7.0",
     "ruff>=0.14",
+    "testcontainers[postgres]>=4.10",
 ]
 
 [tool.uv]
@@ -46,3 +47,6 @@ plugins = ["pydantic.mypy"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = ["--strict-markers", "--import-mode=importlib"]
+
+[tool.alembic]
+script_location = "kwak_api:migrations"
