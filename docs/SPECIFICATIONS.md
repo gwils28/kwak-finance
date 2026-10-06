@@ -1,6 +1,6 @@
 # Functional Specifications
 
-Status: draft v0.1 — 2026-10-06. Owner: sole maintainer.
+Status: draft v0.2 — 2026-10-06. Owner: sole maintainer.
 
 ## 1. Purpose
 
@@ -38,7 +38,7 @@ Priority: **M** = MVP, **S** = should (later in MVP), **L** = later phase.
 
 ### 4.2 Accounts (M)
 
-- F-ACC-1: Account types: checking, savings (livret A, LDDS, PEL…), brokerage (PEA, CTO), life insurance (assurance-vie), crypto wallet/exchange, loan, real estate, use asset (vehicle, instrument…), other.
+- F-ACC-1: Account types: checking, savings (livret A, LDDS, PEL…), brokerage (PEA, CTO), life insurance (assurance-vie), employee savings and retirement (PEE/PEG, PERCOL, PER), crypto wallet/exchange, loan, real estate, use asset (vehicle, instrument…), other.
 - F-ACC-2: Each account has an institution, an owner, a visibility and an opening balance/date.
 - F-ACC-3: Accounts can be closed (kept in history, hidden from current views).
 
@@ -60,9 +60,13 @@ Priority: **M** = MVP, **S** = should (later in MVP), **L** = later phase.
 
 ### 4.5 Budgets (M)
 
-- F-BUD-1: Monthly budget per category (envelope), with optional rollover of any surplus or deficit.
-- F-BUD-2: Planned vs actual per month, with progress bars and a warning at a configurable threshold (default 80 %) and when exceeded.
+Goal of the budget module: **follow spending simply**, whether entered by hand or imported from the bank's export of recent operations; **turn it into KPIs and charts**; and **compare spending per category with a target** set beforehand.
+
+- F-BUD-1: A monthly target per category (or per parent category, covering its children). A target applies to every following month until changed. Optional rollover of any surplus or deficit to the next month.
+- F-BUD-2: Target vs actual for the current month, per category: spent, remaining, share used, with a progress bar, a warning at a configurable threshold (default 80 %) and an alert when exceeded. A "pace" marker shows where spending should be at today's date.
 - F-BUD-3: Personal or household scope.
+- F-BUD-4: Target vs actual over past months and year to date, to see which categories are regularly over or under target.
+- F-BUD-5: Transactions without a category are listed as "to categorise" and counted apart, so totals are never silently wrong.
 
 ### 4.6 Recurring transactions (M)
 
@@ -89,6 +93,8 @@ Priority: **M** = MVP, **S** = should (later in MVP), **L** = later phase.
 ### 4.9 Dashboard and reporting (M)
 
 - F-DSH-1: Home page showing net worth with its change, the month's cash flow, budget status, upcoming recurring items and recent transactions.
+- F-DSH-4: Spending KPIs for any month (default: current): total spent, total income, net cash flow and savings rate ((income − spending) / income); change vs the previous month and vs the 12-month average; top 5 categories; number of transactions left to categorise.
+- F-DSH-5: Spending charts: by category (bar chart, one level, drill-down to subcategories); monthly evolution over 12 months (stacked bars by category, income line); cumulative spending within the month against the budget line. Transfers between own accounts are excluded everywhere (F-TX-5).
 - F-DSH-2: Income/expense reports by category and period, with a cash-flow chart (Sankey).
 - F-DSH-3: CSV export of any table, plus a full JSON export of the household's data (portability).
 
@@ -109,8 +115,8 @@ Priority: **M** = MVP, **S** = should (later in MVP), **L** = later phase.
 | Phase | Content |
 |---|---|
 | 0 — Foundations | Repo, tooling, CI, Claude Code config, design tokens, Docker Compose skeleton |
-| 1 — Budget MVP | Auth + household, accounts, import, categorisation, transactions, dashboard v1 |
-| 2 — Budget complete | Budgets, recurrences, household sharing, reports |
+| 1 — Budget MVP | Auth + household, accounts, import, manual entry, categorisation, transactions, budget targets vs actual (F-BUD-1, 2, 5), spending KPIs and charts (F-DSH-4, 5) |
+| 2 — Budget complete | Budget history (F-BUD-4), rollover, recurrences, household sharing, reports |
 | 3 — Wealth | Securities, crypto, real estate, loans, use assets, market data, net-worth history |
 | 4 — Analytics & DS | Cash-flow **forecasting** (time-series, temporal back-testing, naive baseline first), **wealth simulation** (Monte Carlo, FIRE / retirement projection, allocation scenarios). Interactive Dash pages for exploration |
 | 5 — Local GenAI | Ollama-based assistant: natural-language questions over your own data (text-to-SQL on a read-only analytics view), categorisation suggestions, monthly narrative summary. No data leaves the host |
@@ -158,7 +164,7 @@ Light and dark themes (the dark theme uses `neutral-900` / `neutral-800` surface
 ## 9. Open questions
 
 - **Q1** — ✅ Name: **Kwak Finance**; Python packages `kwak_core`, `kwak_api`, `kwak_analytics`.
-- **Q2** — Which banks need CSV import profiles first? Sample exports (anonymised) are needed to build fixtures.
+- **Q2** — ✅ First import profiles: **Société Générale** (checking, Livret A, LDDS) and **Fortuneo** (checking), the cash accounts of phase 1. Investment accounts (Fortuneo PEA/CTO, Lynxéa Spirit 2 life insurance, Amundi PERCOL/PEG, Trade Republic CTO, Kraken) come with phase 3. Fixtures are synthetic files that copy each bank's exact layout.
 - **Q3** — ✅ Securities quoted in USD/GBP: store an FX rate (ECB reference rate) per price point, used only for market valuation; everything else stays EUR.
 - **Q4** — Life insurance: track UC positions line by line, or only the contract's total value?
 - **Q5** — ✅ Runs on the development machine (RTX 5070 Laptop, 8 GB VRAM, 30 GB RAM): Ollama limited to ~7–8B models (quantised).
