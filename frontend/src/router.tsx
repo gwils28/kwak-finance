@@ -7,9 +7,12 @@ import {
   type RouterHistory,
   redirect,
 } from "@tanstack/react-router";
+import { AppLayout } from "./AppLayout";
 import { LoginPage } from "./auth/LoginPage";
 import { meQuery } from "./auth/session";
 import { HomePage } from "./HomePage";
+import { AcceptInvitePage } from "./household/AcceptInvitePage";
+import { MembersPage } from "./household/MembersPage";
 
 const rootRoute = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   component: Outlet,
@@ -24,13 +27,22 @@ async function isSignedIn(queryClient: QueryClient): Promise<boolean> {
   }
 }
 
-const homeRoute = createRoute({
+/** Every page below requires a fully verified session (password + TOTP). */
+const appRoute = createRoute({
   getParentRoute: () => rootRoute,
-  path: "/",
+  id: "app",
   beforeLoad: async ({ context }) => {
     if (!(await isSignedIn(context.queryClient))) throw redirect({ to: "/login" });
   },
-  component: HomePage,
+  component: AppLayout,
+});
+
+const homeRoute = createRoute({ getParentRoute: () => appRoute, path: "/", component: HomePage });
+
+const membersRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: "/members",
+  component: MembersPage,
 });
 
 const loginRoute = createRoute({
@@ -42,7 +54,17 @@ const loginRoute = createRoute({
   component: LoginPage,
 });
 
-const routeTree = rootRoute.addChildren([homeRoute, loginRoute]);
+const acceptInviteRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/invite/$token",
+  component: AcceptInvitePage,
+});
+
+const routeTree = rootRoute.addChildren([
+  appRoute.addChildren([homeRoute, membersRoute]),
+  loginRoute,
+  acceptInviteRoute,
+]);
 
 export function createAppRouter(queryClient: QueryClient, history?: RouterHistory) {
   return createRouter({ routeTree, context: { queryClient }, history });
