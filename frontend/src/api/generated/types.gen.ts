@@ -168,6 +168,85 @@ export type BodyPreviewImport = {
 };
 
 /**
+ * Categorise
+ */
+export type Categorise = {
+    /**
+     * Category Id
+     */
+    category_id: string | null;
+    /**
+     * Transaction Ids
+     */
+    transaction_ids: Array<string>;
+};
+
+/**
+ * Categorised
+ */
+export type Categorised = {
+    /**
+     * Updated
+     */
+    updated: number;
+};
+
+/**
+ * CategoryIn
+ */
+export type CategoryIn = {
+    kind?: CategoryKind;
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Parent Id
+     */
+    parent_id?: string | null;
+};
+
+/**
+ * CategoryKind
+ */
+export type CategoryKind = 'expense' | 'income';
+
+/**
+ * CategoryOut
+ */
+export type CategoryOut = {
+    /**
+     * Id
+     */
+    id: string;
+    kind: CategoryKind;
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Parent Id
+     */
+    parent_id: string | null;
+};
+
+/**
+ * CategoryPatch
+ *
+ * `parent_id: null` moves the category to the top level; leave it out to keep its place.
+ */
+export type CategoryPatch = {
+    /**
+     * Name
+     */
+    name?: string | null;
+    /**
+     * Parent Id
+     */
+    parent_id?: string | null;
+};
+
+/**
  * HTTPValidationError
  */
 export type HttpValidationError = {
@@ -580,6 +659,14 @@ export type TransactionOut = {
      */
     booked_on: string;
     /**
+     * Category Id
+     */
+    category_id: string | null;
+    /**
+     * Category Name
+     */
+    category_name: string | null;
+    /**
      * Id
      */
     id: string;
@@ -609,6 +696,8 @@ export type TransactionPage = {
 
 /**
  * TransactionPatch
+ *
+ * Only the fields present change. `category_id: null` makes it "to categorise" again.
  */
 export type TransactionPatch = {
     /**
@@ -619,6 +708,10 @@ export type TransactionPatch = {
      * Booked On
      */
     booked_on?: string | null;
+    /**
+     * Category Id
+     */
+    category_id?: string | null;
     /**
      * Label
      */
@@ -1060,6 +1153,118 @@ export type TotpVerifyResponses = {
 
 export type TotpVerifyResponse = TotpVerifyResponses[keyof TotpVerifyResponses];
 
+export type ListCategoriesData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/categories';
+};
+
+export type ListCategoriesErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ListCategoriesError = ListCategoriesErrors[keyof ListCategoriesErrors];
+
+export type ListCategoriesResponses = {
+    /**
+     * Response Listcategories
+     *
+     * Successful Response
+     */
+    200: Array<CategoryOut>;
+};
+
+export type ListCategoriesResponse = ListCategoriesResponses[keyof ListCategoriesResponses];
+
+export type CreateCategoryData = {
+    body: CategoryIn;
+    path?: never;
+    query?: never;
+    url: '/api/categories';
+};
+
+export type CreateCategoryErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type CreateCategoryError = CreateCategoryErrors[keyof CreateCategoryErrors];
+
+export type CreateCategoryResponses = {
+    /**
+     * Successful Response
+     */
+    201: CategoryOut;
+};
+
+export type CreateCategoryResponse = CreateCategoryResponses[keyof CreateCategoryResponses];
+
+export type DeleteCategoryData = {
+    body?: never;
+    path: {
+        /**
+         * Category Id
+         */
+        category_id: string;
+    };
+    query?: never;
+    url: '/api/categories/{category_id}';
+};
+
+export type DeleteCategoryErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type DeleteCategoryError = DeleteCategoryErrors[keyof DeleteCategoryErrors];
+
+export type DeleteCategoryResponses = {
+    /**
+     * Successful Response
+     */
+    204: void;
+};
+
+export type DeleteCategoryResponse = DeleteCategoryResponses[keyof DeleteCategoryResponses];
+
+export type UpdateCategoryData = {
+    body: CategoryPatch;
+    path: {
+        /**
+         * Category Id
+         */
+        category_id: string;
+    };
+    query?: never;
+    url: '/api/categories/{category_id}';
+};
+
+export type UpdateCategoryErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type UpdateCategoryError = UpdateCategoryErrors[keyof UpdateCategoryErrors];
+
+export type UpdateCategoryResponses = {
+    /**
+     * Successful Response
+     */
+    200: CategoryOut;
+};
+
+export type UpdateCategoryResponse = UpdateCategoryResponses[keyof UpdateCategoryResponses];
+
 export type HealthData = {
     body?: never;
     path?: never;
@@ -1325,6 +1530,16 @@ export type ListTransactionsData = {
          */
         q?: string | null;
         /**
+         * Category Id
+         */
+        category_id?: string | null;
+        /**
+         * Uncategorised
+         *
+         * Only transactions to categorise
+         */
+        uncategorised?: boolean;
+        /**
          * Limit
          */
         limit?: number;
@@ -1378,6 +1593,31 @@ export type CreateTransactionResponses = {
 };
 
 export type CreateTransactionResponse = CreateTransactionResponses[keyof CreateTransactionResponses];
+
+export type CategoriseTransactionsData = {
+    body: Categorise;
+    path?: never;
+    query?: never;
+    url: '/api/transactions/categorise';
+};
+
+export type CategoriseTransactionsErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type CategoriseTransactionsError = CategoriseTransactionsErrors[keyof CategoriseTransactionsErrors];
+
+export type CategoriseTransactionsResponses = {
+    /**
+     * Successful Response
+     */
+    200: Categorised;
+};
+
+export type CategoriseTransactionsResponse = CategoriseTransactionsResponses[keyof CategoriseTransactionsResponses];
 
 export type DeleteTransactionData = {
     body?: never;

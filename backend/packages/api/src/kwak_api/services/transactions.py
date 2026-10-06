@@ -8,9 +8,10 @@ from uuid import UUID
 from kwak_core.accounts import CASH_TYPES
 from kwak_core.imports import normalize_label
 from sqlalchemy import func, select
+from sqlalchemy import update as sql_update
 from sqlalchemy.orm import Session
 
-from kwak_api.models import Account, Transaction, User
+from kwak_api.models import Account, Category, Transaction, User
 from kwak_api.services.accounts import find_visible_account, visible_accounts
 
 
@@ -24,6 +25,8 @@ class TransactionFilter:
     date_from: date | None = None
     date_to: date | None = None
     q: str | None = None
+    category_id: UUID | None = None
+    uncategorised: bool = False
 
 
 def _check_entry(account: Account, booked_on: date, amount: Decimal, label: str) -> str:
@@ -61,6 +64,10 @@ def search(
         query = query.where(
             func.unaccent(Transaction.label_norm).like(func.unaccent(f"%{needle}%"))
         )
+    if filters.category_id:
+        query = query.where(Transaction.category_id == filters.category_id)
+    if filters.uncategorised:
+        query = query.where(Transaction.category_id.is_(None))
     total = db.scalar(select(func.count()).select_from(query.subquery())) or 0
     page = db.scalars(
         query.order_by(Transaction.booked_on.desc(), Transaction.id.desc())
@@ -112,6 +119,9 @@ def update(
     amount: Decimal | None,
     label: str | None,
 ) -> None:
+    """Change what the transaction says. Imported rows mirror the bank and cannot change."""
+    if booked_on is None and amount is None and label is None:
+        return
     _manual_only(transaction)
     label = _check_entry(
         account,
@@ -124,6 +134,26 @@ def update(
     transaction.label_raw = label
     transaction.label_norm = normalize_label(label)
     db.flush()
+
+
+def set_category(db: Session, transaction: Transaction, category: Category | None) -> None:
+    """Any transaction, imported or not, can be categorised: it changes no amount."""
+    transaction.category_id = category.id if category else None
+    db.flush()
+
+
+def categorise(
+    db: Session, viewer: User, transaction_ids: list[UUID], category: Category | None
+) -> int:
+    """Set the category of every listed transaction the viewer can see; returns how many."""
+    visible = [a.id for a in visible_accounts(db, viewer, include_closed=True)]
+    result = db.execute(
+        sql_update(Transaction)
+        .where(Transaction.id.in_(transaction_ids), Transaction.account_id.in_(visible))
+        .values(category_id=category.id if category else None)
+        .returning(Transaction.id)
+    )
+    return len(result.all())
 
 
 def delete(db: Session, transaction: Transaction) -> None:
