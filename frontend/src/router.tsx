@@ -12,6 +12,7 @@ import { AccountsPage } from "./accounts/AccountsPage";
 import { LoginPage } from "./auth/LoginPage";
 import { meQuery } from "./auth/session";
 import { BudgetPage } from "./budget/BudgetPage";
+import { CategoriesPage } from "./categories/CategoriesPage";
 import { HomePage } from "./HomePage";
 import { AcceptInvitePage } from "./household/AcceptInvitePage";
 import { MembersPage } from "./household/MembersPage";
@@ -74,6 +75,12 @@ const budgetRoute = createRoute({
   component: BudgetPage,
 });
 
+const categoriesRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: "/categories",
+  component: CategoriesPage,
+});
+
 const loginRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/login",
@@ -96,6 +103,7 @@ const routeTree = rootRoute.addChildren([
     importRoute,
     transactionsRoute,
     budgetRoute,
+    categoriesRoute,
     membersRoute,
   ]),
   loginRoute,
