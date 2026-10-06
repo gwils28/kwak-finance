@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session, joinedload
 from kwak_api.models import User, UserSession
 
 
-def _hash(token: str) -> str:
+def hash_token(token: str) -> str:
     return hashlib.sha256(token.encode()).hexdigest()
 
 
@@ -20,7 +20,7 @@ def open_session(db: Session, user: User, now: datetime) -> tuple[str, UserSessi
     token = secrets.token_urlsafe(32)
     user_session = UserSession(
         user=user,
-        token_hash=_hash(token),
+        token_hash=hash_token(token),
         csrf_token=secrets.token_urlsafe(32),
         created_at=now,
         last_seen_at=now,
@@ -36,7 +36,7 @@ def find_active_session(
     """Look up a session by cookie token and record the activity if it is still valid."""
     user_session = db.scalar(
         select(UserSession)
-        .where(UserSession.token_hash == _hash(token))
+        .where(UserSession.token_hash == hash_token(token))
         .options(joinedload(UserSession.user))
     )
     if user_session is None or not user_session.user.is_active:

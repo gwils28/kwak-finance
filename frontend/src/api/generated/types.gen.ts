@@ -29,6 +29,87 @@ export type Health = {
 };
 
 /**
+ * InviteAccept
+ */
+export type InviteAccept = {
+    /**
+     * Display Name
+     */
+    display_name: string;
+    /**
+     * Password
+     */
+    password: string;
+};
+
+/**
+ * InviteCreate
+ */
+export type InviteCreate = {
+    /**
+     * Email
+     */
+    email: string;
+};
+
+/**
+ * InviteCreated
+ */
+export type InviteCreated = {
+    invite: InviteOut;
+    /**
+     * Token
+     */
+    token: string;
+};
+
+/**
+ * InviteOut
+ */
+export type InviteOut = {
+    /**
+     * Created At
+     */
+    created_at: string;
+    /**
+     * Email
+     */
+    email: string;
+    /**
+     * Expires At
+     */
+    expires_at: string;
+    /**
+     * Id
+     */
+    id: string;
+    state: InviteState;
+};
+
+/**
+ * InvitePreview
+ */
+export type InvitePreview = {
+    /**
+     * Email
+     */
+    email: string;
+    /**
+     * Expires At
+     */
+    expires_at: string;
+    /**
+     * Household Name
+     */
+    household_name: string;
+};
+
+/**
+ * InviteState
+ */
+export type InviteState = 'pending' | 'accepted' | 'revoked' | 'expired';
+
+/**
  * LoginOut
  */
 export type LoginOut = {
@@ -51,6 +132,25 @@ export type LoginRequest = {
      * Password
      */
     password: string;
+};
+
+/**
+ * MemberOut
+ */
+export type MemberOut = {
+    /**
+     * Display Name
+     */
+    display_name: string;
+    /**
+     * Email
+     */
+    email: string;
+    /**
+     * Id
+     */
+    id: string;
+    role: Role;
 };
 
 /**
@@ -389,3 +489,172 @@ export type HealthResponses = {
 };
 
 export type HealthResponse = HealthResponses[keyof HealthResponses];
+
+export type ListMembersData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/household/members';
+};
+
+export type ListMembersErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ListMembersError = ListMembersErrors[keyof ListMembersErrors];
+
+export type ListMembersResponses = {
+    /**
+     * Response Listmembers
+     *
+     * Successful Response
+     */
+    200: Array<MemberOut>;
+};
+
+export type ListMembersResponse = ListMembersResponses[keyof ListMembersResponses];
+
+export type ListInvitesData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/invites';
+};
+
+export type ListInvitesErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ListInvitesError = ListInvitesErrors[keyof ListInvitesErrors];
+
+export type ListInvitesResponses = {
+    /**
+     * Response Listinvites
+     *
+     * Successful Response
+     */
+    200: Array<InviteOut>;
+};
+
+export type ListInvitesResponse = ListInvitesResponses[keyof ListInvitesResponses];
+
+export type CreateInviteData = {
+    body: InviteCreate;
+    path?: never;
+    query?: never;
+    url: '/api/invites';
+};
+
+export type CreateInviteErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type CreateInviteError = CreateInviteErrors[keyof CreateInviteErrors];
+
+export type CreateInviteResponses = {
+    /**
+     * Successful Response
+     */
+    201: InviteCreated;
+};
+
+export type CreateInviteResponse = CreateInviteResponses[keyof CreateInviteResponses];
+
+export type PreviewInviteData = {
+    body?: never;
+    path: {
+        /**
+         * Token
+         */
+        token: string;
+    };
+    query?: never;
+    url: '/api/invites/accept/{token}';
+};
+
+export type PreviewInviteErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type PreviewInviteError = PreviewInviteErrors[keyof PreviewInviteErrors];
+
+export type PreviewInviteResponses = {
+    /**
+     * Successful Response
+     */
+    200: InvitePreview;
+};
+
+export type PreviewInviteResponse = PreviewInviteResponses[keyof PreviewInviteResponses];
+
+export type AcceptInviteData = {
+    body: InviteAccept;
+    path: {
+        /**
+         * Token
+         */
+        token: string;
+    };
+    query?: never;
+    url: '/api/invites/accept/{token}';
+};
+
+export type AcceptInviteErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type AcceptInviteError = AcceptInviteErrors[keyof AcceptInviteErrors];
+
+export type AcceptInviteResponses = {
+    /**
+     * Successful Response
+     */
+    201: MemberOut;
+};
+
+export type AcceptInviteResponse = AcceptInviteResponses[keyof AcceptInviteResponses];
+
+export type RevokeInviteData = {
+    body?: never;
+    path: {
+        /**
+         * Invite Id
+         */
+        invite_id: string;
+    };
+    query?: never;
+    url: '/api/invites/{invite_id}';
+};
+
+export type RevokeInviteErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type RevokeInviteError = RevokeInviteErrors[keyof RevokeInviteErrors];
+
+export type RevokeInviteResponses = {
+    /**
+     * Successful Response
+     */
+    204: void;
+};
+
+export type RevokeInviteResponse = RevokeInviteResponses[keyof RevokeInviteResponses];
