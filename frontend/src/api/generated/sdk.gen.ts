@@ -2,7 +2,7 @@
 
 import { type Client, type ClientMeta, formDataBodySerializer, type Options as Options2, type RequestResult, type TDataShape } from './client';
 import { client } from './client.gen';
-import type { AcceptInviteData, AcceptInviteErrors, AcceptInviteResponses, CreateAccountData, CreateAccountErrors, CreateAccountResponses, CreateImportData, CreateImportErrors, CreateImportResponses, CreateInviteData, CreateInviteErrors, CreateInviteResponses, HealthData, HealthResponses, ListAccountsData, ListAccountsErrors, ListAccountsResponses, ListImportsData, ListImportsErrors, ListImportsResponses, ListInstitutionsData, ListInstitutionsErrors, ListInstitutionsResponses, ListInvitesData, ListInvitesErrors, ListInvitesResponses, ListMembersData, ListMembersErrors, ListMembersResponses, LoginData, LoginErrors, LoginResponses, LogoutData, LogoutErrors, LogoutResponses, MeData, MeErrors, MeResponses, PreviewImportData, PreviewImportErrors, PreviewImportResponses, PreviewInviteData, PreviewInviteErrors, PreviewInviteResponses, RecoveryData, RecoveryErrors, RecoveryResponses, RegenerateRecoveryCodesData, RegenerateRecoveryCodesErrors, RegenerateRecoveryCodesResponses, RevokeInviteData, RevokeInviteErrors, RevokeInviteResponses, RollbackImportData, RollbackImportErrors, RollbackImportResponses, TotpConfirmData, TotpConfirmErrors, TotpConfirmResponses, TotpSetupData, TotpSetupErrors, TotpSetupResponses, TotpVerifyData, TotpVerifyErrors, TotpVerifyResponses, UpdateAccountData, UpdateAccountErrors, UpdateAccountResponses } from './types.gen';
+import type { AcceptInviteData, AcceptInviteErrors, AcceptInviteResponses, CreateAccountData, CreateAccountErrors, CreateAccountResponses, CreateImportData, CreateImportErrors, CreateImportResponses, CreateInviteData, CreateInviteErrors, CreateInviteResponses, CreateTransactionData, CreateTransactionErrors, CreateTransactionResponses, DeleteTransactionData, DeleteTransactionErrors, DeleteTransactionResponses, HealthData, HealthResponses, ListAccountsData, ListAccountsErrors, ListAccountsResponses, ListImportsData, ListImportsErrors, ListImportsResponses, ListInstitutionsData, ListInstitutionsErrors, ListInstitutionsResponses, ListInvitesData, ListInvitesErrors, ListInvitesResponses, ListMembersData, ListMembersErrors, ListMembersResponses, ListTransactionsData, ListTransactionsErrors, ListTransactionsResponses, LoginData, LoginErrors, LoginResponses, LogoutData, LogoutErrors, LogoutResponses, MeData, MeErrors, MeResponses, PreviewImportData, PreviewImportErrors, PreviewImportResponses, PreviewInviteData, PreviewInviteErrors, PreviewInviteResponses, RecoveryData, RecoveryErrors, RecoveryResponses, RegenerateRecoveryCodesData, RegenerateRecoveryCodesErrors, RegenerateRecoveryCodesResponses, RevokeInviteData, RevokeInviteErrors, RevokeInviteResponses, RollbackImportData, RollbackImportErrors, RollbackImportResponses, TotpConfirmData, TotpConfirmErrors, TotpConfirmResponses, TotpSetupData, TotpSetupErrors, TotpSetupResponses, TotpVerifyData, TotpVerifyErrors, TotpVerifyResponses, UpdateAccountData, UpdateAccountErrors, UpdateAccountResponses, UpdateTransactionData, UpdateTransactionErrors, UpdateTransactionResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -231,3 +231,37 @@ export const acceptInvite = <ThrowOnError extends boolean = false>(options: Opti
  * Revoke Invite
  */
 export const revokeInvite = <ThrowOnError extends boolean = false>(options: Options<RevokeInviteData, ThrowOnError>): RequestResult<RevokeInviteResponses, RevokeInviteErrors, ThrowOnError> => (options.client ?? client).delete<RevokeInviteResponses, RevokeInviteErrors, ThrowOnError>({ url: '/api/invites/{invite_id}', ...options });
+
+/**
+ * List Transactions
+ */
+export const listTransactions = <ThrowOnError extends boolean = false>(options?: Options<ListTransactionsData, ThrowOnError>): RequestResult<ListTransactionsResponses, ListTransactionsErrors, ThrowOnError> => (options?.client ?? client).get<ListTransactionsResponses, ListTransactionsErrors, ThrowOnError>({ url: '/api/transactions', ...options });
+
+/**
+ * Create Transaction
+ */
+export const createTransaction = <ThrowOnError extends boolean = false>(options: Options<CreateTransactionData, ThrowOnError>): RequestResult<CreateTransactionResponses, CreateTransactionErrors, ThrowOnError> => (options.client ?? client).post<CreateTransactionResponses, CreateTransactionErrors, ThrowOnError>({
+    url: '/api/transactions',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Delete Transaction
+ */
+export const deleteTransaction = <ThrowOnError extends boolean = false>(options: Options<DeleteTransactionData, ThrowOnError>): RequestResult<DeleteTransactionResponses, DeleteTransactionErrors, ThrowOnError> => (options.client ?? client).delete<DeleteTransactionResponses, DeleteTransactionErrors, ThrowOnError>({ url: '/api/transactions/{transaction_id}', ...options });
+
+/**
+ * Update Transaction
+ */
+export const updateTransaction = <ThrowOnError extends boolean = false>(options: Options<UpdateTransactionData, ThrowOnError>): RequestResult<UpdateTransactionResponses, UpdateTransactionErrors, ThrowOnError> => (options.client ?? client).patch<UpdateTransactionResponses, UpdateTransactionErrors, ThrowOnError>({
+    url: '/api/transactions/{transaction_id}',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
