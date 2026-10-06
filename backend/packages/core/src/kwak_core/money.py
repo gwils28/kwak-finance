@@ -37,3 +37,10 @@ def parse_amount(raw: str, *, decimal_separator: DecimalSeparator) -> Decimal:
     except InvalidOperation as exc:  # pragma: no cover - guarded by the regex
         raise ValueError(f"Unparseable amount: {raw!r}") from exc
     return quantize(-value if negative else value)
+
+
+def require_cents(amount: Decimal) -> Decimal:
+    """Validate a user-entered amount: finite, at most 2 decimals. Never rounds silently."""
+    if not amount.is_finite() or amount != quantize(amount):
+        raise ValueError(f"amount must be a whole number of cents: {amount}")
+    return quantize(amount)
