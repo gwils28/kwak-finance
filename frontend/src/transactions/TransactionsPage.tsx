@@ -3,6 +3,8 @@ import { getRouteApi } from "@tanstack/react-router";
 import { type FormEvent, useId, useState } from "react";
 import {
   type AccountOut,
+  type CategoryOut,
+  categoriseTransactions,
   createTransaction,
   deleteTransaction,
   listAccounts,
@@ -14,6 +16,8 @@ import { apiErrorMessage, detailSentence } from "../auth/errors";
 import { Button, ErrorAlert, TextField } from "../components/ui";
 import { formatDate, todayIso } from "../lib/dates";
 import { formatEur, parseEurInput } from "../lib/money";
+import { CategoryOptions, categoriesQuery } from "./categories";
+import { RuleForm } from "./RuleForm";
 
 export const PAGE_SIZE = 50;
 
@@ -22,6 +26,8 @@ export type TransactionSearch = {
   from?: string;
   to?: string;
   q?: string;
+  /** A category id, or "none" for transactions to categorise. */
+  category?: string;
   page?: number;
 };
 
@@ -37,6 +43,7 @@ export function parseTransactionSearch(search: Record<string, unknown>): Transac
     from: day(search.from),
     to: day(search.to),
     q: text(search.q),
+    category: text(search.category),
     page: Number.isInteger(page) && page > 1 ? page : undefined,
   };
 }
@@ -50,6 +57,9 @@ export function TransactionsPage() {
   const navigate = route.useNavigate();
   const [adding, setAdding] = useState(false);
   const [editing, setEditing] = useState<TransactionOut | null>(null);
+  const [ruleFrom, setRuleFrom] = useState<TransactionOut | null>(null);
+  const [notice, setNotice] = useState("");
+  const categories = useQuery(categoriesQuery);
   const accounts = useQuery({
     queryKey: ["accounts", { includeClosed: true }],
     queryFn: async () =>
@@ -66,6 +76,8 @@ export function TransactionsPage() {
             date_from: search.from,
             date_to: search.to,
             q: search.q,
+            category_id: search.category === "none" ? undefined : search.category,
+            uncategorised: search.category === "none" ? true : undefined,
             limit: PAGE_SIZE,
             offset: (page - 1) * PAGE_SIZE,
           },
@@ -73,6 +85,12 @@ export function TransactionsPage() {
         })
       ).data,
     placeholderData: keepPreviousData,
+  });
+  const toCategorise = useQuery({
+    queryKey: ["toCategorise"],
+    queryFn: async () =>
+      (await listTransactions({ query: { uncategorised: true, limit: 1 }, throwOnError: true }))
+        .data.total,
   });
 
   const setFilter = (changes: Partial<TransactionSearch>) =>
@@ -85,7 +103,14 @@ export function TransactionsPage() {
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <h1 className="text-3xl font-black tracking-tight">Transactions</h1>
+        <div className="flex flex-wrap items-baseline gap-4">
+          <h1 className="text-3xl font-black tracking-tight">Transactions</h1>
+          {Boolean(toCategorise.data) && (
+            <Button variant="ghost" onClick={() => setFilter({ category: "none" })}>
+              {toCategorise.data} to categorise
+            </Button>
+          )}
+        </div>
         <Button
           onClick={() => {
             setEditing(null);
@@ -106,7 +131,28 @@ export function TransactionsPage() {
           }}
         />
       )}
-      <Filters search={search} accounts={accounts.data ?? []} onChange={setFilter} />
+      {ruleFrom && categories.data && (
+        <RuleForm
+          key={ruleFrom.id}
+          transaction={ruleFrom}
+          categories={categories.data}
+          onDone={(message) => {
+            setRuleFrom(null);
+            setNotice(message);
+          }}
+        />
+      )}
+      {notice && (
+        <p className="rounded-md border border-accent px-3 py-2 text-sm" aria-live="polite">
+          {notice}
+        </p>
+      )}
+      <Filters
+        search={search}
+        accounts={accounts.data ?? []}
+        categories={categories.data ?? []}
+        onChange={setFilter}
+      />
       {transactions.isError && <ErrorAlert message="Could not load the transactions." />}
       {transactions.data && transactions.data.total === 0 && (
         <p className="text-muted">No transactions match these filters.</p>
@@ -120,6 +166,9 @@ export function TransactionsPage() {
           </p>
           <TransactionTable
             items={transactions.data.items}
+            categories={categories.data ?? []}
+            onNotice={setNotice}
+            onRule={setRuleFrom}
             onEdit={(t) => {
               setAdding(false);
               setEditing(t);
@@ -152,10 +201,12 @@ export function TransactionsPage() {
 function Filters({
   search,
   accounts,
+  categories,
   onChange,
 }: {
   search: TransactionSearch;
   accounts: AccountOut[];
+  categories: CategoryOut[];
   onChange: (changes: Partial<TransactionSearch>) => void;
 }) {
   const [text, setText] = useState(search.q ?? "");
@@ -167,7 +218,7 @@ function Filters({
   return (
     <form
       onSubmit={submit}
-      className="grid gap-3 rounded-lg border border-border bg-surface p-4 sm:grid-cols-4"
+      className="grid gap-3 rounded-lg border border-border bg-surface p-4 sm:grid-cols-2 lg:grid-cols-5"
     >
       <div className="flex flex-col gap-1">
         <label htmlFor={ids.account} className="text-sm font-medium">
@@ -185,6 +236,21 @@ function Filters({
               {a.name} ({a.institution})
             </option>
           ))}
+        </select>
+      </div>
+      <div className="flex flex-col gap-1">
+        <label htmlFor="category-filter" className="text-sm font-medium">
+          Category
+        </label>
+        <select
+          id="category-filter"
+          className={fieldClass}
+          value={search.category ?? ""}
+          onChange={(e) => onChange({ category: e.target.value || undefined })}
+        >
+          <option value="">All categories</option>
+          <option value="none">To categorise</option>
+          <CategoryOptions categories={categories} />
         </select>
       </div>
       <div className="flex flex-col gap-1">
@@ -238,90 +304,206 @@ function Filters({
 
 function TransactionTable({
   items,
+  categories,
   onEdit,
+  onRule,
+  onNotice,
 }: {
   items: TransactionOut[];
+  categories: CategoryOut[];
   onEdit: (t: TransactionOut) => void;
+  onRule: (t: TransactionOut) => void;
+  onNotice: (message: string) => void;
 }) {
   const queryClient = useQueryClient();
   const [confirming, setConfirming] = useState<string | null>(null);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [bulkCategory, setBulkCategory] = useState("");
+  const bulkSelect = useId();
+
+  const refresh = async () => {
+    await queryClient.invalidateQueries({ queryKey: ["transactions"] });
+    await queryClient.invalidateQueries({ queryKey: ["toCategorise"] });
+  };
   const remove = useMutation({
     mutationFn: async (id: string) =>
       deleteTransaction({ path: { transaction_id: id }, throwOnError: true }),
     onSuccess: async () => {
       setConfirming(null);
-      await queryClient.invalidateQueries({ queryKey: ["transactions"] });
+      await refresh();
       await queryClient.invalidateQueries({ queryKey: ["accounts"] });
     },
   });
+  const setCategory = useMutation({
+    mutationFn: async ({ id, categoryId }: { id: string; categoryId: string | null }) =>
+      updateTransaction({
+        path: { transaction_id: id },
+        body: { category_id: categoryId },
+        throwOnError: true,
+      }),
+    onSuccess: refresh,
+  });
+  const bulk = useMutation({
+    mutationFn: async () =>
+      (
+        await categoriseTransactions({
+          body: { transaction_ids: [...selected], category_id: bulkCategory || null },
+          throwOnError: true,
+        })
+      ).data.updated,
+    onSuccess: async (updated) => {
+      setSelected(new Set());
+      onNotice(`${updated} transaction${updated === 1 ? "" : "s"} categorised.`);
+      await refresh();
+    },
+  });
+
+  const allSelected = items.length > 0 && items.every((t) => selected.has(t.id));
+  const toggle = (id: string) =>
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (!next.delete(id)) next.add(id);
+      return next;
+    });
 
   return (
-    <div className="overflow-x-auto rounded-lg border border-border bg-surface">
-      <table aria-label="Transactions" className="w-full text-sm">
-        <thead className="text-left text-muted">
-          <tr>
-            <th className="px-3 py-2 font-medium">Date</th>
-            <th className="px-3 py-2 font-medium">Label</th>
-            <th className="px-3 py-2 font-medium">Account</th>
-            <th className="px-3 py-2 text-right font-medium">Amount</th>
-            <th className="px-3 py-2">
-              <span className="sr-only">Actions</span>
-            </th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-border">
-          {items.map((t) => (
-            <tr key={t.id}>
-              <td className="whitespace-nowrap px-3 py-2">{formatDate(t.booked_on)}</td>
-              <td className="px-3 py-2">{t.label}</td>
-              <td className="whitespace-nowrap px-3 py-2 text-muted">{t.account_name}</td>
-              <td
-                className={`tabular whitespace-nowrap px-3 py-2 text-right ${
-                  t.amount.startsWith("-") ? "" : "text-positive"
-                }`}
-              >
-                {formatEur(t.amount)}
-              </td>
-              <td className="whitespace-nowrap px-3 py-2 text-right">
-                {t.source === "import" ? (
-                  <span className="text-xs text-muted">Imported</span>
-                ) : confirming === t.id ? (
-                  <span className="flex justify-end gap-2">
-                    <Button
-                      variant="ghost"
-                      className="border-negative text-negative"
-                      disabled={remove.isPending}
-                      onClick={() => remove.mutate(t.id)}
-                    >
-                      Confirm delete
-                    </Button>
-                    <Button variant="ghost" onClick={() => setConfirming(null)}>
-                      Cancel
-                    </Button>
-                  </span>
-                ) : (
-                  <span className="flex justify-end gap-2">
-                    <Button
-                      variant="ghost"
-                      aria-label={`Edit ${t.label}`}
-                      onClick={() => onEdit(t)}
-                    >
-                      Edit
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      aria-label={`Delete ${t.label}`}
-                      onClick={() => setConfirming(t.id)}
-                    >
-                      Delete
-                    </Button>
-                  </span>
-                )}
-              </td>
+    <div className="flex flex-col gap-3">
+      {selected.size > 0 && (
+        <section
+          aria-label={`${selected.size} selected`}
+          className="flex flex-wrap items-center gap-3 rounded-lg border border-accent bg-surface px-4 py-3"
+        >
+          <span className="text-sm font-medium">{selected.size} selected</span>
+          <label htmlFor={bulkSelect} className="sr-only">
+            Category for the selection
+          </label>
+          <select
+            id={bulkSelect}
+            className={fieldClass}
+            value={bulkCategory}
+            onChange={(e) => setBulkCategory(e.target.value)}
+          >
+            <option value="">To categorise</option>
+            <CategoryOptions categories={categories} />
+          </select>
+          <Button disabled={bulk.isPending} onClick={() => bulk.mutate()}>
+            Apply
+          </Button>
+          <Button variant="ghost" onClick={() => setSelected(new Set())}>
+            Clear
+          </Button>
+        </section>
+      )}
+      <div className="overflow-x-auto rounded-lg border border-border bg-surface">
+        <table aria-label="Transactions" className="w-full text-sm">
+          <thead className="text-left text-muted">
+            <tr>
+              <th className="px-3 py-2">
+                <input
+                  type="checkbox"
+                  aria-label="Select all on this page"
+                  checked={allSelected}
+                  onChange={() =>
+                    setSelected(allSelected ? new Set() : new Set(items.map((t) => t.id)))
+                  }
+                />
+              </th>
+              <th className="px-3 py-2 font-medium">Date</th>
+              <th className="px-3 py-2 font-medium">Label</th>
+              <th className="px-3 py-2 font-medium">Category</th>
+              <th className="px-3 py-2 font-medium">Account</th>
+              <th className="px-3 py-2 text-right font-medium">Amount</th>
+              <th className="px-3 py-2">
+                <span className="sr-only">Actions</span>
+              </th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody className="divide-y divide-border">
+            {items.map((t) => (
+              <tr key={t.id} className={selected.has(t.id) ? "bg-bg" : ""}>
+                <td className="px-3 py-2">
+                  <input
+                    type="checkbox"
+                    aria-label={`Select ${t.label}`}
+                    checked={selected.has(t.id)}
+                    onChange={() => toggle(t.id)}
+                  />
+                </td>
+                <td className="whitespace-nowrap px-3 py-2">{formatDate(t.booked_on)}</td>
+                <td className="px-3 py-2">{t.label}</td>
+                <td className="px-3 py-2">
+                  <select
+                    aria-label={`Category of ${t.label}`}
+                    className={`max-w-48 rounded-md border bg-surface px-2 py-1 ${
+                      t.category_id ? "border-border" : "border-warning"
+                    }`}
+                    value={t.category_id ?? ""}
+                    onChange={(e) =>
+                      setCategory.mutate({ id: t.id, categoryId: e.target.value || null })
+                    }
+                  >
+                    <option value="">To categorise</option>
+                    <CategoryOptions categories={categories} />
+                  </select>
+                </td>
+                <td className="whitespace-nowrap px-3 py-2 text-muted">{t.account_name}</td>
+                <td
+                  className={`tabular whitespace-nowrap px-3 py-2 text-right ${
+                    t.amount.startsWith("-") ? "" : "text-positive"
+                  }`}
+                >
+                  {formatEur(t.amount)}
+                </td>
+                <td className="whitespace-nowrap px-3 py-2 text-right">
+                  <span className="flex items-center justify-end gap-2">
+                    <Button
+                      variant="ghost"
+                      aria-label={`Create a rule from ${t.label}`}
+                      onClick={() => onRule(t)}
+                    >
+                      Rule
+                    </Button>
+                    {t.source === "import" ? (
+                      <span className="text-xs text-muted">Imported</span>
+                    ) : confirming === t.id ? (
+                      <>
+                        <Button
+                          variant="ghost"
+                          className="border-negative text-negative"
+                          disabled={remove.isPending}
+                          onClick={() => remove.mutate(t.id)}
+                        >
+                          Confirm delete
+                        </Button>
+                        <Button variant="ghost" onClick={() => setConfirming(null)}>
+                          Cancel
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        <Button
+                          variant="ghost"
+                          aria-label={`Edit ${t.label}`}
+                          onClick={() => onEdit(t)}
+                        >
+                          Edit
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          aria-label={`Delete ${t.label}`}
+                          onClick={() => setConfirming(t.id)}
+                        >
+                          Delete
+                        </Button>
+                      </>
+                    )}
+                  </span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

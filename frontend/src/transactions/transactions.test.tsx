@@ -52,10 +52,15 @@ function api(extra: Record<string, Handler> = {}, page = { items: [imported, man
 /** Query strings of every GET /api/transactions, from the fetch spy. */
 function listQueries(): URLSearchParams[] {
   const fetchSpy = vi.mocked(fetch);
-  return fetchSpy.mock.calls
-    .map(([request]) => new URL((request as Request).url))
-    .filter((url) => url.pathname === "/api/transactions")
-    .map((url) => url.searchParams);
+  return (
+    fetchSpy.mock.calls
+      .map(([request]) => new URL((request as Request).url))
+      // The "to categorise" counter asks for limit=1: it is not the list.
+      .filter(
+        (url) => url.pathname === "/api/transactions" && url.searchParams.get("limit") !== "1",
+      )
+      .map((url) => url.searchParams)
+  );
 }
 
 test("transactions are listed with their account and amount", async () => {
