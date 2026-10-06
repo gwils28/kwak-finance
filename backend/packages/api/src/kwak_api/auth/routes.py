@@ -17,6 +17,17 @@ from sqlalchemy.orm import Session
 from kwak_api.auth.crypto import SecretBox
 from kwak_api.auth.passwords import hash_password, needs_rehash, verify_password
 from kwak_api.auth.sessions import find_active_session, open_session, revoke_session
+from kwak_api.auth.throttle import (
+    IP_LIMITS,
+    PASSWORD_LIMITS,
+    TOTP_LIMITS,
+    clear_failures,
+    ensure_allowed,
+    ip_subject,
+    password_subject,
+    record_failure,
+    totp_subject,
+)
 from kwak_api.auth.totp import check_code, start_enrollment
 from kwak_api.deps import get_db, get_now, get_secret_box, get_settings
 from kwak_api.models import Role, User, UserSession
@@ -114,19 +125,32 @@ CurrentSession = Annotated[UserSession, Depends(current_session)]
 
 @router.post("/login")
 def login(
-    body: LoginRequest, response: Response, db: Db, now: Now, settings: AppSettings
+    body: LoginRequest,
+    request: Request,
+    response: Response,
+    db: Db,
+    now: Now,
+    settings: AppSettings,
 ) -> LoginOut:
     invalid = HTTPException(status.HTTP_401_UNAUTHORIZED, "invalid email or password")
+    # Behind Caddy, uvicorn --proxy-headers puts the real client address here.
+    ip = ip_subject(request.client.host if request.client else "unknown")
     try:
         email = normalize_email(body.email)
     except ValueError:
+        record_failure(db, [ip], now)
         raise invalid from None
+    account = password_subject(email)
+    # Checked before the password, so a blocked caller learns nothing from the answer.
+    ensure_allowed(db, [(account, PASSWORD_LIMITS), (ip, IP_LIMITS)], now)
+
     user = db.scalar(select(User).where(User.email == email))
     # Hash even for unknown emails so response time does not reveal which accounts exist.
-    if not verify_password(user.password_hash if user else _dummy_hash(), body.password):
+    password_ok = verify_password(user.password_hash if user else _dummy_hash(), body.password)
+    if user is None or not user.is_active or not password_ok:
+        record_failure(db, [account, ip], now)
         raise invalid
-    if user is None or not user.is_active:
-        raise invalid
+    clear_failures(db, account)
     if needs_rehash(user.password_hash):
         user.password_hash = hash_password(body.password)
 
@@ -165,26 +189,37 @@ def totp_setup(user_session: PendingSession, box: Box) -> TotpSetupOut:
     )
 
 
+def _check_totp(db: Session, user: User, box: SecretBox, code: str, now: datetime) -> None:
+    subject = totp_subject(user.id)
+    ensure_allowed(db, [(subject, TOTP_LIMITS)], now)
+    if not check_code(user, box, code, now):
+        record_failure(db, [subject], now)
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "invalid code")
+    clear_failures(db, subject)
+
+
 @router.post("/totp/confirm")
-def totp_confirm(body: TotpCode, user_session: PendingSession, box: Box, now: Now) -> UserOut:
+def totp_confirm(
+    body: TotpCode, user_session: PendingSession, db: Db, box: Box, now: Now
+) -> UserOut:
     """Prove the authenticator app works; this also completes the current login."""
     user = user_session.user
     if user.totp_confirmed_at is not None or user.totp_secret_enc is None:
         raise HTTPException(status.HTTP_409_CONFLICT, "no TOTP setup in progress")
-    if not check_code(user, box, body.code, now):
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, "invalid code")
+    _check_totp(db, user, box, body.code, now)
     user.totp_confirmed_at = now
     user_session.mfa_verified_at = now
     return UserOut.of(user)
 
 
 @router.post("/totp/verify")
-def totp_verify(body: TotpCode, user_session: PendingSession, box: Box, now: Now) -> UserOut:
+def totp_verify(
+    body: TotpCode, user_session: PendingSession, db: Db, box: Box, now: Now
+) -> UserOut:
     user = user_session.user
     if user.totp_confirmed_at is None:
         raise HTTPException(status.HTTP_409_CONFLICT, "TOTP is not set up")
-    if not check_code(user, box, body.code, now):
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, "invalid code")
+    _check_totp(db, user, box, body.code, now)
     user_session.mfa_verified_at = now
     return UserOut.of(user)
 

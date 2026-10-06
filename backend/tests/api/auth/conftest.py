@@ -4,7 +4,7 @@ from datetime import UTC, datetime, timedelta
 import pytest
 from fastapi.testclient import TestClient
 from kwak_api.auth.crypto import SecretBox
-from kwak_api.deps import get_db, get_now
+from kwak_api.deps import get_db, get_now, request_scope
 from kwak_api.main import create_app
 from kwak_api.models import User
 from kwak_api.services.households import create_household
@@ -31,8 +31,12 @@ def clock() -> Clock:
 
 @pytest.fixture
 def client(session: Session, clock: Clock) -> Iterator[TestClient]:
+    def db() -> Iterator[Session]:
+        # Same commit/rollback as the real get_db; commits only release a savepoint.
+        yield from request_scope(session)
+
     app = create_app()
-    app.dependency_overrides[get_db] = lambda: session
+    app.dependency_overrides[get_db] = db
     app.dependency_overrides[get_now] = lambda: clock.now
     # Session cookies are Secure: the client must speak https to send them back.
     with TestClient(app, base_url="https://testserver") as client:
@@ -42,13 +46,16 @@ def client(session: Session, clock: Clock) -> Iterator[TestClient]:
 @pytest.fixture
 def unenrolled_owner(session: Session) -> User:
     """An owner straight out of `kwak create-owner`: no TOTP yet."""
-    return create_household(
+    owner = create_household(
         session,
         household_name="Home",
         email="owner@example.com",
         display_name="Owner",
         password=PASSWORD,
     )
+    # Committed, so a request that fails and rolls back does not take it away.
+    session.commit()
+    return owner
 
 
 @pytest.fixture
@@ -57,7 +64,7 @@ def owner(unenrolled_owner: User, session: Session, clock: Clock) -> User:
     box = SecretBox(Settings().encryption_key)
     unenrolled_owner.totp_secret_enc = box.encrypt(TOTP_SECRET, unenrolled_owner.id)
     unenrolled_owner.totp_confirmed_at = clock.now
-    session.flush()
+    session.commit()
     return unenrolled_owner
 
 

@@ -15,6 +15,10 @@ services:
   api:
     build: ./backend
     env_file: .env
+    environment:
+      # Trust X-Forwarded-For from Caddy, so login limits see the real client address.
+      # Safe because the api port is not published: only Caddy can reach it.
+      FORWARDED_ALLOW_IPS: "*"
     depends_on:
       db:
         condition: service_healthy
