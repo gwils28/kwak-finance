@@ -2,6 +2,7 @@ from collections.abc import Iterator
 
 import pytest
 from fastapi.testclient import TestClient
+from kwak_api.db import Base
 from kwak_api.main import create_app
 from kwak_api.services.households import create_household
 from kwak_api.settings import Settings
@@ -25,7 +26,8 @@ def committed_owner(engine: Engine) -> Iterator[None]:
         session.commit()
     yield
     with engine.begin() as conn:
-        conn.execute(text("TRUNCATE household, app_user, user_session, auth_failure"))
+        tables = ", ".join(t.name for t in Base.metadata.sorted_tables)
+        conn.execute(text(f"TRUNCATE {tables}"))
 
 
 @pytest.mark.usefixtures("committed_owner")

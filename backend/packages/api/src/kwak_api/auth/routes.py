@@ -2,6 +2,7 @@
 
 import base64
 import hmac
+from collections.abc import Callable
 from datetime import datetime
 from functools import cache
 from typing import Annotated, Literal
@@ -16,6 +17,7 @@ from sqlalchemy.orm import Session
 
 from kwak_api.auth.crypto import SecretBox
 from kwak_api.auth.passwords import hash_password, needs_rehash, verify_password
+from kwak_api.auth.recovery import issue_recovery_codes, use_recovery_code
 from kwak_api.auth.sessions import find_active_session, open_session, revoke_session
 from kwak_api.auth.throttle import (
     IP_LIMITS,
@@ -78,6 +80,23 @@ class UserOut(BaseModel):
 class LoginOut(BaseModel):
     user: UserOut
     next_step: Literal["totp_setup", "totp_verify"]
+
+
+class PasswordConfirmation(BaseModel):
+    password: str
+
+
+class RecoveryCodeIn(BaseModel):
+    code: str
+
+
+class RecoveryCodesOut(BaseModel):
+    recovery_codes: list[str]
+    """Shown once: only their hashes are stored."""
+
+
+class TotpConfirmOut(RecoveryCodesOut):
+    user: UserOut
 
 
 class TotpSetupOut(BaseModel):
@@ -189,27 +208,32 @@ def totp_setup(user_session: PendingSession, box: Box) -> TotpSetupOut:
     )
 
 
-def _check_totp(db: Session, user: User, box: SecretBox, code: str, now: datetime) -> None:
+def _check_second_factor(db: Session, user: User, now: datetime, check: Callable[[], bool]) -> None:
+    """TOTP and recovery codes share one attempt limit: both are the second factor."""
     subject = totp_subject(user.id)
     ensure_allowed(db, [(subject, TOTP_LIMITS)], now)
-    if not check_code(user, box, code, now):
+    if not check():
         record_failure(db, [subject], now)
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "invalid code")
     clear_failures(db, subject)
 
 
+def _check_totp(db: Session, user: User, box: SecretBox, code: str, now: datetime) -> None:
+    _check_second_factor(db, user, now, lambda: check_code(user, box, code, now))
+
+
 @router.post("/totp/confirm")
 def totp_confirm(
     body: TotpCode, user_session: PendingSession, db: Db, box: Box, now: Now
-) -> UserOut:
-    """Prove the authenticator app works; this also completes the current login."""
+) -> TotpConfirmOut:
+    """Prove the authenticator app works; this completes the login and issues recovery codes."""
     user = user_session.user
     if user.totp_confirmed_at is not None or user.totp_secret_enc is None:
         raise HTTPException(status.HTTP_409_CONFLICT, "no TOTP setup in progress")
     _check_totp(db, user, box, body.code, now)
     user.totp_confirmed_at = now
     user_session.mfa_verified_at = now
-    return UserOut.of(user)
+    return TotpConfirmOut(user=UserOut.of(user), recovery_codes=issue_recovery_codes(db, user))
 
 
 @router.post("/totp/verify")
@@ -222,6 +246,31 @@ def totp_verify(
     _check_totp(db, user, box, body.code, now)
     user_session.mfa_verified_at = now
     return UserOut.of(user)
+
+
+@router.post("/recovery")
+def recovery(body: RecoveryCodeIn, user_session: PendingSession, db: Db, now: Now) -> UserOut:
+    """Complete the login with a recovery code instead of a TOTP code."""
+    user = user_session.user
+    if user.totp_confirmed_at is None:
+        raise HTTPException(status.HTTP_409_CONFLICT, "TOTP is not set up")
+    _check_second_factor(db, user, now, lambda: use_recovery_code(db, user, body.code, now))
+    user_session.mfa_verified_at = now
+    return UserOut.of(user)
+
+
+@router.post("/recovery-codes")
+def regenerate_recovery_codes(
+    body: PasswordConfirmation, user_session: CurrentSession, db: Db, now: Now
+) -> RecoveryCodesOut:
+    """Replace every recovery code. Asks for the password again: a session alone is not enough."""
+    user = user_session.user
+    subject = password_subject(user.email)
+    ensure_allowed(db, [(subject, PASSWORD_LIMITS)], now)
+    if not verify_password(user.password_hash, body.password):
+        record_failure(db, [subject], now)
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "invalid password")
+    return RecoveryCodesOut(recovery_codes=issue_recovery_codes(db, user))
 
 
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
