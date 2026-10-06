@@ -65,7 +65,7 @@ The React app is the product. Dash is used only for **exploratory analytics page
 - Docker Compose services: `caddy`, `api`, `worker`, `db` (Postgres 17), `backup`; then `ollama` (phase 5).
 - Caddy provides local TLS (internal CA) on the LAN hostname.
 - Secrets live in `.env` (template in `.env.example`, which is committed).
-- GitHub Actions CI on each PR: ruff, mypy, pytest (with a Postgres service), Biome, tsc, Vitest, Docker build. `main` is protected and requires CI to pass.
+- GitHub Actions CI on each PR: ruff, mypy, pytest (Postgres started by testcontainers), Biome, tsc, Vitest, Docker build. `main` is protected and requires CI to pass.
 
 ## 3. Repository layout
 
