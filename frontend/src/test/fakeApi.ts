@@ -1,6 +1,6 @@
 import { vi } from "vitest";
 
-type Handler = (body: unknown) => Response | Promise<Response>;
+type Handler = (body: unknown, url: URL) => Response | Promise<Response>;
 
 /** Stub `fetch` with handlers keyed by "METHOD /path". Unknown routes answer 404. */
 export function fakeApi(handlers: Record<string, Handler>) {
@@ -15,7 +15,8 @@ export function fakeApi(handlers: Record<string, Handler>) {
       const body: unknown = isForm ? text : text ? JSON.parse(text) : undefined;
       calls.push({ route, body, headers: request.headers });
       const handler = handlers[route];
-      return handler ? handler(body) : Response.json({ detail: "not found" }, { status: 404 });
+      const url = new URL(request.url);
+      return handler ? handler(body, url) : Response.json({ detail: "not found" }, { status: 404 });
     }),
   );
   return calls;
