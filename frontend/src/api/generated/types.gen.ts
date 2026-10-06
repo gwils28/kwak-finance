@@ -606,6 +606,13 @@ export type Kpis = {
 };
 
 /**
+ * Language
+ *
+ * Languages of the interface.
+ */
+export type Language = 'en' | 'fr';
+
+/**
  * Linked
  */
 export type Linked = {
@@ -703,6 +710,13 @@ export type Period = {
      * Start
      */
     start: string;
+};
+
+/**
+ * Preferences
+ */
+export type Preferences = {
+    language: Language;
 };
 
 /**
@@ -1242,6 +1256,7 @@ export type UserOut = {
      * Id
      */
     id: string;
+    language: Language | null;
     role: Role;
 };
 
@@ -1531,6 +1546,31 @@ export type MeResponses = {
 };
 
 export type MeResponse = MeResponses[keyof MeResponses];
+
+export type UpdateMeData = {
+    body: Preferences;
+    path?: never;
+    query?: never;
+    url: '/api/auth/me';
+};
+
+export type UpdateMeErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type UpdateMeError = UpdateMeErrors[keyof UpdateMeErrors];
+
+export type UpdateMeResponses = {
+    /**
+     * Successful Response
+     */
+    200: UserOut;
+};
+
+export type UpdateMeResponse = UpdateMeResponses[keyof UpdateMeResponses];
 
 export type RecoveryData = {
     body: RecoveryCodeIn;

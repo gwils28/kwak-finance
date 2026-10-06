@@ -10,7 +10,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Cookie, Depends, HTTPException, Request, Response, status
 from kwak_core.totp import provisioning_uri
-from kwak_core.users import normalize_email
+from kwak_core.users import Language, normalize_email
 from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -65,6 +65,8 @@ class UserOut(BaseModel):
     email: str
     display_name: str
     role: Role
+    language: Language | None
+    """The interface language; null until chosen (follow the browser)."""
 
     @classmethod
     def of(cls, user: User) -> "UserOut":
@@ -74,6 +76,7 @@ class UserOut(BaseModel):
             email=user.email,
             display_name=user.display_name,
             role=user.role,
+            language=user.language,
         )
 
 
@@ -284,4 +287,15 @@ def logout(
 
 @router.get("/me")
 def me(user_session: CurrentSession) -> UserOut:
+    return UserOut.of(user_session.user)
+
+
+class Preferences(BaseModel):
+    language: Language
+
+
+@router.patch("/me")
+def update_me(body: Preferences, user_session: CurrentSession) -> UserOut:
+    """Save the signed-in user's preferences."""
+    user_session.user.language = body.language
     return UserOut.of(user_session.user)
