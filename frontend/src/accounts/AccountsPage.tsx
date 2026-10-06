@@ -13,21 +13,9 @@ import {
 import { apiErrorMessage, detailSentence } from "../auth/errors";
 import { meQuery } from "../auth/session";
 import { Button, ErrorAlert, TextField } from "../components/ui";
+import { useI18n } from "../i18n";
 import { formatDate, todayIso } from "../lib/dates";
-import { formatEur, parseEurInput } from "../lib/money";
-
-export const TYPE_LABELS: Record<AccountType, string> = {
-  checking: "Checking",
-  savings: "Savings",
-  brokerage: "Brokerage (PEA, CTO)",
-  life_insurance: "Life insurance",
-  employee_savings: "Employee savings, retirement",
-  crypto: "Crypto",
-  loan: "Loan",
-  real_estate: "Real estate",
-  use_asset: "Vehicle, equipment",
-  other: "Other",
-};
+import { amountInput, formatEur, parseEurInput } from "../lib/money";
 
 /** Accounts whose balance comes from imported or entered transactions. */
 const CASH_TYPES = new Set<AccountType>(["checking", "savings"]);
@@ -43,6 +31,7 @@ export function AccountsPage() {
       (await listAccounts({ query: { include_closed: showClosed }, throwOnError: true })).data,
   });
 
+  const { t } = useI18n();
   const groups = new Map<string, AccountOut[]>();
   for (const account of accounts.data ?? []) {
     groups.set(account.institution, [...(groups.get(account.institution) ?? []), account]);
@@ -51,7 +40,7 @@ export function AccountsPage() {
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <h1 className="text-3xl font-black tracking-tight">Accounts</h1>
+        <h1 className="text-3xl font-black tracking-tight">{t.accounts.title}</h1>
         <div className="flex items-center gap-4">
           <label className="flex items-center gap-2 text-sm">
             <input
@@ -59,21 +48,17 @@ export function AccountsPage() {
               checked={showClosed}
               onChange={(e) => setShowClosed(e.target.checked)}
             />
-            Show closed accounts
+            {t.accounts.showClosed}
           </label>
-          <Button onClick={() => setEditing("new")}>Add an account</Button>
+          <Button onClick={() => setEditing("new")}>{t.accounts.add}</Button>
         </div>
       </div>
       {editing && (
         <AccountForm account={editing === "new" ? null : editing} onDone={() => setEditing(null)} />
       )}
-      {accounts.isPending && <p className="text-sm text-muted">Loading…</p>}
-      {accounts.isError && <ErrorAlert message="Could not load the accounts." />}
-      {accounts.data?.length === 0 && (
-        <p className="text-muted">
-          No accounts yet. Add your bank accounts, then import their statements.
-        </p>
-      )}
+      {accounts.isPending && <p className="text-sm text-muted">{t.common.loading}</p>}
+      {accounts.isError && <ErrorAlert message={t.accounts.loadFailed} />}
+      {accounts.data?.length === 0 && <p className="text-muted">{t.accounts.empty}</p>}
       {[...groups].map(([institution, list]) => (
         <section key={institution}>
           <h2 className="mb-2 text-lg font-bold">{institution}</h2>
@@ -93,6 +78,7 @@ export function AccountsPage() {
 
 function AccountRow({ account, onEdit }: { account: AccountOut; onEdit: () => void }) {
   const { data: user } = useSuspenseQuery(meQuery);
+  const { t } = useI18n();
   const queryClient = useQueryClient();
   const setClosed = useMutation({
     mutationFn: async (closedOn: string | null) =>
@@ -116,11 +102,14 @@ function AccountRow({ account, onEdit }: { account: AccountOut; onEdit: () => vo
             {account.name}
           </Link>
           {account.closed_on && (
-            <span className="ml-2 text-sm text-muted">Closed {formatDate(account.closed_on)}</span>
+            <span className="ml-2 text-sm text-muted">
+              {t.accounts.closedOn(formatDate(account.closed_on))}
+            </span>
           )}
         </p>
         <p className="text-sm text-muted">
-          {TYPE_LABELS[account.type]} · {account.visibility === "shared" ? "Shared" : "Private"}
+          {t.accounts.types[account.type]} ·{" "}
+          {account.visibility === "shared" ? t.accounts.shared : t.accounts.private}
           {account.owner_id !== user.id && ` · ${account.owner_name}`}
         </p>
       </div>
@@ -128,29 +117,36 @@ function AccountRow({ account, onEdit }: { account: AccountOut; onEdit: () => vo
         <div className="text-right">
           <p className="tabular font-medium">{formatEur(account.balance)}</p>
           <p className="text-xs text-muted">
-            opening {formatEur(account.opening_balance)} on {formatDate(account.opening_date)}
+            {t.accounts.opening(
+              formatEur(account.opening_balance),
+              formatDate(account.opening_date),
+            )}
           </p>
         </div>
         {CASH_TYPES.has(account.type) && !account.closed_on && (
           <Link
             to="/accounts/$accountId/import"
             params={{ accountId: account.id }}
-            aria-label={`Import into ${account.name}`}
+            aria-label={t.accounts.importInto(account.name)}
             className="rounded-md border border-border bg-surface px-3 py-2 text-sm hover:border-accent"
           >
-            Import
+            {t.accounts.import}
           </Link>
         )}
-        <Button variant="ghost" aria-label={`Edit ${account.name}`} onClick={onEdit}>
-          Edit
+        <Button variant="ghost" aria-label={t.accounts.editNamed(account.name)} onClick={onEdit}>
+          {t.common.edit}
         </Button>
         <Button
           variant="ghost"
-          aria-label={`${account.closed_on ? "Reopen" : "Close"} ${account.name}`}
+          aria-label={
+            account.closed_on
+              ? t.accounts.reopenNamed(account.name)
+              : t.accounts.closeNamed(account.name)
+          }
           disabled={setClosed.isPending}
           onClick={() => setClosed.mutate(account.closed_on ? null : todayIso())}
         >
-          {account.closed_on ? "Reopen" : "Close"}
+          {account.closed_on ? t.accounts.reopen : t.accounts.close}
         </Button>
       </div>
     </li>
@@ -159,6 +155,7 @@ function AccountRow({ account, onEdit }: { account: AccountOut; onEdit: () => vo
 
 function AccountForm({ account, onDone }: { account: AccountOut | null; onDone: () => void }) {
   const { data: user } = useSuspenseQuery(meQuery);
+  const { t } = useI18n();
   const queryClient = useQueryClient();
   const institutions = useQuery({
     queryKey: ["institutions"],
@@ -168,7 +165,7 @@ function AccountForm({ account, onDone }: { account: AccountOut | null; onDone: 
   const [institution, setInstitution] = useState(account?.institution ?? "");
   const [type, setType] = useState<AccountType>(account?.type ?? "checking");
   const [visibility, setVisibility] = useState<Visibility>(account?.visibility ?? "private");
-  const [balance, setBalance] = useState(account ? account.opening_balance.replace(".", ",") : "0");
+  const [balance, setBalance] = useState(account ? amountInput(account.opening_balance) : "0");
   // No default: "today" would put every operation of the first import before the opening.
   const [openedOn, setOpenedOn] = useState(account?.opening_date ?? "");
   const [invalidAmount, setInvalidAmount] = useState(false);
@@ -195,8 +192,8 @@ function AccountForm({ account, onDone }: { account: AccountOut | null; onDone: 
       if (!data) {
         throw new Error(
           response?.status === 409 || response?.status === 422
-            ? (detailSentence(error) ?? "Check the form.")
-            : apiErrorMessage(response),
+            ? (detailSentence(error) ?? t.errors.checkForm)
+            : apiErrorMessage(t, response),
         );
       }
       return data;
@@ -223,17 +220,17 @@ function AccountForm({ account, onDone }: { account: AccountOut | null; onDone: 
       className="grid gap-4 rounded-lg border border-accent bg-surface p-4 sm:grid-cols-2"
     >
       <h2 className="text-lg font-bold sm:col-span-2">
-        {account ? `Edit ${account.name}` : "New account"}
+        {account ? t.accounts.editNamed(account.name) : t.accounts.newAccount}
       </h2>
       <TextField
-        label="Account name"
+        label={t.accounts.name}
         required
         maxLength={100}
         value={name}
         onChange={(e) => setName(e.target.value)}
       />
       <TextField
-        label="Institution"
+        label={t.accounts.institution}
         required
         maxLength={100}
         list={institutionsId}
@@ -247,7 +244,7 @@ function AccountForm({ account, onDone }: { account: AccountOut | null; onDone: 
       </datalist>
       <div className="flex flex-col gap-1">
         <label htmlFor={typeId} className="text-sm font-medium">
-          Type
+          {t.accounts.type}
         </label>
         <select
           id={typeId}
@@ -255,7 +252,7 @@ function AccountForm({ account, onDone }: { account: AccountOut | null; onDone: 
           value={type}
           onChange={(e) => setType(e.target.value as AccountType)}
         >
-          {Object.entries(TYPE_LABELS).map(([value, label]) => (
+          {Object.entries(t.accounts.types).map(([value, label]) => (
             <option key={value} value={value}>
               {label}
             </option>
@@ -264,7 +261,7 @@ function AccountForm({ account, onDone }: { account: AccountOut | null; onDone: 
       </div>
       <div className="flex flex-col gap-1">
         <label htmlFor={visibilityId} className="text-sm font-medium">
-          Visible to
+          {t.accounts.visibleTo}
         </label>
         <select
           id={visibilityId}
@@ -273,15 +270,15 @@ function AccountForm({ account, onDone }: { account: AccountOut | null; onDone: 
           disabled={!ownedByMe}
           onChange={(e) => setVisibility(e.target.value as Visibility)}
         >
-          <option value="private">Only me</option>
-          <option value="shared">Every household member</option>
+          <option value="private">{t.accounts.onlyMe}</option>
+          <option value="shared">{t.accounts.everyone}</option>
         </select>
         {!ownedByMe && account && (
-          <p className="text-xs text-muted">Only {account.owner_name} can change this.</p>
+          <p className="text-xs text-muted">{t.accounts.onlyOwnerChanges(account.owner_name)}</p>
         )}
       </div>
       <TextField
-        label="Opening balance (€)"
+        label={t.accounts.openingBalance}
         inputMode="decimal"
         required
         className="tabular"
@@ -289,32 +286,24 @@ function AccountForm({ account, onDone }: { account: AccountOut | null; onDone: 
         onChange={(e) => setBalance(e.target.value)}
       />
       <TextField
-        label="Opening date"
+        label={t.accounts.openingDate}
         type="date"
         required
         value={openedOn}
         onChange={(e) => setOpenedOn(e.target.value)}
       />
-      <p className="text-xs text-muted sm:col-span-2">
-        The opening date is the first day of the first statement you will import; the opening
-        balance is the account balance on that day, before its first operation. Operations dated
-        earlier are ignored.
-      </p>
+      <p className="text-xs text-muted sm:col-span-2">{t.accounts.openingHelp}</p>
       <div className="sm:col-span-2">
         <ErrorAlert
-          message={
-            invalidAmount
-              ? "Enter an amount in euros with at most 2 decimals, e.g. 1234,56."
-              : (save.error?.message ?? null)
-          }
+          message={invalidAmount ? t.accounts.invalidAmount : (save.error?.message ?? null)}
         />
       </div>
       <div className="flex gap-3 sm:col-span-2">
         <Button type="submit" disabled={save.isPending}>
-          Save
+          {t.common.save}
         </Button>
         <Button variant="ghost" onClick={onDone}>
-          Cancel
+          {t.common.cancel}
         </Button>
       </div>
     </form>

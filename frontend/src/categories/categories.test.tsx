@@ -159,7 +159,7 @@ test("rules are listed in order with their conditions in words", async () => {
   const items = within(list).getAllByRole("listitem");
   expect(items[0]).toHaveTextContent('Label contains "BOULANGERIE"');
   expect(items[0]).toHaveTextContent("Bakery and coffee");
-  expect(items[1]).toHaveTextContent(/Label contains "CAFE" · from 1,00\s€ to 10,00\s€/);
+  expect(items[1]).toHaveTextContent(/Label contains "CAFE" · from €1.00 to €10.00/);
 });
 
 test("moving a rule up swaps its priority with the one above", async () => {

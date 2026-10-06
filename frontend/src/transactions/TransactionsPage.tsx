@@ -15,8 +15,9 @@ import {
 } from "../api/generated";
 import { apiErrorMessage, detailSentence } from "../auth/errors";
 import { Button, ErrorAlert, TextField } from "../components/ui";
+import { useI18n } from "../i18n";
 import { formatDate, todayIso } from "../lib/dates";
-import { formatEur, parseEurInput } from "../lib/money";
+import { amountInput, formatEur, parseEurInput } from "../lib/money";
 import { CategoryOptions, categoriesQuery } from "./categories";
 import { RuleForm } from "./RuleForm";
 import { afterTransferChange, TransferBanner } from "./TransferBanner";
@@ -55,6 +56,7 @@ const CASH = new Set(["checking", "savings"]);
 const fieldClass = "rounded-md border border-border bg-surface px-3 py-2";
 
 export function TransactionsPage() {
+  const { t } = useI18n();
   const search = route.useSearch();
   const navigate = route.useNavigate();
   const [adding, setAdding] = useState(false);
@@ -106,10 +108,10 @@ export function TransactionsPage() {
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex flex-wrap items-baseline gap-4">
-          <h1 className="text-3xl font-black tracking-tight">Transactions</h1>
+          <h1 className="text-3xl font-black tracking-tight">{t.transactions.title}</h1>
           {Boolean(toCategorise.data) && (
             <Button variant="ghost" onClick={() => setFilter({ category: "none" })}>
-              {toCategorise.data} to categorise
+              {t.transactions.toCategoriseCount(toCategorise.data ?? 0)}
             </Button>
           )}
         </div>
@@ -119,7 +121,7 @@ export function TransactionsPage() {
             setAdding(true);
           }}
         >
-          Add a transaction
+          {t.transactions.add}
         </Button>
       </div>
       {(adding || editing) && accounts.data && (
@@ -156,25 +158,25 @@ export function TransactionsPage() {
         categories={categories.data ?? []}
         onChange={setFilter}
       />
-      {transactions.isError && <ErrorAlert message="Could not load the transactions." />}
+      {transactions.isError && <ErrorAlert message={t.transactions.loadFailed} />}
       {transactions.data && transactions.data.total === 0 && (
-        <p className="text-muted">No transactions match these filters.</p>
+        <p className="text-muted">{t.transactions.noMatch}</p>
       )}
       {transactions.data && transactions.data.total > 0 && (
         <>
           <p className="text-sm text-muted">
             {total <= PAGE_SIZE
-              ? `${total} transaction${total === 1 ? "" : "s"}`
-              : `${first}–${last} of ${total}`}
+              ? t.transactions.count(total)
+              : t.transactions.range(first, last, total)}
           </p>
           <TransactionTable
             items={transactions.data.items}
             categories={categories.data ?? []}
             onNotice={setNotice}
             onRule={setRuleFrom}
-            onEdit={(t) => {
+            onEdit={(tx) => {
               setAdding(false);
-              setEditing(t);
+              setEditing(tx);
             }}
           />
           {total > PAGE_SIZE && (
@@ -184,14 +186,14 @@ export function TransactionsPage() {
                 disabled={page === 1}
                 onClick={() => navigate({ search: (prev) => ({ ...prev, page: page - 1 }) })}
               >
-                Previous
+                {t.transactions.previous}
               </Button>
               <Button
                 variant="ghost"
                 disabled={last >= total}
                 onClick={() => navigate({ search: (prev) => ({ ...prev, page: page + 1 }) })}
               >
-                Next
+                {t.transactions.next}
               </Button>
             </div>
           )}
@@ -212,6 +214,7 @@ function Filters({
   categories: CategoryOut[];
   onChange: (changes: Partial<TransactionSearch>) => void;
 }) {
+  const { t } = useI18n();
   const [text, setText] = useState(search.q ?? "");
   const ids = { account: useId(), from: useId(), to: useId(), q: useId() };
   const submit = (event: FormEvent) => {
@@ -225,7 +228,7 @@ function Filters({
     >
       <div className="flex flex-col gap-1">
         <label htmlFor={ids.account} className="text-sm font-medium">
-          Account
+          {t.transactions.account}
         </label>
         <select
           id={ids.account}
@@ -233,7 +236,7 @@ function Filters({
           value={search.account ?? ""}
           onChange={(e) => onChange({ account: e.target.value || undefined })}
         >
-          <option value="">All accounts</option>
+          <option value="">{t.transactions.allAccounts}</option>
           {accounts.map((a) => (
             <option key={a.id} value={a.id}>
               {a.name} ({a.institution})
@@ -243,7 +246,7 @@ function Filters({
       </div>
       <div className="flex flex-col gap-1">
         <label htmlFor="category-filter" className="text-sm font-medium">
-          Category
+          {t.transactions.category}
         </label>
         <select
           id="category-filter"
@@ -251,14 +254,14 @@ function Filters({
           value={search.category ?? ""}
           onChange={(e) => onChange({ category: e.target.value || undefined })}
         >
-          <option value="">All categories</option>
-          <option value="none">To categorise</option>
+          <option value="">{t.transactions.allCategories}</option>
+          <option value="none">{t.transactions.toCategorise}</option>
           <CategoryOptions categories={categories} />
         </select>
       </div>
       <div className="flex flex-col gap-1">
         <label htmlFor={ids.from} className="text-sm font-medium">
-          From
+          {t.transactions.from}
         </label>
         <input
           id={ids.from}
@@ -270,7 +273,7 @@ function Filters({
       </div>
       <div className="flex flex-col gap-1">
         <label htmlFor={ids.to} className="text-sm font-medium">
-          To
+          {t.transactions.to}
         </label>
         <input
           id={ids.to}
@@ -282,12 +285,12 @@ function Filters({
       </div>
       <div className="flex flex-col gap-1">
         <label htmlFor={ids.q} className="text-sm font-medium">
-          Search
+          {t.transactions.search}
         </label>
         <input
           id={ids.q}
           type="search"
-          placeholder="Label, then Enter"
+          placeholder={t.transactions.searchPlaceholder}
           className={fieldClass}
           value={text}
           onChange={(e) => {
@@ -299,7 +302,7 @@ function Filters({
       </div>
       {/* Enter only submits a form with several fields when it has a submit button. */}
       <button type="submit" className="sr-only">
-        Apply filters
+        {t.transactions.applyFilters}
       </button>
     </form>
   );
@@ -314,10 +317,11 @@ function TransactionTable({
 }: {
   items: TransactionOut[];
   categories: CategoryOut[];
-  onEdit: (t: TransactionOut) => void;
-  onRule: (t: TransactionOut) => void;
+  onEdit: (tx: TransactionOut) => void;
+  onRule: (tx: TransactionOut) => void;
   onNotice: (message: string) => void;
 }) {
+  const { t } = useI18n();
   const queryClient = useQueryClient();
   const [confirming, setConfirming] = useState<string | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -361,12 +365,12 @@ function TransactionTable({
       ).data.updated,
     onSuccess: async (updated) => {
       setSelected(new Set());
-      onNotice(`${updated} transaction${updated === 1 ? "" : "s"} categorised.`);
+      onNotice(t.transactions.categorised(updated));
       await refresh();
     },
   });
 
-  const allSelected = items.length > 0 && items.every((t) => selected.has(t.id));
+  const allSelected = items.length > 0 && items.every((tx) => selected.has(tx.id));
   const toggle = (id: string) =>
     setSelected((prev) => {
       const next = new Set(prev);
@@ -378,12 +382,12 @@ function TransactionTable({
     <div className="flex flex-col gap-3">
       {selected.size > 0 && (
         <section
-          aria-label={`${selected.size} selected`}
+          aria-label={t.transactions.selected(selected.size)}
           className="flex flex-wrap items-center gap-3 rounded-lg border border-accent bg-surface px-4 py-3"
         >
-          <span className="text-sm font-medium">{selected.size} selected</span>
+          <span className="text-sm font-medium">{t.transactions.selected(selected.size)}</span>
           <label htmlFor={bulkSelect} className="sr-only">
-            Category for the selection
+            {t.transactions.selectionCategory}
           </label>
           <select
             id={bulkSelect}
@@ -391,134 +395,135 @@ function TransactionTable({
             value={bulkCategory}
             onChange={(e) => setBulkCategory(e.target.value)}
           >
-            <option value="">To categorise</option>
+            <option value="">{t.transactions.toCategorise}</option>
             <CategoryOptions categories={categories} />
           </select>
           <Button disabled={bulk.isPending} onClick={() => bulk.mutate()}>
-            Apply
+            {t.common.apply}
           </Button>
           <Button variant="ghost" onClick={() => setSelected(new Set())}>
-            Clear
+            {t.common.clear}
           </Button>
         </section>
       )}
       <div className="overflow-x-auto rounded-lg border border-border bg-surface">
-        <table aria-label="Transactions" className="w-full text-sm">
+        <table aria-label={t.transactions.title} className="w-full text-sm">
           <thead className="text-left text-muted">
             <tr>
               <th className="px-3 py-2">
                 <input
                   type="checkbox"
-                  aria-label="Select all on this page"
+                  aria-label={t.transactions.selectAll}
                   checked={allSelected}
                   onChange={() =>
-                    setSelected(allSelected ? new Set() : new Set(items.map((t) => t.id)))
+                    setSelected(allSelected ? new Set() : new Set(items.map((tx) => tx.id)))
                   }
                 />
               </th>
-              <th className="px-3 py-2 font-medium">Date</th>
-              <th className="px-3 py-2 font-medium">Label</th>
-              <th className="px-3 py-2 font-medium">Category</th>
-              <th className="px-3 py-2 font-medium">Account</th>
-              <th className="px-3 py-2 text-right font-medium">Amount</th>
+              <th className="px-3 py-2 font-medium">{t.transactions.date}</th>
+              <th className="px-3 py-2 font-medium">{t.transactions.label}</th>
+              <th className="px-3 py-2 font-medium">{t.transactions.category}</th>
+              <th className="px-3 py-2 font-medium">{t.transactions.account}</th>
+              <th className="px-3 py-2 text-right font-medium">{t.transactions.amount}</th>
               <th className="px-3 py-2">
-                <span className="sr-only">Actions</span>
+                <span className="sr-only">{t.transactions.actions}</span>
               </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
-            {items.map((t) => (
-              <tr key={t.id} className={selected.has(t.id) ? "bg-bg" : ""}>
+            {items.map((tx) => (
+              <tr key={tx.id} className={selected.has(tx.id) ? "bg-bg" : ""}>
                 <td className="px-3 py-2">
                   <input
                     type="checkbox"
-                    aria-label={`Select ${t.label}`}
-                    checked={selected.has(t.id)}
-                    onChange={() => toggle(t.id)}
+                    aria-label={t.transactions.select(tx.label)}
+                    checked={selected.has(tx.id)}
+                    onChange={() => toggle(tx.id)}
                   />
                 </td>
-                <td className="whitespace-nowrap px-3 py-2">{formatDate(t.booked_on)}</td>
-                <td className="px-3 py-2">{t.label}</td>
+                <td className="whitespace-nowrap px-3 py-2">{formatDate(tx.booked_on)}</td>
+                <td className="px-3 py-2">{tx.label}</td>
                 <td className="px-3 py-2">
-                  {t.transfer_group_id ? (
+                  {tx.transfer_group_id ? (
                     <span className="flex items-center gap-2">
                       <span className="whitespace-nowrap rounded-md bg-bg px-2 py-1 text-xs">
-                        Transfer {t.amount.startsWith("-") ? "to" : "from"}{" "}
-                        {t.transfer_account_name}
+                        {(tx.amount.startsWith("-")
+                          ? t.transactions.transferTo
+                          : t.transactions.transferFrom)(tx.transfer_account_name ?? "")}
                       </span>
                       <Button
                         variant="ghost"
-                        aria-label={`Unlink the transfer of ${t.label}`}
+                        aria-label={t.transactions.unlinkNamed(tx.label)}
                         disabled={unlink.isPending}
-                        onClick={() => t.transfer_group_id && unlink.mutate(t.transfer_group_id)}
+                        onClick={() => tx.transfer_group_id && unlink.mutate(tx.transfer_group_id)}
                       >
-                        Unlink
+                        {t.transactions.unlink}
                       </Button>
                     </span>
                   ) : (
                     <select
-                      aria-label={`Category of ${t.label}`}
+                      aria-label={t.transactions.categoryOf(tx.label)}
                       className={`max-w-48 rounded-md border bg-surface px-2 py-1 ${
-                        t.category_id ? "border-border" : "border-warning"
+                        tx.category_id ? "border-border" : "border-warning"
                       }`}
-                      value={t.category_id ?? ""}
+                      value={tx.category_id ?? ""}
                       onChange={(e) =>
-                        setCategory.mutate({ id: t.id, categoryId: e.target.value || null })
+                        setCategory.mutate({ id: tx.id, categoryId: e.target.value || null })
                       }
                     >
-                      <option value="">To categorise</option>
+                      <option value="">{t.transactions.toCategorise}</option>
                       <CategoryOptions categories={categories} />
                     </select>
                   )}
                 </td>
-                <td className="whitespace-nowrap px-3 py-2 text-muted">{t.account_name}</td>
+                <td className="whitespace-nowrap px-3 py-2 text-muted">{tx.account_name}</td>
                 <td
                   className={`tabular whitespace-nowrap px-3 py-2 text-right ${
-                    t.amount.startsWith("-") ? "" : "text-positive"
+                    tx.amount.startsWith("-") ? "" : "text-positive"
                   }`}
                 >
-                  {formatEur(t.amount)}
+                  {formatEur(tx.amount)}
                 </td>
                 <td className="whitespace-nowrap px-3 py-2 text-right">
                   <span className="flex items-center justify-end gap-2">
                     <Button
                       variant="ghost"
-                      aria-label={`Create a rule from ${t.label}`}
-                      onClick={() => onRule(t)}
+                      aria-label={t.transactions.ruleFrom(tx.label)}
+                      onClick={() => onRule(tx)}
                     >
-                      Rule
+                      {t.transactions.rule}
                     </Button>
-                    {t.source === "import" ? (
-                      <span className="text-xs text-muted">Imported</span>
-                    ) : confirming === t.id ? (
+                    {tx.source === "import" ? (
+                      <span className="text-xs text-muted">{t.transactions.imported}</span>
+                    ) : confirming === tx.id ? (
                       <>
                         <Button
                           variant="ghost"
                           className="border-negative text-negative"
                           disabled={remove.isPending}
-                          onClick={() => remove.mutate(t.id)}
+                          onClick={() => remove.mutate(tx.id)}
                         >
-                          Confirm delete
+                          {t.transactions.confirmDelete}
                         </Button>
                         <Button variant="ghost" onClick={() => setConfirming(null)}>
-                          Cancel
+                          {t.common.cancel}
                         </Button>
                       </>
                     ) : (
                       <>
                         <Button
                           variant="ghost"
-                          aria-label={`Edit ${t.label}`}
-                          onClick={() => onEdit(t)}
+                          aria-label={t.transactions.editNamed(tx.label)}
+                          onClick={() => onEdit(tx)}
                         >
-                          Edit
+                          {t.common.edit}
                         </Button>
                         <Button
                           variant="ghost"
-                          aria-label={`Delete ${t.label}`}
-                          onClick={() => setConfirming(t.id)}
+                          aria-label={t.transactions.deleteNamed(tx.label)}
+                          onClick={() => setConfirming(tx.id)}
                         >
-                          Delete
+                          {t.common.delete}
                         </Button>
                       </>
                     )}
@@ -542,13 +547,14 @@ function TransactionForm({
   accounts: AccountOut[];
   onDone: () => void;
 }) {
+  const { t } = useI18n();
   const queryClient = useQueryClient();
   const isIncome = transaction ? !transaction.amount.startsWith("-") : false;
   const [accountId, setAccountId] = useState(transaction?.account_id ?? accounts[0]?.id ?? "");
   const [bookedOn, setBookedOn] = useState(transaction?.booked_on ?? todayIso());
   const [kind, setKind] = useState<"expense" | "income">(isIncome ? "income" : "expense");
   const [amount, setAmount] = useState(
-    transaction ? transaction.amount.replace("-", "").replace(".", ",") : "",
+    transaction ? amountInput(transaction.amount.replace("-", "")) : "",
   );
   const [label, setLabel] = useState(transaction?.label ?? "");
   const [invalid, setInvalid] = useState(false);
@@ -563,8 +569,8 @@ function TransactionForm({
       if (!data) {
         throw new Error(
           response?.status === 422 || response?.status === 409
-            ? (detailSentence(error) ?? "Check the form.")
-            : apiErrorMessage(response),
+            ? (detailSentence(error) ?? t.errors.checkForm)
+            : apiErrorMessage(t, response),
         );
       }
       return data;
@@ -584,7 +590,7 @@ function TransactionForm({
     if (ok) save.mutate(kind === "expense" ? `-${parsed}` : parsed);
   };
 
-  const title = transaction ? "Edit transaction" : "New transaction";
+  const title = transaction ? t.transactions.editTitle : t.transactions.newTitle;
   return (
     <form
       aria-label={title}
@@ -593,11 +599,13 @@ function TransactionForm({
     >
       <h2 className="text-lg font-bold sm:col-span-2">{title}</h2>
       {transaction ? (
-        <p className="text-sm sm:col-span-2">Account: {transaction.account_name}</p>
+        <p className="text-sm sm:col-span-2">
+          {t.transactions.accountLine(transaction.account_name)}
+        </p>
       ) : (
         <div className="flex flex-col gap-1">
           <label htmlFor={ids.account} className="text-sm font-medium">
-            Account
+            {t.transactions.account}
           </label>
           <select
             id={ids.account}
@@ -614,14 +622,14 @@ function TransactionForm({
         </div>
       )}
       <TextField
-        label="Date"
+        label={t.transactions.date}
         type="date"
         required
         value={bookedOn}
         onChange={(e) => setBookedOn(e.target.value)}
       />
       <fieldset className="flex items-center gap-4">
-        <legend className="sr-only">Direction</legend>
+        <legend className="sr-only">{t.transactions.direction}</legend>
         {(["expense", "income"] as const).map((value) => (
           <label key={value} className="flex items-center gap-2 text-sm">
             <input
@@ -631,12 +639,12 @@ function TransactionForm({
               checked={kind === value}
               onChange={() => setKind(value)}
             />
-            {value === "expense" ? "Expense" : "Income"}
+            {value === "expense" ? t.transactions.expense : t.transactions.income}
           </label>
         ))}
       </fieldset>
       <TextField
-        label="Amount (€)"
+        label={t.transactions.amountEur}
         inputMode="decimal"
         required
         className="tabular"
@@ -645,7 +653,7 @@ function TransactionForm({
       />
       <div className="sm:col-span-2">
         <TextField
-          label="Label"
+          label={t.transactions.label}
           required
           maxLength={200}
           value={label}
@@ -654,19 +662,15 @@ function TransactionForm({
       </div>
       <div className="sm:col-span-2">
         <ErrorAlert
-          message={
-            invalid
-              ? "Enter a positive amount in euros, e.g. 12,50, and pick Expense or Income."
-              : (save.error?.message ?? null)
-          }
+          message={invalid ? t.transactions.invalidAmount : (save.error?.message ?? null)}
         />
       </div>
       <div className="flex gap-3 sm:col-span-2">
         <Button type="submit" disabled={save.isPending}>
-          Save
+          {t.common.save}
         </Button>
         <Button variant="ghost" onClick={onDone}>
-          Cancel
+          {t.common.cancel}
         </Button>
       </div>
     </form>

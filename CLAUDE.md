@@ -20,7 +20,7 @@ Kwak Finance — self-hosted household budget and net-worth web app. FastAPI + P
 ## Rules
 
 - **Never commit or push.** The maintainer must be the sole GitHub contributor. Prepare the change and propose a Conventional Commit message (`feat:`, `fix:`, `chore:`…). One topic per commit. Never add a `Co-Authored-By` trailer.
-- Everything in English: code, docs, UI strings, commit messages.
+- Code, docs and commit messages in English. The UI is in English and French: every user-visible string lives in `frontend/src/i18n/` (one section file per page, `xxxEn` plus `xxxFr: typeof xxxEn`), never inline. Dates and amounts go through `lib/money.ts` / `lib/dates.ts`, which follow the language.
 - Money is `Decimal` / `NUMERIC`, never float. Negative = outflow. EUR only.
 - Business rules go in `backend/packages/core` (pure, no I/O) and are tested there, including hypothesis property tests for the invariants in `docs/SPECIFICATIONS.md` §8.
 - Write the failing test first, check it fails for the right reason, then implement.

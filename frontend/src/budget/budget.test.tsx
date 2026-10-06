@@ -125,14 +125,14 @@ test("the matrix shows categories by month with the gap and a colour", async () 
   const bakery = within(table).getByRole("row", { name: /Bakery and coffee/ });
   const march = within(bakery).getAllByRole("cell").at(-1) as HTMLElement;
   expect(march).toHaveAttribute("data-status", "over");
-  expect(march).toHaveTextContent("72 €");
-  expect(march).toHaveTextContent("+12 € · +20 %");
+  expect(march).toHaveTextContent("€72");
+  expect(march).toHaveTextContent("+€12 · +20%");
 
   const groceries = within(table).getByRole("row", { name: /Groceries/ });
   expect(within(groceries).getAllByRole("cell").at(-1)).toHaveAttribute("data-status", "none");
-  expect(within(table).getByRole("row", { name: /To categorise/ })).toHaveTextContent("26 €");
-  expect(within(table).getByRole("row", { name: /Total/ })).toHaveTextContent("388 €");
-  expect(screen.getByText(/more than 5 % below/)).toBeInTheDocument();
+  expect(within(table).getByRole("row", { name: /To categorise/ })).toHaveTextContent("€26");
+  expect(within(table).getByRole("row", { name: /Total/ })).toHaveTextContent("€388");
+  expect(screen.getByText(/more than 5% below/)).toBeInTheDocument();
 });
 
 test("a target is edited in place and applies from this month on", async () => {
@@ -190,12 +190,12 @@ test("a cell opens the month's transactions of its category", async () => {
   api();
   render(<TestApp path="/budget" />);
 
-  const link = await screen.findByRole("link", { name: /^Bakery and coffee, Mar 2026: 72\s€$/ });
+  const link = await screen.findByRole("link", { name: /^Bakery and coffee, Mar 2026: €72$/ });
   expect(link).toHaveAttribute(
     "href",
     "/transactions?category=c-bakery&from=2026-03-01&to=2026-03-31",
   );
-  const todo = screen.getByRole("link", { name: /^To categorise, Feb 2026: 0\s€$/ });
+  const todo = screen.getByRole("link", { name: /^To categorise, Feb 2026: €0$/ });
   expect(todo).toHaveAttribute("href", "/transactions?category=none&from=2026-02-01&to=2026-02-28");
 });
 
@@ -228,7 +228,7 @@ test("a parent's target that only sums its subcategories is shown as a hint, not
 
   const food = await screen.findByLabelText("Monthly target for Food");
   expect(food).toHaveValue("");
-  expect(food.getAttribute("placeholder")).toMatch(/^360\s€ \(sum\)$/);
+  expect(food.getAttribute("placeholder")).toMatch(/^€360 \(sum\)$/);
 });
 
 test("categories with no spending and no target are hidden until asked for", async () => {

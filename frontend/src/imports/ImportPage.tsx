@@ -11,33 +11,30 @@ import {
   rollbackImport,
   updateAccount,
 } from "../api/generated";
-import { apiErrorMessage, detailSentence } from "../auth/errors";
+import { apiErrorMessage, detailSentence, translateApiMessage } from "../auth/errors";
 import { Button, ErrorAlert } from "../components/ui";
+import { useI18n } from "../i18n";
+import type { Messages } from "../i18n/en";
 import { formatDate } from "../lib/dates";
 import { formatEur } from "../lib/money";
 
 const route = getRouteApi("/app/accounts/$accountId/import");
 
-const STATUS_LABELS = {
-  new: "New",
-  duplicate: "Already imported",
-  before_opening: "Before opening date",
-} as const;
-
-function plural(n: number, word: string): string {
-  return `${n} ${word}${n === 1 ? "" : "s"}`;
-}
-
-async function failure(error: unknown, response: Response | undefined): Promise<never> {
+async function failure(
+  t: Messages,
+  error: unknown,
+  response: Response | undefined,
+): Promise<never> {
   throw new Error(
     response?.status === 422
-      ? (detailSentence(error) ?? "This file cannot be imported.")
-      : apiErrorMessage(response, { 413: "This file is too large (2 MB at most)." }),
+      ? (detailSentence(error) ?? t.imports.cannotImport)
+      : apiErrorMessage(t, response, { 413: t.imports.tooLarge }),
   );
 }
 
 export function ImportPage() {
   const { accountId } = route.useParams();
+  const { t } = useI18n();
   const queryClient = useQueryClient();
   const inputId = useId();
   const accounts = useQuery({
@@ -55,7 +52,7 @@ export function ImportPage() {
         path: { account_id: accountId },
         body: { file: chosen },
       });
-      return data ?? failure(error, response);
+      return data ?? failure(t, error, response);
     },
   });
 
@@ -65,7 +62,7 @@ export function ImportPage() {
         path: { account_id: accountId },
         body: { file: chosen },
       });
-      return data ?? failure(error, response);
+      return data ?? failure(t, error, response);
     },
     onSuccess: async (batch) => {
       setResult(batch);
@@ -96,33 +93,33 @@ export function ImportPage() {
     if (chosen) preview.mutate(chosen);
   };
 
-  const title = account ? `Import into ${account.name}` : "Import";
-
   return (
     <div className="flex flex-col gap-6">
       <div>
         <Link to="/accounts" className="text-sm text-muted hover:text-accent">
-          ← Accounts
+          {t.imports.back}
         </Link>
-        <h1 className="mt-1 text-3xl font-black tracking-tight">{title}</h1>
+        <h1 className="mt-1 text-3xl font-black tracking-tight">
+          {account ? t.imports.titleInto(account.name) : t.imports.title}
+        </h1>
         {account && (
           <p className="text-sm text-muted">
-            {account.institution} · balance {formatEur(account.balance)} · operations before{" "}
-            {formatDate(account.opening_date)} are ignored (opening date)
+            {t.imports.accountLine(
+              account.institution,
+              formatEur(account.balance),
+              formatDate(account.opening_date),
+            )}
           </p>
         )}
       </div>
       <div className="flex flex-col gap-2 rounded-lg border border-border bg-surface p-4">
         <label htmlFor={inputId} className="text-sm font-medium">
-          Bank export (CSV)
+          {t.imports.fileLabel}
         </label>
         <input id={inputId} type="file" accept=".csv,text/csv" onChange={choose} />
-        <p className="text-xs text-muted">
-          Société Générale: account page, “Télécharger”, CSV format. Nothing is saved until you
-          confirm, and importing the same file twice adds nothing.
-        </p>
+        <p className="text-xs text-muted">{t.imports.fileHelp}</p>
       </div>
-      {preview.isPending && <p className="text-sm text-muted">Reading the file…</p>}
+      {preview.isPending && <p className="text-sm text-muted">{t.imports.reading}</p>}
       <ErrorAlert message={preview.error?.message ?? commit.error?.message ?? null} />
       {result && <ImportResult batch={result} />}
       {preview.data && file && (
@@ -152,79 +149,80 @@ function Preview({
   onImport: () => void;
   onOpenOn: (day: string) => void;
 }) {
+  const { t } = useI18n();
   const { counts } = preview;
   const earliest = preview.rows
     .filter((r) => r.status === "before_opening")
     .map((r) => r.booked_on)
     .sort()[0];
   const summary = [
-    `${counts.new} new`,
-    counts.duplicate > 0 && `${counts.duplicate} already imported`,
-    counts.before_opening > 0 && `${counts.before_opening} before the opening date`,
-    counts.error > 0 && plural(counts.error, "error"),
+    t.imports.countNew(counts.new),
+    counts.duplicate > 0 && t.imports.countDuplicate(counts.duplicate),
+    counts.before_opening > 0 && t.imports.countBeforeOpening(counts.before_opening),
+    counts.error > 0 && t.imports.countErrors(counts.error),
   ].filter(Boolean);
 
   return (
     <section className="flex flex-col gap-4">
       <div className="flex flex-wrap items-baseline justify-between gap-4">
         <div>
-          <h2 className="text-xl font-bold">Preview</h2>
+          <h2 className="text-xl font-bold">{t.imports.preview}</h2>
           <p className="text-sm text-muted">{preview.format_label}</p>
           {preview.period && (
             <p className="text-sm text-muted">
-              From {formatDate(preview.period.start)} to {formatDate(preview.period.end)}
+              {t.imports.period(formatDate(preview.period.start), formatDate(preview.period.end))}
               {preview.bank_balance &&
-                ` · bank balance ${formatEur(preview.bank_balance.amount)} on ${formatDate(preview.bank_balance.on)}`}
+                t.imports.bankBalance(
+                  formatEur(preview.bank_balance.amount),
+                  formatDate(preview.bank_balance.on),
+                )}
             </p>
           )}
           <p className="mt-1 font-medium">{summary.join(" · ")}</p>
         </div>
         <Button onClick={onImport} disabled={busy || counts.new === 0}>
-          {counts.new === 0
-            ? "Nothing new to import"
-            : `Import ${plural(counts.new, "new operation")}`}
+          {counts.new === 0 ? t.imports.nothingNew : t.imports.importNew(counts.new)}
         </Button>
       </div>
       {counts.before_opening > 0 && earliest && (
         <div className="flex flex-col gap-2 rounded-md border border-warning px-3 py-2 text-sm">
           <p>
-            {plural(counts.before_opening, "operation")}{" "}
-            {counts.before_opening === 1 ? "is" : "are"} before the account's opening date
-            {openingDate && ` (${formatDate(openingDate)})`}: skipped, because the opening balance
-            already includes {counts.before_opening === 1 ? "it" : "them"}.
+            {t.imports.beforeOpening(
+              counts.before_opening,
+              openingDate ? formatDate(openingDate) : null,
+            )}
           </p>
           <div className="flex flex-wrap items-center gap-3">
             <Button variant="ghost" disabled={busy} onClick={() => onOpenOn(earliest)}>
-              Open the account on {formatDate(earliest)}
+              {t.imports.openOn(formatDate(earliest))}
             </Button>
-            <span className="text-xs text-muted">
-              Then check the opening balance in Accounts: it must be the balance on that day.
-            </span>
+            <span className="text-xs text-muted">{t.imports.openOnHelp}</span>
           </div>
         </div>
       )}
       {preview.already_imported_at && (
         <p className="rounded-md border border-warning px-3 py-2 text-sm">
-          This file was already imported on {formatDate(preview.already_imported_at)}.
+          {t.imports.alreadyImported(formatDate(preview.already_imported_at))}
         </p>
       )}
       {preview.errors.length > 0 && (
         <ul className="rounded-md border border-negative px-3 py-2 text-sm text-negative">
           {preview.errors.map((e) => (
             <li key={`${e.line}-${e.message}`}>
-              {e.line === 0 ? "File" : `Line ${e.line}`}: {e.message}
+              {e.line === 0 ? t.imports.fileError : t.imports.lineError(e.line)}:{" "}
+              {translateApiMessage(e.message)}
             </li>
           ))}
         </ul>
       )}
       <div className="overflow-x-auto rounded-lg border border-border bg-surface">
-        <table aria-label="Rows in the file" className="w-full text-sm">
+        <table aria-label={t.imports.rowsTable} className="w-full text-sm">
           <thead className="text-left text-muted">
             <tr>
-              <th className="px-3 py-2 font-medium">Date</th>
-              <th className="px-3 py-2 font-medium">Label</th>
-              <th className="px-3 py-2 text-right font-medium">Amount</th>
-              <th className="px-3 py-2 font-medium">Status</th>
+              <th className="px-3 py-2 font-medium">{t.imports.date}</th>
+              <th className="px-3 py-2 font-medium">{t.imports.label}</th>
+              <th className="px-3 py-2 text-right font-medium">{t.imports.amount}</th>
+              <th className="px-3 py-2 font-medium">{t.imports.status}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
@@ -239,7 +237,7 @@ function Preview({
                 >
                   {formatEur(r.amount)}
                 </td>
-                <td className="whitespace-nowrap px-3 py-2">{STATUS_LABELS[r.status]}</td>
+                <td className="whitespace-nowrap px-3 py-2">{t.imports.statuses[r.status]}</td>
               </tr>
             ))}
           </tbody>
@@ -250,25 +248,31 @@ function Preview({
 }
 
 function ImportResult({ batch }: { batch: ImportBatchOut }) {
+  const { t } = useI18n();
   const check = batch.balance_check;
   const skipped = [
-    batch.duplicate_count > 0 && `${batch.duplicate_count} already imported`,
-    batch.skipped_count > 0 && `${batch.skipped_count} before the opening date`,
+    batch.duplicate_count > 0 && t.imports.countDuplicate(batch.duplicate_count),
+    batch.skipped_count > 0 && t.imports.countBeforeOpening(batch.skipped_count),
   ].filter(Boolean);
   return (
     <section className="flex flex-col gap-2 rounded-lg border border-accent bg-surface p-4">
-      <p className="font-medium">{plural(batch.imported_count, "operation")} imported.</p>
-      {skipped.length > 0 && <p className="text-sm text-muted">Skipped: {skipped.join(", ")}.</p>}
+      <p className="font-medium">{t.imports.imported(batch.imported_count)}</p>
+      {skipped.length > 0 && (
+        <p className="text-sm text-muted">{t.imports.skipped(skipped.join(", "))}</p>
+      )}
       {check && check.difference === "0.00" && (
         <p className="text-sm text-positive">
-          The balance matches the bank: {formatEur(check.bank)} on {formatDate(check.on)}.
+          {t.imports.balanceMatches(formatEur(check.bank), formatDate(check.on))}
         </p>
       )}
       {check && check.difference !== "0.00" && (
         <p role="alert" className="text-sm text-warning">
-          The computed balance ({formatEur(check.computed)}) differs from the bank's (
-          {formatEur(check.bank)}) by {formatEur(check.difference)} on {formatDate(check.on)}. Check
-          the account's opening balance and date, or import the missing period.
+          {t.imports.balanceDiffers(
+            formatEur(check.computed),
+            formatEur(check.bank),
+            formatEur(check.difference),
+            formatDate(check.on),
+          )}
         </p>
       )}
     </section>
@@ -276,6 +280,7 @@ function ImportResult({ batch }: { batch: ImportBatchOut }) {
 }
 
 function History({ accountId }: { accountId: string }) {
+  const { t } = useI18n();
   const queryClient = useQueryClient();
   const [confirming, setConfirming] = useState<string | null>(null);
   const batches = useQuery({
@@ -296,9 +301,9 @@ function History({ accountId }: { accountId: string }) {
   if (!batches.data || batches.data.length === 0) return null;
   return (
     <section>
-      <h2 className="mb-2 text-xl font-bold">Previous imports</h2>
+      <h2 className="mb-2 text-xl font-bold">{t.imports.previous}</h2>
       <ul
-        aria-label="Previous imports"
+        aria-label={t.imports.previous}
         className="divide-y divide-border rounded-lg border border-border bg-surface"
       >
         {batches.data.map((b) => (
@@ -306,8 +311,8 @@ function History({ accountId }: { accountId: string }) {
             <div>
               <p className="font-medium">{b.file_name}</p>
               <p className="text-sm text-muted">
-                {formatDate(b.created_at)} · {plural(b.imported_count, "operation")} imported
-                {b.rolled_back_at && ` · Rolled back on ${formatDate(b.rolled_back_at)}`}
+                {t.imports.historyLine(formatDate(b.created_at), b.imported_count)}
+                {b.rolled_back_at && t.imports.rolledBack(formatDate(b.rolled_back_at))}
               </p>
             </div>
             {!b.rolled_back_at &&
@@ -320,15 +325,15 @@ function History({ accountId }: { accountId: string }) {
                     disabled={rollback.isPending}
                     onClick={() => rollback.mutate(b.id)}
                   >
-                    Confirm: delete its {plural(b.imported_count, "operation")}
+                    {t.imports.confirmRollback(b.imported_count)}
                   </Button>
                   <Button variant="ghost" onClick={() => setConfirming(null)}>
-                    Cancel
+                    {t.common.cancel}
                   </Button>
                 </div>
               ) : (
                 <Button variant="ghost" onClick={() => setConfirming(b.id)}>
-                  Roll back
+                  {t.imports.rollBack}
                 </Button>
               ))}
           </li>

@@ -69,12 +69,12 @@ test("the KPI tiles give the month's figures and how spending moved", async () =
   render(<TestApp path="/" />);
 
   const spent = await screen.findByRole("region", { name: "Spent" });
-  expect(spent).toHaveTextContent("1 621 €");
-  expect(spent).toHaveTextContent("+16 % vs last month");
-  expect(spent).toHaveTextContent("+8 % vs 12-month average");
-  expect(screen.getByRole("region", { name: "Income" })).toHaveTextContent("2 519 €");
-  expect(screen.getByRole("region", { name: "Net" })).toHaveTextContent("+898 €");
-  expect(screen.getByRole("region", { name: "Savings rate" })).toHaveTextContent("36 %");
+  expect(spent).toHaveTextContent("€1,621");
+  expect(spent).toHaveTextContent("+16% vs last month");
+  expect(spent).toHaveTextContent("+8% vs 12-month average");
+  expect(screen.getByRole("region", { name: "Income" })).toHaveTextContent("€2,519");
+  expect(screen.getByRole("region", { name: "Net" })).toHaveTextContent("+€898");
+  expect(screen.getByRole("region", { name: "Savings rate" })).toHaveTextContent("36%");
 });
 
 test("the to-categorise tile links to those transactions", async () => {
@@ -113,13 +113,13 @@ test("every chart has a table with its values", async () => {
   render(<TestApp path="/" />);
 
   const byCategory = await screen.findByRole("table", { name: "Spending by category, Mar 2026" });
-  expect(within(byCategory).getByRole("row", { name: /Housing/ })).toHaveTextContent("850 €");
-  expect(within(byCategory).getByRole("row", { name: /Housing/ })).toHaveTextContent("52 %");
+  expect(within(byCategory).getByRole("row", { name: /Housing/ })).toHaveTextContent("€850");
+  expect(within(byCategory).getByRole("row", { name: /Housing/ })).toHaveTextContent("52%");
   const months = screen.getByRole("table", { name: "Spending and income, last 12 months" });
   expect(within(months).getAllByRole("row")).toHaveLength(13);
   const pace = screen.getByRole("table", { name: "Spending so far against the budget pace" });
-  expect(within(pace).getAllByRole("row").at(-1)).toHaveTextContent("1 500 €");
-  expect(within(pace).getAllByRole("row").at(-1)).toHaveTextContent("1 800 €");
+  expect(within(pace).getAllByRole("row").at(-1)).toHaveTextContent("€1,500");
+  expect(within(pace).getAllByRole("row").at(-1)).toHaveTextContent("€1,800");
 });
 
 test("choosing a month refetches it", async () => {

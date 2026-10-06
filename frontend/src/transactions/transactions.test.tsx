@@ -73,10 +73,10 @@ test("transactions are listed with their account and amount", async () => {
   expect(rows[0]).toHaveTextContent("14 Mar 2026");
   expect(rows[0]).toHaveTextContent("BOULANGERIE DU PARC");
   expect(rows[0]).toHaveTextContent("Compte courant");
-  expect(rows[0]).toHaveTextContent("-4,20 €");
+  expect(rows[0]).toHaveTextContent("-€4.20");
   expect(rows[0]).toHaveTextContent("Imported");
   expect(within(rows[0] as HTMLElement).queryByRole("button", { name: /Edit/ })).toBeNull();
-  expect(rows[1]).toHaveTextContent("2 480,15 €");
+  expect(rows[1]).toHaveTextContent("€2,480.15");
   expect(screen.getByText("2 transactions")).toBeInTheDocument();
 });
 
@@ -204,7 +204,7 @@ test("a manual transaction can be edited", async () => {
   await user.click(await screen.findByRole("button", { name: "Edit Salary" }));
   const form = screen.getByRole("form", { name: "Edit transaction" });
   expect(within(form).getByLabelText("Income")).toBeChecked();
-  expect(within(form).getByLabelText("Amount (€)")).toHaveValue("2480,15");
+  expect(within(form).getByLabelText("Amount (€)")).toHaveValue("2480.15");
   const label = within(form).getByLabelText("Label");
   await user.clear(label);
   await user.type(label, "Salary March");

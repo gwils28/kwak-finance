@@ -3,12 +3,15 @@ import { getRouteApi, useNavigate } from "@tanstack/react-router";
 import { type FormEvent, useState } from "react";
 import { acceptInvite, logout, previewInvite } from "../api/generated";
 import { apiErrorMessage, detailSentence } from "../auth/errors";
+import { LanguageSelect } from "../components/LanguageSelect";
 import { Button, Card, ErrorAlert, TextField } from "../components/ui";
+import { useI18n } from "../i18n";
 
 const route = getRouteApi("/invite/$token");
 
 export function AcceptInvitePage() {
   const { token } = route.useParams();
+  const { t } = useI18n();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const invite = useQuery({
@@ -30,10 +33,10 @@ export function AcceptInvitePage() {
       if (!data) {
         throw new Error(
           response?.status === 422
-            ? (detailSentence(error) ?? "Check the form.")
-            : apiErrorMessage(response, {
-                404: "This invitation is invalid or has expired.",
-                409: "An account already uses this email.",
+            ? (detailSentence(error) ?? t.errors.checkForm)
+            : apiErrorMessage(t, response, {
+                404: t.household.invalidInvite,
+                409: t.household.emailTaken,
               }),
         );
       }
@@ -55,42 +58,38 @@ export function AcceptInvitePage() {
   };
 
   return (
-    <main className="flex min-h-screen items-center justify-center px-4">
-      {invite.isPending && <p className="text-muted">Checking the invitation…</p>}
+    <main className="flex min-h-screen flex-col items-center justify-center gap-4 px-4">
+      <LanguageSelect />
+      {invite.isPending && <p className="text-muted">{t.household.checking}</p>}
       {invite.isError && (
-        <Card title="Invitation">
-          <p className="text-sm">
-            This invitation is invalid or has expired. Ask the household owner for a new link.
-          </p>
+        <Card title={t.household.invitation}>
+          <p className="text-sm">{t.household.askNewLink}</p>
         </Card>
       )}
       {invite.data && accept.isSuccess && (
-        <Card title="Your account is ready">
+        <Card title={t.household.ready}>
           <div className="flex flex-col gap-4">
-            <p className="text-sm text-muted">
-              Sign in with {invite.data.email} and your new password. You will then set up two-step
-              verification with an authenticator app.
-            </p>
-            <Button onClick={goToSignIn}>Sign in</Button>
+            <p className="text-sm text-muted">{t.household.readyHelp(invite.data.email)}</p>
+            <Button onClick={goToSignIn}>{t.household.signIn}</Button>
           </div>
         </Card>
       )}
       {invite.data && !accept.isSuccess && (
-        <Card title="Join the household">
+        <Card title={t.household.join}>
           <form onSubmit={submit} className="flex flex-col gap-4">
             <p className="text-sm text-muted">
-              You are invited to join {invite.data.household_name} on Kwak Finance. Your account
-              will use <span className="text-fg">{invite.data.email}</span>.
+              {t.household.invitedTo(invite.data.household_name)}
+              <span className="text-fg">{invite.data.email}</span>.
             </p>
             <TextField
-              label="Your name"
+              label={t.household.yourName}
               autoComplete="name"
               required
               value={name}
               onChange={(e) => setName(e.target.value)}
             />
             <TextField
-              label="Password"
+              label={t.household.password}
               type="password"
               autoComplete="new-password"
               required
@@ -98,19 +97,19 @@ export function AcceptInvitePage() {
               onChange={(e) => setPassword(e.target.value)}
             />
             <TextField
-              label="Repeat password"
+              label={t.household.repeatPassword}
               type="password"
               autoComplete="new-password"
               required
               value={repeat}
               onChange={(e) => setRepeat(e.target.value)}
             />
-            <p className="text-xs text-muted">At least 12 characters. A passphrase is easiest.</p>
+            <p className="text-xs text-muted">{t.household.passwordHelp}</p>
             <ErrorAlert
-              message={mismatch ? "The passwords do not match." : (accept.error?.message ?? null)}
+              message={mismatch ? t.household.mismatch : (accept.error?.message ?? null)}
             />
             <Button type="submit" disabled={accept.isPending}>
-              Create my account
+              {t.household.createAccount}
             </Button>
           </form>
         </Card>
