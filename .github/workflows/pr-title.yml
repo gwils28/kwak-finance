@@ -1,0 +1,28 @@
+name: PR title
+
+# The squash merge uses the PR title (and description) as the commit message,
+# so it must pass the same commit-msg hook as individual commits.
+on:
+  pull_request:
+    types: [opened, edited, reopened, synchronize]
+
+permissions:
+  contents: read
+
+jobs:
+  pr-title:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Check PR title and description
+        env:
+          TITLE: ${{ github.event.pull_request.title }}
+          BODY: ${{ github.event.pull_request.body }}
+        run: |
+          # The hook exempts git-generated subjects; a PR title never is one.
+          if [[ "$TITLE" =~ ^(Merge|fixup!|squash!) ]]; then
+            echo "::error::PR title must follow Conventional Commits, got: $TITLE"
+            exit 1
+          fi
+          printf '%s\n\n%s\n' "$TITLE" "$BODY" > "$RUNNER_TEMP/msg"
+          .githooks/commit-msg "$RUNNER_TEMP/msg" || { echo "::error::PR title or description"; exit 1; }
