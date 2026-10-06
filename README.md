@@ -22,7 +22,11 @@ Full stack in Docker:
 ```bash
 cp .env.example .env   # then edit the secrets
 make up                # https://localhost:8443
+docker compose exec api kwak migrate
+docker compose exec -it api kwak create-owner --household "Home" --email you@example.com --name "You"
 ```
+
+`create-owner` asks for the password (at least 12 characters). There is no public sign-up: other members join by invitation.
 
 ## Documentation
 
