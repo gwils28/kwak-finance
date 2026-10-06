@@ -67,6 +67,15 @@ def current_targets(
     return current
 
 
+def scoped_accounts(db: Session, viewer: User, scope: Scope) -> list[UUID]:
+    """Cash accounts in scope: the ones whose transactions make up spending and income."""
+    return [
+        a.id
+        for a in visible_accounts(db, viewer, include_closed=True)
+        if a.type in CASH_TYPES and (scope is Scope.HOUSEHOLD or a.owner_id == viewer.id)
+    ]
+
+
 def matrix(
     db: Session,
     viewer: User,
@@ -75,11 +84,7 @@ def matrix(
     scope: Scope = Scope.HOUSEHOLD,
     band: Decimal = DEFAULT_BAND,
 ) -> Matrix:
-    accounts = [
-        a.id
-        for a in visible_accounts(db, viewer, include_closed=True)
-        if a.type in CASH_TYPES and (scope is Scope.HOUSEHOLD or a.owner_id == viewer.id)
-    ]
+    accounts = scoped_accounts(db, viewer, scope)
     expense = list(
         db.scalars(
             select(Category).where(

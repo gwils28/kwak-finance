@@ -537,6 +537,44 @@
         "title": "CategoryPatch",
         "type": "object"
       },
+      "CategorySpending": {
+        "properties": {
+          "category_id": {
+            "format": "uuid",
+            "title": "Category Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "share": {
+            "anyOf": [
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Share"
+          },
+          "spent": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Spent",
+            "type": "string"
+          }
+        },
+        "required": [
+          "category_id",
+          "name",
+          "spent",
+          "share"
+        ],
+        "title": "CategorySpending",
+        "type": "object"
+      },
       "CellOut": {
         "properties": {
           "gap": {
@@ -597,6 +635,84 @@
           "status"
         ],
         "title": "CellOut",
+        "type": "object"
+      },
+      "DashboardOut": {
+        "properties": {
+          "budget_target": {
+            "anyOf": [
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Budget Target"
+          },
+          "cumulative": {
+            "items": {
+              "$ref": "#/components/schemas/DayPoint"
+            },
+            "title": "Cumulative",
+            "type": "array"
+          },
+          "kpis": {
+            "$ref": "#/components/schemas/Kpis"
+          },
+          "month": {
+            "title": "Month",
+            "type": "string"
+          },
+          "monthly": {
+            "items": {
+              "$ref": "#/components/schemas/MonthPoint"
+            },
+            "title": "Monthly",
+            "type": "array"
+          },
+          "to_categorise": {
+            "$ref": "#/components/schemas/ToCategorise"
+          },
+          "top_categories": {
+            "items": {
+              "$ref": "#/components/schemas/CategorySpending"
+            },
+            "title": "Top Categories",
+            "type": "array"
+          }
+        },
+        "required": [
+          "month",
+          "kpis",
+          "top_categories",
+          "to_categorise",
+          "monthly",
+          "cumulative",
+          "budget_target"
+        ],
+        "title": "DashboardOut",
+        "type": "object"
+      },
+      "DayPoint": {
+        "properties": {
+          "day": {
+            "format": "date",
+            "title": "Day",
+            "type": "string"
+          },
+          "spent": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Spent",
+            "type": "string"
+          }
+        },
+        "required": [
+          "day",
+          "spent"
+        ],
+        "title": "DayPoint",
         "type": "object"
       },
       "HTTPValidationError": {
@@ -904,6 +1020,83 @@
         "title": "InviteState",
         "type": "string"
       },
+      "Kpis": {
+        "properties": {
+          "average_spent": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Average Spent",
+            "type": "string"
+          },
+          "income": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Income",
+            "type": "string"
+          },
+          "net": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Net",
+            "type": "string"
+          },
+          "previous_spent": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Previous Spent",
+            "type": "string"
+          },
+          "savings_rate": {
+            "anyOf": [
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Savings Rate"
+          },
+          "spent": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Spent",
+            "type": "string"
+          },
+          "spent_change_vs_average": {
+            "anyOf": [
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Spent Change Vs Average"
+          },
+          "spent_change_vs_previous": {
+            "anyOf": [
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Spent Change Vs Previous"
+          }
+        },
+        "required": [
+          "spent",
+          "income",
+          "net",
+          "savings_rate",
+          "previous_spent",
+          "average_spent",
+          "spent_change_vs_previous",
+          "spent_change_vs_average"
+        ],
+        "title": "Kpis",
+        "type": "object"
+      },
       "Linked": {
         "properties": {
           "linked": {
@@ -982,6 +1175,39 @@
           "role"
         ],
         "title": "MemberOut",
+        "type": "object"
+      },
+      "MonthPoint": {
+        "properties": {
+          "by_category": {
+            "items": {
+              "$ref": "#/components/schemas/CategorySpending"
+            },
+            "title": "By Category",
+            "type": "array"
+          },
+          "income": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Income",
+            "type": "string"
+          },
+          "month": {
+            "title": "Month",
+            "type": "string"
+          },
+          "spent": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Spent",
+            "type": "string"
+          }
+        },
+        "required": [
+          "month",
+          "spent",
+          "income",
+          "by_category"
+        ],
+        "title": "MonthPoint",
         "type": "object"
       },
       "PasswordConfirmation": {
@@ -1569,6 +1795,25 @@
           "valid_from"
         ],
         "title": "TargetOut",
+        "type": "object"
+      },
+      "ToCategorise": {
+        "properties": {
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "spent": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Spent",
+            "type": "string"
+          }
+        },
+        "required": [
+          "count",
+          "spent"
+        ],
+        "title": "ToCategorise",
         "type": "object"
       },
       "TotpCode": {
@@ -3317,6 +3562,83 @@
         "summary": "Update Category",
         "tags": [
           "categories"
+        ]
+      }
+    },
+    "/api/dashboard": {
+      "get": {
+        "description": "Spending KPIs and chart series (F-DSH-4, 5).",
+        "operationId": "dashboard",
+        "parameters": [
+          {
+            "description": "YYYY-MM; default: this month",
+            "in": "query",
+            "name": "month",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "YYYY-MM; default: this month",
+              "title": "Month"
+            }
+          },
+          {
+            "in": "query",
+            "name": "scope",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/Scope",
+              "default": "household"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "kwak_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Kwak Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DashboardOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Dashboard",
+        "tags": [
+          "dashboard"
         ]
       }
     },
