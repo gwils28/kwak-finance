@@ -17,6 +17,7 @@ const checking = {
   opening_balance: "1234.56",
   opening_date: "2026-01-01",
   closed_on: null,
+  balance: "1234.56",
 };
 const partnerSavings = {
   ...checking,
@@ -26,6 +27,7 @@ const partnerSavings = {
   owner_id: "someone-else",
   owner_name: "Partner",
   opening_balance: "-20.00",
+  balance: "-20.00",
 };
 
 function api(accounts: unknown[], extra: Record<string, (body: unknown) => Response> = {}) {

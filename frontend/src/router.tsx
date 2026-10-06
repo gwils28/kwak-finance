@@ -14,6 +14,7 @@ import { meQuery } from "./auth/session";
 import { HomePage } from "./HomePage";
 import { AcceptInvitePage } from "./household/AcceptInvitePage";
 import { MembersPage } from "./household/MembersPage";
+import { ImportPage } from "./imports/ImportPage";
 
 const rootRoute = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   component: Outlet,
@@ -52,6 +53,12 @@ const accountsRoute = createRoute({
   component: AccountsPage,
 });
 
+const importRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: "/accounts/$accountId/import",
+  component: ImportPage,
+});
+
 const loginRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/login",
@@ -68,7 +75,7 @@ const acceptInviteRoute = createRoute({
 });
 
 const routeTree = rootRoute.addChildren([
-  appRoute.addChildren([homeRoute, accountsRoute, membersRoute]),
+  appRoute.addChildren([homeRoute, accountsRoute, importRoute, membersRoute]),
   loginRoute,
   acceptInviteRoute,
 ]);

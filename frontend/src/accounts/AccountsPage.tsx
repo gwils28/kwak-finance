@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
+import { Link } from "@tanstack/react-router";
 import { type FormEvent, useId, useState } from "react";
 import {
   type AccountOut,
@@ -27,6 +28,9 @@ export const TYPE_LABELS: Record<AccountType, string> = {
   use_asset: "Vehicle, equipment",
   other: "Other",
 };
+
+/** Accounts whose balance comes from imported or entered transactions. */
+const CASH_TYPES = new Set<AccountType>(["checking", "savings"]);
 
 const accountsKey = (includeClosed: boolean) => ["accounts", { includeClosed }];
 
@@ -116,9 +120,21 @@ function AccountRow({ account, onEdit }: { account: AccountOut; onEdit: () => vo
       </div>
       <div className="flex items-center gap-3">
         <div className="text-right">
-          <p className="tabular">{formatEur(account.opening_balance)}</p>
-          <p className="text-xs text-muted">opening, {formatDate(account.opening_date)}</p>
+          <p className="tabular font-medium">{formatEur(account.balance)}</p>
+          <p className="text-xs text-muted">
+            opening {formatEur(account.opening_balance)} on {formatDate(account.opening_date)}
+          </p>
         </div>
+        {CASH_TYPES.has(account.type) && !account.closed_on && (
+          <Link
+            to="/accounts/$accountId/import"
+            params={{ accountId: account.id }}
+            aria-label={`Import into ${account.name}`}
+            className="rounded-md border border-border bg-surface px-3 py-2 text-sm hover:border-accent"
+          >
+            Import
+          </Link>
+        )}
         <Button variant="ghost" aria-label={`Edit ${account.name}`} onClick={onEdit}>
           Edit
         </Button>
