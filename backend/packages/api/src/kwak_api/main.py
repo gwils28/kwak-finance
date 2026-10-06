@@ -2,6 +2,11 @@ from importlib.metadata import version
 
 from fastapi import APIRouter, FastAPI
 from pydantic import BaseModel
+from sqlalchemy.orm import sessionmaker
+
+from kwak_api.auth.routes import router as auth_router
+from kwak_api.db import make_engine
+from kwak_api.settings import Settings
 
 
 class Health(BaseModel):
@@ -17,9 +22,14 @@ def health() -> Health:
     return Health(status="ok", version=version("kwak-api"))
 
 
-def create_app() -> FastAPI:
+def create_app(settings: Settings | None = None) -> FastAPI:
+    settings = settings or Settings()
     app = FastAPI(title="Kwak Finance API", version=version("kwak-api"))
+    app.state.settings = settings
+    # The engine connects lazily, on the first request that needs the database.
+    app.state.sessionmaker = sessionmaker(make_engine(settings.database_url))
     app.include_router(router)
+    app.include_router(auth_router)
     return app
 
 
