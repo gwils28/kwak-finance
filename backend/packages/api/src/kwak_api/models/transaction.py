@@ -66,3 +66,6 @@ class Transaction(UUIDPrimaryKey, Timestamps, Base):
     category_id: Mapped[UUID | None] = mapped_column(
         ForeignKey("category.id", ondelete="SET NULL"), index=True
     )
+    # Both sides of a transfer between own accounts share this id (F-TX-5): they are neither
+    # spending nor income, and carry no category.
+    transfer_group_id: Mapped[UUID | None] = mapped_column(index=True)

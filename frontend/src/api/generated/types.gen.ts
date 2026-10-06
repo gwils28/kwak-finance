@@ -5,6 +5,13 @@ export type ClientOptions = {
 };
 
 /**
+ * AcceptSuggestions
+ */
+export type AcceptSuggestions = {
+    [key: string]: unknown;
+};
+
+/**
  * AccountIn
  */
 export type AccountIn = {
@@ -497,6 +504,16 @@ export type InvitePreview = {
 export type InviteState = 'pending' | 'accepted' | 'revoked' | 'expired';
 
 /**
+ * Linked
+ */
+export type Linked = {
+    /**
+     * Linked
+     */
+    linked: number;
+};
+
+/**
  * LoginOut
  */
 export type LoginOut = {
@@ -957,6 +974,14 @@ export type TransactionOut = {
      * Source
      */
     source: 'import' | 'manual';
+    /**
+     * Transfer Account Name
+     */
+    transfer_account_name: string | null;
+    /**
+     * Transfer Group Id
+     */
+    transfer_group_id: string | null;
 };
 
 /**
@@ -995,6 +1020,68 @@ export type TransactionPatch = {
      * Label
      */
     label?: string | null;
+};
+
+/**
+ * TransferIn
+ */
+export type TransferIn = {
+    /**
+     * Inflow Id
+     */
+    inflow_id: string;
+    /**
+     * Outflow Id
+     */
+    outflow_id: string;
+};
+
+/**
+ * TransferOut
+ */
+export type TransferOut = {
+    /**
+     * Group Id
+     */
+    group_id: string;
+};
+
+/**
+ * TransferSide
+ */
+export type TransferSide = {
+    /**
+     * Account Id
+     */
+    account_id: string;
+    /**
+     * Account Name
+     */
+    account_name: string;
+    /**
+     * Amount
+     */
+    amount: string;
+    /**
+     * Booked On
+     */
+    booked_on: string;
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Label
+     */
+    label: string;
+};
+
+/**
+ * TransferSuggestion
+ */
+export type TransferSuggestion = {
+    inflow: TransferSide;
+    outflow: TransferSide;
 };
 
 /**
@@ -2226,3 +2313,110 @@ export type UpdateTransactionResponses = {
 };
 
 export type UpdateTransactionResponse = UpdateTransactionResponses[keyof UpdateTransactionResponses];
+
+export type LinkTransferData = {
+    body: TransferIn;
+    path?: never;
+    query?: never;
+    url: '/api/transfers';
+};
+
+export type LinkTransferErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type LinkTransferError = LinkTransferErrors[keyof LinkTransferErrors];
+
+export type LinkTransferResponses = {
+    /**
+     * Successful Response
+     */
+    201: TransferOut;
+};
+
+export type LinkTransferResponse = LinkTransferResponses[keyof LinkTransferResponses];
+
+export type AcceptTransferSuggestionsData = {
+    body: AcceptSuggestions;
+    path?: never;
+    query?: never;
+    url: '/api/transfers/accept-suggestions';
+};
+
+export type AcceptTransferSuggestionsErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type AcceptTransferSuggestionsError = AcceptTransferSuggestionsErrors[keyof AcceptTransferSuggestionsErrors];
+
+export type AcceptTransferSuggestionsResponses = {
+    /**
+     * Successful Response
+     */
+    200: Linked;
+};
+
+export type AcceptTransferSuggestionsResponse = AcceptTransferSuggestionsResponses[keyof AcceptTransferSuggestionsResponses];
+
+export type TransferSuggestionsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/transfers/suggestions';
+};
+
+export type TransferSuggestionsErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type TransferSuggestionsError = TransferSuggestionsErrors[keyof TransferSuggestionsErrors];
+
+export type TransferSuggestionsResponses = {
+    /**
+     * Response Transfersuggestions
+     *
+     * Successful Response
+     */
+    200: Array<TransferSuggestion>;
+};
+
+export type TransferSuggestionsResponse = TransferSuggestionsResponses[keyof TransferSuggestionsResponses];
+
+export type UnlinkTransferData = {
+    body?: never;
+    path: {
+        /**
+         * Group Id
+         */
+        group_id: string;
+    };
+    query?: never;
+    url: '/api/transfers/{group_id}';
+};
+
+export type UnlinkTransferErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type UnlinkTransferError = UnlinkTransferErrors[keyof UnlinkTransferErrors];
+
+export type UnlinkTransferResponses = {
+    /**
+     * Successful Response
+     */
+    204: void;
+};
+
+export type UnlinkTransferResponse = UnlinkTransferResponses[keyof UnlinkTransferResponses];

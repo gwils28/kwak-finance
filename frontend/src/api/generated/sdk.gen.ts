@@ -2,7 +2,7 @@
 
 import { type Client, type ClientMeta, formDataBodySerializer, type Options as Options2, type RequestResult, type TDataShape } from './client';
 import { client } from './client.gen';
-import type { AcceptInviteData, AcceptInviteErrors, AcceptInviteResponses, ApplyRulesData, ApplyRulesErrors, ApplyRulesResponses, BudgetMatrixData, BudgetMatrixErrors, BudgetMatrixResponses, CategoriseTransactionsData, CategoriseTransactionsErrors, CategoriseTransactionsResponses, CreateAccountData, CreateAccountErrors, CreateAccountResponses, CreateCategoryData, CreateCategoryErrors, CreateCategoryResponses, CreateImportData, CreateImportErrors, CreateImportResponses, CreateInviteData, CreateInviteErrors, CreateInviteResponses, CreateRuleData, CreateRuleErrors, CreateRuleResponses, CreateTransactionData, CreateTransactionErrors, CreateTransactionResponses, DeleteCategoryData, DeleteCategoryErrors, DeleteCategoryResponses, DeleteRuleData, DeleteRuleErrors, DeleteRuleResponses, DeleteTransactionData, DeleteTransactionErrors, DeleteTransactionResponses, HealthData, HealthResponses, ListAccountsData, ListAccountsErrors, ListAccountsResponses, ListCategoriesData, ListCategoriesErrors, ListCategoriesResponses, ListImportsData, ListImportsErrors, ListImportsResponses, ListInstitutionsData, ListInstitutionsErrors, ListInstitutionsResponses, ListInvitesData, ListInvitesErrors, ListInvitesResponses, ListMembersData, ListMembersErrors, ListMembersResponses, ListRulesData, ListRulesErrors, ListRulesResponses, ListTargetsData, ListTargetsErrors, ListTargetsResponses, ListTransactionsData, ListTransactionsErrors, ListTransactionsResponses, LoginData, LoginErrors, LoginResponses, LogoutData, LogoutErrors, LogoutResponses, MeData, MeErrors, MeResponses, PreviewImportData, PreviewImportErrors, PreviewImportResponses, PreviewInviteData, PreviewInviteErrors, PreviewInviteResponses, PreviewRuleData, PreviewRuleErrors, PreviewRuleResponses, RecoveryData, RecoveryErrors, RecoveryResponses, RegenerateRecoveryCodesData, RegenerateRecoveryCodesErrors, RegenerateRecoveryCodesResponses, RevokeInviteData, RevokeInviteErrors, RevokeInviteResponses, RollbackImportData, RollbackImportErrors, RollbackImportResponses, SetTargetData, SetTargetErrors, SetTargetResponses, TotpConfirmData, TotpConfirmErrors, TotpConfirmResponses, TotpSetupData, TotpSetupErrors, TotpSetupResponses, TotpVerifyData, TotpVerifyErrors, TotpVerifyResponses, UpdateAccountData, UpdateAccountErrors, UpdateAccountResponses, UpdateCategoryData, UpdateCategoryErrors, UpdateCategoryResponses, UpdateRuleData, UpdateRuleErrors, UpdateRuleResponses, UpdateTransactionData, UpdateTransactionErrors, UpdateTransactionResponses } from './types.gen';
+import type { AcceptInviteData, AcceptInviteErrors, AcceptInviteResponses, AcceptTransferSuggestionsData, AcceptTransferSuggestionsErrors, AcceptTransferSuggestionsResponses, ApplyRulesData, ApplyRulesErrors, ApplyRulesResponses, BudgetMatrixData, BudgetMatrixErrors, BudgetMatrixResponses, CategoriseTransactionsData, CategoriseTransactionsErrors, CategoriseTransactionsResponses, CreateAccountData, CreateAccountErrors, CreateAccountResponses, CreateCategoryData, CreateCategoryErrors, CreateCategoryResponses, CreateImportData, CreateImportErrors, CreateImportResponses, CreateInviteData, CreateInviteErrors, CreateInviteResponses, CreateRuleData, CreateRuleErrors, CreateRuleResponses, CreateTransactionData, CreateTransactionErrors, CreateTransactionResponses, DeleteCategoryData, DeleteCategoryErrors, DeleteCategoryResponses, DeleteRuleData, DeleteRuleErrors, DeleteRuleResponses, DeleteTransactionData, DeleteTransactionErrors, DeleteTransactionResponses, HealthData, HealthResponses, LinkTransferData, LinkTransferErrors, LinkTransferResponses, ListAccountsData, ListAccountsErrors, ListAccountsResponses, ListCategoriesData, ListCategoriesErrors, ListCategoriesResponses, ListImportsData, ListImportsErrors, ListImportsResponses, ListInstitutionsData, ListInstitutionsErrors, ListInstitutionsResponses, ListInvitesData, ListInvitesErrors, ListInvitesResponses, ListMembersData, ListMembersErrors, ListMembersResponses, ListRulesData, ListRulesErrors, ListRulesResponses, ListTargetsData, ListTargetsErrors, ListTargetsResponses, ListTransactionsData, ListTransactionsErrors, ListTransactionsResponses, LoginData, LoginErrors, LoginResponses, LogoutData, LogoutErrors, LogoutResponses, MeData, MeErrors, MeResponses, PreviewImportData, PreviewImportErrors, PreviewImportResponses, PreviewInviteData, PreviewInviteErrors, PreviewInviteResponses, PreviewRuleData, PreviewRuleErrors, PreviewRuleResponses, RecoveryData, RecoveryErrors, RecoveryResponses, RegenerateRecoveryCodesData, RegenerateRecoveryCodesErrors, RegenerateRecoveryCodesResponses, RevokeInviteData, RevokeInviteErrors, RevokeInviteResponses, RollbackImportData, RollbackImportErrors, RollbackImportResponses, SetTargetData, SetTargetErrors, SetTargetResponses, TotpConfirmData, TotpConfirmErrors, TotpConfirmResponses, TotpSetupData, TotpSetupErrors, TotpSetupResponses, TotpVerifyData, TotpVerifyErrors, TotpVerifyResponses, TransferSuggestionsData, TransferSuggestionsErrors, TransferSuggestionsResponses, UnlinkTransferData, UnlinkTransferErrors, UnlinkTransferResponses, UpdateAccountData, UpdateAccountErrors, UpdateAccountResponses, UpdateCategoryData, UpdateCategoryErrors, UpdateCategoryResponses, UpdateRuleData, UpdateRuleErrors, UpdateRuleResponses, UpdateTransactionData, UpdateTransactionErrors, UpdateTransactionResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -409,3 +409,43 @@ export const updateTransaction = <ThrowOnError extends boolean = false>(options:
         ...options.headers
     }
 });
+
+/**
+ * Link Transfer
+ *
+ * Mark two transactions as one transfer: no longer spending, income or to categorise.
+ */
+export const linkTransfer = <ThrowOnError extends boolean = false>(options: Options<LinkTransferData, ThrowOnError>): RequestResult<LinkTransferResponses, LinkTransferErrors, ThrowOnError> => (options.client ?? client).post<LinkTransferResponses, LinkTransferErrors, ThrowOnError>({
+    url: '/api/transfers',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Accept Transfer Suggestions
+ *
+ * Link every current suggestion.
+ */
+export const acceptTransferSuggestions = <ThrowOnError extends boolean = false>(options: Options<AcceptTransferSuggestionsData, ThrowOnError>): RequestResult<AcceptTransferSuggestionsResponses, AcceptTransferSuggestionsErrors, ThrowOnError> => (options.client ?? client).post<AcceptTransferSuggestionsResponses, AcceptTransferSuggestionsErrors, ThrowOnError>({
+    url: '/api/transfers/accept-suggestions',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Transfer Suggestions
+ *
+ * Pairs that look like a transfer between two of your accounts (same amount, 3 days).
+ */
+export const transferSuggestions = <ThrowOnError extends boolean = false>(options?: Options<TransferSuggestionsData, ThrowOnError>): RequestResult<TransferSuggestionsResponses, TransferSuggestionsErrors, ThrowOnError> => (options?.client ?? client).get<TransferSuggestionsResponses, TransferSuggestionsErrors, ThrowOnError>({ url: '/api/transfers/suggestions', ...options });
+
+/**
+ * Unlink Transfer
+ */
+export const unlinkTransfer = <ThrowOnError extends boolean = false>(options: Options<UnlinkTransferData, ThrowOnError>): RequestResult<UnlinkTransferResponses, UnlinkTransferErrors, ThrowOnError> => (options.client ?? client).delete<UnlinkTransferResponses, UnlinkTransferErrors, ThrowOnError>({ url: '/api/transfers/{group_id}', ...options });

@@ -15,6 +15,7 @@ from kwak_api.imports.routes import router as imports_router
 from kwak_api.rules.routes import router as rules_router
 from kwak_api.settings import Settings
 from kwak_api.transactions.routes import router as transactions_router
+from kwak_api.transfers.routes import router as transfers_router
 
 
 class Health(BaseModel):
@@ -55,6 +56,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(categories_router)
     app.include_router(rules_router)
     app.include_router(budget_router)
+    app.include_router(transfers_router)
     return app
 
 

@@ -16,6 +16,10 @@ from kwak_api.services.accounts import find_visible_account, visible_accounts
 from kwak_api.services.rules import categorise_new
 
 
+class TransferCategoryError(Exception):
+    """A transfer has no category: unlink it first."""
+
+
 class ImportedTransactionError(Exception):
     """Imported rows mirror the bank: correct them by rolling the import back."""
 
@@ -68,7 +72,10 @@ def search(
     if filters.category_id:
         query = query.where(Transaction.category_id == filters.category_id)
     if filters.uncategorised:
-        query = query.where(Transaction.category_id.is_(None))
+        # Transfers are not "to categorise": they are neither spending nor income.
+        query = query.where(
+            Transaction.category_id.is_(None), Transaction.transfer_group_id.is_(None)
+        )
     total = db.scalar(select(func.count()).select_from(query.subquery())) or 0
     page = db.scalars(
         query.order_by(Transaction.booked_on.desc(), Transaction.id.desc())
@@ -140,6 +147,8 @@ def update(
 
 def set_category(db: Session, transaction: Transaction, category: Category | None) -> None:
     """Any transaction, imported or not, can be categorised: it changes no amount."""
+    if category is not None and transaction.transfer_group_id is not None:
+        raise TransferCategoryError
     transaction.category_id = category.id if category else None
     db.flush()
 
@@ -151,7 +160,11 @@ def categorise(
     visible = [a.id for a in visible_accounts(db, viewer, include_closed=True)]
     result = db.execute(
         sql_update(Transaction)
-        .where(Transaction.id.in_(transaction_ids), Transaction.account_id.in_(visible))
+        .where(
+            Transaction.id.in_(transaction_ids),
+            Transaction.account_id.in_(visible),
+            Transaction.transfer_group_id.is_(None),
+        )
         .values(category_id=category.id if category else None)
         .returning(Transaction.id)
     )

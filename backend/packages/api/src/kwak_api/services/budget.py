@@ -104,6 +104,7 @@ def matrix(
         select(Transaction.category_id, month_start, spent)
         .where(
             Transaction.account_id.in_(accounts),
+            Transaction.transfer_group_id.is_(None),  # transfers are not spending (§8.3)
             Transaction.booked_on >= months[0].first_day(),
             Transaction.booked_on < months[-1].next().first_day(),
         )
