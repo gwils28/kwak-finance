@@ -51,7 +51,7 @@ def test_login_failure_does_not_say_which_part_was_wrong(
 
 def test_inactive_user_cannot_log_in(client: TestClient, owner: User, session: Session) -> None:
     owner.is_active = False
-    session.flush()
+    session.commit()
     assert _password_step(client) == 401
 
 
@@ -60,7 +60,7 @@ def test_login_upgrades_a_weak_password_hash(
 ) -> None:
     owner.password_hash = PasswordHasher(time_cost=1, memory_cost=8, parallelism=1).hash(PASSWORD)
     weak = owner.password_hash
-    session.flush()
+    session.commit()
 
     assert _password_step(client) == 200
     session.refresh(owner)

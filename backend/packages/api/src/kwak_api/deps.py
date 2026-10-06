@@ -15,11 +15,25 @@ def get_settings(request: Request) -> Settings:
     return settings
 
 
-def get_db(request: Request) -> Iterator[Session]:
-    """One database session per request, committed when the handler succeeds."""
-    factory: sessionmaker[Session] = request.app.state.sessionmaker
-    with factory() as session, session.begin():
+def request_scope(session: Session) -> Iterator[Session]:
+    """Commit when the handler succeeds, roll back when it raises.
+
+    Handlers may commit earlier themselves, e.g. to keep a record of a failed login
+    that the error response would otherwise roll back.
+    """
+    try:
         yield session
+    except Exception:
+        session.rollback()
+        raise
+    session.commit()
+
+
+def get_db(request: Request) -> Iterator[Session]:
+    """One database session per request."""
+    factory: sessionmaker[Session] = request.app.state.sessionmaker
+    with factory() as session:
+        yield from request_scope(session)
 
 
 def get_now() -> datetime:

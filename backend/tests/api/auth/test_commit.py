@@ -25,7 +25,7 @@ def committed_owner(engine: Engine) -> Iterator[None]:
         session.commit()
     yield
     with engine.begin() as conn:
-        conn.execute(text("TRUNCATE household, app_user, user_session"))
+        conn.execute(text("TRUNCATE household, app_user, user_session, auth_failure"))
 
 
 @pytest.mark.usefixtures("committed_owner")
@@ -38,3 +38,14 @@ def test_sessions_are_committed_by_the_real_request_scope(database_url: str) -> 
         assert login.status_code == 200
         # "second factor required", not "not authenticated": the session row was committed.
         assert client.get("/api/auth/me").json() == {"detail": "second factor required"}
+
+
+@pytest.mark.usefixtures("committed_owner")
+def test_failed_logins_are_kept_although_the_request_fails(database_url: str) -> None:
+    app = create_app(Settings(database_url=database_url))
+    with TestClient(app, base_url="https://testserver") as client:
+        for _ in range(5):
+            wrong = {"email": "owner@example.com", "password": "wrong password!"}
+            assert client.post("/api/auth/login", json=wrong).status_code == 401
+        right = {"email": "owner@example.com", "password": PASSWORD}
+        assert client.post("/api/auth/login", json=right).status_code == 429
