@@ -3,6 +3,8 @@ SHELL := /bin/bash
 # Use the fnm default Node when the shell has not loaded fnm (Claude hooks, cron, …).
 export PATH := $(HOME)/.local/share/fnm/aliases/default/bin:$(PATH)
 BACKEND := backend
+# ops/ scripts run outside the backend image but follow its lint and type rules.
+OPS_LINT := uv run ruff format --check --config pyproject.toml ../ops && uv run ruff check --config pyproject.toml ../ops && uv run mypy --strict ../ops/backup/backup.py
 FRONTEND := frontend
 
 .PHONY: setup hooks migrate migration dev-api dev-web check check-fast check-backend check-frontend fmt test up down logs openapi
@@ -34,6 +36,7 @@ check: check-backend check-frontend ## Full lint + types + tests (what CI runs)
 
 check-backend:
 	cd $(BACKEND) && uv run ruff format --check . && uv run ruff check . && uv run mypy && uv run pytest -q
+	cd $(BACKEND) && $(OPS_LINT)
 
 check-frontend:
 	cd $(FRONTEND) && pnpm check && pnpm typecheck && pnpm test

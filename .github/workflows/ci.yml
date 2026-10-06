@@ -42,6 +42,8 @@ jobs:
       - run: uv run ruff check .
       - run: uv run mypy
       - run: uv run pytest --cov --cov-report=term-missing
+      - name: Lint ops scripts
+        run: uv run ruff format --check --config pyproject.toml ../ops && uv run ruff check --config pyproject.toml ../ops && uv run mypy --strict ../ops/backup/backup.py
 
   frontend:
     runs-on: ubuntu-latest
@@ -90,4 +92,4 @@ jobs:
     needs: [backend, frontend]
     steps:
       - uses: actions/checkout@v5
-      - run: docker build backend && docker build frontend
+      - run: docker build backend && docker build frontend && docker build ops/backup

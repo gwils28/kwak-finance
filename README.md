@@ -28,6 +28,8 @@ docker compose exec -it api kwak create-owner --household "Home" --email you@exa
 
 `.env` must set `KWAK_ENV=prod` and `KWAK_SECRET_KEY` (from `cd backend && uv run kwak generate-key`). The key encrypts the TOTP secrets: back it up apart from the database backups. If it is lost, every user has to set up TOTP again.
 
+Backups run every night into `data/backups/` (create it first: `mkdir -p data/backups`); see [Operations](docs/OPERATIONS.md).
+
 `create-owner` asks for the password (at least 12 characters). At first login, the owner scans a QR code to set up TOTP (mandatory). There is no public sign-up: other members join by invitation.
 
 ## Documentation
@@ -35,6 +37,7 @@ docker compose exec -it api kwak create-owner --household "Home" --email you@exa
 - [Specifications](docs/SPECIFICATIONS.md)
 - [Architecture](docs/ARCHITECTURE.md) and [decision records](docs/adr/)
 - [Claude Code usage](docs/CLAUDE_CODE.md)
+- [Operations: backups and restore](docs/OPERATIONS.md)
 
 ## Contributing
 
