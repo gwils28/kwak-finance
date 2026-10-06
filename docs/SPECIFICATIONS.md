@@ -67,6 +67,11 @@ Goal of the budget module: **follow spending simply**, whether entered by hand o
 - F-BUD-3: Personal or household scope.
 - F-BUD-4: Target vs actual over past months and year to date, to see which categories are regularly over or under target.
 - F-BUD-5: Transactions without a category are listed as "to categorise" and counted apart, so totals are never silently wrong.
+- F-BUD-6: **Budget matrix**, the main view of F-BUD-4. One row per expense category (parent categories with their total, children below), one column per month (default: the last 12), plus a first column with the category's **monthly target**. Each cell shows the month's spending, its **gap to the target in € and in %** ((spent − target) / target), and a colour:
+  - **under**: spent more than 5 % below the target → green;
+  - **on target**: within ±5 % → neutral (pale grey);
+  - **over**: more than 5 % above the target → burnt orange / terracotta.
+  The 5 % band is a setting. A category without a target shows its spending without a colour. A total row sums every category; a "to categorise" row (F-BUD-5) is always visible. Clicking a cell opens that month's transactions for the category.
 
 ### 4.6 Recurring transactions (M)
 
@@ -115,8 +120,8 @@ Goal of the budget module: **follow spending simply**, whether entered by hand o
 | Phase | Content |
 |---|---|
 | 0 — Foundations | Repo, tooling, CI, Claude Code config, design tokens, Docker Compose skeleton |
-| 1 — Budget MVP | Auth + household, accounts, import, manual entry, categorisation, transactions, budget targets vs actual (F-BUD-1, 2, 5), spending KPIs and charts (F-DSH-4, 5) |
-| 2 — Budget complete | Budget history (F-BUD-4), rollover, recurrences, household sharing, reports |
+| 1 — Budget MVP | Auth + household, accounts, import, manual entry, categorisation, transactions, budget targets vs actual (F-BUD-1, 2, 4, 5) with the budget matrix (F-BUD-6), spending KPIs and charts (F-DSH-4, 5) |
+| 2 — Budget complete | Rollover, recurrences, household sharing, reports |
 | 3 — Wealth | Securities, crypto, real estate, loans, use assets, market data, net-worth history |
 | 4 — Analytics & DS | Cash-flow **forecasting** (time-series, temporal back-testing, naive baseline first), **wealth simulation** (Monte Carlo, FIRE / retirement projection, allocation scenarios). Interactive Dash pages for exploration |
 | 5 — Local GenAI | Ollama-based assistant: natural-language questions over your own data (text-to-SQL on a read-only analytics view), categorisation suggestions, monthly narrative summary. No data leaves the host |
@@ -150,6 +155,8 @@ Full scales (50–900) are in the blog's CSS variables `--color-primary-*`, `--c
 Typography: **Archivo** 700–900 (headings), **IBM Plex Sans** (UI text), **IBM Plex Mono** (amounts in tables use tabular numerals; code).
 
 Light and dark themes (the dark theme uses `neutral-900` / `neutral-800` surfaces, like the blog).
+
+Budget status colours (F-BUD-6) are semantic tokens built from the palette, defined for both themes: `budget-under` (from `primary`), `budget-on` (from `neutral`) and `budget-over` (from `secondary-700/800`, a burnt orange that reads as "over" without the alarm of the danger red).
 
 ## 8. Domain invariants (to be enforced by tests)
 
