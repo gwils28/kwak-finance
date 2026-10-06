@@ -10,6 +10,7 @@ import {
   listAccounts,
   listTransactions,
   type TransactionOut,
+  unlinkTransfer,
   updateTransaction,
 } from "../api/generated";
 import { apiErrorMessage, detailSentence } from "../auth/errors";
@@ -18,6 +19,7 @@ import { formatDate, todayIso } from "../lib/dates";
 import { formatEur, parseEurInput } from "../lib/money";
 import { CategoryOptions, categoriesQuery } from "./categories";
 import { RuleForm } from "./RuleForm";
+import { afterTransferChange, TransferBanner } from "./TransferBanner";
 
 export const PAGE_SIZE = 50;
 
@@ -131,6 +133,7 @@ export function TransactionsPage() {
           }}
         />
       )}
+      <TransferBanner onNotice={setNotice} />
       {ruleFrom && categories.data && (
         <RuleForm
           key={ruleFrom.id}
@@ -343,6 +346,11 @@ function TransactionTable({
       }),
     onSuccess: refresh,
   });
+  const unlink = useMutation({
+    mutationFn: async (groupId: string) =>
+      unlinkTransfer({ path: { group_id: groupId }, throwOnError: true }),
+    onSuccess: () => afterTransferChange(queryClient),
+  });
   const bulk = useMutation({
     mutationFn: async () =>
       (
@@ -432,19 +440,36 @@ function TransactionTable({
                 <td className="whitespace-nowrap px-3 py-2">{formatDate(t.booked_on)}</td>
                 <td className="px-3 py-2">{t.label}</td>
                 <td className="px-3 py-2">
-                  <select
-                    aria-label={`Category of ${t.label}`}
-                    className={`max-w-48 rounded-md border bg-surface px-2 py-1 ${
-                      t.category_id ? "border-border" : "border-warning"
-                    }`}
-                    value={t.category_id ?? ""}
-                    onChange={(e) =>
-                      setCategory.mutate({ id: t.id, categoryId: e.target.value || null })
-                    }
-                  >
-                    <option value="">To categorise</option>
-                    <CategoryOptions categories={categories} />
-                  </select>
+                  {t.transfer_group_id ? (
+                    <span className="flex items-center gap-2">
+                      <span className="whitespace-nowrap rounded-md bg-bg px-2 py-1 text-xs">
+                        Transfer {t.amount.startsWith("-") ? "to" : "from"}{" "}
+                        {t.transfer_account_name}
+                      </span>
+                      <Button
+                        variant="ghost"
+                        aria-label={`Unlink the transfer of ${t.label}`}
+                        disabled={unlink.isPending}
+                        onClick={() => t.transfer_group_id && unlink.mutate(t.transfer_group_id)}
+                      >
+                        Unlink
+                      </Button>
+                    </span>
+                  ) : (
+                    <select
+                      aria-label={`Category of ${t.label}`}
+                      className={`max-w-48 rounded-md border bg-surface px-2 py-1 ${
+                        t.category_id ? "border-border" : "border-warning"
+                      }`}
+                      value={t.category_id ?? ""}
+                      onChange={(e) =>
+                        setCategory.mutate({ id: t.id, categoryId: e.target.value || null })
+                      }
+                    >
+                      <option value="">To categorise</option>
+                      <CategoryOptions categories={categories} />
+                    </select>
+                  )}
                 </td>
                 <td className="whitespace-nowrap px-3 py-2 text-muted">{t.account_name}</td>
                 <td
