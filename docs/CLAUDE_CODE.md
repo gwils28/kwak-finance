@@ -45,7 +45,7 @@ Check once that `git config user.name` / `user.email` match the GitHub account.
 |---|---|---|
 | `prepare-commit` | Single-topic diff check, Conventional Commit message, PR description template | done |
 | `bank-import-profile` | How to add a new bank format: anonymised fixture, test written first, profile, dedup check | 1 |
-| `db-migration` | Alembic procedure: autogenerate, review, up/down test on testcontainers, never edit a merged migration | 1 |
+| `db-migration` | Alembic procedure: autogenerate, review, up/down test on testcontainers, never edit a merged migration | done |
 | `design-system` | Blog palette tokens, typography, chart colours, shadcn conventions, light/dark check with Chrome | 1 |
 | `money-rules` | Decimal handling, sign convention, rounding, domain invariants (spec §8) | 1 |
 | `forecast-protocol` | Temporal split, naive baseline, rolling-origin metrics with dispersion, seeds, no look-ahead property test | 4 |
