@@ -19,5 +19,7 @@ class UserSession(UUIDPrimaryKey, Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     last_seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # Set once the second factor is checked; until then only the TOTP endpoints accept it.
+    mfa_verified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
     user: Mapped[User] = relationship()

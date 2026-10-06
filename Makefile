@@ -15,13 +15,13 @@ hooks: ## Enable the repo git hooks (commit-msg guard)
 	git config core.hooksPath .githooks
 
 migrate: ## Apply database migrations (KWAK_DATABASE_URL)
-	cd $(BACKEND) && uv run alembic upgrade head
+	cd $(BACKEND) && KWAK_ENV=dev uv run alembic upgrade head
 
 migration: ## New migration from model changes: make migration m="add user table"
-	cd $(BACKEND) && uv run alembic revision --autogenerate -m "$(m)"
+	cd $(BACKEND) && KWAK_ENV=dev uv run alembic revision --autogenerate -m "$(m)"
 
 dev-api: ## Run the API with reload on :8000
-	cd $(BACKEND) && uv run uvicorn kwak_api.main:app --reload --port 8000
+	cd $(BACKEND) && KWAK_ENV=dev uv run uvicorn kwak_api.main:app --reload --port 8000
 
 dev-web: ## Run the Vite dev server on :5173 (proxies /api to :8000)
 	cd $(FRONTEND) && pnpm dev

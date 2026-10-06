@@ -1,7 +1,18 @@
 import enum
+from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import CheckConstraint, Enum, ForeignKey, Index, String, text
+from sqlalchemy import (
+    BigInteger,
+    CheckConstraint,
+    DateTime,
+    Enum,
+    ForeignKey,
+    Index,
+    LargeBinary,
+    String,
+    text,
+)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from kwak_api.db import Base, Timestamps, UUIDPrimaryKey
@@ -49,5 +60,11 @@ class User(UUIDPrimaryKey, Timestamps, Base):
         )
     )
     is_active: Mapped[bool] = mapped_column(server_default=text("true"))
+    # TOTP seed sealed with kwak_api.auth.crypto.SecretBox, bound to the user id.
+    totp_secret_enc: Mapped[bytes | None] = mapped_column(LargeBinary)
+    # Null while the user has not proven they can produce codes from the seed.
+    totp_confirmed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # Time step of the last accepted code, so a code cannot be used twice.
+    totp_last_counter: Mapped[int | None] = mapped_column(BigInteger)
 
     household: Mapped[Household] = relationship(back_populates="users")

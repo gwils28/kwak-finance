@@ -3,6 +3,7 @@ from collections.abc import Iterator
 import pytest
 from kwak_api.cli import main
 from kwak_api.models import User
+from kwak_api.settings import Settings
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -45,3 +46,9 @@ def test_create_owner_reports_a_rule_violation(
 
     assert code == 1
     assert "password" in capsys.readouterr().err
+
+
+def test_generate_key_prints_a_valid_secret_key(capsys: pytest.CaptureFixture[str]) -> None:
+    assert main(["generate-key"]) == 0
+    key = capsys.readouterr().out.strip()
+    assert len(Settings(secret_key=key).encryption_key) == 32

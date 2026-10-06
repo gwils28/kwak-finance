@@ -12,6 +12,7 @@ dependencies = [
     "alembic>=1.16",
     "psycopg[binary]>=3.2",
     "argon2-cffi>=25.1",
+    "cryptography>=46",
 ]
 
 [project.scripts]

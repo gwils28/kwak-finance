@@ -1,7 +1,9 @@
-"""Admin command line: `kwak migrate`, `kwak create-owner`."""
+"""Admin command line: `kwak migrate`, `kwak create-owner`, `kwak generate-key`."""
 
 import argparse
+import base64
 import getpass
+import secrets
 import sys
 from collections.abc import Callable, Sequence
 
@@ -22,6 +24,7 @@ def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="kwak", description="Kwak Finance administration")
     commands = parser.add_subparsers(dest="command", required=True)
     commands.add_parser("migrate", help="apply database migrations")
+    commands.add_parser("generate-key", help="print a new KWAK_SECRET_KEY")
     owner = commands.add_parser("create-owner", help="create the household and its owner")
     owner.add_argument("--household", required=True, help="household name")
     owner.add_argument("--email", required=True)
@@ -36,6 +39,10 @@ def main(
     read_password: Callable[[str], str] = getpass.getpass,
 ) -> int:
     args = _parser().parse_args(argv)
+
+    if args.command == "generate-key":
+        print(base64.urlsafe_b64encode(secrets.token_bytes(32)).decode())
+        return 0
 
     if args.command == "migrate":
         command.upgrade(alembic_config(Settings().database_url), "head")
