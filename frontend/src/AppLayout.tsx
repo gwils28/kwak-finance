@@ -37,6 +37,9 @@ export function AppLayout() {
             >
               Transactions
             </Link>
+            <Link to="/budget" className={NAV_LINK} activeProps={{ className: "text-accent" }}>
+              Budget
+            </Link>
             <Link to="/members" className={NAV_LINK} activeProps={{ className: "text-accent" }}>
               Members
             </Link>

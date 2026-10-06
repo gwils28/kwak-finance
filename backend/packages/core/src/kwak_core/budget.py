@@ -109,6 +109,8 @@ class Row:
     target: Decimal | None
     """The target in force in the last month shown."""
     cells: list[Cell] = field(default_factory=list)
+    target_from_children: bool = False
+    """The target is the sum of the subcategories' targets, not one set on this category."""
 
 
 @dataclass(frozen=True)
@@ -142,15 +144,20 @@ def build_matrix(
     def row(cid: UUID, parent: UUID | None, name: str, level: int, kids: list[UUID]) -> Row:
         cells = []
         targets_by_month = []
+        from_children = False
         for month in months:
             total = spent(cid, month) + sum((spent(k, month) for k in kids), zero)
             target = own_target(cid, month)
+            from_children = target is None and bool(kids)
             if target is None and kids:
                 child_targets = [t for k in kids if (t := own_target(k, month)) is not None]
                 target = sum(child_targets, zero) if child_targets else None
             targets_by_month.append(target)
             cells.append(_cell(month, total, target, band))
-        return Row(cid, name, parent, level, targets_by_month[-1] if months else None, cells)
+        last_target = targets_by_month[-1] if months else None
+        return Row(
+            cid, name, parent, level, last_target, cells, from_children and last_target is not None
+        )
 
     rows = []
     for cid, _parent, name in sorted(

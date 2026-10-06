@@ -1,0 +1,371 @@
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Link } from "@tanstack/react-router";
+import { useId, useState } from "react";
+import {
+  type BudgetStatus,
+  budgetMatrix,
+  type CellOut,
+  type RowOut,
+  type Scope,
+  setTarget,
+} from "../api/generated";
+import { apiErrorMessage, detailSentence } from "../auth/errors";
+import { ErrorAlert } from "../components/ui";
+import { parseEurInput } from "../lib/money";
+
+const WHOLE_EUR = new Intl.NumberFormat("fr-FR", {
+  style: "currency",
+  currency: "EUR",
+  maximumFractionDigits: 0,
+});
+const SIGNED_EUR = new Intl.NumberFormat("fr-FR", {
+  style: "currency",
+  currency: "EUR",
+  maximumFractionDigits: 0,
+  signDisplay: "exceptZero",
+});
+const SIGNED_PERCENT = new Intl.NumberFormat("fr-FR", {
+  style: "percent",
+  maximumFractionDigits: 0,
+  signDisplay: "exceptZero",
+});
+const MONTH_LABEL = new Intl.DateTimeFormat("en-GB", { month: "short", year: "numeric" });
+
+const STATUS_CLASS: Record<BudgetStatus, string> = {
+  under: "bg-budget-under-bg text-budget-under-fg",
+  on: "bg-budget-on-bg text-budget-on-fg",
+  over: "bg-budget-over-bg text-budget-over-fg",
+  none: "",
+};
+
+type Num = Intl.StringNumericLiteral;
+
+/** This calendar month as the API writes it: "2026-10". */
+export function thisMonth(): string {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+}
+
+function shiftMonth(month: string, delta: number): string {
+  const [year, m] = month.split("-").map(Number) as [number, number];
+  const index = year * 12 + (m - 1) + delta;
+  return `${Math.floor(index / 12)}-${String((index % 12) + 1).padStart(2, "0")}`;
+}
+
+function monthLabel(month: string): string {
+  const [year, m] = month.split("-").map(Number) as [number, number];
+  return MONTH_LABEL.format(new Date(year, m - 1, 1));
+}
+
+function monthBounds(month: string): { from: string; to: string } {
+  const [year, m] = month.split("-").map(Number) as [number, number];
+  const lastDay = new Date(year, m, 0).getDate();
+  return { from: `${month}-01`, to: `${month}-${String(lastDay).padStart(2, "0")}` };
+}
+
+/** "60.00" -> "60", "12.50" -> "12,50": how a target reads in its input. */
+function targetText(row: RowOut): string {
+  const target = row.target_from_children ? null : row.target;
+  if (target === null) return "";
+  return target.endsWith(".00") ? target.slice(0, -3) : target.replace(".", ",");
+}
+
+const fieldClass = "rounded-md border border-border bg-surface px-3 py-2";
+// The category and target columns stay visible while the months scroll sideways.
+const STICKY_NAME = "sticky left-0 z-10 w-52 min-w-52 bg-surface";
+const STICKY_TARGET = "sticky left-52 z-10 w-40 min-w-40 bg-surface border-r border-border";
+
+export function BudgetPage() {
+  const ids = { period: useId(), scope: useId(), band: useId() };
+  const [period, setPeriod] = useState(12);
+  const [scope, setScope] = useState<Scope>("household");
+  const [band, setBand] = useState("0.05");
+  const [error, setError] = useState<string | null>(null);
+  const [showEmpty, setShowEmpty] = useState(false);
+  const end = thisMonth();
+  const start = shiftMonth(end, -(period - 1));
+
+  const matrix = useQuery({
+    queryKey: ["budget", { start, end, scope, band }],
+    queryFn: async () =>
+      (await budgetMatrix({ query: { start, end, scope, band }, throwOnError: true })).data,
+    placeholderData: keepPreviousData,
+  });
+
+  const bandPercent = `${Math.round(Number(band) * 100)} %`;
+
+  return (
+    <div className="flex flex-col gap-6">
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-black tracking-tight">Budget</h1>
+          <p className="text-sm text-muted">
+            Spending per category and month against your monthly targets.
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-3">
+          <label htmlFor={ids.period} className="flex flex-col gap-1 text-sm font-medium">
+            Period
+            <select
+              id={ids.period}
+              className={fieldClass}
+              value={period}
+              onChange={(e) => setPeriod(Number(e.target.value))}
+            >
+              <option value={3}>Last 3 months</option>
+              <option value={6}>Last 6 months</option>
+              <option value={12}>Last 12 months</option>
+            </select>
+          </label>
+          <label htmlFor={ids.scope} className="flex flex-col gap-1 text-sm font-medium">
+            Accounts
+            <select
+              id={ids.scope}
+              className={fieldClass}
+              value={scope}
+              onChange={(e) => setScope(e.target.value as Scope)}
+            >
+              <option value="household">Household</option>
+              <option value="mine">Only mine</option>
+            </select>
+          </label>
+          <label htmlFor={ids.band} className="flex flex-col gap-1 text-sm font-medium">
+            Margin
+            <select
+              id={ids.band}
+              className={fieldClass}
+              value={band}
+              onChange={(e) => setBand(e.target.value)}
+            >
+              <option value="0.05">± 5 %</option>
+              <option value="0.10">± 10 %</option>
+              <option value="0.15">± 15 %</option>
+            </select>
+          </label>
+        </div>
+      </div>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <Legend band={bandPercent} />
+        <label className="flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={showEmpty}
+            onChange={(e) => setShowEmpty(e.target.checked)}
+          />
+          Show categories with no spending or target
+        </label>
+      </div>
+      <ErrorAlert message={error} />
+      {matrix.isError && <ErrorAlert message="Could not load the budget." />}
+      {matrix.isPending && <p className="text-sm text-muted">Loading…</p>}
+      {matrix.data && (
+        <div className="overflow-x-auto rounded-lg border border-border bg-surface">
+          <table aria-label="Budget by category and month" className="w-full text-sm">
+            <thead className="text-left text-muted">
+              <tr>
+                <th className={`${STICKY_NAME} px-3 py-2 font-medium`}>Category</th>
+                <th className={`${STICKY_TARGET} px-3 py-2 font-medium`}>Monthly target</th>
+                {matrix.data.months.map((m) => (
+                  <th key={m} className="whitespace-nowrap px-3 py-2 text-right font-medium">
+                    {monthLabel(m)}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border">
+              {visibleRows(matrix.data.rows, showEmpty).map((row) => (
+                <MatrixRow
+                  key={row.category_id}
+                  row={row}
+                  onError={setError}
+                  editable
+                  categoryParam={row.category_id ?? "none"}
+                />
+              ))}
+              <MatrixRow row={matrix.data.uncategorised} onError={setError} categoryParam="none" />
+              <MatrixRow row={matrix.data.total} onError={setError} isTotal />
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function isEmpty(row: RowOut): boolean {
+  return row.target === null && row.cells.every((c) => Number(c.spent) === 0);
+}
+
+/** Without `showEmpty`, drop rows with nothing to say; a parent stays while a child shows. */
+function visibleRows(rows: RowOut[], showEmpty: boolean): RowOut[] {
+  if (showEmpty) return rows;
+  const kept = new Set(rows.filter((r) => !isEmpty(r)).map((r) => r.category_id));
+  for (const row of rows) if (row.parent_id && kept.has(row.category_id)) kept.add(row.parent_id);
+  return rows.filter((r) => kept.has(r.category_id));
+}
+
+function Legend({ band }: { band: string }) {
+  const swatch = "inline-block h-3 w-3 rounded-sm align-middle";
+  return (
+    <p className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted">
+      <span>
+        <span className={`${swatch} bg-budget-under-bg`} /> Green: more than {band} below the target
+      </span>
+      <span>
+        <span className={`${swatch} bg-budget-on-bg`} /> Grey: within ±{band}
+      </span>
+      <span>
+        <span className={`${swatch} bg-budget-over-bg`} /> Burnt orange: more than {band} above
+      </span>
+      <span>No colour: no target.</span>
+    </p>
+  );
+}
+
+function MatrixRow({
+  row,
+  onError,
+  editable = false,
+  isTotal = false,
+  categoryParam,
+}: {
+  row: RowOut;
+  onError: (message: string | null) => void;
+  editable?: boolean;
+  isTotal?: boolean;
+  categoryParam?: string;
+}) {
+  const weight = row.level === 0 ? "font-semibold" : "";
+  const rowClass = isTotal ? "border-t-2 border-border font-bold" : "";
+  return (
+    <tr className={rowClass}>
+      <th
+        scope="row"
+        className={`${STICKY_NAME} whitespace-nowrap px-3 py-2 text-left ${weight} ${
+          row.level === 1 ? "pl-8 font-normal" : ""
+        }`}
+      >
+        {row.name}
+      </th>
+      <td className={`${STICKY_TARGET} px-3 py-2`}>
+        {editable && row.category_id ? (
+          <TargetInput row={row} categoryId={row.category_id} onError={onError} />
+        ) : (
+          <span className="tabular text-muted">
+            {row.target === null ? "" : WHOLE_EUR.format(row.target as Num)}
+          </span>
+        )}
+      </td>
+      {row.cells.map((cell) => (
+        <MatrixCell key={cell.month} row={row} cell={cell} categoryParam={categoryParam} />
+      ))}
+    </tr>
+  );
+}
+
+function MatrixCell({
+  row,
+  cell,
+  categoryParam,
+}: {
+  row: RowOut;
+  cell: CellOut;
+  categoryParam: string | undefined;
+}) {
+  const spent = WHOLE_EUR.format(cell.spent as Num);
+  const gap =
+    cell.gap !== null && cell.gap_ratio !== null
+      ? `${SIGNED_EUR.format(cell.gap as Num)} · ${SIGNED_PERCENT.format(cell.gap_ratio as Num)}`
+      : null;
+  const content = (
+    <>
+      <span className="tabular block">{spent}</span>
+      {gap && <span className="tabular block text-xs opacity-80">{gap}</span>}
+    </>
+  );
+  return (
+    <td
+      data-status={cell.status}
+      className={`whitespace-nowrap px-3 py-2 text-right ${STATUS_CLASS[cell.status]}`}
+    >
+      {categoryParam ? (
+        <Link
+          to="/transactions"
+          search={{ category: categoryParam, ...monthBounds(cell.month) }}
+          aria-label={`${row.name}, ${monthLabel(cell.month)}: ${spent}`}
+          className="block hover:underline"
+        >
+          {content}
+        </Link>
+      ) : (
+        content
+      )}
+    </td>
+  );
+}
+
+function TargetInput({
+  row,
+  categoryId,
+  onError,
+}: {
+  row: RowOut;
+  categoryId: string;
+  onError: (message: string | null) => void;
+}) {
+  const queryClient = useQueryClient();
+  const [text, setText] = useState(targetText(row));
+  const save = useMutation({
+    mutationFn: async (amount: string | null) => {
+      const { data, error, response } = await setTarget({
+        path: { category_id: categoryId },
+        body: { amount, from_month: thisMonth() },
+      });
+      if (!data) throw new Error(detailSentence(error) ?? apiErrorMessage(response));
+      return data;
+    },
+    onSuccess: () => {
+      onError(null);
+      return queryClient.invalidateQueries({ queryKey: ["budget"] });
+    },
+    onError: (exc) => onError(`${row.name}: ${exc.message}`),
+  });
+
+  const commit = () => {
+    if (text.trim() === targetText(row)) return;
+    if (text.trim() === "") {
+      save.mutate(null);
+      return;
+    }
+    const amount = parseEurInput(text);
+    if (amount === null || amount.startsWith("-")) {
+      onError(`${row.name}: enter a positive amount in euros, e.g. 300 or 12,50.`);
+      return;
+    }
+    save.mutate(amount);
+  };
+
+  return (
+    <input
+      aria-label={`Monthly target for ${row.name}`}
+      inputMode="decimal"
+      placeholder={
+        row.target_from_children && row.target !== null
+          ? `${WHOLE_EUR.format(row.target as Num)} (sum)`
+          : "—"
+      }
+      title={
+        row.target_from_children
+          ? "Sum of the subcategories' targets. Type an amount to set one for the whole category."
+          : undefined
+      }
+      className="tabular w-32 rounded-md border border-border bg-surface px-2 py-1 text-right"
+      value={text}
+      onChange={(e) => setText(e.target.value)}
+      onBlur={commit}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") e.currentTarget.blur();
+      }}
+    />
+  );
+}

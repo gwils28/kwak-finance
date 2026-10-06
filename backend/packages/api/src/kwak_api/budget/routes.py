@@ -73,6 +73,8 @@ class RowOut(BaseModel):
     level: int
     target: Decimal | None
     """Target in force in the last month shown."""
+    target_from_children: bool
+    """True when `target` is the subcategories' sum rather than a target set on this category."""
     cells: list[CellOut]
 
     @classmethod
@@ -83,6 +85,7 @@ class RowOut(BaseModel):
             parent_id=row.parent_id,
             level=row.level,
             target=row.target,
+            target_from_children=row.target_from_children,
             cells=[CellOut.of(c) for c in row.cells],
         )
 

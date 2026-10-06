@@ -698,6 +698,10 @@ export type RowOut = {
      * Target
      */
     target: string | null;
+    /**
+     * Target From Children
+     */
+    target_from_children: boolean;
 };
 
 /**
