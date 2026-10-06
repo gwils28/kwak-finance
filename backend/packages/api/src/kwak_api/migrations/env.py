@@ -1,9 +1,11 @@
+import kwak_api.models  # noqa: F401  (registers the tables on Base.metadata)
 from alembic import context
 from kwak_api.db import Base, make_engine
 from kwak_api.settings import Settings
 
 config = context.config
-url = config.get_main_option("sqlalchemy.url") or Settings().database_url
+# Tests pass the URL in; the CLI (configured in pyproject.toml) reads it from the settings.
+url = config.attributes.get("database_url") or Settings().database_url
 
 
 def run_migrations_online() -> None:

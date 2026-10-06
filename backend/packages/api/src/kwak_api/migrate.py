@@ -8,5 +8,5 @@ SCRIPT_LOCATION = "kwak_api:migrations"
 def alembic_config(database_url: str) -> Config:
     config = Config()
     config.set_main_option("script_location", SCRIPT_LOCATION)
-    config.set_main_option("sqlalchemy.url", database_url.replace("%", "%%"))
+    config.attributes["database_url"] = database_url
     return config

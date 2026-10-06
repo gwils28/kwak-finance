@@ -1,7 +1,9 @@
 from collections.abc import Iterator
 
 import pytest
+from alembic import command
 from kwak_api.db import make_engine
+from kwak_api.migrate import alembic_config
 from sqlalchemy import Connection, Engine
 from sqlalchemy.orm import Session
 from testcontainers.community.postgres import PostgresContainer
@@ -15,6 +17,8 @@ def database_url() -> Iterator[str]:
 
 @pytest.fixture(scope="session")
 def engine(database_url: str) -> Iterator[Engine]:
+    """Engine on a database migrated to head."""
+    command.upgrade(alembic_config(database_url), "head")
     engine = make_engine(database_url)
     yield engine
     engine.dispose()
