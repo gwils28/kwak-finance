@@ -1,5 +1,14 @@
 """User identity rules."""
 
+import enum
+
+
+class Language(enum.StrEnum):
+    """Languages of the interface."""
+
+    EN = "en"
+    FR = "fr"
+
 
 def normalize_email(value: str) -> str:
     """Canonical form used for storage and login lookup: trimmed and lowercased.

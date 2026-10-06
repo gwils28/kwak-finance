@@ -2,6 +2,7 @@ import enum
 from datetime import datetime
 from uuid import UUID
 
+from kwak_core.users import Language
 from sqlalchemy import (
     BigInteger,
     CheckConstraint,
@@ -60,6 +61,17 @@ class User(UUIDPrimaryKey, Timestamps, Base):
         )
     )
     is_active: Mapped[bool] = mapped_column(server_default=text("true"))
+    # NULL until the user picks one: the interface then follows the browser.
+    language: Mapped[Language | None] = mapped_column(
+        Enum(
+            Language,
+            name="language",
+            native_enum=False,
+            create_constraint=True,
+            length=5,
+            values_callable=lambda langs: [lang.value for lang in langs],
+        )
+    )
     # TOTP seed sealed with kwak_api.auth.crypto.SecretBox, bound to the user id.
     totp_secret_enc: Mapped[bytes | None] = mapped_column(LargeBinary)
     # Null while the user has not proven they can produce codes from the seed.

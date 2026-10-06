@@ -1097,6 +1097,15 @@
         "title": "Kpis",
         "type": "object"
       },
+      "Language": {
+        "description": "Languages of the interface.",
+        "enum": [
+          "en",
+          "fr"
+        ],
+        "title": "Language",
+        "type": "string"
+      },
       "Linked": {
         "properties": {
           "linked": {
@@ -1241,6 +1250,18 @@
           "end"
         ],
         "title": "Period",
+        "type": "object"
+      },
+      "Preferences": {
+        "properties": {
+          "language": {
+            "$ref": "#/components/schemas/Language"
+          }
+        },
+        "required": [
+          "language"
+        ],
+        "title": "Preferences",
         "type": "object"
       },
       "PreviewCounts": {
@@ -2196,6 +2217,16 @@
             "title": "Id",
             "type": "string"
           },
+          "language": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Language"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "role": {
             "$ref": "#/components/schemas/Role"
           }
@@ -2205,7 +2236,8 @@
           "household_id",
           "email",
           "display_name",
-          "role"
+          "role",
+          "language"
         ],
         "title": "UserOut",
         "type": "object"
@@ -2783,6 +2815,64 @@
           }
         },
         "summary": "Me",
+        "tags": [
+          "auth"
+        ]
+      },
+      "patch": {
+        "description": "Save the signed-in user's preferences.",
+        "operationId": "updateMe",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "kwak_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Kwak Session"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Preferences"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Update Me",
         "tags": [
           "auth"
         ]
