@@ -119,3 +119,21 @@ def test_a_bad_month_is_rejected(owner_client: TestClient) -> None:
 
 def test_the_dashboard_requires_a_full_sign_in(client: TestClient) -> None:
     assert client.get("/api/dashboard").status_code == 401
+
+
+def test_the_average_ignores_months_before_any_data(owner_client: TestClient) -> None:
+    _setup(owner_client)  # data only in March 2026
+    account = owner_client.get("/api/accounts").json()[0]["id"]
+    owner_client.post(
+        "/api/transactions",
+        json={
+            "account_id": account,
+            "booked_on": "2026-04-10",
+            "amount": "-100.00",
+            "label": "April",
+        },
+        headers=csrf(owner_client),
+    )
+    kpis = _dashboard(owner_client, month="2026-04")["kpis"]
+    # Only March had data before April: the average is March's spending, not a 12th of it.
+    assert kpis["average_spent"] == "1621.04"

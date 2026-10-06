@@ -11,25 +11,8 @@ import {
 } from "../api/generated";
 import { apiErrorMessage, detailSentence } from "../auth/errors";
 import { ErrorAlert } from "../components/ui";
-import { parseEurInput } from "../lib/money";
-
-const WHOLE_EUR = new Intl.NumberFormat("fr-FR", {
-  style: "currency",
-  currency: "EUR",
-  maximumFractionDigits: 0,
-});
-const SIGNED_EUR = new Intl.NumberFormat("fr-FR", {
-  style: "currency",
-  currency: "EUR",
-  maximumFractionDigits: 0,
-  signDisplay: "exceptZero",
-});
-const SIGNED_PERCENT = new Intl.NumberFormat("fr-FR", {
-  style: "percent",
-  maximumFractionDigits: 0,
-  signDisplay: "exceptZero",
-});
-const MONTH_LABEL = new Intl.DateTimeFormat("en-GB", { month: "short", year: "numeric" });
+import { formatEurSigned, formatEurWhole, formatPercentSigned, parseEurInput } from "../lib/money";
+import { monthBounds, monthLabel, shiftMonth, thisMonth } from "../lib/months";
 
 const STATUS_CLASS: Record<BudgetStatus, string> = {
   under: "bg-budget-under-bg text-budget-under-fg",
@@ -38,30 +21,7 @@ const STATUS_CLASS: Record<BudgetStatus, string> = {
   none: "",
 };
 
-type Num = Intl.StringNumericLiteral;
-
-/** This calendar month as the API writes it: "2026-10". */
-export function thisMonth(): string {
-  const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-}
-
-function shiftMonth(month: string, delta: number): string {
-  const [year, m] = month.split("-").map(Number) as [number, number];
-  const index = year * 12 + (m - 1) + delta;
-  return `${Math.floor(index / 12)}-${String((index % 12) + 1).padStart(2, "0")}`;
-}
-
-function monthLabel(month: string): string {
-  const [year, m] = month.split("-").map(Number) as [number, number];
-  return MONTH_LABEL.format(new Date(year, m - 1, 1));
-}
-
-function monthBounds(month: string): { from: string; to: string } {
-  const [year, m] = month.split("-").map(Number) as [number, number];
-  const lastDay = new Date(year, m, 0).getDate();
-  return { from: `${month}-01`, to: `${month}-${String(lastDay).padStart(2, "0")}` };
-}
+export { thisMonth };
 
 /** "60.00" -> "60", "12.50" -> "12,50": how a target reads in its input. */
 function targetText(row: RowOut): string {
@@ -252,7 +212,7 @@ function MatrixRow({
           <TargetInput row={row} categoryId={row.category_id} onError={onError} />
         ) : (
           <span className="tabular text-muted">
-            {row.target === null ? "" : WHOLE_EUR.format(row.target as Num)}
+            {row.target === null ? "" : formatEurWhole(row.target)}
           </span>
         )}
       </td>
@@ -272,10 +232,10 @@ function MatrixCell({
   cell: CellOut;
   categoryParam: string | undefined;
 }) {
-  const spent = WHOLE_EUR.format(cell.spent as Num);
+  const spent = formatEurWhole(cell.spent);
   const gap =
     cell.gap !== null && cell.gap_ratio !== null
-      ? `${SIGNED_EUR.format(cell.gap as Num)} · ${SIGNED_PERCENT.format(cell.gap_ratio as Num)}`
+      ? `${formatEurSigned(cell.gap)} · ${formatPercentSigned(cell.gap_ratio)}`
       : null;
   const content = (
     <>
@@ -351,7 +311,7 @@ function TargetInput({
       inputMode="decimal"
       placeholder={
         row.target_from_children && row.target !== null
-          ? `${WHOLE_EUR.format(row.target as Num)} (sum)`
+          ? `${formatEurWhole(row.target)} (sum)`
           : "—"
       }
       title={

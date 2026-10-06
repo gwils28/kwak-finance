@@ -39,7 +39,7 @@ class Dashboard:
     current: MonthFigures
     previous: MonthFigures
     average_spent: Decimal
-    """Average spending of the 12 months before `month`."""
+    """Average spending of the months with transactions among the 12 before `month`."""
     top: list[TopCategory]
     to_categorise_count: int
     to_categorise_spent: Decimal
@@ -102,7 +102,8 @@ def dashboard(db: Session, viewer: User, month: Month, scope: Scope) -> Dashboar
         return MonthSummary(m, figures, by_category)
 
     summaries = {m: summary(m) for m in months}
-    history = [summaries[m].figures.spent for m in months[:-1]]
+    # Months before the household's first transaction are not months of zero spending.
+    history = [summaries[m].figures.spent for m in months[:-1] if flows[m]]
 
     daily: dict[date, Decimal] = defaultdict(Decimal)
     uncategorised_count = 0
@@ -125,7 +126,7 @@ def dashboard(db: Session, viewer: User, month: Month, scope: Scope) -> Dashboar
         month=month,
         current=current.figures,
         previous=summaries[months[-2]].figures,
-        average_spent=sum(history, Decimal(0)) / len(history),
+        average_spent=sum(history, Decimal(0)) / len(history) if history else Decimal(0),
         top=current.by_category[:5],
         to_categorise_count=uncategorised_count,
         to_categorise_spent=uncategorised_spent,

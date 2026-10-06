@@ -66,6 +66,13 @@
   --color-budget-on-fg: var(--color-neutral-700);
   --color-budget-over-bg: var(--color-secondary-200);
   --color-budget-over-fg: var(--color-secondary-900);
+
+  /* Charts: one accent hue for the subject, a grey for context (emphasis form). Pairs checked
+     with the dataviz validator: CVD dE 14.2, normal 17.5 light; the light grey is under 3:1,
+     so its series always carries a direct label and every chart a table view. */
+  --color-chart-accent: var(--color-primary-600);
+  --color-chart-context: var(--color-neutral-400);
+  --color-chart-grid: var(--color-neutral-200);
 }
 
 @layer base {
@@ -87,6 +94,11 @@
     --color-budget-on-fg: var(--color-neutral-200);
     --color-budget-over-bg: var(--color-secondary-900);
     --color-budget-over-fg: var(--color-secondary-200);
+
+    /* CVD dE 16.6, normal 20.7 on the dark surface. */
+    --color-chart-accent: var(--color-primary-500);
+    --color-chart-context: var(--color-neutral-300);
+    --color-chart-grid: var(--color-neutral-700);
   }
 
   body {
