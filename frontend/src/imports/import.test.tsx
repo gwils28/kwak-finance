@@ -36,7 +36,7 @@ const preview = {
     row(4, "CARTE BOULANGERIE", "-4.20", "new"),
     row(5, "VIR RECU SALAIRE", "2480.15", "new"),
     row(6, "CARTE CAFE", "-1.10", "duplicate"),
-    row(7, "OLD", "-3.00", "before_opening"),
+    { ...row(7, "OLD", "-3.00", "before_opening"), booked_on: "2026-02-27" },
   ],
   errors: [{ line: 8, message: "invalid date '32/03/2026', expected DD/MM/YYYY" }],
   already_imported_at: null,
@@ -208,4 +208,28 @@ test("an import can be rolled back after confirming", async () => {
 
   expect(await within(history).findByText(/Rolled back on 16 Mar 2026/)).toBeInTheDocument();
   expect(calls.some((c) => c.route === "DELETE /api/imports/b1")).toBe(true);
+});
+
+test("rows before the opening date are explained and the account can be opened earlier", async () => {
+  let previews = 0;
+  const calls = api({
+    "POST /api/accounts/a1/imports/preview": () => {
+      previews += 1;
+      return Response.json(preview);
+    },
+    "PATCH /api/accounts/a1": (body) => Response.json({ ...account, ...(body as object) }),
+  });
+  render(<TestApp path="/accounts/a1/import" />);
+
+  const user = await choose();
+
+  expect(
+    await screen.findByText(/1 operation is before the account's opening date \(1 Mar 2026\)/),
+  ).toBeInTheDocument();
+  await user.click(screen.getByRole("button", { name: "Open the account on 27 Feb 2026" }));
+
+  await vi.waitFor(() => expect(previews).toBe(2));
+  expect(calls.find((c) => c.route === "PATCH /api/accounts/a1")?.body).toEqual({
+    opening_date: "2026-02-27",
+  });
 });
