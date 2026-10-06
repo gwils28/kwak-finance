@@ -36,4 +36,5 @@ def test_sessions_are_committed_by_the_real_request_scope(database_url: str) -> 
             "/api/auth/login", json={"email": "owner@example.com", "password": PASSWORD}
         )
         assert login.status_code == 200
-        assert client.get("/api/auth/me").status_code == 200
+        # "second factor required", not "not authenticated": the session row was committed.
+        assert client.get("/api/auth/me").json() == {"detail": "second factor required"}

@@ -6,6 +6,7 @@ from datetime import UTC, datetime
 from fastapi import Request
 from sqlalchemy.orm import Session, sessionmaker
 
+from kwak_api.auth.crypto import SecretBox
 from kwak_api.settings import Settings
 
 
@@ -23,3 +24,7 @@ def get_db(request: Request) -> Iterator[Session]:
 
 def get_now() -> datetime:
     return datetime.now(UTC)
+
+
+def get_secret_box(request: Request) -> SecretBox:
+    return SecretBox(get_settings(request).encryption_key)
