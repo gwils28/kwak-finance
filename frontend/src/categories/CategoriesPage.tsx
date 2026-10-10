@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { type FormEvent, useId, useState } from "react";
 import {
   applyRules,
@@ -14,11 +14,13 @@ import {
   updateRule,
 } from "../api/generated";
 import { apiErrorMessage, detailSentence } from "../auth/errors";
+import { meQuery } from "../auth/session";
 import { Button, ErrorAlert, TextField } from "../components/ui";
 import { useI18n } from "../i18n";
 import type { Messages } from "../i18n/en";
 import { amountInput, formatEur, parseEurInput } from "../lib/money";
 import { CategoryOptions, categoriesQuery } from "../transactions/categories";
+import { RestoreDefaults } from "./RestoreDefaults";
 
 const fieldClass = "rounded-md border border-border bg-surface px-3 py-2";
 
@@ -48,6 +50,7 @@ function useRefresh() {
 
 export function CategoriesPage() {
   const { t } = useI18n();
+  const { data: user } = useSuspenseQuery(meQuery);
   const categories = useQuery(categoriesQuery);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState("");
@@ -75,6 +78,7 @@ export function CategoriesPage() {
         </div>
       )}
       <RulesSection categories={all} {...report} />
+      {user.role === "owner" && <RestoreDefaults {...report} />}
     </div>
   );
 }

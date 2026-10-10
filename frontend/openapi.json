@@ -1800,6 +1800,97 @@
         "title": "RecoveryCodesOut",
         "type": "object"
       },
+      "RenameOut": {
+        "properties": {
+          "from": {
+            "title": "From",
+            "type": "string"
+          },
+          "to": {
+            "title": "To",
+            "type": "string"
+          }
+        },
+        "required": [
+          "from",
+          "to"
+        ],
+        "title": "RenameOut",
+        "type": "object"
+      },
+      "RestoreOut": {
+        "description": "What restoring the default categories does (GET) or did (POST).",
+        "properties": {
+          "created": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Created",
+            "type": "array"
+          },
+          "deleted": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Deleted",
+            "type": "array"
+          },
+          "language": {
+            "$ref": "#/components/schemas/Language"
+          },
+          "locked_plans_affected": {
+            "title": "Locked Plans Affected",
+            "type": "integer"
+          },
+          "merged": {
+            "items": {
+              "$ref": "#/components/schemas/RenameOut"
+            },
+            "title": "Merged",
+            "type": "array"
+          },
+          "moved": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Moved",
+            "type": "array"
+          },
+          "plan_targets_deleted": {
+            "title": "Plan Targets Deleted",
+            "type": "integer"
+          },
+          "renamed": {
+            "items": {
+              "$ref": "#/components/schemas/RenameOut"
+            },
+            "title": "Renamed",
+            "type": "array"
+          },
+          "rules_deleted": {
+            "title": "Rules Deleted",
+            "type": "integer"
+          },
+          "transactions_to_categorise": {
+            "title": "Transactions To Categorise",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "language",
+          "created",
+          "renamed",
+          "merged",
+          "moved",
+          "deleted",
+          "transactions_to_categorise",
+          "rules_deleted",
+          "plan_targets_deleted",
+          "locked_plans_affected"
+        ],
+        "title": "RestoreOut",
+        "type": "object"
+      },
       "ReviewOut": {
         "properties": {
           "band": {
@@ -4675,6 +4766,104 @@
           }
         },
         "summary": "Create Category",
+        "tags": [
+          "categories"
+        ]
+      }
+    },
+    "/api/categories/restore": {
+      "get": {
+        "description": "What restoring the default categories would do, without changing anything.",
+        "operationId": "previewRestore",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "kwak_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Kwak Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RestoreOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Preview Restore",
+        "tags": [
+          "categories"
+        ]
+      },
+      "post": {
+        "description": "Restore the default categories, named in the owner's language (owner only).\n\nDefaults found are kept (renamed, moved back) with their transactions, rules and plan\ntargets; duplicates merge into them; missing ones are created; every other category is\ndeleted: its transactions go back to \"to categorise\", its rules and plan targets go.",
+        "operationId": "restoreDefaults",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "kwak_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Kwak Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RestoreOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Restore Defaults",
         "tags": [
           "categories"
         ]

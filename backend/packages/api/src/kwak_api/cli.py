@@ -9,6 +9,7 @@ import sys
 from collections.abc import Callable, Sequence
 
 from alembic import command
+from kwak_core.users import Language
 from sqlalchemy.orm import Session
 
 from kwak_api.db import make_engine
@@ -31,6 +32,12 @@ def _parser() -> argparse.ArgumentParser:
     owner.add_argument("--household", required=True, help="household name")
     owner.add_argument("--email", required=True)
     owner.add_argument("--name", required=True, help="owner display name")
+    owner.add_argument(
+        "--language",
+        choices=[language.value for language in Language],
+        default=Language.EN.value,
+        help="interface language, also used to name the default categories (default: en)",
+    )
     return parser
 
 
@@ -70,6 +77,7 @@ def main(
                 email=args.email,
                 display_name=args.name,
                 password=password,
+                language=Language(args.language),
             )
         except (ValueError, HouseholdAlreadyExistsError) as exc:
             print(f"error: {exc}", file=sys.stderr)
