@@ -3,7 +3,6 @@ from typing import Any
 
 import pytest
 from fastapi.testclient import TestClient
-from kwak_api.models import User
 
 from tests.api.conftest import Clock, csrf, log_in
 
@@ -11,12 +10,6 @@ CHECKING_CSV = (
     Path(__file__).parents[2] / "fixtures" / "import" / "societe_generale" / "checking.csv"
 ).read_bytes()
 MARCH = {"start": "2026-02", "end": "2026-03"}
-
-
-@pytest.fixture
-def owner_client(client: TestClient, clock: Clock, owner: User) -> TestClient:
-    log_in(client, clock)
-    return client
 
 
 def _category(client: TestClient, name: str) -> str:
@@ -140,33 +133,6 @@ def test_income_stays_out_and_uncategorised_spending_has_its_row(owner_client: T
     # Every outflow of the fixture: 1 621.04 €, of which 6.40 € is categorised.
     assert matrix["uncategorised"]["cells"][1]["spent"] == "1614.64"
     assert matrix["total"]["cells"][1]["spent"] == "1621.04"
-
-
-def test_a_new_target_applies_from_its_month_only(owner_client: TestClient) -> None:
-    _import_and_categorise(owner_client)
-    _target(owner_client, "Bakery and coffee", "100.00", "2026-02")
-    _target(owner_client, "Bakery and coffee", "6.00", "2026-03")
-
-    cells = _row(_matrix(owner_client), "Bakery and coffee")["cells"]
-    assert [c["target"] for c in cells] == ["100.00", "6.00"]
-
-    current = owner_client.get("/api/budget/targets", params={"month": "2026-03"}).json()
-    assert current == [
-        {
-            "category_id": _category(owner_client, "Bakery and coffee"),
-            "amount": "6.00",
-            "valid_from": "2026-03",
-        }
-    ]
-
-
-def test_a_target_can_be_removed_from_a_month_on(owner_client: TestClient) -> None:
-    _import_and_categorise(owner_client)
-    _target(owner_client, "Bakery and coffee", "6.00", "2026-02")
-    _target(owner_client, "Bakery and coffee", None, "2026-03")
-    cells = _row(_matrix(owner_client), "Bakery and coffee")["cells"]
-    assert [c["target"] for c in cells] == ["6.00", None]
-    assert cells[1]["status"] == "none"
 
 
 @pytest.mark.parametrize(

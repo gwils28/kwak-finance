@@ -78,6 +78,8 @@ export const API_MESSAGES_FR: Record<string, string> = {
   "a sibling category already has this name": "une catégorie voisine porte déjà ce nom",
   "a subcategory has the same kind as its parent":
     "une sous-catégorie a le même type que sa parente",
+  "a plan closes early before its last month":
+    "un plan se clôture par anticipation avant son dernier mois",
   "a target cannot be negative": "un objectif ne peut pas être négatif",
   "a transfer has no category: unlink it first":
     "un transfert n'a pas de catégorie : déliez-le d'abord",
@@ -87,6 +89,7 @@ export const API_MESSAGES_FR: Record<string, string> = {
     "un transfert déplace de l'argent entre deux comptes différents",
   "categories have two levels: a subcategory cannot have children":
     "les catégories ont deux niveaux : une sous-catégorie ne peut pas avoir d'enfants",
+  "budget plan not found": "plan budgétaire introuvable",
   "category not found": "catégorie introuvable",
   "display name is required": "le nom est obligatoire",
   "file too large (2 MB at most)": "fichier trop volumineux (2 Mo au plus)",
@@ -113,6 +116,8 @@ export const API_MESSAGES_FR: Record<string, string> = {
   "the date is before the account's opening date": "la date est antérieure à l'ouverture du compte",
   "the minimum amount is above the maximum": "le montant minimum dépasse le maximum",
   "this account is closed": "ce compte est clôturé",
+  "this plan can no longer be edited: close it early to change its targets":
+    "ce plan n'est plus modifiable : clôturez-le par anticipation pour changer ses objectifs",
   "this account is closed: reopen it to import": "ce compte est clôturé : rouvrez-le pour importer",
   "this institution already has an account with this name":
     "cet établissement a déjà un compte de ce nom",
@@ -142,6 +147,12 @@ export const API_PATTERNS_FR: [RegExp, string][] = [
   ],
   [/^invalid email address: (.*)$/, "adresse e-mail invalide : $1"],
   [/^invalid month (.*), expected YYYY-MM$/, "mois invalide $1, attendu AAAA-MM"],
+  [/^budget plans overlap: (.*) and (.*)$/, "les plans budgétaires se chevauchent : $1 et $2"],
+  [
+    /^invalid period (.*), expected YYYY, YYYY-Sn or YYYY-Qn$/,
+    "période invalide $1, attendu AAAA, AAAA-Sn ou AAAA-Qn",
+  ],
+  [/^no such period: (.*)$/, "cette période n'existe pas : $1"],
   [
     /^amount must be a whole number of cents: (.*)$/,
     "le montant doit être un nombre entier de centimes : $1",
