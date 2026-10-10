@@ -99,6 +99,7 @@ export const API_MESSAGES_FR: Record<string, string> = {
   "invalid password": "mot de passe incorrect",
   "missing or invalid CSRF token": "jeton de sécurité manquant ou invalide : rechargez la page",
   "move or delete its subcategories first": "déplacez ou supprimez d'abord ses sous-catégories",
+  "no earlier budget plan to compare with": "aucun plan budgétaire antérieur à comparer",
   "no import to roll back with this id": "aucun import à annuler",
   "no pending invitation with this id": "aucune invitation en attente",
   "not authenticated": "non connecté",
@@ -113,6 +114,8 @@ export const API_MESSAGES_FR: Record<string, string> = {
   "start is after end": "le début est après la fin",
   "targets are set on expense categories": "les objectifs se fixent sur des catégories de dépense",
   "the amount cannot be zero": "le montant ne peut pas être nul",
+  "the cumulative chart is for an expense category":
+    "la courbe cumulée porte sur une catégorie de dépense",
   "the date is before the account's opening date": "la date est antérieure à l'ouverture du compte",
   "the minimum amount is above the maximum": "le montant minimum dépasse le maximum",
   "this account is closed": "ce compte est clôturé",

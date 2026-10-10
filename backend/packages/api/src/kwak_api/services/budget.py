@@ -43,7 +43,7 @@ UNSET = object()
 FROZEN = "this plan can no longer be edited: close it early to change its targets"
 
 
-def _core(plan: BudgetPlan) -> Plan:
+def core_plan(plan: BudgetPlan) -> Plan:
     return Plan(
         Period(PeriodKind(plan.kind), plan.year, plan.number),
         {t.category_id: t.amount for t in plan.targets},
@@ -56,7 +56,7 @@ def _core(plan: BudgetPlan) -> Plan:
 
 
 def is_editable(plan: BudgetPlan, today: date) -> bool:
-    return editable(_core(plan), today)
+    return editable(core_plan(plan), today)
 
 
 def list_plans(db: Session, household_id: UUID) -> list[BudgetPlan]:
@@ -76,7 +76,7 @@ def find_plan(db: Session, household_id: UUID, plan_id: UUID) -> BudgetPlan | No
 
 def _insert(db: Session, household_id: UUID, plan: Plan) -> BudgetPlan:
     try:
-        check_no_overlap([*(_core(p) for p in list_plans(db, household_id)), plan])
+        check_no_overlap([*(core_plan(p) for p in list_plans(db, household_id)), plan])
     except ValueError as exc:
         raise PlanConflictError(str(exc)) from None
     row = BudgetPlan(
@@ -100,7 +100,7 @@ def _insert(db: Session, household_id: UUID, plan: Plan) -> BudgetPlan:
 def create_plan(db: Session, household_id: UUID, period: Period) -> BudgetPlan:
     """A plan over `period`, pre-filled from the latest plan (F-BUD-7)."""
     plans = list_plans(db, household_id)
-    latest = _core(plans[-1]) if plans else None
+    latest = core_plan(plans[-1]) if plans else None
     return _insert(db, household_id, new_plan(period, latest))
 
 
@@ -148,7 +148,7 @@ def update_plan(
 
 def close_plan(db: Session, plan: BudgetPlan, last_month: Month, reason: str | None) -> BudgetPlan:
     """Close the plan after `last_month` and return the replacement plan for the rest."""
-    closed = close_early(_core(plan), last_month, reason)
+    closed = close_early(core_plan(plan), last_month, reason)
     plan.end_month = closed.end.first_day()
     plan.close_reason = reason
     db.flush()
@@ -188,7 +188,7 @@ def set_target(
 def target_history(
     db: Session, household_id: UUID
 ) -> dict[UUID, list[tuple[Month, Decimal | None]]]:
-    return plans_history([_core(p) for p in list_plans(db, household_id)])
+    return plans_history([core_plan(p) for p in list_plans(db, household_id)])
 
 
 def scoped_accounts(db: Session, viewer: User, scope: Scope) -> list[UUID]:
@@ -200,14 +200,10 @@ def scoped_accounts(db: Session, viewer: User, scope: Scope) -> list[UUID]:
     ]
 
 
-def matrix(
-    db: Session,
-    viewer: User,
-    months: list[Month],
-    *,
-    scope: Scope = Scope.HOUSEHOLD,
-    band: Decimal = DEFAULT_BAND,
-) -> Matrix:
+def spending(
+    db: Session, viewer: User, months: list[Month], scope: Scope
+) -> tuple[list[Category], dict[tuple[UUID | None, Month], Decimal]]:
+    """The expense categories, and spending per category (None: to categorise) and month."""
     accounts = scoped_accounts(db, viewer, scope)
     expense = list(
         db.scalars(
@@ -239,14 +235,26 @@ def matrix(
         )
         .group_by(Transaction.category_id, month_start)
     )
-    spending: dict[tuple[UUID | None, Month], Decimal] = {}
+    result: dict[tuple[UUID | None, Month], Decimal] = {}
     for category_id, start, total in rows:
         if category_id is None or category_id in expense_ids:
-            spending[(category_id, Month.of(start))] = Decimal(total)
+            result[(category_id, Month.of(start))] = Decimal(total)
+    return expense, result
+
+
+def matrix(
+    db: Session,
+    viewer: User,
+    months: list[Month],
+    *,
+    scope: Scope = Scope.HOUSEHOLD,
+    band: Decimal = DEFAULT_BAND,
+) -> Matrix:
+    expense, spent = spending(db, viewer, months, scope)
     return build_matrix(
         [(c.id, c.parent_id, c.name) for c in expense],
         target_history(db, viewer.household_id),
-        spending,
+        spent,
         months,
         band,
     )

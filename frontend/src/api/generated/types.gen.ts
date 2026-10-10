@@ -362,6 +362,96 @@ export type CloseIn = {
 };
 
 /**
+ * ComparisonOut
+ */
+export type ComparisonOut = {
+    a: PlanOut;
+    b: PlanOut;
+    /**
+     * Rows
+     */
+    rows: Array<ComparisonRowOut>;
+};
+
+/**
+ * ComparisonRowOut
+ */
+export type ComparisonRowOut = {
+    /**
+     * Average A
+     */
+    average_a: string | null;
+    /**
+     * Average B
+     */
+    average_b: string | null;
+    /**
+     * Category Id
+     */
+    category_id: string | null;
+    /**
+     * Change
+     */
+    change: string | null;
+    /**
+     * Change Ratio
+     */
+    change_ratio: string | null;
+    /**
+     * Level
+     */
+    level: number;
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Parent Id
+     */
+    parent_id: string | null;
+    /**
+     * Target A
+     */
+    target_a: string | null;
+    /**
+     * Target B
+     */
+    target_b: string | null;
+};
+
+/**
+ * CumulativeOut
+ */
+export type CumulativeOut = {
+    /**
+     * Envelope
+     */
+    envelope: string;
+    /**
+     * Points
+     */
+    points: Array<CumulativePointOut>;
+};
+
+/**
+ * CumulativePointOut
+ */
+export type CumulativePointOut = {
+    /**
+     * Day
+     */
+    day: string;
+    /**
+     * Envelope
+     */
+    envelope: string;
+    /**
+     * Spent
+     */
+    spent: string | null;
+};
+
+/**
  * DashboardOut
  */
 export type DashboardOut = {
@@ -918,6 +1008,133 @@ export type RecoveryCodesOut = {
      * Recovery Codes
      */
     recovery_codes: Array<string>;
+};
+
+/**
+ * ReviewOut
+ */
+export type ReviewOut = {
+    /**
+     * Band
+     */
+    band: string;
+    /**
+     * Drifting
+     */
+    drifting: Array<string | null>;
+    /**
+     * Elapsed
+     */
+    elapsed: string;
+    /**
+     * Finished
+     */
+    finished: boolean;
+    /**
+     * Income
+     */
+    income: string;
+    plan: PlanOut;
+    /**
+     * Planned Savings
+     */
+    planned_savings: string | null;
+    /**
+     * Provisional
+     */
+    provisional: boolean;
+    /**
+     * Rows
+     */
+    rows: Array<ReviewRowOut>;
+    /**
+     * Savings
+     */
+    savings: string;
+    /**
+     * Savings Rate
+     */
+    savings_rate: string | null;
+    total: ReviewRowOut;
+    /**
+     * Uncategorised
+     */
+    uncategorised: string;
+};
+
+/**
+ * ReviewRowOut
+ */
+export type ReviewRowOut = {
+    /**
+     * Category Id
+     */
+    category_id: string | null;
+    /**
+     * Drift
+     */
+    drift: string | null;
+    /**
+     * Drifting
+     */
+    drifting: boolean;
+    /**
+     * Envelope
+     */
+    envelope: string | null;
+    /**
+     * Gap
+     */
+    gap: string | null;
+    /**
+     * Gap Ratio
+     */
+    gap_ratio: string | null;
+    /**
+     * Level
+     */
+    level: number;
+    /**
+     * Monthly Target
+     */
+    monthly_target: string | null;
+    /**
+     * Months On
+     */
+    months_on: number;
+    /**
+     * Months Over
+     */
+    months_over: number;
+    /**
+     * Months Under
+     */
+    months_under: number;
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Pace
+     */
+    pace: string | null;
+    /**
+     * Parent Id
+     */
+    parent_id: string | null;
+    /**
+     * Projection
+     */
+    projection: string | null;
+    /**
+     * Spent
+     */
+    spent: string;
+    status: BudgetStatus;
+    /**
+     * Target From Children
+     */
+    target_from_children: boolean;
 };
 
 /**
@@ -1995,6 +2212,118 @@ export type ClosePlanResponses = {
 };
 
 export type ClosePlanResponse = ClosePlanResponses[keyof ClosePlanResponses];
+
+export type PlanComparisonData = {
+    body?: never;
+    path: {
+        /**
+         * Plan Id
+         */
+        plan_id: string;
+    };
+    query?: {
+        /**
+         * Against
+         *
+         * The reference plan; default: the previous plan
+         */
+        against?: string | null;
+        scope?: Scope;
+    };
+    url: '/api/budget/plans/{plan_id}/comparison';
+};
+
+export type PlanComparisonErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type PlanComparisonError = PlanComparisonErrors[keyof PlanComparisonErrors];
+
+export type PlanComparisonResponses = {
+    /**
+     * Successful Response
+     */
+    200: ComparisonOut;
+};
+
+export type PlanComparisonResponse = PlanComparisonResponses[keyof PlanComparisonResponses];
+
+export type PlanCumulativeData = {
+    body?: never;
+    path: {
+        /**
+         * Plan Id
+         */
+        plan_id: string;
+    };
+    query?: {
+        /**
+         * Category Id
+         *
+         * An expense category; default: every category
+         */
+        category_id?: string | null;
+        scope?: Scope;
+    };
+    url: '/api/budget/plans/{plan_id}/cumulative';
+};
+
+export type PlanCumulativeErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type PlanCumulativeError = PlanCumulativeErrors[keyof PlanCumulativeErrors];
+
+export type PlanCumulativeResponses = {
+    /**
+     * Successful Response
+     */
+    200: CumulativeOut;
+};
+
+export type PlanCumulativeResponse = PlanCumulativeResponses[keyof PlanCumulativeResponses];
+
+export type ReviewPlanData = {
+    body?: never;
+    path: {
+        /**
+         * Plan Id
+         */
+        plan_id: string;
+    };
+    query?: {
+        scope?: Scope;
+        /**
+         * Band
+         */
+        band?: number | string;
+    };
+    url: '/api/budget/plans/{plan_id}/review';
+};
+
+export type ReviewPlanErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ReviewPlanError = ReviewPlanErrors[keyof ReviewPlanErrors];
+
+export type ReviewPlanResponses = {
+    /**
+     * Successful Response
+     */
+    200: ReviewOut;
+};
+
+export type ReviewPlanResponse = ReviewPlanResponses[keyof ReviewPlanResponses];
 
 export type SetPlanTargetData = {
     body: PlanTargetIn;
