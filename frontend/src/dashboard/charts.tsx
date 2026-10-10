@@ -3,7 +3,7 @@
  * context (income, the budget pace). Colours are tokens checked with the dataviz validator.
  * Every chart has a table twin, so no value is reachable only by hovering.
  */
-import type { ReactNode } from "react";
+import { type ReactNode, useId } from "react";
 import {
   Area,
   Bar,
@@ -24,12 +24,12 @@ import { formatDate } from "../lib/dates";
 import { formatEurWhole, formatPercent } from "../lib/money";
 import { daysInMonth, monthLabel, thisMonth } from "../lib/months";
 
-const ACCENT = "var(--color-chart-accent)";
-const CONTEXT = "var(--color-chart-context)";
-const GRID = "var(--color-chart-grid)";
+export const ACCENT = "var(--color-chart-accent)";
+export const CONTEXT = "var(--color-chart-context)";
+export const GRID = "var(--color-chart-grid)";
 const MUTED = "var(--color-muted)";
-const AXIS = { stroke: GRID, tick: { fill: MUTED, fontSize: 12 }, tickLine: false } as const;
-const TOOLTIP = {
+export const AXIS = { stroke: GRID, tick: { fill: MUTED, fontSize: 12 }, tickLine: false } as const;
+export const TOOLTIP = {
   contentStyle: {
     background: "var(--color-surface)",
     border: "1px solid var(--color-border)",
@@ -51,35 +51,57 @@ export function niceTicks(max: number): number[] {
   return ticks;
 }
 
-function axisTicks(values: number[]): { ticks: number[]; domain: [number, number] } {
+export function axisTicks(values: number[]): { ticks: number[]; domain: [number, number] } {
   const ticks = niceTicks(Math.max(0, ...values));
   return { ticks, domain: [0, ticks.at(-1) ?? 100] };
 }
 
 /** Legend names in the text colour: the marker beside them carries the series colour. */
-const legendText = (value: string) => <span style={{ color: "var(--color-fg)" }}>{value}</span>;
+export const legendText = (value: string) => (
+  <span style={{ color: "var(--color-fg)" }}>{value}</span>
+);
 
-function Card({
+/** A chart's frame: a region named by its title. `aside` holds controls next to the title. */
+export function Card({
   title,
   subtitle,
+  aside,
   children,
 }: {
   title: string;
   subtitle?: string;
+  aside?: ReactNode;
   children: ReactNode;
 }) {
+  const id = useId();
   return (
-    <section className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-4">
-      <div>
-        <h2 className="text-lg font-bold">{title}</h2>
-        {subtitle && <p className="text-sm text-muted">{subtitle}</p>}
+    <section
+      aria-labelledby={id}
+      className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-4"
+    >
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h2 id={id} className="text-lg font-bold">
+            {title}
+          </h2>
+          {subtitle && <p className="text-sm text-muted">{subtitle}</p>}
+        </div>
+        {aside}
       </div>
       {children}
     </section>
   );
 }
 
-function DataTable({ label, head, rows }: { label: string; head: string[]; rows: string[][] }) {
+export function DataTable({
+  label,
+  head,
+  rows,
+}: {
+  label: string;
+  head: string[];
+  rows: string[][];
+}) {
   const { t } = useI18n();
   return (
     <details className="text-sm">

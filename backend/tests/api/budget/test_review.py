@@ -79,6 +79,7 @@ def test_during_a_plan_the_review_compares_spending_with_the_pace(
         "gap": "-370.00",
         "gap_ratio": "-0.4111",
         "pace": "460.71",
+        "pace_gap_ratio": "0.1504",
         "status": "over",
         "projection": "1035.35",
         "drift": "135.35",

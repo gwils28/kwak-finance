@@ -73,6 +73,10 @@
   --color-chart-accent: var(--color-primary-600);
   --color-chart-context: var(--color-neutral-400);
   --color-chart-grid: var(--color-neutral-200);
+  /* Budget status in charts (F-DSH-6), the matrix hues at bar strength. */
+  --color-chart-under: var(--color-primary-600);
+  --color-chart-on: var(--color-neutral-400);
+  --color-chart-over: var(--color-secondary-600);
 }
 
 @layer base {
@@ -99,6 +103,9 @@
     --color-chart-accent: var(--color-primary-500);
     --color-chart-context: var(--color-neutral-300);
     --color-chart-grid: var(--color-neutral-700);
+    --color-chart-under: var(--color-primary-500);
+    --color-chart-on: var(--color-neutral-300);
+    --color-chart-over: var(--color-secondary-500);
   }
 
   body {

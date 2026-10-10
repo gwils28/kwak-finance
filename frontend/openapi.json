@@ -2016,6 +2016,18 @@
             ],
             "title": "Pace"
           },
+          "pace_gap_ratio": {
+            "anyOf": [
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pace Gap Ratio"
+          },
           "parent_id": {
             "anyOf": [
               {
@@ -2064,6 +2076,7 @@
           "gap",
           "gap_ratio",
           "pace",
+          "pace_gap_ratio",
           "status",
           "projection",
           "drift",
