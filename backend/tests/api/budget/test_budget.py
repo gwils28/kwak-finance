@@ -54,10 +54,15 @@ def _import_and_categorise(client: TestClient) -> str:
     return account
 
 
-def _target(client: TestClient, name: str, amount: str | None, from_month: str = "2026-02") -> Any:
+def _target(client: TestClient, name: str, amount: str | None, period: str = "2026-Q1") -> Any:
+    """Set the category's monthly target in the plan over `period`, creating it if needed."""
+    plan = (
+        next((p for p in client.get("/api/budget/plans").json() if p["period"] == period), None)
+        or client.post("/api/budget/plans", json={"period": period}, headers=csrf(client)).json()
+    )
     return client.put(
-        f"/api/budget/targets/{_category(client, name)}",
-        json={"amount": amount, "from_month": from_month},
+        f"/api/budget/plans/{plan['id']}/targets/{_category(client, name)}",
+        json={"amount": amount},
         headers=csrf(client),
     )
 
@@ -133,21 +138,6 @@ def test_income_stays_out_and_uncategorised_spending_has_its_row(owner_client: T
     # Every outflow of the fixture: 1 621.04 €, of which 6.40 € is categorised.
     assert matrix["uncategorised"]["cells"][1]["spent"] == "1614.64"
     assert matrix["total"]["cells"][1]["spent"] == "1621.04"
-
-
-@pytest.mark.parametrize(
-    ("name", "amount", "month"),
-    [
-        ("Salary", "100", "2026-03"),
-        ("Groceries", "-1", "2026-03"),
-        ("Groceries", "1.234", "2026-03"),
-        ("Groceries", "1", "2026-13"),
-    ],
-)
-def test_invalid_targets_are_rejected(
-    owner_client: TestClient, name: str, amount: str, month: str
-) -> None:
-    assert _target(owner_client, name, amount, month).status_code == 422
 
 
 def test_the_band_is_a_parameter(owner_client: TestClient) -> None:

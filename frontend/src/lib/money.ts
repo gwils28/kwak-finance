@@ -24,6 +24,11 @@ export function amountInput(amount: string): string {
   return currentLanguage() === "fr" ? amount.replace(".", ",") : amount;
 }
 
+/** "60.00" -> "60", "12.50" -> "12,50" (fr): an amount in an input, without empty cents. */
+export function amountInputShort(amount: string): string {
+  return amount.endsWith(".00") ? amount.slice(0, -3) : amountInput(amount);
+}
+
 const WHOLE_EUR: Intl.NumberFormatOptions = { ...EUR, maximumFractionDigits: 0 };
 const SIGNED_EUR: Intl.NumberFormatOptions = { ...WHOLE_EUR, signDisplay: "exceptZero" };
 const PERCENT: Intl.NumberFormatOptions = { style: "percent", maximumFractionDigits: 0 };

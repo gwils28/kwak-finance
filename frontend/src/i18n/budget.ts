@@ -1,6 +1,6 @@
 export const budgetEn = {
   title: "Budget",
-  intro: "Spending per category and month against your monthly targets.",
+  intro: "Spending per category and month against the monthly targets of your budget plans.",
   period: "Period",
   lastMonths: (n: number) => `Last ${n} months`,
   margin: "Margin",
@@ -17,11 +17,52 @@ export const budgetEn = {
   targetFor: (name: string) => `Monthly target for ${name}`,
   sum: (amount: string) => `${amount} (sum)`,
   sumHelp: "Sum of the subcategories' targets. Type an amount to set one for the whole category.",
+  plan: {
+    section: "Budget plan",
+    select: "Plan",
+    periodLabel: (kind: "year" | "semester" | "quarter", year: number, n: number) =>
+      kind === "year" ? `${year}` : `${kind === "semester" ? "S" : "Q"}${n} ${year}`,
+    range: (from: string, to: string) => (from === to ? from : `${from} – ${to}`),
+    closedEarlyTag: "closed early",
+    none: "No budget plan yet. A plan holds your monthly targets for a year, a semester or a quarter.",
+    noneCovering: (month: string) => `No plan covers ${month}: create one to set its targets.`,
+    editableUntil: (date: string) =>
+      `Targets can be changed until ${date}. After that, change them by closing the plan early.`,
+    locked: (date: string) =>
+      `Targets locked since ${date}. To change them, close the plan early: a new plan takes over for the remaining months.`,
+    over: "This plan is over: its targets stay as they were.",
+    closedEarly: (month: string) => `Closed early after ${month}.`,
+    reason: (reason: string) => `Reason: ${reason}`,
+    expectedIncome: "Expected monthly income",
+    note: "Note",
+    notePlaceholder: "What this plan is about, e.g. new job from October",
+    lockedTarget: "Locked: close the plan early to change it.",
+    newPlan: "New plan",
+    kind: "Length",
+    kinds: { year: "Year", semester: "Semester", quarter: "Quarter" },
+    year: "Year",
+    number: "Which one",
+    create: "Create the plan",
+    prefilled: "The new plan starts with the targets of the latest plan.",
+    cancel: "Cancel",
+    closeEarly: "Close early",
+    lastMonth: "Last month of this plan",
+    closeReason: "Reason (optional)",
+    closeReasonPlaceholder: "e.g. job loss, a raise, a new recurring expense",
+    closeHelp:
+      "The plan keeps its targets and is reviewed over its months. A replacement plan, pre-filled with the same targets, covers the rest of the period: change them there.",
+    confirmClose: "Close and create the replacement",
+    delete: "Delete plan",
+    confirmDelete: "Confirm deletion",
+    invalidIncome: "expected income: enter a positive amount in euros.",
+  },
+  monthlyTargetOf: (plan: string) => `Monthly target · ${plan}`,
 };
 
 export const budgetFr: typeof budgetEn = {
   title: "Budget",
-  intro: "Dépenses par catégorie et par mois, comparées à vos objectifs mensuels.",
+  intro:
+    "Dépenses par catégorie et par mois, comparées aux objectifs mensuels de vos plans budgétaires.",
   period: "Période",
   lastMonths: (n) => `${n} derniers mois`,
   margin: "Marge",
@@ -39,4 +80,45 @@ export const budgetFr: typeof budgetEn = {
   sum: (amount) => `${amount} (somme)`,
   sumHelp:
     "Somme des objectifs des sous-catégories. Saisissez un montant pour en fixer un pour toute la catégorie.",
+  plan: {
+    section: "Plan budgétaire",
+    select: "Plan",
+    periodLabel: (kind, year, n) =>
+      kind === "year" ? `${year}` : `${kind === "semester" ? "S" : "T"}${n} ${year}`,
+    range: (from, to) => (from === to ? from : `${from} – ${to}`),
+    closedEarlyTag: "clôturé par anticipation",
+    none: "Aucun plan budgétaire pour l'instant. Un plan contient vos objectifs mensuels pour une année, un semestre ou un trimestre.",
+    noneCovering: (month) =>
+      `Aucun plan ne couvre ${month} : créez-en un pour fixer ses objectifs.`,
+    editableUntil: (date) =>
+      `Objectifs modifiables jusqu'au ${date}. Ensuite, changez-les en clôturant le plan par anticipation.`,
+    locked: (date) =>
+      `Objectifs verrouillés depuis le ${date}. Pour les changer, clôturez le plan par anticipation : un nouveau plan prend le relais pour les mois restants.`,
+    over: "Ce plan est terminé : ses objectifs restent tels quels.",
+    closedEarly: (month) => `Clôturé par anticipation après ${month}.`,
+    reason: (reason) => `Motif : ${reason}`,
+    expectedIncome: "Revenu mensuel attendu",
+    note: "Note",
+    notePlaceholder: "L'idée de ce plan, par ex. nouvel emploi depuis octobre",
+    lockedTarget: "Verrouillé : clôturez le plan par anticipation pour le changer.",
+    newPlan: "Nouveau plan",
+    kind: "Durée",
+    kinds: { year: "Année", semester: "Semestre", quarter: "Trimestre" },
+    year: "Année",
+    number: "Lequel",
+    create: "Créer le plan",
+    prefilled: "Le nouveau plan reprend les objectifs du plan le plus récent.",
+    cancel: "Annuler",
+    closeEarly: "Clôturer par anticipation",
+    lastMonth: "Dernier mois de ce plan",
+    closeReason: "Motif (facultatif)",
+    closeReasonPlaceholder: "par ex. perte d'emploi, augmentation, nouvelle dépense récurrente",
+    closeHelp:
+      "Le plan garde ses objectifs et sera évalué sur ses mois. Un plan de remplacement, pré-rempli avec les mêmes objectifs, couvre le reste de la période : modifiez-les là.",
+    confirmClose: "Clôturer et créer le remplacement",
+    delete: "Supprimer le plan",
+    confirmDelete: "Confirmer la suppression",
+    invalidIncome: "revenu attendu : saisissez un montant positif en euros.",
+  },
+  monthlyTargetOf: (plan) => `Objectif mensuel · ${plan}`,
 };

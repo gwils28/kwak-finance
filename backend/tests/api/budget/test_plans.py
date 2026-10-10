@@ -184,19 +184,5 @@ def test_an_unknown_plan_is_not_found(owner_client: TestClient) -> None:
     assert owner_client.delete(url, headers=csrf(owner_client)).status_code == 404
 
 
-def test_setting_a_target_for_a_month_writes_it_into_the_plan_covering_it(
-    owner_client: TestClient,
-) -> None:
-    """The budget page's target editor, until it manages plans itself."""
-    response = owner_client.put(
-        f"/api/budget/targets/{_category(owner_client, 'Groceries')}",
-        json={"amount": "400.00", "from_month": "2026-01"},
-        headers=csrf(owner_client),
-    )
-    assert response.status_code == 200, response.text
-    (plan,) = _plans(owner_client)
-    assert (plan["period"], plan["targets"][0]["amount"]) == ("2026-Q1", "400.00")
-
-
 def test_plans_require_a_full_sign_in(client: TestClient) -> None:
     assert client.get("/api/budget/plans").status_code == 401
