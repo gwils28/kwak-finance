@@ -34,6 +34,7 @@ Backups run every night into `data/backups/` (create it first: `mkdir -p data/ba
 
 ## Documentation
 
+- In the app: footer link “How to run the app” (`/run`), a step-by-step guide to install, start, stop and update the Docker stack
 - [Specifications](docs/SPECIFICATIONS.md)
 - [Architecture](docs/ARCHITECTURE.md) and [decision records](docs/adr/)
 - [Claude Code usage](docs/CLAUDE_CODE.md)

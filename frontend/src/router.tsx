@@ -17,6 +17,7 @@ import { HomePage } from "./HomePage";
 import { AcceptInvitePage } from "./household/AcceptInvitePage";
 import { MembersPage } from "./household/MembersPage";
 import { ImportPage } from "./imports/ImportPage";
+import { RunGuidePage } from "./runGuide/RunGuidePage";
 import { parseTransactionSearch, TransactionsPage } from "./transactions/TransactionsPage";
 
 const rootRoute = createRootRouteWithContext<{ queryClient: QueryClient }>()({
@@ -96,6 +97,13 @@ const acceptInviteRoute = createRoute({
   component: AcceptInvitePage,
 });
 
+/** Public: it explains how to start the app, so it must not need an account. */
+const runGuideRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/run",
+  component: RunGuidePage,
+});
+
 const routeTree = rootRoute.addChildren([
   appRoute.addChildren([
     homeRoute,
@@ -108,6 +116,7 @@ const routeTree = rootRoute.addChildren([
   ]),
   loginRoute,
   acceptInviteRoute,
+  runGuideRoute,
 ]);
 
 export function createAppRouter(queryClient: QueryClient, history?: RouterHistory) {

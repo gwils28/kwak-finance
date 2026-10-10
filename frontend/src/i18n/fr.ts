@@ -7,6 +7,7 @@ import { dashboardFr } from "./dashboard";
 import type { Messages } from "./en";
 import { householdFr } from "./household";
 import { importsFr } from "./imports";
+import { runGuideFr } from "./runGuide";
 import { transactionsFr } from "./transactions";
 
 export const fr: Messages = {
@@ -21,4 +22,5 @@ export const fr: Messages = {
   transactions: transactionsFr,
   budget: budgetFr,
   categories: categoriesFr,
+  runGuide: runGuideFr,
 };

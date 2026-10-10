@@ -10,6 +10,7 @@ import {
   totpVerify,
   type UserOut,
 } from "../api/generated";
+import { Footer } from "../components/Footer";
 import { LanguageSelect } from "../components/LanguageSelect";
 import { Button, Card, ErrorAlert, TextField } from "../components/ui";
 import { useI18n } from "../i18n";
@@ -47,26 +48,29 @@ export function LoginPage() {
   };
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center gap-4 px-4">
-      <LanguageSelect />
-      {step.kind === "password" && (
-        <PasswordStep
-          onDone={(next) => setStep({ kind: next === "totp_setup" ? "setup" : "totp" })}
-        />
-      )}
-      {step.kind === "totp" && (
-        <CodeStep mode="totp" onDone={finish} onSwitch={() => setStep({ kind: "recovery" })} />
-      )}
-      {step.kind === "recovery" && (
-        <CodeStep mode="recovery" onDone={finish} onSwitch={() => setStep({ kind: "totp" })} />
-      )}
-      {step.kind === "setup" && (
-        <SetupStep onDone={(user, codes) => setStep({ kind: "codes", user, codes })} />
-      )}
-      {step.kind === "codes" && (
-        <RecoveryCodes codes={step.codes} onDone={() => finish(step.user)} />
-      )}
-    </main>
+    <div className="flex min-h-screen flex-col">
+      <main className="flex flex-1 flex-col items-center justify-center gap-4 px-4 py-10">
+        <LanguageSelect />
+        {step.kind === "password" && (
+          <PasswordStep
+            onDone={(next) => setStep({ kind: next === "totp_setup" ? "setup" : "totp" })}
+          />
+        )}
+        {step.kind === "totp" && (
+          <CodeStep mode="totp" onDone={finish} onSwitch={() => setStep({ kind: "recovery" })} />
+        )}
+        {step.kind === "recovery" && (
+          <CodeStep mode="recovery" onDone={finish} onSwitch={() => setStep({ kind: "totp" })} />
+        )}
+        {step.kind === "setup" && (
+          <SetupStep onDone={(user, codes) => setStep({ kind: "codes", user, codes })} />
+        )}
+        {step.kind === "codes" && (
+          <RecoveryCodes codes={step.codes} onDone={() => finish(step.user)} />
+        )}
+      </main>
+      <Footer />
+    </div>
   );
 }
 

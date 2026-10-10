@@ -6,6 +6,7 @@ import { commonEn, errorsEn } from "./common";
 import { dashboardEn } from "./dashboard";
 import { householdEn } from "./household";
 import { importsEn } from "./imports";
+import { runGuideEn } from "./runGuide";
 import { transactionsEn } from "./transactions";
 
 /** The reference dictionary: every other language must have exactly this shape. */
@@ -21,6 +22,7 @@ export const en = {
   transactions: transactionsEn,
   budget: budgetEn,
   categories: categoriesEn,
+  runGuide: runGuideEn,
 };
 
 export type Messages = typeof en;
