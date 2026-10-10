@@ -1,6 +1,6 @@
 # Functional Specifications
 
-Status: draft v0.2 — 2026-10-06. Owner: sole maintainer.
+Status: draft v0.3 — 2026-10-10. Owner: sole maintainer.
 
 ## 1. Purpose
 
@@ -62,7 +62,7 @@ Priority: **M** = MVP, **S** = should (later in MVP), **L** = later phase.
 
 Goal of the budget module: **follow spending simply**, whether entered by hand or imported from the bank's export of recent operations; **turn it into KPIs and charts**; and **compare spending per category with a target** set beforehand.
 
-- F-BUD-1: A monthly target per category (or per parent category, covering its children). A target applies to every following month until changed. Optional rollover of any surplus or deficit to the next month.
+- F-BUD-1: A monthly target per category (or per parent category, covering its children), set within a budget plan (F-BUD-7). Within a plan, a cheaper month offsets a dearer one (the period envelope): this replaces a month-to-month rollover.
 - F-BUD-2: Target vs actual for the current month, per category: spent, remaining, share used, with a progress bar, a warning at a configurable threshold (default 80 %) and an alert when exceeded. A "pace" marker shows where spending should be at today's date.
 - F-BUD-3: Personal or household scope.
 - F-BUD-4: Target vs actual over past months and year to date, to see which categories are regularly over or under target.
@@ -71,7 +71,19 @@ Goal of the budget module: **follow spending simply**, whether entered by hand o
   - **under**: spent more than 5 % below the target → green;
   - **on target**: within ±5 % → neutral (pale grey);
   - **over**: more than 5 % above the target → burnt orange / terracotta.
-  The 5 % band is a setting. A category without a target shows its spending without a colour. A total row sums every category; a "to categorise" row (F-BUD-5) is always visible. Clicking a cell opens that month's transactions for the category.
+  The 5 % band is a setting. A category without a target shows its spending without a colour. A total row sums every category; a "to categorise" row (F-BUD-5) is always visible. Clicking a cell opens that month's transactions for the category. The monthly target shown is the one of the plan covering the month (F-BUD-7); a month outside any plan has no target.
+- F-BUD-7: **Budget plans by period**, so targets follow life changes (job loss, a raise, a new recurring expense). A plan covers one **calendar period**: a year (January–December), a semester (January–June, July–December) or a quarter (January–March, …). It holds one **monthly target** per expense category (parent or child, as F-BUD-1) and, optionally, the expected monthly income and a note. A category's **envelope** for the plan is its monthly target times the plan's number of months.
+  - Plans never overlap: a month belongs to one plan at most. Consecutive plans may have different lengths (e.g. S1 2027, then Q3 and Q4). A month outside any plan has no target.
+  - A new plan starts pre-filled with the targets of the latest plan.
+  - A plan's targets can be edited until the end of its first month (to fix the set-up). After that, changes go through an **early close**: the user closes the plan at the end of a month, with an optional reason. The closed plan keeps its targets and is reviewed over the months it covered. A **replacement plan** then covers the rest of the original period (e.g. Q1 closed at the end of February → a replacement plan for March), pre-filled from the closed one; the calendar resumes after it.
+  - The monthly targets of v0.2 are migrated into quarterly plans: one per past or current quarter in which a target was in force, with the targets in force in its first month; a change of target within a quarter becomes an early close followed by a replacement plan, so the matrix shows the same targets as before.
+- F-BUD-8: **Plan review**, available during and after a plan, per category (parents with their children) and in total:
+  - envelope, spent, gap in € and in % ((spent − envelope) / envelope) and the status with the band and colours of F-BUD-6;
+  - the number of months over / on / under the monthly target;
+  - **during the plan**: the share of time elapsed (completed months plus the current month prorated by days), the envelope prorated to it (the **pace**), spent vs pace, and a linear **projection** at the end of the plan (spent ÷ share elapsed). Categories projected above their envelope are flagged as **drifting**. Phase 4 forecasting can replace the linear projection;
+  - **after the plan**: the final result per category and in total, with income, spending, savings and savings rate over the period (as F-DSH-4); when the plan has an expected income, the planned savings (expected income − envelopes) next to the actual ones;
+  - a plan closed early is labelled so, with its reason, and reviewed over the months it covered;
+  - while transactions in the period are left to categorise (F-BUD-5), their amount is shown apart and the review is marked provisional.
 
 ### 4.6 Recurring transactions (M)
 
@@ -100,6 +112,11 @@ Goal of the budget module: **follow spending simply**, whether entered by hand o
 - F-DSH-1: Home page showing net worth with its change, the month's cash flow, budget status, upcoming recurring items and recent transactions.
 - F-DSH-4: Spending KPIs for any month (default: current): total spent, total income, net cash flow and savings rate ((income − spending) / income); change vs the previous month and vs the 12-month average; top 5 categories; number of transactions left to categorise.
 - F-DSH-5: Spending charts: by category (bar chart, one level, drill-down to subcategories); monthly evolution over 12 months (stacked bars by category, income line); cumulative spending within the month against the budget line. Transfers between own accounts are excluded everywhere (F-TX-5).
+- F-DSH-6: **Plan steering dashboards**, on the plan review (F-BUD-8):
+  - **cumulative chart**: cumulative spending by day over the plan against the cumulative envelope line, in total or for one category;
+  - **gap chart**: the gap in % per category, coloured under / on / over;
+  - **drift list** (during a plan): categories ranked by projected overrun in €;
+  - **plan comparison**: two plans side by side (by default the current one and the previous one, or the same period a year before), per category: monthly target and monthly average spent, with the change in € and in %. Monthly averages make plans of different lengths comparable.
 - F-DSH-2: Income/expense reports by category and period, with a cash-flow chart (Sankey).
 - F-DSH-3: CSV export of any table, plus a full JSON export of the household's data (portability).
 
@@ -121,7 +138,7 @@ Goal of the budget module: **follow spending simply**, whether entered by hand o
 |---|---|
 | 0 — Foundations | Repo, tooling, CI, Claude Code config, design tokens, Docker Compose skeleton |
 | 1 — Budget MVP | Auth + household, accounts, import, manual entry, categorisation, transactions, budget targets vs actual (F-BUD-1, 2, 4, 5) with the budget matrix (F-BUD-6), spending KPIs and charts (F-DSH-4, 5) |
-| 2 — Budget complete | Rollover, recurrences, household sharing, reports |
+| 2 — Budget complete | Budget plans by period and their review, with steering dashboards (F-BUD-7, 8, F-DSH-6), then recurrences, household sharing, reports |
 | 3 — Wealth | Securities, crypto, real estate, loans, use assets, market data, net-worth history |
 | 4 — Analytics & DS | Cash-flow **forecasting** (time-series, temporal back-testing, naive baseline first), **wealth simulation** (Monte Carlo, FIRE / retirement projection, allocation scenarios). Interactive Dash pages for exploration |
 | 5 — Local GenAI | Ollama-based assistant: natural-language questions over your own data (text-to-SQL on a read-only analytics view), categorisation suggestions, monthly narrative summary. No data leaves the host |
@@ -167,6 +184,9 @@ Budget status colours (F-BUD-6) are semantic tokens built from the palette, defi
 5. A loan's amortisation schedule: principal repayments sum to the borrowed amount, and outstanding capital decreases monotonically.
 6. Net worth on date D equals assets minus liabilities, using only prices known on or before D (no look-ahead).
 7. Forecasts and back-tests (phase 4) never read data after their origin date.
+8. Budget plans never overlap, and each lies within one calendar period (year, semester or quarter).
+9. A category's envelope equals its monthly target times the plan's number of months; a parent without a target of its own takes the sum of its children's.
+10. A plan review and the budget matrix never disagree: the spending of a plan equals the sum of the matrix cells of its months, category by category.
 
 ## 9. Open questions
 
