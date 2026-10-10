@@ -27,4 +27,5 @@ Kwak Finance — self-hosted household budget and net-worth web app. FastAPI + P
 - `data/` holds real financial data: never read it into the conversation unless asked, and never write to it. Test fixtures must be synthetic.
 - The TS API client is generated from the FastAPI OpenAPI schema into `frontend/src/api/generated` by `make openapi` (run it after any API change; CI fails on drift). Do not hand-edit it.
 - The in-app tutorial "Running Kwak Finance" (`/run`, linked from the footer; content in `frontend/src/i18n/runGuide.ts`) must stay true: any change to `docker-compose.yml`, the Makefile, `.env` settings, the `kwak` CLI or the install steps updates it in the same PR, in both languages.
+- The in-app guide "Using Kwak Finance" (`/guide`, in the header; content in `frontend/src/i18n/guide.ts`, with the overview's "Getting started" checklist) must stay true: any PR that changes what users see updates it in the same PR, in both languages.
 - UI colours come from the blog palette tokens (`docs/SPECIFICATIONS.md` §7). Do not introduce ad-hoc hex values.

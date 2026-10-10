@@ -60,6 +60,9 @@ export function AppLayout() {
             <Link to="/members" className={NAV_LINK} activeProps={ACTIVE}>
               {t.nav.members}
             </Link>
+            <Link to="/guide" className={NAV_LINK} activeProps={ACTIVE}>
+              {t.nav.guide}
+            </Link>
           </nav>
           <div className="flex items-center gap-3">
             <span className="text-sm">{user.display_name}</span>

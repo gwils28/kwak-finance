@@ -4,6 +4,7 @@ import { type ReactNode, useId, useState } from "react";
 import { dashboard as fetchDashboard, type Kpis, type Scope } from "./api/generated";
 import { ErrorAlert } from "./components/ui";
 import { SpendingByCategory, SpendingOverMonths, SpendingPace } from "./dashboard/charts";
+import { GettingStarted } from "./guide/GettingStarted";
 import { useI18n } from "./i18n";
 import { formatEurSigned, formatEurWhole, formatPercent, formatPercentSigned } from "./lib/money";
 import { monthBounds, monthLabel, thisMonth } from "./lib/months";
@@ -54,6 +55,7 @@ export function HomePage() {
           </label>
         </div>
       </div>
+      <GettingStarted />
       {query.isError && <ErrorAlert message={t.dashboard.loadFailed} />}
       {query.isPending && <p className="text-sm text-muted">{t.common.loading}</p>}
       {data && empty && (
