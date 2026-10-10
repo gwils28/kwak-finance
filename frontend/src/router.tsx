@@ -14,6 +14,7 @@ import { meQuery } from "./auth/session";
 import { BudgetPage } from "./budget/BudgetPage";
 import { ReviewPage } from "./budget/ReviewPage";
 import { CategoriesPage } from "./categories/CategoriesPage";
+import { GuidePage } from "./guide/GuidePage";
 import { HomePage } from "./HomePage";
 import { AcceptInvitePage } from "./household/AcceptInvitePage";
 import { MembersPage } from "./household/MembersPage";
@@ -87,6 +88,12 @@ const reviewRoute = createRoute({
   },
 });
 
+const guideRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: "/guide",
+  component: GuidePage,
+});
+
 const categoriesRoute = createRoute({
   getParentRoute: () => appRoute,
   path: "/categories",
@@ -125,6 +132,7 @@ const routeTree = rootRoute.addChildren([
     reviewRoute,
     categoriesRoute,
     membersRoute,
+    guideRoute,
   ]),
   loginRoute,
   acceptInviteRoute,

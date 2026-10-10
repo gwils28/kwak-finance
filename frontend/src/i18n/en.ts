@@ -4,6 +4,7 @@ import { budgetEn } from "./budget";
 import { categoriesEn } from "./categories";
 import { commonEn, errorsEn } from "./common";
 import { dashboardEn } from "./dashboard";
+import { guideEn } from "./guide";
 import { householdEn } from "./household";
 import { importsEn } from "./imports";
 import { reviewEn } from "./review";
@@ -25,6 +26,7 @@ export const en = {
   review: reviewEn,
   categories: categoriesEn,
   runGuide: runGuideEn,
+  guide: guideEn,
 };
 
 export type Messages = typeof en;
