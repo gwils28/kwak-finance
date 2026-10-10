@@ -348,6 +348,20 @@ export type CellOut = {
 };
 
 /**
+ * CloseIn
+ */
+export type CloseIn = {
+    /**
+     * Last Month
+     */
+    last_month: string;
+    /**
+     * Reason
+     */
+    reason?: string | null;
+};
+
+/**
  * DashboardOut
  */
 export type DashboardOut = {
@@ -710,6 +724,106 @@ export type Period = {
      * Start
      */
     start: string;
+};
+
+/**
+ * PeriodKind
+ */
+export type PeriodKind = 'year' | 'semester' | 'quarter';
+
+/**
+ * PlanIn
+ */
+export type PlanIn = {
+    /**
+     * Period
+     */
+    period: string;
+};
+
+/**
+ * PlanOut
+ */
+export type PlanOut = {
+    /**
+     * Close Reason
+     */
+    close_reason: string | null;
+    /**
+     * Closed Early
+     */
+    closed_early: boolean;
+    /**
+     * Editable
+     */
+    editable: boolean;
+    /**
+     * End
+     */
+    end: string;
+    /**
+     * Expected Income
+     */
+    expected_income: string | null;
+    /**
+     * Id
+     */
+    id: string;
+    kind: PeriodKind;
+    /**
+     * Note
+     */
+    note: string | null;
+    /**
+     * Period
+     */
+    period: string;
+    /**
+     * Start
+     */
+    start: string;
+    /**
+     * Targets
+     */
+    targets: Array<PlanTargetOut>;
+};
+
+/**
+ * PlanPatch
+ */
+export type PlanPatch = {
+    /**
+     * Expected Income
+     */
+    expected_income?: number | string | null;
+    /**
+     * Note
+     */
+    note?: string | null;
+};
+
+/**
+ * PlanTargetIn
+ */
+export type PlanTargetIn = {
+    /**
+     * Amount
+     */
+    amount: number | string | null;
+};
+
+/**
+ * PlanTargetOut
+ */
+export type PlanTargetOut = {
+    /**
+     * Amount
+     */
+    amount: string;
+    /**
+     * Category Id
+     */
+    category_id: string;
 };
 
 /**
@@ -1740,39 +1854,181 @@ export type BudgetMatrixResponses = {
 
 export type BudgetMatrixResponse = BudgetMatrixResponses[keyof BudgetMatrixResponses];
 
-export type ListTargetsData = {
+export type ListPlansData = {
     body?: never;
     path?: never;
-    query?: {
-        /**
-         * Month
-         *
-         * Default: this month
-         */
-        month?: string | null;
-    };
-    url: '/api/budget/targets';
+    query?: never;
+    url: '/api/budget/plans';
 };
 
-export type ListTargetsErrors = {
+export type ListPlansErrors = {
     /**
      * Validation Error
      */
     422: HttpValidationError;
 };
 
-export type ListTargetsError = ListTargetsErrors[keyof ListTargetsErrors];
+export type ListPlansError = ListPlansErrors[keyof ListPlansErrors];
 
-export type ListTargetsResponses = {
+export type ListPlansResponses = {
     /**
-     * Response Listtargets
+     * Response Listplans
      *
      * Successful Response
      */
-    200: Array<TargetOut>;
+    200: Array<PlanOut>;
 };
 
-export type ListTargetsResponse = ListTargetsResponses[keyof ListTargetsResponses];
+export type ListPlansResponse = ListPlansResponses[keyof ListPlansResponses];
+
+export type CreatePlanData = {
+    body: PlanIn;
+    path?: never;
+    query?: never;
+    url: '/api/budget/plans';
+};
+
+export type CreatePlanErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type CreatePlanError = CreatePlanErrors[keyof CreatePlanErrors];
+
+export type CreatePlanResponses = {
+    /**
+     * Successful Response
+     */
+    201: PlanOut;
+};
+
+export type CreatePlanResponse = CreatePlanResponses[keyof CreatePlanResponses];
+
+export type DeletePlanData = {
+    body?: never;
+    path: {
+        /**
+         * Plan Id
+         */
+        plan_id: string;
+    };
+    query?: never;
+    url: '/api/budget/plans/{plan_id}';
+};
+
+export type DeletePlanErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type DeletePlanError = DeletePlanErrors[keyof DeletePlanErrors];
+
+export type DeletePlanResponses = {
+    /**
+     * Successful Response
+     */
+    204: void;
+};
+
+export type DeletePlanResponse = DeletePlanResponses[keyof DeletePlanResponses];
+
+export type UpdatePlanData = {
+    body: PlanPatch;
+    path: {
+        /**
+         * Plan Id
+         */
+        plan_id: string;
+    };
+    query?: never;
+    url: '/api/budget/plans/{plan_id}';
+};
+
+export type UpdatePlanErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type UpdatePlanError = UpdatePlanErrors[keyof UpdatePlanErrors];
+
+export type UpdatePlanResponses = {
+    /**
+     * Successful Response
+     */
+    200: PlanOut;
+};
+
+export type UpdatePlanResponse = UpdatePlanResponses[keyof UpdatePlanResponses];
+
+export type ClosePlanData = {
+    body: CloseIn;
+    path: {
+        /**
+         * Plan Id
+         */
+        plan_id: string;
+    };
+    query?: never;
+    url: '/api/budget/plans/{plan_id}/close';
+};
+
+export type ClosePlanErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ClosePlanError = ClosePlanErrors[keyof ClosePlanErrors];
+
+export type ClosePlanResponses = {
+    /**
+     * Successful Response
+     */
+    200: PlanOut;
+};
+
+export type ClosePlanResponse = ClosePlanResponses[keyof ClosePlanResponses];
+
+export type SetPlanTargetData = {
+    body: PlanTargetIn;
+    path: {
+        /**
+         * Plan Id
+         */
+        plan_id: string;
+        /**
+         * Category Id
+         */
+        category_id: string;
+    };
+    query?: never;
+    url: '/api/budget/plans/{plan_id}/targets/{category_id}';
+};
+
+export type SetPlanTargetErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type SetPlanTargetError = SetPlanTargetErrors[keyof SetPlanTargetErrors];
+
+export type SetPlanTargetResponses = {
+    /**
+     * Successful Response
+     */
+    200: PlanOut;
+};
+
+export type SetPlanTargetResponse = SetPlanTargetResponses[keyof SetPlanTargetResponses];
 
 export type SetTargetData = {
     body: TargetIn;

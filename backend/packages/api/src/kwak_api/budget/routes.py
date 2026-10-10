@@ -1,3 +1,4 @@
+from datetime import date
 from decimal import Decimal
 from typing import Annotated
 from uuid import UUID
@@ -5,9 +6,11 @@ from uuid import UUID
 from fastapi import APIRouter, HTTPException, Query, status
 from kwak_core.budget import BudgetStatus, Cell, Month, Row, month_range
 from kwak_core.money import require_cents
+from kwak_core.plans import Period, PeriodKind
 from pydantic import AfterValidator, BaseModel, Field
 
 from kwak_api.auth.routes import CurrentSession, Db, Now
+from kwak_api.models import BudgetPlan, Category
 from kwak_api.services import budget as service
 from kwak_api.services import categories as category_service
 
@@ -31,14 +34,14 @@ class TargetIn(BaseModel):
     amount: Cents | None
     """Monthly target in euros; null removes the target."""
     from_month: Annotated[str, Field(pattern=MONTH_PATTERN)]
-    """YYYY-MM: the first month the target applies to. Earlier months keep their target."""
+    """YYYY-MM: the month whose plan gets the target."""
 
 
 class TargetOut(BaseModel):
     category_id: UUID
     amount: Decimal | None
     valid_from: str
-    """YYYY-MM."""
+    """YYYY-MM: the first month of the plan holding the target."""
 
 
 class CellOut(BaseModel):
@@ -99,37 +102,184 @@ class BudgetMatrix(BaseModel):
     total: RowOut
 
 
-@router.put("/targets/{category_id}")
+@router.put("/targets/{category_id}", deprecated=True)
 def set_target(
-    category_id: UUID, body: TargetIn, user_session: CurrentSession, db: Db
+    category_id: UUID, body: TargetIn, user_session: CurrentSession, db: Db, now: Now
 ) -> TargetOut:
+    """Set the target in the plan covering `from_month` (its quarter's plan if none).
+
+    Kept for the current budget page; use the plan endpoints instead.
+    """
     household_id = user_session.user.household_id
+    category = _category(db, household_id, category_id)
+    month = _month(body.from_month)
+    try:
+        plan = service.set_target(db, household_id, category, month, body.amount, now.date())
+    except service.PlanConflictError as exc:
+        raise HTTPException(status.HTTP_409_CONFLICT, str(exc)) from None
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, str(exc)) from None
+    return TargetOut(
+        category_id=category.id, amount=body.amount, valid_from=str(Month.of(plan.start_month))
+    )
+
+
+def _category(db: Db, household_id: UUID, category_id: UUID) -> Category:
     category = category_service.find(db, household_id, category_id)
     if category is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "category not found")
-    month = _month(body.from_month)
+    return category
+
+
+def _plan(db: Db, household_id: UUID, plan_id: UUID) -> BudgetPlan:
+    plan = service.find_plan(db, household_id, plan_id)
+    if plan is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "budget plan not found")
+    return plan
+
+
+class PlanIn(BaseModel):
+    period: str
+    """"2027" (year), "2027-S1" (semester) or "2027-Q3" (quarter)."""
+
+
+class PlanTargetIn(BaseModel):
+    amount: Cents | None
+    """Monthly target in euros; null removes the category from the plan."""
+
+
+class PlanPatch(BaseModel):
+    note: Annotated[str, Field(max_length=500)] | None = None
+    expected_income: Cents | None = None
+    """Expected monthly income; editable as long as the targets are."""
+
+
+class CloseIn(BaseModel):
+    last_month: Annotated[str, Field(pattern=MONTH_PATTERN)]
+    """YYYY-MM: the plan's last month; a replacement plan covers the rest of its period."""
+    reason: Annotated[str, Field(max_length=500)] | None = None
+
+
+class PlanTargetOut(BaseModel):
+    category_id: UUID
+    amount: Decimal
+
+
+class PlanOut(BaseModel):
+    id: UUID
+    period: str
+    kind: PeriodKind
+    start: str
+    """YYYY-MM, first month."""
+    end: str
+    """YYYY-MM, last month."""
+    targets: list[PlanTargetOut]
+    """Monthly targets."""
+    expected_income: Decimal | None
+    note: str | None
+    closed_early: bool
+    close_reason: str | None
+    editable: bool
+    """Targets and expected income can change until the end of the first month."""
+
+    @classmethod
+    def of(cls, plan: BudgetPlan, today: date) -> "PlanOut":
+        period = Period(PeriodKind(plan.kind), plan.year, plan.number)
+        return cls(
+            id=plan.id,
+            period=str(period),
+            kind=period.kind,
+            start=str(Month.of(plan.start_month)),
+            end=str(Month.of(plan.end_month)),
+            targets=[
+                PlanTargetOut(category_id=t.category_id, amount=t.amount)
+                for t in sorted(plan.targets, key=lambda t: str(t.category_id))
+            ],
+            expected_income=plan.expected_income,
+            note=plan.note,
+            closed_early=Month.of(plan.end_month) < period.end,
+            close_reason=plan.close_reason,
+            editable=service.is_editable(plan, today),
+        )
+
+
+@router.get("/plans")
+def list_plans(user_session: CurrentSession, db: Db, now: Now) -> list[PlanOut]:
+    """Every budget plan, in calendar order (F-BUD-7)."""
+    plans = service.list_plans(db, user_session.user.household_id)
+    return [PlanOut.of(p, now.date()) for p in plans]
+
+
+@router.post("/plans", status_code=status.HTTP_201_CREATED)
+def create_plan(body: PlanIn, user_session: CurrentSession, db: Db, now: Now) -> PlanOut:
+    """A plan over a calendar period, pre-filled with the latest plan's targets."""
     try:
-        target = service.set_target(db, household_id, category, month, body.amount)
+        period = Period.parse(body.period)
     except ValueError as exc:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, str(exc)) from None
-    return TargetOut(category_id=category.id, amount=target.amount, valid_from=str(month))
+    try:
+        plan = service.create_plan(db, user_session.user.household_id, period)
+    except service.PlanConflictError as exc:
+        raise HTTPException(status.HTTP_409_CONFLICT, str(exc)) from None
+    return PlanOut.of(plan, now.date())
 
 
-@router.get("/targets")
-def list_targets(
+@router.put("/plans/{plan_id}/targets/{category_id}")
+def set_plan_target(
+    plan_id: UUID,
+    category_id: UUID,
+    body: PlanTargetIn,
     user_session: CurrentSession,
     db: Db,
     now: Now,
-    month: Annotated[
-        str | None, Query(pattern=MONTH_PATTERN, description="Default: this month")
-    ] = None,
-) -> list[TargetOut]:
-    """Targets in force in `month`, with the month each one started."""
-    when = _month(month) if month else Month.of(now.date())
-    return [
-        TargetOut(category_id=cid, amount=amount, valid_from=str(since))
-        for cid, amount, since in service.current_targets(db, user_session.user.household_id, when)
-    ]
+) -> PlanOut:
+    household_id = user_session.user.household_id
+    plan = _plan(db, household_id, plan_id)
+    category = _category(db, household_id, category_id)
+    try:
+        service.set_plan_target(db, plan, category, body.amount, now.date())
+    except service.PlanConflictError as exc:
+        raise HTTPException(status.HTTP_409_CONFLICT, str(exc)) from None
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, str(exc)) from None
+    return PlanOut.of(plan, now.date())
+
+
+@router.patch("/plans/{plan_id}")
+def update_plan(
+    plan_id: UUID, body: PlanPatch, user_session: CurrentSession, db: Db, now: Now
+) -> PlanOut:
+    plan = _plan(db, user_session.user.household_id, plan_id)
+    try:
+        service.update_plan(db, plan, now.date(), **body.model_dump(exclude_unset=True))
+    except service.PlanConflictError as exc:
+        raise HTTPException(status.HTTP_409_CONFLICT, str(exc)) from None
+    return PlanOut.of(plan, now.date())
+
+
+@router.post("/plans/{plan_id}/close")
+def close_plan(
+    plan_id: UUID, body: CloseIn, user_session: CurrentSession, db: Db, now: Now
+) -> PlanOut:
+    """Close the plan early after `last_month`; returns the replacement plan for the rest."""
+    plan = _plan(db, user_session.user.household_id, plan_id)
+    try:
+        rest = service.close_plan(db, plan, _month(body.last_month), body.reason)
+    except service.PlanConflictError as exc:
+        raise HTTPException(status.HTTP_409_CONFLICT, str(exc)) from None
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, str(exc)) from None
+    return PlanOut.of(rest, now.date())
+
+
+@router.delete("/plans/{plan_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_plan(plan_id: UUID, user_session: CurrentSession, db: Db, now: Now) -> None:
+    """Only while the plan is editable: afterwards, close it early instead."""
+    plan = _plan(db, user_session.user.household_id, plan_id)
+    try:
+        service.delete_plan(db, plan, now.date())
+    except service.PlanConflictError as exc:
+        raise HTTPException(status.HTTP_409_CONFLICT, str(exc)) from None
 
 
 @router.get("/matrix")

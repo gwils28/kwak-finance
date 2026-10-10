@@ -1,17 +1,28 @@
-"""Budget targets and the monthly budget matrix (F-BUD-1, 2, 3, 4, 6)."""
+"""Budget plans and the monthly budget matrix (F-BUD-1, 2, 3, 4, 6, 7)."""
 
 import enum
-from collections import defaultdict
+from datetime import date
 from decimal import Decimal
 from uuid import UUID
 
 from kwak_core.accounts import CASH_TYPES
-from kwak_core.budget import DEFAULT_BAND, Matrix, Month, build_matrix, target_for
+from kwak_core.budget import DEFAULT_BAND, Matrix, Month, build_matrix
 from kwak_core.categories import CategoryKind
+from kwak_core.plans import (
+    Period,
+    PeriodKind,
+    Plan,
+    check_no_overlap,
+    close_early,
+    editable,
+    new_plan,
+    replacement,
+)
+from kwak_core.plans import target_history as plans_history
 from sqlalchemy import case, func, select
 from sqlalchemy.orm import Session
 
-from kwak_api.models import BudgetTarget, Category, Transaction, User
+from kwak_api.models import BudgetPlan, BudgetPlanTarget, Category, Transaction, User
 from kwak_api.services.accounts import visible_accounts
 
 
@@ -22,49 +33,162 @@ class Scope(enum.StrEnum):
     """Only the viewer's own accounts."""
 
 
-def set_target(
-    db: Session, household_id: UUID, category: Category, month: Month, amount: Decimal | None
-) -> BudgetTarget:
-    """Set (or remove, with None) the category's target from `month` on."""
+class PlanConflictError(Exception):
+    """The change would break a plan rule: overlap, or a plan past its first month."""
+
+
+UNSET = object()
+"""Marks a field left out of an update."""
+
+FROZEN = "this plan can no longer be edited: close it early to change its targets"
+
+
+def _core(plan: BudgetPlan) -> Plan:
+    return Plan(
+        Period(PeriodKind(plan.kind), plan.year, plan.number),
+        {t.category_id: t.amount for t in plan.targets},
+        Month.of(plan.start_month),
+        Month.of(plan.end_month),
+        plan.expected_income,
+        plan.note,
+        plan.close_reason,
+    )
+
+
+def is_editable(plan: BudgetPlan, today: date) -> bool:
+    return editable(_core(plan), today)
+
+
+def list_plans(db: Session, household_id: UUID) -> list[BudgetPlan]:
+    return list(
+        db.scalars(
+            select(BudgetPlan)
+            .where(BudgetPlan.household_id == household_id)
+            .order_by(BudgetPlan.start_month)
+        )
+    )
+
+
+def find_plan(db: Session, household_id: UUID, plan_id: UUID) -> BudgetPlan | None:
+    plan = db.get(BudgetPlan, plan_id)
+    return plan if plan is not None and plan.household_id == household_id else None
+
+
+def _insert(db: Session, household_id: UUID, plan: Plan) -> BudgetPlan:
+    try:
+        check_no_overlap([*(_core(p) for p in list_plans(db, household_id)), plan])
+    except ValueError as exc:
+        raise PlanConflictError(str(exc)) from None
+    row = BudgetPlan(
+        household_id=household_id,
+        kind=plan.period.kind.value,
+        year=plan.period.year,
+        number=plan.period.index,
+        start_month=plan.start.first_day(),
+        end_month=plan.end.first_day(),
+        expected_income=plan.expected_income,
+        note=plan.note,
+        targets=[
+            BudgetPlanTarget(category_id=cid, amount=amount) for cid, amount in plan.targets.items()
+        ],
+    )
+    db.add(row)
+    db.flush()
+    return row
+
+
+def create_plan(db: Session, household_id: UUID, period: Period) -> BudgetPlan:
+    """A plan over `period`, pre-filled from the latest plan (F-BUD-7)."""
+    plans = list_plans(db, household_id)
+    latest = _core(plans[-1]) if plans else None
+    return _insert(db, household_id, new_plan(period, latest))
+
+
+def _require_editable(plan: BudgetPlan, today: date) -> None:
+    if not is_editable(plan, today):
+        raise PlanConflictError(FROZEN)
+
+
+def set_plan_target(
+    db: Session, plan: BudgetPlan, category: Category, amount: Decimal | None, today: date
+) -> None:
+    """Set (or remove, with None) the category's monthly target in the plan."""
     if category.kind is not CategoryKind.EXPENSE:
         raise ValueError("targets are set on expense categories")
     if amount is not None and amount < 0:
         raise ValueError("a target cannot be negative")
-    target = db.scalar(
-        select(BudgetTarget).where(
-            BudgetTarget.category_id == category.id, BudgetTarget.valid_from == month.first_day()
-        )
-    )
-    if target is None:
-        target = BudgetTarget(
-            household_id=household_id, category_id=category.id, valid_from=month.first_day()
-        )
-        db.add(target)
-    target.amount = amount
+    _require_editable(plan, today)
+    existing = next((t for t in plan.targets if t.category_id == category.id), None)
+    if amount is None:
+        if existing is not None:
+            plan.targets.remove(existing)
+    elif existing is None:
+        plan.targets.append(BudgetPlanTarget(category_id=category.id, amount=amount))
+    else:
+        existing.amount = amount
     db.flush()
-    return target
+
+
+def update_plan(
+    db: Session,
+    plan: BudgetPlan,
+    today: date,
+    *,
+    note: str | object | None = UNSET,
+    expected_income: Decimal | object | None = UNSET,
+) -> None:
+    """The note changes any time; the expected income only while the plan is editable."""
+    if isinstance(expected_income, Decimal) or expected_income is None:
+        _require_editable(plan, today)
+        plan.expected_income = expected_income
+    if isinstance(note, str) or note is None:
+        plan.note = note
+    db.flush()
+
+
+def close_plan(db: Session, plan: BudgetPlan, last_month: Month, reason: str | None) -> BudgetPlan:
+    """Close the plan after `last_month` and return the replacement plan for the rest."""
+    closed = close_early(_core(plan), last_month, reason)
+    plan.end_month = closed.end.first_day()
+    plan.close_reason = reason
+    db.flush()
+    return _insert(db, plan.household_id, replacement(closed))
+
+
+def delete_plan(db: Session, plan: BudgetPlan, today: date) -> None:
+    _require_editable(plan, today)
+    db.delete(plan)
+    db.flush()
+
+
+def set_target(
+    db: Session,
+    household_id: UUID,
+    category: Category,
+    month: Month,
+    amount: Decimal | None,
+    today: date,
+) -> BudgetPlan:
+    """Set the target in the plan covering `month`, creating its quarter's plan if needed.
+
+    Kept for the budget page's target editor until it manages plans itself.
+    """
+    plan = next(
+        (
+            p
+            for p in list_plans(db, household_id)
+            if p.start_month <= month.first_day() <= p.end_month
+        ),
+        None,
+    ) or create_plan(db, household_id, Period.containing(PeriodKind.QUARTER, month))
+    set_plan_target(db, plan, category, amount, today)
+    return plan
 
 
 def target_history(
     db: Session, household_id: UUID
 ) -> dict[UUID, list[tuple[Month, Decimal | None]]]:
-    history: dict[UUID, list[tuple[Month, Decimal | None]]] = defaultdict(list)
-    for t in db.scalars(select(BudgetTarget).where(BudgetTarget.household_id == household_id)):
-        history[t.category_id].append((Month.of(t.valid_from), t.amount))
-    return history
-
-
-def current_targets(
-    db: Session, household_id: UUID, month: Month
-) -> list[tuple[UUID, Decimal, Month]]:
-    """(category, amount, since) of every target in force in `month`."""
-    current = []
-    for category_id, history in target_history(db, household_id).items():
-        amount = target_for(history, month)
-        if amount is not None:
-            since = max(start for start, _ in history if start <= month)
-            current.append((category_id, amount, since))
-    return current
+    return plans_history([_core(p) for p in list_plans(db, household_id)])
 
 
 def scoped_accounts(db: Session, viewer: User, scope: Scope) -> list[UUID]:

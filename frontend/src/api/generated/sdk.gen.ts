@@ -2,7 +2,7 @@
 
 import { type Client, type ClientMeta, formDataBodySerializer, type Options as Options2, type RequestResult, type TDataShape } from './client';
 import { client } from './client.gen';
-import type { AcceptInviteData, AcceptInviteErrors, AcceptInviteResponses, AcceptTransferSuggestionsData, AcceptTransferSuggestionsErrors, AcceptTransferSuggestionsResponses, ApplyRulesData, ApplyRulesErrors, ApplyRulesResponses, BudgetMatrixData, BudgetMatrixErrors, BudgetMatrixResponses, CategoriseTransactionsData, CategoriseTransactionsErrors, CategoriseTransactionsResponses, CreateAccountData, CreateAccountErrors, CreateAccountResponses, CreateCategoryData, CreateCategoryErrors, CreateCategoryResponses, CreateImportData, CreateImportErrors, CreateImportResponses, CreateInviteData, CreateInviteErrors, CreateInviteResponses, CreateRuleData, CreateRuleErrors, CreateRuleResponses, CreateTransactionData, CreateTransactionErrors, CreateTransactionResponses, DashboardData, DashboardErrors, DashboardResponses, DeleteCategoryData, DeleteCategoryErrors, DeleteCategoryResponses, DeleteRuleData, DeleteRuleErrors, DeleteRuleResponses, DeleteTransactionData, DeleteTransactionErrors, DeleteTransactionResponses, HealthData, HealthResponses, LinkTransferData, LinkTransferErrors, LinkTransferResponses, ListAccountsData, ListAccountsErrors, ListAccountsResponses, ListCategoriesData, ListCategoriesErrors, ListCategoriesResponses, ListImportsData, ListImportsErrors, ListImportsResponses, ListInstitutionsData, ListInstitutionsErrors, ListInstitutionsResponses, ListInvitesData, ListInvitesErrors, ListInvitesResponses, ListMembersData, ListMembersErrors, ListMembersResponses, ListRulesData, ListRulesErrors, ListRulesResponses, ListTargetsData, ListTargetsErrors, ListTargetsResponses, ListTransactionsData, ListTransactionsErrors, ListTransactionsResponses, LoginData, LoginErrors, LoginResponses, LogoutData, LogoutErrors, LogoutResponses, MeData, MeErrors, MeResponses, PreviewImportData, PreviewImportErrors, PreviewImportResponses, PreviewInviteData, PreviewInviteErrors, PreviewInviteResponses, PreviewRuleData, PreviewRuleErrors, PreviewRuleResponses, RecoveryData, RecoveryErrors, RecoveryResponses, RegenerateRecoveryCodesData, RegenerateRecoveryCodesErrors, RegenerateRecoveryCodesResponses, RevokeInviteData, RevokeInviteErrors, RevokeInviteResponses, RollbackImportData, RollbackImportErrors, RollbackImportResponses, SetTargetData, SetTargetErrors, SetTargetResponses, TotpConfirmData, TotpConfirmErrors, TotpConfirmResponses, TotpSetupData, TotpSetupErrors, TotpSetupResponses, TotpVerifyData, TotpVerifyErrors, TotpVerifyResponses, TransferSuggestionsData, TransferSuggestionsErrors, TransferSuggestionsResponses, UnlinkTransferData, UnlinkTransferErrors, UnlinkTransferResponses, UpdateAccountData, UpdateAccountErrors, UpdateAccountResponses, UpdateCategoryData, UpdateCategoryErrors, UpdateCategoryResponses, UpdateMeData, UpdateMeErrors, UpdateMeResponses, UpdateRuleData, UpdateRuleErrors, UpdateRuleResponses, UpdateTransactionData, UpdateTransactionErrors, UpdateTransactionResponses } from './types.gen';
+import type { AcceptInviteData, AcceptInviteErrors, AcceptInviteResponses, AcceptTransferSuggestionsData, AcceptTransferSuggestionsErrors, AcceptTransferSuggestionsResponses, ApplyRulesData, ApplyRulesErrors, ApplyRulesResponses, BudgetMatrixData, BudgetMatrixErrors, BudgetMatrixResponses, CategoriseTransactionsData, CategoriseTransactionsErrors, CategoriseTransactionsResponses, ClosePlanData, ClosePlanErrors, ClosePlanResponses, CreateAccountData, CreateAccountErrors, CreateAccountResponses, CreateCategoryData, CreateCategoryErrors, CreateCategoryResponses, CreateImportData, CreateImportErrors, CreateImportResponses, CreateInviteData, CreateInviteErrors, CreateInviteResponses, CreatePlanData, CreatePlanErrors, CreatePlanResponses, CreateRuleData, CreateRuleErrors, CreateRuleResponses, CreateTransactionData, CreateTransactionErrors, CreateTransactionResponses, DashboardData, DashboardErrors, DashboardResponses, DeleteCategoryData, DeleteCategoryErrors, DeleteCategoryResponses, DeletePlanData, DeletePlanErrors, DeletePlanResponses, DeleteRuleData, DeleteRuleErrors, DeleteRuleResponses, DeleteTransactionData, DeleteTransactionErrors, DeleteTransactionResponses, HealthData, HealthResponses, LinkTransferData, LinkTransferErrors, LinkTransferResponses, ListAccountsData, ListAccountsErrors, ListAccountsResponses, ListCategoriesData, ListCategoriesErrors, ListCategoriesResponses, ListImportsData, ListImportsErrors, ListImportsResponses, ListInstitutionsData, ListInstitutionsErrors, ListInstitutionsResponses, ListInvitesData, ListInvitesErrors, ListInvitesResponses, ListMembersData, ListMembersErrors, ListMembersResponses, ListPlansData, ListPlansErrors, ListPlansResponses, ListRulesData, ListRulesErrors, ListRulesResponses, ListTransactionsData, ListTransactionsErrors, ListTransactionsResponses, LoginData, LoginErrors, LoginResponses, LogoutData, LogoutErrors, LogoutResponses, MeData, MeErrors, MeResponses, PreviewImportData, PreviewImportErrors, PreviewImportResponses, PreviewInviteData, PreviewInviteErrors, PreviewInviteResponses, PreviewRuleData, PreviewRuleErrors, PreviewRuleResponses, RecoveryData, RecoveryErrors, RecoveryResponses, RegenerateRecoveryCodesData, RegenerateRecoveryCodesErrors, RegenerateRecoveryCodesResponses, RevokeInviteData, RevokeInviteErrors, RevokeInviteResponses, RollbackImportData, RollbackImportErrors, RollbackImportResponses, SetPlanTargetData, SetPlanTargetErrors, SetPlanTargetResponses, SetTargetData, SetTargetErrors, SetTargetResponses, TotpConfirmData, TotpConfirmErrors, TotpConfirmResponses, TotpSetupData, TotpSetupErrors, TotpSetupResponses, TotpVerifyData, TotpVerifyErrors, TotpVerifyResponses, TransferSuggestionsData, TransferSuggestionsErrors, TransferSuggestionsResponses, UnlinkTransferData, UnlinkTransferErrors, UnlinkTransferResponses, UpdateAccountData, UpdateAccountErrors, UpdateAccountResponses, UpdateCategoryData, UpdateCategoryErrors, UpdateCategoryResponses, UpdateMeData, UpdateMeErrors, UpdateMeResponses, UpdatePlanData, UpdatePlanErrors, UpdatePlanResponses, UpdateRuleData, UpdateRuleErrors, UpdateRuleResponses, UpdateTransactionData, UpdateTransactionErrors, UpdateTransactionResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -187,14 +187,79 @@ export const totpVerify = <ThrowOnError extends boolean = false>(options: Option
 export const budgetMatrix = <ThrowOnError extends boolean = false>(options?: Options<BudgetMatrixData, ThrowOnError>): RequestResult<BudgetMatrixResponses, BudgetMatrixErrors, ThrowOnError> => (options?.client ?? client).get<BudgetMatrixResponses, BudgetMatrixErrors, ThrowOnError>({ url: '/api/budget/matrix', ...options });
 
 /**
- * List Targets
+ * List Plans
  *
- * Targets in force in `month`, with the month each one started.
+ * Every budget plan, in calendar order (F-BUD-7).
  */
-export const listTargets = <ThrowOnError extends boolean = false>(options?: Options<ListTargetsData, ThrowOnError>): RequestResult<ListTargetsResponses, ListTargetsErrors, ThrowOnError> => (options?.client ?? client).get<ListTargetsResponses, ListTargetsErrors, ThrowOnError>({ url: '/api/budget/targets', ...options });
+export const listPlans = <ThrowOnError extends boolean = false>(options?: Options<ListPlansData, ThrowOnError>): RequestResult<ListPlansResponses, ListPlansErrors, ThrowOnError> => (options?.client ?? client).get<ListPlansResponses, ListPlansErrors, ThrowOnError>({ url: '/api/budget/plans', ...options });
+
+/**
+ * Create Plan
+ *
+ * A plan over a calendar period, pre-filled with the latest plan's targets.
+ */
+export const createPlan = <ThrowOnError extends boolean = false>(options: Options<CreatePlanData, ThrowOnError>): RequestResult<CreatePlanResponses, CreatePlanErrors, ThrowOnError> => (options.client ?? client).post<CreatePlanResponses, CreatePlanErrors, ThrowOnError>({
+    url: '/api/budget/plans',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Delete Plan
+ *
+ * Only while the plan is editable: afterwards, close it early instead.
+ */
+export const deletePlan = <ThrowOnError extends boolean = false>(options: Options<DeletePlanData, ThrowOnError>): RequestResult<DeletePlanResponses, DeletePlanErrors, ThrowOnError> => (options.client ?? client).delete<DeletePlanResponses, DeletePlanErrors, ThrowOnError>({ url: '/api/budget/plans/{plan_id}', ...options });
+
+/**
+ * Update Plan
+ */
+export const updatePlan = <ThrowOnError extends boolean = false>(options: Options<UpdatePlanData, ThrowOnError>): RequestResult<UpdatePlanResponses, UpdatePlanErrors, ThrowOnError> => (options.client ?? client).patch<UpdatePlanResponses, UpdatePlanErrors, ThrowOnError>({
+    url: '/api/budget/plans/{plan_id}',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Close Plan
+ *
+ * Close the plan early after `last_month`; returns the replacement plan for the rest.
+ */
+export const closePlan = <ThrowOnError extends boolean = false>(options: Options<ClosePlanData, ThrowOnError>): RequestResult<ClosePlanResponses, ClosePlanErrors, ThrowOnError> => (options.client ?? client).post<ClosePlanResponses, ClosePlanErrors, ThrowOnError>({
+    url: '/api/budget/plans/{plan_id}/close',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Set Plan Target
+ */
+export const setPlanTarget = <ThrowOnError extends boolean = false>(options: Options<SetPlanTargetData, ThrowOnError>): RequestResult<SetPlanTargetResponses, SetPlanTargetErrors, ThrowOnError> => (options.client ?? client).put<SetPlanTargetResponses, SetPlanTargetErrors, ThrowOnError>({
+    url: '/api/budget/plans/{plan_id}/targets/{category_id}',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
 
 /**
  * Set Target
+ *
+ * Set the target in the plan covering `from_month` (its quarter's plan if none).
+ *
+ * Kept for the current budget page; use the plan endpoints instead.
+ *
+ * @deprecated
  */
 export const setTarget = <ThrowOnError extends boolean = false>(options: Options<SetTargetData, ThrowOnError>): RequestResult<SetTargetResponses, SetTargetErrors, ThrowOnError> => (options.client ?? client).put<SetTargetResponses, SetTargetErrors, ThrowOnError>({
     url: '/api/budget/targets/{category_id}',
