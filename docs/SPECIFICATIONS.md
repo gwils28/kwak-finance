@@ -1,6 +1,6 @@
 # Functional Specifications
 
-Status: draft v0.3 — 2026-10-10. Owner: sole maintainer.
+Status: draft v0.4 — 2026-10-10. Owner: sole maintainer.
 
 ## 1. Purpose
 
@@ -78,9 +78,9 @@ Goal of the budget module: **follow spending simply**, whether entered by hand o
   - A plan's targets can be edited until the end of its first month (to fix the set-up). After that, changes go through an **early close**: the user closes the plan at the end of a month, with an optional reason. The closed plan keeps its targets and is reviewed over the months it covered. A **replacement plan** then covers the rest of the original period (e.g. Q1 closed at the end of February → a replacement plan for March), pre-filled from the closed one; the calendar resumes after it.
   - The monthly targets of v0.2 are migrated into quarterly plans: one per past or current quarter in which a target was in force, with the targets in force in its first month; a change of target within a quarter becomes an early close followed by a replacement plan, so the matrix shows the same targets as before.
 - F-BUD-8: **Plan review**, available during and after a plan, per category (parents with their children) and in total:
-  - envelope, spent, gap in € and in % ((spent − envelope) / envelope) and the status with the band and colours of F-BUD-6;
+  - envelope, spent, gap in € and in % ((spent − envelope) / envelope) and the status with the band and colours of F-BUD-6: during the plan the status compares the projection with the envelope, after it the spending (the projection then equals the spending);
   - the number of months over / on / under the monthly target;
-  - **during the plan**: the share of time elapsed (completed months plus the current month prorated by days), the envelope prorated to it (the **pace**), spent vs pace, and a linear **projection** at the end of the plan (spent ÷ share elapsed). Categories projected above their envelope are flagged as **drifting**. Phase 4 forecasting can replace the linear projection;
+  - **during the plan**: the share of time elapsed (completed months plus the current month prorated by days), the envelope prorated to it (the **pace**, for reference), and a **projection** at the end of the plan. The projection takes the completed months as spent, the current month and each remaining one as the larger of its spending so far (an entry booked ahead) and the expected monthly spending. The expected monthly spending is the larger of the monthly target and the average of the completed months; with neither, the projection is linear (spent ÷ share elapsed). So a fixed cost paid early in the month (rent, a subscription) is not projected as an overrun, while spending above the target shows at once. Categories projected above their envelope (beyond the band) are flagged as **drifting**. Phase 4 forecasting can replace this projection;
   - **after the plan**: the final result per category and in total, with income, spending, savings and savings rate over the period (as F-DSH-4); when the plan has an expected income, the planned savings (expected income − envelopes) next to the actual ones;
   - a plan closed early is labelled so, with its reason, and reviewed over the months it covered;
   - while transactions in the period are left to categorise (F-BUD-5), their amount is shown apart and the review is marked provisional.
@@ -114,9 +114,9 @@ Goal of the budget module: **follow spending simply**, whether entered by hand o
 - F-DSH-5: Spending charts: by category (bar chart, one level, drill-down to subcategories); monthly evolution over 12 months (stacked bars by category, income line); cumulative spending within the month against the budget line. Transfers between own accounts are excluded everywhere (F-TX-5).
 - F-DSH-6: **Plan steering dashboards**, on the plan review (F-BUD-8):
   - **cumulative chart**: cumulative spending by day over the plan against the cumulative envelope line, in total or for one category;
-  - **gap chart**: the gap in % per category, coloured under / on / over;
+  - **gap chart**: the projected gap in % per category ((projection − envelope) / envelope, the gap itself once the plan is over), coloured with the status;
   - **drift list** (during a plan): categories ranked by projected overrun in €;
-  - **plan comparison**: two plans side by side (by default the current one and the previous one, or the same period a year before), per category: monthly target and monthly average spent, with the change in € and in %. Monthly averages make plans of different lengths comparable.
+  - **plan comparison**: two plans side by side (by default the current one and the previous one, or the same period a year before), per category: monthly target and monthly average spent (for a running plan, its projection ÷ its number of months), with the change in € and in %. Monthly averages make plans of different lengths comparable.
 - F-DSH-2: Income/expense reports by category and period, with a cash-flow chart (Sankey).
 - F-DSH-3: CSV export of any table, plus a full JSON export of the household's data (portability).
 

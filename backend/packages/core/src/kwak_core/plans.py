@@ -240,9 +240,9 @@ class ReviewRow:
     pace: Decimal | None
     """The envelope prorated to the time elapsed; the envelope itself once the plan is over."""
     status: BudgetStatus
-    """Spent compared with the pace."""
+    """The projection compared with the envelope: the spending, once the plan is over."""
     projection: Decimal | None
-    """Linear projection of the spending at the end of the plan."""
+    """Spending projected at the end of the plan (see `_projection`)."""
     drift: Decimal | None
     """projection - envelope."""
     drifting: bool
@@ -253,9 +253,9 @@ class ReviewRow:
     target_from_children: bool = False
 
     @property
-    def pace_gap_ratio(self) -> Decimal | None:
-        """(spent - pace) / pace: the gap the status is judged on; the gap ratio once over."""
-        return (self.spent - self.pace) / self.pace if self.pace else None
+    def projected_gap_ratio(self) -> Decimal | None:
+        """drift / envelope: the gap the status is judged on; the gap ratio once over."""
+        return self.drift / self.envelope if self.drift is not None and self.envelope else None
 
 
 @dataclass(frozen=True)
@@ -279,6 +279,29 @@ class Review:
         return self.uncategorised != 0
 
 
+def _projection(cells: Sequence[Cell], current: Month, elapsed: Decimal) -> Decimal | None:
+    """Spending at the end of the plan, on the expected monthly spending.
+
+    Completed months count as spent; the current month and the remaining ones as the larger
+    of their spending so far (an entry booked ahead) and the expected spending. The expected
+    spending is the larger of the monthly target and the completed months' average. So rent
+    paid on the 1st is not an overrun, while spending above the target shows at once.
+    Without a target nor a completed month, the projection is linear.
+    """
+    if not elapsed:
+        return None
+    if elapsed == 1:  # the plan is over, from its last day on: nothing left to project
+        return sum((c.spent for c in cells), ZERO)
+    done = [c.spent for c in cells if c.month < current]
+    target = cells[0].target if cells else None
+    rates = [r for r in (target, sum(done, ZERO) / len(done) if done else None) if r is not None]
+    if not rates:
+        return quantize(sum((c.spent for c in cells), ZERO) / elapsed)
+    expected = max(rates)
+    ahead = sum((max(c.spent, expected) for c in cells if c.month >= current), ZERO)
+    return quantize(sum(done, ZERO) + ahead)
+
+
 def _review_row(
     category_id: UUID | None,
     name: str,
@@ -295,14 +318,10 @@ def _review_row(
     envelope = None if monthly is None else monthly * len(cells)
     finished = elapsed == 1
     pace = None if envelope is None else quantize(envelope * elapsed)
-    projection = quantize(spent / elapsed) if elapsed else None
+    projection = _projection(cells, current, elapsed)
     drift = None if envelope is None or projection is None else projection - envelope
-    drifting = (
-        not finished
-        and envelope is not None
-        and projection is not None
-        and budget_status(projection, envelope, band) is BudgetStatus.OVER
-    )
+    status = budget_status(spent if projection is None else projection, envelope, band)
+    drifting = not finished and envelope is not None and status is BudgetStatus.OVER
     completed = [c.status for c in cells if c.month < current]
     return ReviewRow(
         category_id,
@@ -315,7 +334,7 @@ def _review_row(
         None if envelope is None else spent - envelope,
         (spent - envelope) / envelope if envelope else None,
         pace,
-        budget_status(spent, pace, band),
+        status,
         projection,
         drift,
         drifting,
@@ -411,16 +430,18 @@ class ComparisonRow:
     target_a: Decimal | None
     target_b: Decimal | None
     average_a: Decimal | None
-    """Monthly average spent over the elapsed part of plan a."""
+    """Monthly average spent in plan a: of its projection while it runs."""
     average_b: Decimal | None
     change: Decimal | None
     """average_b - average_a."""
     change_ratio: Decimal | None
 
 
-def _average(review: Review, spent: Decimal) -> Decimal | None:
-    months = review.elapsed * len(review.plan.months)
-    return quantize(spent / months) if months else None
+def _average(review: Review, row: ReviewRow) -> Decimal | None:
+    """Monthly average of the projection: of the spending, once the plan is over."""
+    if row.projection is None:
+        return None
+    return quantize(row.projection / len(review.plan.months))
 
 
 def compare(a: Review, b: Review) -> list[ComparisonRow]:
@@ -429,8 +450,8 @@ def compare(a: Review, b: Review) -> list[ComparisonRow]:
     result = []
     for row_b in [*b.rows, b.total]:
         row_a = a.total if row_b is b.total else rows_a.get(row_b.category_id)
-        avg_a = None if row_a is None else _average(a, row_a.spent)
-        avg_b = _average(b, row_b.spent)
+        avg_a = None if row_a is None else _average(a, row_a)
+        avg_b = _average(b, row_b)
         diff = None if avg_a is None or avg_b is None else avg_b - avg_a
         ratio = None if avg_a is None or avg_b is None else change(avg_b, avg_a)
         result.append(

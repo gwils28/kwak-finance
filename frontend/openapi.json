@@ -2016,18 +2016,6 @@
             ],
             "title": "Pace"
           },
-          "pace_gap_ratio": {
-            "anyOf": [
-              {
-                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Pace Gap Ratio"
-          },
           "parent_id": {
             "anyOf": [
               {
@@ -2039,6 +2027,18 @@
               }
             ],
             "title": "Parent Id"
+          },
+          "projected_gap_ratio": {
+            "anyOf": [
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Projected Gap Ratio"
           },
           "projection": {
             "anyOf": [
@@ -2076,10 +2076,10 @@
           "gap",
           "gap_ratio",
           "pace",
-          "pace_gap_ratio",
           "status",
           "projection",
           "drift",
+          "projected_gap_ratio",
           "drifting",
           "months_over",
           "months_on",

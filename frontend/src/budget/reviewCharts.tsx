@@ -47,14 +47,14 @@ function gapTicks(reach: number): number[] {
   return [-2, -1, 0, 1, 2].map((k) => k * step);
 }
 
-/** Spent against the pace in % per category with a target, coloured as its status. */
+/** The projected gap in % per category with a target, coloured as its status. */
 export function GapChart({ rows }: { rows: ReviewRowOut[] }) {
   const { t } = useI18n();
-  const shown = rows.filter((r) => r.pace_gap_ratio !== null);
+  const shown = rows.filter((r) => r.projected_gap_ratio !== null);
   // The value sits in the category label: a bar label would cross the axis when negative.
   const data = shown.map((r) => ({
-    label: `${r.level === 1 ? "· " : ""}${r.name}  ${formatPercentSigned(r.pace_gap_ratio as string)}`,
-    gap: Number(r.pace_gap_ratio),
+    label: `${r.level === 1 ? "· " : ""}${r.name}  ${formatPercentSigned(r.projected_gap_ratio as string)}`,
+    gap: Number(r.projected_gap_ratio),
     status: r.status,
   }));
   const ticks = gapTicks(Math.max(0.05, ...data.map((d) => Math.abs(d.gap))));
@@ -98,7 +98,7 @@ export function GapChart({ rows }: { rows: ReviewRowOut[] }) {
       <DataTable
         label={t.review.gapTable}
         head={[t.review.category, t.review.gap]}
-        rows={shown.map((r) => [r.name, formatPercentSigned(r.pace_gap_ratio as string)])}
+        rows={shown.map((r) => [r.name, formatPercentSigned(r.projected_gap_ratio as string)])}
       />
     </Card>
   );

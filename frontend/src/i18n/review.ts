@@ -22,7 +22,8 @@ export const reviewEn = {
     `${amount} of spending is left to categorise in this plan: the review is provisional.`,
   categorise: "Categorise them",
   drifting: "Drifting categories",
-  driftingHelp: "Projected above their envelope at the end of the plan, largest overrun first.",
+  driftingHelp:
+    "Projected above their envelope at the end of the plan, largest overrun first. Each month counts at least its target: rent paid on the 1st is not a drift.",
   driftItem: (name: string, overrun: string, projection: string, envelope: string) =>
     `${name}: ${overrun} over, ${projection} projected for an envelope of ${envelope}`,
   noDrift: "No category is heading above its envelope.",
@@ -33,10 +34,10 @@ export const reviewEn = {
   status: "Status",
   statusName: { under: "under", on: "on target", over: "over", none: "" },
   months: "Months over · on · under",
-  gapChart: "Gap to the pace",
+  gapChart: "Projected gap",
   gapChartHelp:
-    "Spent against what was expected by now (the envelope once the plan is over), with the status colours.",
-  gapTable: "Gap to the pace by category",
+    "Projected spending at the end of the plan against the envelope (the actual gap once it is over), with the status colours.",
+  gapTable: "Projected gap by category",
   gapNone: "No category of this plan has a target yet.",
   cumulative: "Cumulative spending",
   cumulativeHelp: (envelope: string) => `Day by day, against the envelope line (${envelope}).`,
@@ -47,7 +48,7 @@ export const reviewEn = {
   envelopeLine: "Envelope line",
   comparison: "Comparison",
   comparisonHelp:
-    "Monthly figures, so plans of different lengths compare. Averages count the months elapsed.",
+    "Monthly figures, so plans of different lengths compare. A running plan's average is that of its projection.",
   compareWith: "Compare with",
   noComparison: "There is no other plan to compare with yet.",
   targetOf: (plan: string) => `Target ${plan}`,
@@ -82,7 +83,7 @@ export const reviewFr: typeof reviewEn = {
   categorise: "Les catégoriser",
   drifting: "Catégories qui dérapent",
   driftingHelp:
-    "Projetées au-dessus de leur enveloppe en fin de plan, du plus gros dépassement au plus petit.",
+    "Projetées au-dessus de leur enveloppe en fin de plan, du plus gros dépassement au plus petit. Chaque mois compte au moins pour son objectif : un loyer payé le 1er n'est pas une dérive.",
   driftItem: (name, overrun, projection, envelope) =>
     `${name} : ${overrun} de dépassement, ${projection} projetés pour une enveloppe de ${envelope}`,
   noDrift: "Aucune catégorie ne se dirige au-dessus de son enveloppe.",
@@ -93,10 +94,10 @@ export const reviewFr: typeof reviewEn = {
   status: "Statut",
   statusName: { under: "en dessous", on: "dans l'objectif", over: "au-dessus", none: "" },
   months: "Mois au-dessus · dans · en dessous",
-  gapChart: "Écart au rythme prévu",
+  gapChart: "Écart projeté",
   gapChartHelp:
-    "Dépensé face à ce qui était prévu à ce jour (l'enveloppe une fois le plan terminé), avec les couleurs du statut.",
-  gapTable: "Écart au rythme prévu par catégorie",
+    "Dépenses projetées en fin de plan face à l'enveloppe (l'écart réel une fois le plan terminé), avec les couleurs du statut.",
+  gapTable: "Écart projeté par catégorie",
   gapNone: "Aucune catégorie de ce plan n'a encore d'objectif.",
   cumulative: "Dépenses cumulées",
   cumulativeHelp: (envelope) => `Jour après jour, face à la ligne d'enveloppe (${envelope}).`,
@@ -107,7 +108,7 @@ export const reviewFr: typeof reviewEn = {
   envelopeLine: "Ligne d'enveloppe",
   comparison: "Comparaison",
   comparisonHelp:
-    "Chiffres mensuels, pour comparer des plans de durées différentes. Les moyennes portent sur les mois écoulés.",
+    "Chiffres mensuels, pour comparer des plans de durées différentes. Pour un plan en cours, la moyenne est celle de sa projection.",
   compareWith: "Comparer avec",
   noComparison: "Il n'y a pas encore d'autre plan à comparer.",
   targetOf: (plan) => `Objectif ${plan}`,

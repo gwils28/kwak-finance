@@ -216,21 +216,60 @@ def test_during_a_plan_spending_is_judged_on_the_pace_and_projected() -> None:
     assert groceries.drift == D("300.00")
     # February is not over yet: only January counts in the months over / on / under.
     assert (groceries.months_over, groceries.months_on, groceries.months_under) == (1, 0, 0)
-    assert housing.status is BudgetStatus.UNDER
+    # Housing spent its January target: on track, at 900 a month.
+    assert (housing.projection, housing.status) == (D("2700"), BudgetStatus.ON)
     assert [r.category_id for r in review.drifting_rows] == [FOOD, GROCERIES]
-    # The gap the status is judged on: 750 spent against a pace of 600.
-    assert groceries.pace_gap_ratio == D("0.25")
+    # The gap the status is judged on: 1500 projected for an envelope of 1200.
+    assert groceries.projected_gap_ratio == D("0.25")
 
 
-def test_once_over_the_gap_to_the_pace_is_the_gap_to_the_envelope() -> None:
+def test_a_fixed_cost_paid_early_in_the_month_is_not_a_drift() -> None:
+    """Rent paid on the 1st: the month counts for its target, not 31 times its first day."""
+    plan = q1_plan(housing="850")
+    review = review_plan(plan, CATEGORIES, {(HOUSING, JAN): D("850")}, {}, date(2027, 1, 2))
+    housing = row(review, HOUSING)
+    assert housing.projection == D("2550")
+    assert housing.status is BudgetStatus.ON
+    assert not housing.drifting
+
+
+def test_spending_above_the_target_drifts_at_once() -> None:
+    plan = q1_plan(groceries="80")
+    review = review_plan(plan, CATEGORIES, {(GROCERIES, JAN): D("120")}, {}, date(2027, 1, 10))
+    groceries = row(review, GROCERIES)
+    # January at 120, then February and March at their target.
+    assert (groceries.projection, groceries.drift) == (D("280"), D("40"))
+    assert groceries.drifting
+
+
+def test_completed_months_above_the_target_set_the_expected_spending() -> None:
+    plan = q1_plan(groceries="400")
+    spending = {(GROCERIES, JAN): D("600"), (GROCERIES, FEB): D("100")}
+    groceries = row(review_plan(plan, CATEGORIES, spending, {}, date(2027, 2, 5)), GROCERIES)
+    # January ran at 600 a month: February and March are expected at 600.
+    assert groceries.projection == D("1800")
+
+
+def test_on_its_last_day_a_plan_is_over_and_projects_what_was_spent() -> None:
+    plan = q1_plan(groceries="400")
+    review = review_plan(plan, CATEGORIES, {}, {}, date(2027, 3, 31))
+    assert review.finished
+    assert row(review, GROCERIES).projection == 0
+
+
+def test_without_a_target_nor_a_completed_month_the_projection_is_linear() -> None:
+    plan = q1_plan()
+    review = review_plan(plan, CATEGORIES, {(HOUSING, JAN): D("100")}, {}, date(2027, 1, 31))
+    assert row(review, HOUSING).projection == D("300.00")
+
+
+def test_once_over_the_projected_gap_is_the_gap() -> None:
     plan = q1_plan(groceries="400")
     spending = {(GROCERIES, JAN): D("1180")}
     groceries = row(review_plan(plan, CATEGORIES, spending, {}, today=date(2027, 4, 2)), GROCERIES)
-    assert groceries.pace_gap_ratio == groceries.gap_ratio
-    assert (
-        row(review_plan(plan, CATEGORIES, {}, {}, date(2026, 12, 1)), GROCERIES).pace_gap_ratio
-        is None
-    )
+    assert groceries.projected_gap_ratio == groceries.gap_ratio
+    before = row(review_plan(plan, CATEGORIES, {}, {}, date(2026, 12, 1)), GROCERIES)
+    assert before.projected_gap_ratio is None
 
 
 def test_the_review_totals_income_savings_and_the_planned_savings() -> None:
@@ -332,6 +371,29 @@ def test_invariant_9_envelope_is_target_times_months(
     n = len(period.months)
     assert result[GROCERIES] == groceries * n
     assert result[FOOD] == (groceries * n if own_food else (groceries + bakery) * n)
+
+
+@given(
+    st.dictionaries(
+        st.tuples(
+            st.sampled_from([FOOD, GROCERIES, BAKERY, HOUSING, None]),
+            st.sampled_from([JAN, FEB, MAR, APR]),
+        ),
+        amounts,
+    ),
+    st.integers(0, 120),
+)
+def test_the_projection_starts_from_what_is_spent_and_ends_on_it(
+    spending: dict[tuple[UUID | None, Month], Decimal], offset: int
+) -> None:
+    plan = q1_plan(groceries="400", housing="900")
+    today = date(2027, 1, 1) + timedelta(days=offset)
+    review = review_plan(plan, CATEGORIES, spending, {}, today)
+    for r in [*review.rows, review.total]:
+        if r.projection is not None:
+            assert r.projection >= r.spent
+        if review.finished:
+            assert r.projection == r.spent
 
 
 @given(

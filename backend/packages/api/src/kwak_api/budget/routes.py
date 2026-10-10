@@ -277,14 +277,16 @@ class ReviewRowOut(BaseModel):
     """gap / envelope, rounded to 4 decimals."""
     pace: Decimal | None
     """The envelope prorated to the time elapsed; the envelope once the plan is over."""
-    pace_gap_ratio: Decimal | None
-    """(spent - pace) / pace, rounded to 4 decimals: the gap the status is judged on."""
     status: BudgetStatus
-    """Spent compared with the pace, with the band."""
+    """The projection compared with the envelope, with the band: the spending once over."""
     projection: Decimal | None
-    """Linear projection of the spending at the end of the plan."""
+    """Spending projected at the end of the plan: completed months as spent, the others at the
+    larger of their spending and the expected one (the target, or the completed months' average
+    if higher)."""
     drift: Decimal | None
     """projection - envelope."""
+    projected_gap_ratio: Decimal | None
+    """drift / envelope, rounded to 4 decimals: the gap the status is judged on."""
     drifting: bool
     """Projected above the envelope while the plan runs."""
     months_over: int
@@ -306,10 +308,10 @@ class ReviewRowOut(BaseModel):
             gap=_cents(row.gap),
             gap_ratio=_ratio(row.gap_ratio),
             pace=_cents(row.pace),
-            pace_gap_ratio=_ratio(row.pace_gap_ratio),
             status=row.status,
             projection=_cents(row.projection),
             drift=_cents(row.drift),
+            projected_gap_ratio=_ratio(row.projected_gap_ratio),
             drifting=row.drifting,
             months_over=row.months_over,
             months_on=row.months_on,
@@ -427,7 +429,7 @@ class ComparisonRowOut(BaseModel):
     target_a: Decimal | None
     target_b: Decimal | None
     average_a: Decimal | None
-    """Monthly average spent over the elapsed part of plan a."""
+    """Monthly average spent in plan a: its projection's while it runs."""
     average_b: Decimal | None
     change: Decimal | None
     """average_b - average_a."""
