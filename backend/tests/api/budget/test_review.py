@@ -48,7 +48,7 @@ def q1(owner_client: TestClient, clock: Clock) -> Any:
     account = _account(owner_client, opening_date="2025-12-01")
     _spend(owner_client, account, "2026-01-10", "-280.00", "Groceries")
     _spend(owner_client, account, "2026-01-31", "2000.00", "Salary")
-    _spend(owner_client, account, "2026-02-05", "-250.00", "Groceries")
+    _spend(owner_client, account, "2026-02-05", "-400.00", "Groceries")
     _spend(owner_client, account, "2026-02-12", "-50.00", None)
     plan["account"] = account
     return plan
@@ -60,7 +60,7 @@ def _review(client: TestClient, plan: Any) -> Any:
     return response.json()
 
 
-def test_during_a_plan_the_review_compares_spending_with_the_pace(
+def test_during_a_plan_the_review_judges_the_projection_against_the_envelope(
     owner_client: TestClient, q1: Any
 ) -> None:
     review = _review(owner_client, q1)
@@ -75,14 +75,14 @@ def test_during_a_plan_the_review_compares_spending_with_the_pace(
         "level": 1,
         "monthly_target": "300.00",
         "envelope": "900.00",
-        "spent": "530.00",
-        "gap": "-370.00",
-        "gap_ratio": "-0.4111",
+        "spent": "680.00",
+        "gap": "-220.00",
+        "gap_ratio": "-0.2444",
         "pace": "460.71",
-        "pace_gap_ratio": "0.1504",
         "status": "over",
-        "projection": "1035.35",
-        "drift": "135.35",
+        "projection": "980.00",  # January as spent, February at 400, March at its 300 target
+        "drift": "80.00",
+        "projected_gap_ratio": "0.0889",
         "drifting": True,
         "months_over": 0,
         "months_on": 0,
@@ -101,11 +101,11 @@ def test_spending_left_to_categorise_makes_the_review_provisional(
 ) -> None:
     review = _review(owner_client, q1)
     assert (review["uncategorised"], review["provisional"]) == ("50.00", True)
-    assert review["total"]["spent"] == "580.00"
+    assert review["total"]["spent"] == "730.00"
     assert (review["income"], review["savings"], review["savings_rate"]) == (
         "2000.00",
-        "1420.00",
-        "0.7100",
+        "1270.00",
+        "0.6350",
     )
     assert review["planned_savings"] == "5100.00"  # 3 x 2000 - 900
 
@@ -134,7 +134,11 @@ def test_after_the_plan_the_review_gives_the_final_result(
         "under",
         False,
     )
-    assert (groceries["months_under"], groceries["months_on"]) == (3, 0)
+    assert (groceries["months_over"], groceries["months_on"], groceries["months_under"]) == (
+        1,
+        0,
+        2,
+    )
     assert review["drifting"] == []
 
 
@@ -149,11 +153,11 @@ def test_the_cumulative_chart_runs_day_by_day_against_the_envelope_line(
     by_day = {p["day"]: p for p in points}
     assert by_day["2026-01-10"]["spent"] == "280.00"
     assert by_day["2026-01-31"] == {"day": "2026-01-31", "spent": "280.00", "envelope": "300.00"}
-    assert by_day["2026-02-15"]["spent"] == "580.00"  # uncategorised outflows count
+    assert by_day["2026-02-15"]["spent"] == "730.00"  # uncategorised outflows count
     assert by_day["2026-02-16"]["spent"] is None  # the future
 
     food = owner_client.get(url, params={"category_id": _category(owner_client, "Food")}).json()
-    assert {p["day"]: p["spent"] for p in food["points"]}["2026-02-15"] == "530.00"
+    assert {p["day"]: p["spent"] for p in food["points"]}["2026-02-15"] == "680.00"
 
 
 def test_the_cumulative_chart_is_for_an_expense_category(owner_client: TestClient, q1: Any) -> None:
@@ -173,8 +177,9 @@ def test_two_plans_compare_on_monthly_figures(owner_client: TestClient, q1: Any)
     assert (comparison["a"]["id"], comparison["b"]["id"]) == (previous["id"], q1["id"])
     groceries = _row(comparison, "Groceries")
     assert (groceries["target_a"], groceries["target_b"]) == ("300.00", "300.00")
-    assert (groceries["average_a"], groceries["average_b"]) == ("50.00", "345.12")
-    assert (groceries["change"], groceries["change_ratio"]) == ("295.12", "5.9024")
+    # Q1 runs: its average is its projection's, 980 / 3.
+    assert (groceries["average_a"], groceries["average_b"]) == ("50.00", "326.67")
+    assert (groceries["change"], groceries["change_ratio"]) == ("276.67", "5.5334")
     assert comparison["rows"][-1]["name"] == "Total"
 
 

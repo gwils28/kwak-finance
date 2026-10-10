@@ -109,16 +109,16 @@ test("a plan closed early is labelled so, with its reason", async () => {
   expect(screen.getByText("Reason: job loss")).toBeInTheDocument();
 });
 
-test("the gap chart compares spending with the pace, as the status does", async () => {
+test("the gap chart shows the projected gap, as the status does", async () => {
   api();
   render(<TestApp path="/budget/review?plan=p-current" />);
 
-  const table = await screen.findByRole("table", { name: "Gap to the pace by category" });
+  const table = await screen.findByRole("table", { name: "Projected gap by category" });
   const rows = within(table)
     .getAllByRole("row")
     .slice(1)
     .map((r) => r.textContent);
-  // Spent against the pace, as the status: categories without a target have no gap.
+  // Projection against the envelope, as the status: categories without a target have no gap.
   expect(rows).toEqual(["Food+14%", "Restaurants+63%", "Housing-2%"]);
 });
 
