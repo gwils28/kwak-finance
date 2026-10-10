@@ -5,6 +5,7 @@ import pytest
 from fastapi.testclient import TestClient
 from kwak_api.models import User
 
+from tests.api.budget.test_budget import _target
 from tests.api.conftest import Clock, csrf, log_in
 
 CHECKING_CSV = (
@@ -94,11 +95,7 @@ def test_twelve_months_of_spending_by_category_and_income(owner_client: TestClie
 
 def test_cumulative_spending_through_the_month_against_the_target(owner_client: TestClient) -> None:
     _setup(owner_client)
-    owner_client.put(
-        f"/api/budget/targets/{_category(owner_client, 'Groceries')}",
-        json={"amount": "400.00", "from_month": "2026-01"},
-        headers=csrf(owner_client),
-    )
+    _target(owner_client, "Groceries", "400.00")
     dashboard = _dashboard(owner_client)
     cumulative = dashboard["cumulative"]
 

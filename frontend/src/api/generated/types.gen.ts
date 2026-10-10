@@ -1315,38 +1315,6 @@ export type RulePreview = {
 export type Scope = 'household' | 'mine';
 
 /**
- * TargetIn
- */
-export type TargetIn = {
-    /**
-     * Amount
-     */
-    amount: number | string | null;
-    /**
-     * From Month
-     */
-    from_month: string;
-};
-
-/**
- * TargetOut
- */
-export type TargetOut = {
-    /**
-     * Amount
-     */
-    amount: string | null;
-    /**
-     * Category Id
-     */
-    category_id: string;
-    /**
-     * Valid From
-     */
-    valid_from: string;
-};
-
-/**
  * ToCategorise
  */
 export type ToCategorise = {
@@ -2358,36 +2326,6 @@ export type SetPlanTargetResponses = {
 };
 
 export type SetPlanTargetResponse = SetPlanTargetResponses[keyof SetPlanTargetResponses];
-
-export type SetTargetData = {
-    body: TargetIn;
-    path: {
-        /**
-         * Category Id
-         */
-        category_id: string;
-    };
-    query?: never;
-    url: '/api/budget/targets/{category_id}';
-};
-
-export type SetTargetErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type SetTargetError = SetTargetErrors[keyof SetTargetErrors];
-
-export type SetTargetResponses = {
-    /**
-     * Successful Response
-     */
-    200: TargetOut;
-};
-
-export type SetTargetResponse = SetTargetResponses[keyof SetTargetResponses];
 
 export type ListCategoriesData = {
     body?: never;

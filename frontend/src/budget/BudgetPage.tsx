@@ -5,15 +5,17 @@ import {
   type BudgetStatus,
   budgetMatrix,
   type CellOut,
+  listPlans,
+  type PlanOut,
   type RowOut,
   type Scope,
-  setTarget,
+  setPlanTarget,
 } from "../api/generated";
 import { apiErrorMessage, detailSentence } from "../auth/errors";
 import { ErrorAlert } from "../components/ui";
 import { useI18n } from "../i18n";
 import {
-  amountInput,
+  amountInputShort,
   formatEurSigned,
   formatEurWhole,
   formatPercent,
@@ -21,6 +23,8 @@ import {
   parseEurInput,
 } from "../lib/money";
 import { monthBounds, monthLabel, shiftMonth, thisMonth } from "../lib/months";
+import { defaultPlan, type PlanTarget, planTargets } from "../lib/plans";
+import { PLANS_KEY, PlanPanel, usePeriodLabel } from "./PlanPanel";
 
 const STATUS_CLASS: Record<BudgetStatus, string> = {
   under: "bg-budget-under-bg text-budget-under-fg",
@@ -32,10 +36,9 @@ const STATUS_CLASS: Record<BudgetStatus, string> = {
 export { thisMonth };
 
 /** "60.00" -> "60", "12.50" -> "12,50" (fr): how a target reads in its input. */
-function targetText(row: RowOut): string {
-  const target = row.target_from_children ? null : row.target;
-  if (target === null) return "";
-  return target.endsWith(".00") ? target.slice(0, -3) : amountInput(target);
+function targetText(target: PlanTarget | undefined): string {
+  if (!target || target.fromChildren) return "";
+  return amountInputShort(target.amount);
 }
 
 const fieldClass = "rounded-md border border-border bg-surface px-3 py-2";
@@ -51,6 +54,8 @@ export function BudgetPage() {
   const [band, setBand] = useState("0.05");
   const [error, setError] = useState<string | null>(null);
   const [showEmpty, setShowEmpty] = useState(false);
+  const [planId, setPlanId] = useState<string | null>(null);
+  const periodLabel = usePeriodLabel();
   const end = thisMonth();
   const start = shiftMonth(end, -(period - 1));
 
@@ -60,6 +65,13 @@ export function BudgetPage() {
       (await budgetMatrix({ query: { start, end, scope, band }, throwOnError: true })).data,
     placeholderData: keepPreviousData,
   });
+
+  const plans = useQuery({
+    queryKey: PLANS_KEY,
+    queryFn: async () => (await listPlans({ throwOnError: true })).data,
+  });
+  const plan = plans.data?.find((p) => p.id === planId) ?? defaultPlan(plans.data ?? [], end);
+  const targets = plan && matrix.data ? planTargets(plan, matrix.data.rows) : null;
 
   const bandPercent = formatPercent(band);
 
@@ -115,6 +127,10 @@ export function BudgetPage() {
           </label>
         </div>
       </div>
+      {plans.isError && <ErrorAlert message={t.budget.loadFailed} />}
+      {plans.data && (
+        <PlanPanel plans={plans.data} selected={plan} onSelect={setPlanId} onError={setError} />
+      )}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <Legend band={bandPercent} />
         <label className="flex items-center gap-2 text-sm">
@@ -136,7 +152,9 @@ export function BudgetPage() {
               <tr>
                 <th className={`${STICKY_NAME} px-3 py-2 font-medium`}>{t.budget.category}</th>
                 <th className={`${STICKY_TARGET} px-3 py-2 font-medium`}>
-                  {t.budget.monthlyTarget}
+                  {plan
+                    ? t.budget.monthlyTargetOf(periodLabel(plan.period))
+                    : t.budget.monthlyTarget}
                 </th>
                 {matrix.data.months.map((m) => (
                   <th key={m} className="whitespace-nowrap px-3 py-2 text-right font-medium">
@@ -150,13 +168,19 @@ export function BudgetPage() {
                 <MatrixRow
                   key={row.category_id}
                   row={row}
+                  plan={plan}
+                  target={row.category_id ? targets?.byCategory.get(row.category_id) : undefined}
                   onError={setError}
-                  editable
                   categoryParam={row.category_id ?? "none"}
                 />
               ))}
               <MatrixRow row={matrix.data.uncategorised} onError={setError} categoryParam="none" />
-              <MatrixRow row={matrix.data.total} onError={setError} isTotal />
+              <MatrixRow
+                row={matrix.data.total}
+                target={targets?.total ? { amount: targets.total, fromChildren: true } : undefined}
+                onError={setError}
+                isTotal
+              />
             </tbody>
           </table>
         </div>
@@ -198,17 +222,21 @@ function Legend({ band }: { band: string }) {
 
 function MatrixRow({
   row,
+  plan,
+  target,
   onError,
-  editable = false,
   isTotal = false,
   categoryParam,
 }: {
   row: RowOut;
+  /** The plan whose targets the row edits; none for the "to categorise" and total rows. */
+  plan?: PlanOut;
+  target?: PlanTarget;
   onError: (message: string | null) => void;
-  editable?: boolean;
   isTotal?: boolean;
   categoryParam?: string;
 }) {
+  const { t } = useI18n();
   const weight = row.level === 0 ? "font-semibold" : "";
   const rowClass = isTotal ? "border-t-2 border-border font-bold" : "";
   return (
@@ -222,11 +250,21 @@ function MatrixRow({
         {row.name}
       </th>
       <td className={`${STICKY_TARGET} px-3 py-2`}>
-        {editable && row.category_id ? (
-          <TargetInput row={row} categoryId={row.category_id} onError={onError} />
+        {plan?.editable && row.category_id ? (
+          <TargetInput
+            key={`${plan.id}:${target?.amount}`}
+            row={row}
+            plan={plan}
+            target={target}
+            categoryId={row.category_id}
+            onError={onError}
+          />
         ) : (
-          <span className="tabular text-muted">
-            {row.target === null ? "" : formatEurWhole(row.target)}
+          <span
+            className="tabular text-muted"
+            title={plan && !plan.editable ? t.budget.plan.lockedTarget : undefined}
+          >
+            {target ? formatEurWhole(target.amount) : ""}
           </span>
         )}
       </td>
@@ -280,21 +318,25 @@ function MatrixCell({
 
 function TargetInput({
   row,
+  plan,
+  target,
   categoryId,
   onError,
 }: {
   row: RowOut;
+  plan: PlanOut;
+  target: PlanTarget | undefined;
   categoryId: string;
   onError: (message: string | null) => void;
 }) {
   const { t } = useI18n();
   const queryClient = useQueryClient();
-  const [text, setText] = useState(targetText(row));
+  const [text, setText] = useState(targetText(target));
   const save = useMutation({
     mutationFn: async (amount: string | null) => {
-      const { data, error, response } = await setTarget({
-        path: { category_id: categoryId },
-        body: { amount, from_month: thisMonth() },
+      const { data, error, response } = await setPlanTarget({
+        path: { plan_id: plan.id, category_id: categoryId },
+        body: { amount },
       });
       if (!data) throw new Error(detailSentence(error) ?? apiErrorMessage(t, response));
       return data;
@@ -307,7 +349,7 @@ function TargetInput({
   });
 
   const commit = () => {
-    if (text.trim() === targetText(row)) return;
+    if (text.trim() === targetText(target)) return;
     if (text.trim() === "") {
       save.mutate(null);
       return;
@@ -324,12 +366,8 @@ function TargetInput({
     <input
       aria-label={t.budget.targetFor(row.name)}
       inputMode="decimal"
-      placeholder={
-        row.target_from_children && row.target !== null
-          ? t.budget.sum(formatEurWhole(row.target))
-          : "—"
-      }
-      title={row.target_from_children ? t.budget.sumHelp : undefined}
+      placeholder={target?.fromChildren ? t.budget.sum(formatEurWhole(target.amount)) : "—"}
+      title={target?.fromChildren ? t.budget.sumHelp : undefined}
       className="tabular w-32 rounded-md border border-border bg-surface px-2 py-1 text-right"
       value={text}
       onChange={(e) => setText(e.target.value)}

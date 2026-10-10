@@ -161,30 +161,6 @@ def delete_plan(db: Session, plan: BudgetPlan, today: date) -> None:
     db.flush()
 
 
-def set_target(
-    db: Session,
-    household_id: UUID,
-    category: Category,
-    month: Month,
-    amount: Decimal | None,
-    today: date,
-) -> BudgetPlan:
-    """Set the target in the plan covering `month`, creating its quarter's plan if needed.
-
-    Kept for the budget page's target editor until it manages plans itself.
-    """
-    plan = next(
-        (
-            p
-            for p in list_plans(db, household_id)
-            if p.start_month <= month.first_day() <= p.end_month
-        ),
-        None,
-    ) or create_plan(db, household_id, Period.containing(PeriodKind.QUARTER, month))
-    set_plan_target(db, plan, category, amount, today)
-    return plan
-
-
 def target_history(
     db: Session, household_id: UUID
 ) -> dict[UUID, list[tuple[Month, Decimal | None]]]:

@@ -31,20 +31,6 @@ def _month(text: str) -> Month:
         ) from None
 
 
-class TargetIn(BaseModel):
-    amount: Cents | None
-    """Monthly target in euros; null removes the target."""
-    from_month: Annotated[str, Field(pattern=MONTH_PATTERN)]
-    """YYYY-MM: the month whose plan gets the target."""
-
-
-class TargetOut(BaseModel):
-    category_id: UUID
-    amount: Decimal | None
-    valid_from: str
-    """YYYY-MM: the first month of the plan holding the target."""
-
-
 class CellOut(BaseModel):
     month: str
     spent: Decimal
@@ -101,28 +87,6 @@ class BudgetMatrix(BaseModel):
     """Expense categories: each parent (with its subcategories' total) then its subcategories."""
     uncategorised: RowOut
     total: RowOut
-
-
-@router.put("/targets/{category_id}", deprecated=True)
-def set_target(
-    category_id: UUID, body: TargetIn, user_session: CurrentSession, db: Db, now: Now
-) -> TargetOut:
-    """Set the target in the plan covering `from_month` (its quarter's plan if none).
-
-    Kept for the current budget page; use the plan endpoints instead.
-    """
-    household_id = user_session.user.household_id
-    category = _category(db, household_id, category_id)
-    month = _month(body.from_month)
-    try:
-        plan = service.set_target(db, household_id, category, month, body.amount, now.date())
-    except service.PlanConflictError as exc:
-        raise HTTPException(status.HTTP_409_CONFLICT, str(exc)) from None
-    except ValueError as exc:
-        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, str(exc)) from None
-    return TargetOut(
-        category_id=category.id, amount=body.amount, valid_from=str(Month.of(plan.start_month))
-    )
 
 
 def _category(db: Db, household_id: UUID, category_id: UUID) -> Category:

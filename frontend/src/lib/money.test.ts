@@ -2,6 +2,7 @@ import { afterEach, expect, test } from "vitest";
 import { setCurrentLanguage } from "./locale";
 import {
   amountInput,
+  amountInputShort,
   formatEur,
   formatEurSigned,
   formatEurWhole,
@@ -57,4 +58,10 @@ test.each([
 
 test.each(["", "12,345", "1,2,3", "abc", "1.234,56", "--1"])("parseEurInput rejects %s", (text) => {
   expect(parseEurInput(text)).toBeNull();
+});
+
+test("an input shows whole euros without empty cents", () => {
+  setCurrentLanguage("fr");
+  expect(amountInputShort("2400.00")).toBe("2400");
+  expect(amountInputShort("12.50")).toBe("12,50");
 });
