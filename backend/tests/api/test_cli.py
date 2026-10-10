@@ -3,8 +3,9 @@ from collections.abc import Iterator
 
 import pytest
 from kwak_api.cli import main
-from kwak_api.models import User
+from kwak_api.models import Category, User
 from kwak_api.settings import Settings
+from kwak_core.users import Language
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -26,6 +27,24 @@ def test_create_owner(session: Session, capsys: pytest.CaptureFixture[str]) -> N
     assert code == 0
     assert session.scalars(select(User.email)).all() == ["o@example.com"]
     assert "o@example.com" in capsys.readouterr().out
+
+
+def test_create_owner_in_french_names_the_default_categories_in_french(
+    session: Session,
+) -> None:
+    argv = ["create-owner", "--household", "Home", "--email", "o@example.com", "--name", "Owner"]
+    code = _run(
+        session,
+        [*argv, "--language", "fr"],
+        _passwords("correct horse battery", "correct horse battery"),
+    )
+
+    assert code == 0
+    owner = session.scalars(select(User)).one()
+    assert owner.language == Language.FR
+    names = set(session.scalars(select(Category.name)))
+    assert {"Alimentation", "Courses", "Revenus"} <= names
+    assert "Groceries" not in names
 
 
 def test_create_owner_fails_when_the_passwords_differ(

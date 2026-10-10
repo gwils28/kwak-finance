@@ -1,4 +1,4 @@
-from kwak_core.users import check_password_policy, normalize_email
+from kwak_core.users import Language, check_password_policy, normalize_email
 from sqlalchemy import exists, select
 from sqlalchemy.orm import Session
 
@@ -12,7 +12,13 @@ class HouseholdAlreadyExistsError(Exception):
 
 
 def create_household(
-    session: Session, *, household_name: str, email: str, display_name: str, password: str
+    session: Session,
+    *,
+    household_name: str,
+    email: str,
+    display_name: str,
+    password: str,
+    language: Language | None = None,
 ) -> User:
     """Create the household and its owner. The caller commits."""
     check_password_policy(password)
@@ -26,8 +32,9 @@ def create_household(
         display_name=display_name.strip(),
         password_hash=hash_password(password),
         role=Role.OWNER,
+        language=language,
     )
     session.add(owner)
     session.flush()
-    seed_defaults(session, owner.household_id)
+    seed_defaults(session, owner.household_id, language or Language.EN)
     return owner

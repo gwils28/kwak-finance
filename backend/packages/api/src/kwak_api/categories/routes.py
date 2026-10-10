@@ -2,9 +2,11 @@ from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, status
 from kwak_core.categories import CategoryKind, HierarchyError
-from pydantic import BaseModel
+from kwak_core.users import Language
+from pydantic import BaseModel, Field
 
-from kwak_api.auth.routes import CurrentSession, Db
+from kwak_api.auth.routes import CurrentSession, Db, Now
+from kwak_api.household.routes import OwnerSession
 from kwak_api.models import Category
 from kwak_api.services import categories as service
 
@@ -110,3 +112,68 @@ def delete_category(category_id: UUID, user_session: CurrentSession, db: Db) -> 
         raise HTTPException(
             status.HTTP_409_CONFLICT, "move or delete its subcategories first"
         ) from None
+
+
+class RenameOut(BaseModel):
+    from_: str = Field(alias="from", serialization_alias="from")
+    to: str
+
+
+class RestoreOut(BaseModel):
+    """What restoring the default categories does (GET) or did (POST)."""
+
+    language: Language
+    """The language of the default names: the requesting user's."""
+    created: list[str]
+    renamed: list[RenameOut]
+    merged: list[RenameOut]
+    """Duplicates of a default, merged with their transactions, rules and plan targets."""
+    moved: list[str]
+    """Default subcategories moved back under their default parent."""
+    deleted: list[str]
+    """Categories that are not defaults."""
+    transactions_to_categorise: int
+    rules_deleted: int
+    plan_targets_deleted: int
+    locked_plans_affected: int
+    """Plans past their first month that lose a target: their review changes."""
+
+    @classmethod
+    def of(cls, summary: service.RestoreSummary) -> "RestoreOut":
+        return cls(
+            language=summary.language,
+            created=summary.created,
+            renamed=[RenameOut(**{"from": a, "to": b}) for a, b in summary.renamed],
+            merged=[RenameOut(**{"from": a, "to": b}) for a, b in summary.merged],
+            moved=summary.moved,
+            deleted=summary.deleted,
+            transactions_to_categorise=summary.transactions_to_categorise,
+            rules_deleted=summary.rules_deleted,
+            plan_targets_deleted=summary.plan_targets_deleted,
+            locked_plans_affected=summary.locked_plans_affected,
+        )
+
+
+def _restore(user_session: OwnerSession, db: Db, now: Now, *, apply: bool) -> RestoreOut:
+    user = user_session.user
+    summary = service.restore_defaults(
+        db, user.household_id, user.language or Language.EN, now.date(), apply=apply
+    )
+    return RestoreOut.of(summary)
+
+
+@router.get("/categories/restore")
+def preview_restore(user_session: OwnerSession, db: Db, now: Now) -> RestoreOut:
+    """What restoring the default categories would do, without changing anything."""
+    return _restore(user_session, db, now, apply=False)
+
+
+@router.post("/categories/restore")
+def restore_defaults(user_session: OwnerSession, db: Db, now: Now) -> RestoreOut:
+    """Restore the default categories, named in the owner's language (owner only).
+
+    Defaults found are kept (renamed, moved back) with their transactions, rules and plan
+    targets; duplicates merge into them; missing ones are created; every other category is
+    deleted: its transactions go back to "to categorise", its rules and plan targets go.
+    """
+    return _restore(user_session, db, now, apply=True)

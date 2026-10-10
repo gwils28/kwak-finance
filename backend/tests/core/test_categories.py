@@ -2,6 +2,7 @@ from collections import Counter
 
 import pytest
 from kwak_core.categories import DEFAULT_CATEGORIES, CategoryKind, HierarchyError, check_hierarchy
+from kwak_core.users import Language
 
 
 def test_the_default_tree_has_two_levels_and_both_kinds() -> None:
@@ -12,12 +13,20 @@ def test_the_default_tree_has_two_levels_and_both_kinds() -> None:
     )
 
 
-def test_default_names_are_unique_among_siblings() -> None:
-    parents = Counter(p.name.lower() for p in DEFAULT_CATEGORIES)
+@pytest.mark.parametrize("language", list(Language))
+def test_default_names_are_unique_among_siblings(language: Language) -> None:
+    parents = Counter(p.name(language).lower() for p in DEFAULT_CATEGORIES)
     assert max(parents.values()) == 1
     for parent in DEFAULT_CATEGORIES:
-        children = Counter(c.lower() for c in parent.children)
+        children = Counter(c.name(language).lower() for c in parent.children)
         assert not children or max(children.values()) == 1
+
+
+def test_a_top_level_default_is_recognised_in_either_language_only_as_itself() -> None:
+    for parent in DEFAULT_CATEGORIES:
+        for language in Language:
+            matching = [p for p in DEFAULT_CATEGORIES if p.names.matches(parent.name(language))]
+            assert matching == [parent]
 
 
 def test_a_top_level_category_is_always_valid() -> None:

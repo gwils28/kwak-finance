@@ -7,7 +7,7 @@
 export type GuideStep = { text: string; commands?: string[] };
 export type GuideSection = { id: string; title: string; steps: GuideStep[] };
 
-// Commands are the same in both languages.
+// Commands are the same in both languages, except the example owner.
 const CLONE = ["git clone https://github.com/gwils28/kwak-finance.git", "cd kwak-finance"];
 const ENV = ["cp .env.example .env"];
 const KEY = ["cd backend && uv run kwak generate-key && cd .."];
@@ -15,7 +15,10 @@ const BACKUP_DIR = ["mkdir -p data/backups"];
 const UP = ["make up"];
 const MIGRATE = ["docker compose exec api kwak migrate"];
 const OWNER = [
-  'docker compose exec -it api kwak create-owner --household "Home" --email you@example.com --name "You"',
+  'docker compose exec -it api kwak create-owner --household "Home" --email you@example.com --name "You" --language en',
+];
+const OWNER_FR = [
+  'docker compose exec -it api kwak create-owner --household "Maison" --email vous@example.com --name "Vous" --language fr',
 ];
 const PS = ["docker compose ps"];
 const DOWN = ["make down"];
@@ -80,7 +83,7 @@ export const runGuideEn = {
         },
         { text: "7. Create the database tables:", commands: MIGRATE },
         {
-          text: "8. Create your household and your account (it asks for a password of at least 12 characters):",
+          text: "8. Create your household and your account (it asks for a password of at least 12 characters). --language sets the interface language and names the default categories in it (en or fr):",
           commands: OWNER,
         },
         {
@@ -225,8 +228,8 @@ export const runGuideFr: typeof runGuideEn = {
         },
         { text: "7. Créez les tables de la base :", commands: MIGRATE },
         {
-          text: "8. Créez votre foyer et votre compte (un mot de passe d'au moins 12 caractères est demandé) :",
-          commands: OWNER,
+          text: "8. Créez votre foyer et votre compte (un mot de passe d'au moins 12 caractères est demandé). --language fixe la langue de l'interface et nomme les catégories par défaut dans cette langue (fr ou en) :",
+          commands: OWNER_FR,
         },
         {
           text: "9. Ouvrez https://localhost:8443. La première fois, le navigateur signale un problème de certificat : c'est un certificat local créé par Caddy, acceptez-le (Paramètres avancés → Continuer). Connectez-vous, scannez le QR code avec une application d'authentification et rangez les codes de secours.",

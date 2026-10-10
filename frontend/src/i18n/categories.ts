@@ -45,6 +45,34 @@ export const categoriesEn = {
   account: "Account",
   anyAccount: "Any account",
   invalidAmounts: "Enter amounts in euros, e.g. 12.50.",
+  restore: {
+    title: "Default categories",
+    intro:
+      "Brings the categories back to the defaults Kwak Finance suggests, named in your language. Defaults you still have keep their transactions, rules and plan targets; the ones you created are deleted.",
+    open: "Restore the default categories…",
+    loading: "Working out what changes…",
+    nothing: "Your categories already match the defaults.",
+    warningTitle: "Before you restore",
+    toCategorise: (n: number) =>
+      `${n} transaction${s(n)} go${n === 1 ? "es" : ""} back to “to categorise”.`,
+    rules: (n: number) => `${n} rule${s(n)} ${n === 1 ? "is" : "are"} deleted.`,
+    targets: (n: number, locked: number) =>
+      `${n} plan target${s(n)} ${n === 1 ? "is" : "are"} deleted${
+        locked
+          ? `, in ${locked} plan${s(locked)} already locked: ${locked === 1 ? "its" : "their"} review changes`
+          : ""
+      }.`,
+    backup:
+      "This cannot be undone from the app. Check that a recent backup exists first (see “How to run the app”).",
+    created: (n: number, names: string) => `Created (${n}): ${names}`,
+    renamed: (n: number, names: string) => `Renamed (${n}): ${names}`,
+    merged: (n: number, names: string) => `Merged (${n}): ${names}`,
+    moved: (n: number, names: string) => `Moved back under their category (${n}): ${names}`,
+    deleted: (n: number, names: string) => `Deleted (${n}): ${names}`,
+    confirm: "Restore now",
+    cancel: "Cancel",
+    done: "Default categories restored.",
+  },
 };
 
 const fs = (n: number) => (n > 1 ? "s" : "");
@@ -94,4 +122,31 @@ export const categoriesFr: typeof categoriesEn = {
   account: "Compte",
   anyAccount: "N'importe quel compte",
   invalidAmounts: "Saisissez des montants en euros, par ex. 12,50.",
+  restore: {
+    title: "Catégories par défaut",
+    intro:
+      "Ramène les catégories à celles que propose Kwak Finance, nommées dans votre langue. Les catégories par défaut que vous avez encore gardent leurs opérations, règles et objectifs de plans ; celles que vous avez créées sont supprimées.",
+    open: "Rétablir les catégories par défaut…",
+    loading: "Calcul de ce qui change…",
+    nothing: "Vos catégories correspondent déjà à celles par défaut.",
+    warningTitle: "Avant de rétablir",
+    toCategorise: (n) => `${n} opération${fs(n)} repasse${n > 1 ? "nt" : ""} « à catégoriser ».`,
+    rules: (n) => `${n} règle${fs(n)} ${n > 1 ? "sont supprimées" : "est supprimée"}.`,
+    targets: (n, locked) =>
+      `${n} objectif${fs(n)} de plan ${n > 1 ? "sont supprimés" : "est supprimé"}${
+        locked
+          ? `, dans ${locked} plan${fs(locked)} déjà verrouillé${fs(locked)} : ${locked > 1 ? "leur" : "son"} bilan change`
+          : ""
+      }.`,
+    backup:
+      "Cette action ne peut pas être annulée depuis l'application. Vérifiez d'abord qu'une sauvegarde récente existe (voir « Lancer et arrêter l'application »).",
+    created: (n, names) => `Créées (${n}) : ${names}`,
+    renamed: (n, names) => `Renommées (${n}) : ${names}`,
+    merged: (n, names) => `Fusionnées (${n}) : ${names}`,
+    moved: (n, names) => `Replacées sous leur catégorie (${n}) : ${names}`,
+    deleted: (n, names) => `Supprimées (${n}) : ${names}`,
+    confirm: "Rétablir maintenant",
+    cancel: "Annuler",
+    done: "Catégories par défaut rétablies.",
+  },
 };

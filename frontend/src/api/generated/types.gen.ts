@@ -1011,6 +1011,65 @@ export type RecoveryCodesOut = {
 };
 
 /**
+ * RenameOut
+ */
+export type RenameOut = {
+    /**
+     * From
+     */
+    from: string;
+    /**
+     * To
+     */
+    to: string;
+};
+
+/**
+ * RestoreOut
+ *
+ * What restoring the default categories does (GET) or did (POST).
+ */
+export type RestoreOut = {
+    /**
+     * Created
+     */
+    created: Array<string>;
+    /**
+     * Deleted
+     */
+    deleted: Array<string>;
+    language: Language;
+    /**
+     * Locked Plans Affected
+     */
+    locked_plans_affected: number;
+    /**
+     * Merged
+     */
+    merged: Array<RenameOut>;
+    /**
+     * Moved
+     */
+    moved: Array<string>;
+    /**
+     * Plan Targets Deleted
+     */
+    plan_targets_deleted: number;
+    /**
+     * Renamed
+     */
+    renamed: Array<RenameOut>;
+    /**
+     * Rules Deleted
+     */
+    rules_deleted: number;
+    /**
+     * Transactions To Categorise
+     */
+    transactions_to_categorise: number;
+};
+
+/**
  * ReviewOut
  */
 export type ReviewOut = {
@@ -2382,6 +2441,56 @@ export type CreateCategoryResponses = {
 };
 
 export type CreateCategoryResponse = CreateCategoryResponses[keyof CreateCategoryResponses];
+
+export type PreviewRestoreData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/categories/restore';
+};
+
+export type PreviewRestoreErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type PreviewRestoreError = PreviewRestoreErrors[keyof PreviewRestoreErrors];
+
+export type PreviewRestoreResponses = {
+    /**
+     * Successful Response
+     */
+    200: RestoreOut;
+};
+
+export type PreviewRestoreResponse = PreviewRestoreResponses[keyof PreviewRestoreResponses];
+
+export type RestoreDefaultsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/categories/restore';
+};
+
+export type RestoreDefaultsErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type RestoreDefaultsError = RestoreDefaultsErrors[keyof RestoreDefaultsErrors];
+
+export type RestoreDefaultsResponses = {
+    /**
+     * Successful Response
+     */
+    200: RestoreOut;
+};
+
+export type RestoreDefaultsResponse = RestoreDefaultsResponses[keyof RestoreDefaultsResponses];
 
 export type DeleteCategoryData = {
     body?: never;

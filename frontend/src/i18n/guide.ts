@@ -67,6 +67,7 @@ export const guideEn = {
       paragraphs: [
         "Categories have two levels: a category and its subcategories, for spending or for income. Rename, move or delete them as you like: deleting one sends its transactions back to “to categorise”.",
         "Rules run in order, and the first one that matches sets the category of each import and manual entry. A rule looks at the label (case, spacing and accents ignored), and can also check the amount and the account. They can be applied again to past transactions.",
+        "The household owner can restore the default categories, named in their language: defaults still there keep their transactions, rules and plan targets, copies merge into them, missing ones come back, and every other category is deleted. A preview lists what goes and what it implies before anything changes.",
       ],
       link: { to: "/categories", label: "Open the categories" },
     },
@@ -182,6 +183,7 @@ export const guideFr: typeof guideEn = {
       paragraphs: [
         "Les catégories ont deux niveaux : une catégorie et ses sous-catégories, de dépense ou de revenu. Renommez-les, déplacez-les ou supprimez-les à votre guise : en supprimer une renvoie ses opérations « à catégoriser ».",
         "Les règles s'appliquent dans l'ordre, et la première qui correspond fixe la catégorie de chaque import et de chaque saisie. Une règle regarde le libellé (sans tenir compte de la casse, des espaces ni des accents), et peut aussi vérifier le montant et le compte. Elles peuvent être réappliquées aux opérations passées.",
+        "Le propriétaire du foyer peut rétablir les catégories par défaut, nommées dans sa langue : celles encore présentes gardent leurs opérations, règles et objectifs de plans, les doublons sont fusionnés avec elles, celles qui manquent reviennent, et toutes les autres sont supprimées. Un aperçu liste ce qui part et ce que cela implique avant tout changement.",
       ],
       link: { to: "/categories", label: "Ouvrir les catégories" },
     },
