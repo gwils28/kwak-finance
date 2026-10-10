@@ -3,6 +3,7 @@ import { Link, Outlet, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { logout, updateMe } from "./api/generated";
 import { meQuery } from "./auth/session";
+import { Footer } from "./components/Footer";
 import { LanguageSelect } from "./components/LanguageSelect";
 import { ThemeToggle } from "./components/ThemeToggle";
 import { Button } from "./components/ui";
@@ -37,7 +38,7 @@ export function AppLayout() {
   };
 
   return (
-    <div className="min-h-screen">
+    <div className="flex min-h-screen flex-col">
       <header className="border-b border-border bg-surface">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-4 py-3">
           <nav className="flex flex-wrap items-center gap-4">
@@ -70,9 +71,10 @@ export function AppLayout() {
           </div>
         </div>
       </header>
-      <main className="mx-auto max-w-6xl px-4 py-10">
+      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-10">
         <Outlet />
       </main>
+      <Footer />
     </div>
   );
 }
