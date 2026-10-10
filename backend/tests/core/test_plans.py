@@ -218,6 +218,19 @@ def test_during_a_plan_spending_is_judged_on_the_pace_and_projected() -> None:
     assert (groceries.months_over, groceries.months_on, groceries.months_under) == (1, 0, 0)
     assert housing.status is BudgetStatus.UNDER
     assert [r.category_id for r in review.drifting_rows] == [FOOD, GROCERIES]
+    # The gap the status is judged on: 750 spent against a pace of 600.
+    assert groceries.pace_gap_ratio == D("0.25")
+
+
+def test_once_over_the_gap_to_the_pace_is_the_gap_to_the_envelope() -> None:
+    plan = q1_plan(groceries="400")
+    spending = {(GROCERIES, JAN): D("1180")}
+    groceries = row(review_plan(plan, CATEGORIES, spending, {}, today=date(2027, 4, 2)), GROCERIES)
+    assert groceries.pace_gap_ratio == groceries.gap_ratio
+    assert (
+        row(review_plan(plan, CATEGORIES, {}, {}, date(2026, 12, 1)), GROCERIES).pace_gap_ratio
+        is None
+    )
 
 
 def test_the_review_totals_income_savings_and_the_planned_savings() -> None:

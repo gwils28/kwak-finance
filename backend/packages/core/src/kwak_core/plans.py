@@ -252,6 +252,11 @@ class ReviewRow:
     months_under: int = 0
     target_from_children: bool = False
 
+    @property
+    def pace_gap_ratio(self) -> Decimal | None:
+        """(spent - pace) / pace: the gap the status is judged on; the gap ratio once over."""
+        return (self.spent - self.pace) / self.pace if self.pace else None
+
 
 @dataclass(frozen=True)
 class Review:

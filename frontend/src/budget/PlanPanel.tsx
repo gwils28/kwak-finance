@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { Link } from "@tanstack/react-router";
 import { useId, useState } from "react";
 import { closePlan, createPlan, deletePlan, type PlanOut, updatePlan } from "../api/generated";
 import { apiErrorMessage, detailSentence } from "../auth/errors";
@@ -105,6 +106,15 @@ export function PlanPanel({
           <h2 className="text-lg font-bold">{t.budget.plan.section}</h2>
         )}
         <div className="flex flex-wrap gap-2">
+          {selected && (
+            <Link
+              to="/budget/review"
+              search={{ plan: selected.id }}
+              className="rounded-md bg-accent px-3 py-2 text-sm font-semibold text-bg hover:opacity-90"
+            >
+              {t.review.link}
+            </Link>
+          )}
           <Button variant="ghost" onClick={() => setOpen(open === "new" ? null : "new")}>
             {t.budget.plan.newPlan}
           </Button>

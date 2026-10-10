@@ -12,6 +12,7 @@ import { AccountsPage } from "./accounts/AccountsPage";
 import { LoginPage } from "./auth/LoginPage";
 import { meQuery } from "./auth/session";
 import { BudgetPage } from "./budget/BudgetPage";
+import { ReviewPage } from "./budget/ReviewPage";
 import { CategoriesPage } from "./categories/CategoriesPage";
 import { HomePage } from "./HomePage";
 import { AcceptInvitePage } from "./household/AcceptInvitePage";
@@ -76,6 +77,16 @@ const budgetRoute = createRoute({
   component: BudgetPage,
 });
 
+const reviewRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: "/budget/review",
+  validateSearch: (search: Record<string, unknown>): { plan?: string } =>
+    typeof search.plan === "string" ? { plan: search.plan } : {},
+  component: function Review() {
+    return <ReviewPage planId={reviewRoute.useSearch().plan} />;
+  },
+});
+
 const categoriesRoute = createRoute({
   getParentRoute: () => appRoute,
   path: "/categories",
@@ -111,6 +122,7 @@ const routeTree = rootRoute.addChildren([
     importRoute,
     transactionsRoute,
     budgetRoute,
+    reviewRoute,
     categoriesRoute,
     membersRoute,
   ]),

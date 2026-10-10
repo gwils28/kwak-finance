@@ -1119,6 +1119,10 @@ export type ReviewRowOut = {
      */
     pace: string | null;
     /**
+     * Pace Gap Ratio
+     */
+    pace_gap_ratio: string | null;
+    /**
      * Parent Id
      */
     parent_id: string | null;

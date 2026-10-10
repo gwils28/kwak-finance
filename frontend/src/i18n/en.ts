@@ -6,6 +6,7 @@ import { commonEn, errorsEn } from "./common";
 import { dashboardEn } from "./dashboard";
 import { householdEn } from "./household";
 import { importsEn } from "./imports";
+import { reviewEn } from "./review";
 import { runGuideEn } from "./runGuide";
 import { transactionsEn } from "./transactions";
 
@@ -21,6 +22,7 @@ export const en = {
   household: householdEn,
   transactions: transactionsEn,
   budget: budgetEn,
+  review: reviewEn,
   categories: categoriesEn,
   runGuide: runGuideEn,
 };

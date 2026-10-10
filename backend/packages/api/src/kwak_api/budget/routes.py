@@ -277,6 +277,8 @@ class ReviewRowOut(BaseModel):
     """gap / envelope, rounded to 4 decimals."""
     pace: Decimal | None
     """The envelope prorated to the time elapsed; the envelope once the plan is over."""
+    pace_gap_ratio: Decimal | None
+    """(spent - pace) / pace, rounded to 4 decimals: the gap the status is judged on."""
     status: BudgetStatus
     """Spent compared with the pace, with the band."""
     projection: Decimal | None
@@ -304,6 +306,7 @@ class ReviewRowOut(BaseModel):
             gap=_cents(row.gap),
             gap_ratio=_ratio(row.gap_ratio),
             pace=_cents(row.pace),
+            pace_gap_ratio=_ratio(row.pace_gap_ratio),
             status=row.status,
             projection=_cents(row.projection),
             drift=_cents(row.drift),
