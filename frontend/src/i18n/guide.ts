@@ -47,7 +47,7 @@ export const guideEn = {
       id: "import",
       title: "Importing statements",
       paragraphs: [
-        "From an account, “Import” takes the bank's CSV export (Société Générale for now). A preview shows the new operations, the ones already imported and the errors with their line numbers: nothing is saved until you confirm, and importing the same file twice adds nothing.",
+        "From an account, “Import” takes the bank's CSV export (Société Générale or Helios for now). A preview shows the new operations, the ones already imported and the errors with their line numbers: nothing is saved until you confirm, and importing the same file twice adds nothing.",
         "After the import, the computed balance is compared with the bank's. If they differ, check the account's opening balance and date, or import the missing period. An import can be rolled back from the list of previous imports.",
       ],
       link: { to: "/accounts", label: "Open the accounts" },
@@ -163,7 +163,7 @@ export const guideFr: typeof guideEn = {
       id: "import",
       title: "Importer des relevés",
       paragraphs: [
-        "Depuis un compte, « Importer » prend l'export CSV de la banque (Société Générale pour l'instant). Un aperçu montre les nouvelles opérations, celles déjà importées et les erreurs avec leur numéro de ligne : rien n'est enregistré avant votre confirmation, et importer deux fois le même fichier n'ajoute rien.",
+        "Depuis un compte, « Importer » prend l'export CSV de la banque (Société Générale ou Helios pour l'instant). Un aperçu montre les nouvelles opérations, celles déjà importées et les erreurs avec leur numéro de ligne : rien n'est enregistré avant votre confirmation, et importer deux fois le même fichier n'ajoute rien.",
         "Après l'import, le solde calculé est comparé à celui de la banque. S'ils diffèrent, vérifiez le solde et la date d'ouverture du compte, ou importez la période manquante. Un import peut être annulé depuis la liste des imports précédents.",
       ],
       link: { to: "/accounts", label: "Ouvrir les comptes" },

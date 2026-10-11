@@ -11,3 +11,4 @@ synthetic file in the same layout, then a failing test in `backend/tests/core/im
 |---|---|
 | `societe_generale/checking.csv` | SG checking: summary line with balance, 5 columns, ISO-8859-1, CRLF |
 | `societe_generale/savings.csv` | SG savings (Livret A, LDDS): snake_case header, trailing `;`, ISO-8859-1, CRLF |
+| `helios/statement.csv` | Helios: 8 columns separated by `; `, UTF-8 with BOM, LF, `.` decimals, unsorted dates, note `null` |

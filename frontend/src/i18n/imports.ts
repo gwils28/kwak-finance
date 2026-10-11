@@ -8,7 +8,7 @@ export const importsEn = {
     `${institution} · balance ${balance} · operations before ${opening} are ignored (opening date)`,
   fileLabel: "Bank export (CSV)",
   fileHelp:
-    "Société Générale: account page, “Télécharger”, CSV format. Nothing is saved until you confirm, and importing the same file twice adds nothing.",
+    "Société Générale: account page, “Télécharger”, CSV format. Helios: the monthly statement in CSV. Nothing is saved until you confirm, and importing the same file twice adds nothing.",
   reading: "Reading the file…",
   cannotImport: "This file cannot be imported.",
   tooLarge: "This file is too large (2 MB at most).",
@@ -59,7 +59,7 @@ export const importsFr: typeof importsEn = {
     `${institution} · solde ${balance} · les opérations antérieures au ${opening} sont ignorées (date d'ouverture)`,
   fileLabel: "Export bancaire (CSV)",
   fileHelp:
-    "Société Générale : page du compte, « Télécharger », format CSV. Rien n'est enregistré avant votre confirmation, et importer deux fois le même fichier n'ajoute rien.",
+    "Société Générale : page du compte, « Télécharger », format CSV. Helios : le relevé mensuel au format CSV. Rien n'est enregistré avant votre confirmation, et importer deux fois le même fichier n'ajoute rien.",
   reading: "Lecture du fichier…",
   cannotImport: "Ce fichier ne peut pas être importé.",
   tooLarge: "Ce fichier est trop volumineux (2 Mo au plus).",

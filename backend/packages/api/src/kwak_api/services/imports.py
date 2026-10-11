@@ -76,6 +76,7 @@ def analyse(db: Session, account: Account, data: bytes) -> Analysis:
     if bank_format is None:
         raise ImportRejectedError(
             "unrecognised file format: export a CSV of the operations from Société Générale"
+            " or Helios"
         )
     statement = parse_statement(bank_format, data)
     # Fingerprints over the whole file, in file order: occurrence ranks must not depend on

@@ -48,3 +48,5 @@ class BankFormat:
     matches: Callable[[list[str]], bool]
     """True if the file's first lines are in this format."""
     parse: Callable[[list[str]], Statement]
+    encoding: str = "iso-8859-1"
+    """How the bank encodes the file; "utf-8-sig" also drops a byte order mark."""
