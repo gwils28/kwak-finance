@@ -146,7 +146,8 @@ test("signing out returns to the sign-in page", async () => {
   render(<TestApp path="/" />);
 
   const user = userEvent.setup();
-  await user.click(await screen.findByRole("button", { name: "Sign out" }));
+  await user.click(await screen.findByRole("button", { name: "Account menu: Wilson" }));
+  await user.click(screen.getByRole("button", { name: "Sign out" }));
 
   expect(await screen.findByRole("heading", { name: "Sign in" })).toBeInTheDocument();
   expect(calls.some((c) => c.route === "POST /api/auth/logout")).toBe(true);

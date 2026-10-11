@@ -65,6 +65,10 @@ export const navEn = {
   categories: "Categories",
   members: "Members",
   guide: "Guide",
+  mainLabel: "Main",
+  accountMenu: (name: string) => `Account menu: ${name}`,
+  household: "Household",
+  preferences: "Preferences",
 };
 
 export const navFr: typeof navEn = {
@@ -75,4 +79,8 @@ export const navFr: typeof navEn = {
   categories: "Catégories",
   members: "Membres",
   guide: "Guide",
+  mainLabel: "Principale",
+  accountMenu: (name) => `Menu du compte : ${name}`,
+  household: "Foyer",
+  preferences: "Préférences",
 };

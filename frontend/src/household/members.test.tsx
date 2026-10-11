@@ -115,7 +115,7 @@ test("members see the household but cannot invite", async () => {
   expect(calls.some((c) => c.route === "GET /api/invites")).toBe(false);
 });
 
-test("the header links to the members page", async () => {
+test("the account menu links to the members page", async () => {
   fakeApi({
     "GET /api/auth/me": () => Response.json(owner),
     "GET /api/household/members": () => Response.json([owner]),
@@ -124,7 +124,8 @@ test("the header links to the members page", async () => {
   render(<TestApp path="/" />);
 
   const user = userEvent.setup();
-  await user.click(await screen.findByRole("link", { name: "Members" }));
+  await user.click(await screen.findByRole("button", { name: "Account menu: Wilson" }));
+  await user.click(screen.getByRole("link", { name: "Members" }));
 
   expect(await screen.findByRole("heading", { name: "Members" })).toBeInTheDocument();
 });

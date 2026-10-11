@@ -22,7 +22,7 @@ export type GuideSection = {
 export const guideEn = {
   title: "Using Kwak Finance",
   intro:
-    "Kwak Finance keeps your household's accounts, spending and budget in one place, on your own computer. This guide walks through each page. To install, start or update the app, see “How to run the app” at the bottom of every page.",
+    "Kwak Finance keeps your household's accounts, spending and budget in one place, on your own computer. This guide walks through each page. The tabs at the top lead to the everyday pages; categories, members, language and theme are in the menu under your name, next to this guide. To install, start or update the app, see “How to run the app” at the bottom of every page.",
   contents: "Contents",
   sections: [
     {
@@ -138,7 +138,7 @@ export const guideEn = {
 export const guideFr: typeof guideEn = {
   title: "Utiliser Kwak Finance",
   intro:
-    "Kwak Finance réunit les comptes, les dépenses et le budget de votre foyer, sur votre propre ordinateur. Ce guide parcourt chaque page. Pour installer, lancer ou mettre à jour l'application, voyez « Lancer et arrêter l'application » en bas de chaque page.",
+    "Kwak Finance réunit les comptes, les dépenses et le budget de votre foyer, sur votre propre ordinateur. Ce guide parcourt chaque page. Les onglets du haut mènent aux pages du quotidien ; les catégories, les membres, la langue et le thème sont dans le menu à votre nom, à côté de ce guide. Pour installer, lancer ou mettre à jour l'application, voyez « Lancer et arrêter l'application » en bas de chaque page.",
   contents: "Sommaire",
   sections: [
     {
