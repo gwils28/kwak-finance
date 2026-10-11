@@ -120,7 +120,11 @@ def test_a_merge_keeps_the_plan_targets(owner_client: TestClient, clock: Clock) 
 
     (plan,) = owner_client.get("/api/budget/plans").json()
     assert plan["targets"] == [
-        {"category_id": _by_name(owner_client, "Courses")["id"], "amount": "300.00"}
+        {
+            "category_id": _by_name(owner_client, "Courses")["id"],
+            "amount": "300.00",
+            "paid_from": None,
+        }
     ]
 
 

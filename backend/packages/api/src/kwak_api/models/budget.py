@@ -2,9 +2,11 @@ from datetime import date
 from decimal import Decimal
 from uuid import UUID
 
+from kwak_core.plans import PaidFrom
 from sqlalchemy import (
     CheckConstraint,
     Date,
+    Enum,
     ForeignKey,
     Numeric,
     SmallInteger,
@@ -67,3 +69,14 @@ class BudgetPlanTarget(UUIDPrimaryKey, Timestamps, Base):
     plan_id: Mapped[UUID] = mapped_column(ForeignKey("budget_plan.id", ondelete="CASCADE"))
     category_id: Mapped[UUID] = mapped_column(ForeignKey("category.id", ondelete="CASCADE"))
     amount: Mapped[Decimal] = mapped_column(Numeric(14, 2))
+    paid_from: Mapped[PaidFrom | None] = mapped_column(
+        Enum(
+            PaidFrom,
+            name="paid_from",
+            native_enum=False,
+            create_constraint=True,
+            length=10,
+            values_callable=lambda members: [m.value for m in members],
+        )
+    )
+    """Which accounts pay the category; None counts it in every scope."""

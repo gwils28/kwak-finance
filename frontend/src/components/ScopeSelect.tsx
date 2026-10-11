@@ -3,6 +3,16 @@ import { useId } from "react";
 import { listAccounts, type Scope } from "../api/generated";
 import { useI18n } from "../i18n";
 
+/** Whether the household has a joint account, closed ones included (they hold history). */
+export function useHasJointAccount(): boolean {
+  const { data: accounts } = useQuery({
+    queryKey: ["accounts", { includeClosed: true }],
+    queryFn: async () =>
+      (await listAccounts({ query: { include_closed: true }, throwOnError: true })).data,
+  });
+  return accounts?.some((a) => a.visibility === "joint") ?? false;
+}
+
 /**
  * Which accounts an aggregated view covers. "Joint accounts" is offered once the household
  * has one, closed ones included since they still hold history.
@@ -20,12 +30,7 @@ export function ScopeSelect({
 }) {
   const { t } = useI18n();
   const id = useId();
-  const { data: accounts } = useQuery({
-    queryKey: ["accounts", { includeClosed: true }],
-    queryFn: async () =>
-      (await listAccounts({ query: { include_closed: true }, throwOnError: true })).data,
-  });
-  const hasJoint = accounts?.some((a) => a.visibility === "joint") ?? false;
+  const hasJoint = useHasJointAccount();
   return (
     <label htmlFor={id} className={labelClassName}>
       {t.dashboard.scope}

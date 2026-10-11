@@ -134,3 +134,49 @@ def test_the_average_ignores_months_before_any_data(owner_client: TestClient) ->
     kpis = _dashboard(owner_client, month="2026-04")["kpis"]
     # Only March had data before April: the average is March's spending, not a 12th of it.
     assert kpis["average_spent"] == "1621.04"
+
+
+def _account(client: TestClient, name: str, visibility: str) -> str:
+    body = {
+        "name": name,
+        "institution_name": "Bank",
+        "type": "checking",
+        "visibility": visibility,
+        "opening_balance": "0",
+        "opening_date": "2026-01-01",
+    }
+    account_id: str = client.post("/api/accounts", json=body, headers=csrf(client)).json()["id"]
+    return account_id
+
+
+def _entry(client: TestClient, account: str, amount: str, label: str) -> str:
+    body = {"account_id": account, "booked_on": "2026-03-03", "amount": amount, "label": label}
+    response = client.post("/api/transactions", json=body, headers=csrf(client))
+    assert response.status_code == 201, response.text
+    entry_id: str = response.json()["id"]
+    return entry_id
+
+
+def test_a_narrow_scope_counts_the_transfers_crossing_its_edge(owner_client: TestClient) -> None:
+    personal = _account(owner_client, "Personal", "private")
+    joint = _account(owner_client, "Joint", "joint")
+    _entry(owner_client, personal, "2600.00", "SALARY")
+    _entry(owner_client, joint, "-1500.00", "RENT")
+    outflow = _entry(owner_client, personal, "-1100.00", "TO JOINT")
+    inflow = _entry(owner_client, joint, "1100.00", "FROM PERSONAL")
+    linked = owner_client.post(
+        "/api/transfers",
+        json={"outflow_id": outflow, "inflow_id": inflow},
+        headers=csrf(owner_client),
+    )
+    assert linked.status_code == 201, linked.text
+
+    joint_kpis = _dashboard(owner_client, scope="joint")["kpis"]
+    assert (joint_kpis["paid_in"], joint_kpis["paid_out"]) == ("1100.00", "0.00")
+    assert joint_kpis["net"] == "-400.00"
+    mine = _dashboard(owner_client, scope="mine")["kpis"]
+    assert (mine["paid_in"], mine["paid_out"]) == ("0.00", "1100.00")
+    assert mine["net"] == "1500.00"
+    household = _dashboard(owner_client)["kpis"]
+    assert (household["paid_in"], household["paid_out"]) == ("0.00", "0.00")
+    assert household["net"] == "1100.00"

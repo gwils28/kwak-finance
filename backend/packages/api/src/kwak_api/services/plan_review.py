@@ -9,12 +9,26 @@ from kwak_core.accounts import Scope
 from kwak_core.budget import DEFAULT_BAND, Month
 from kwak_core.categories import CategoryKind
 from kwak_core.kpis import Flow, month_figures
-from kwak_core.plans import ComparisonRow, CumulativePoint, Review, compare, cumulative, review_plan
+from kwak_core.plans import (
+    ComparisonRow,
+    CumulativePoint,
+    Review,
+    compare,
+    cumulative,
+    for_scope,
+    review_plan,
+)
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from kwak_api.models import BudgetPlan, Category, Transaction, User
-from kwak_api.services.budget import core_plan, list_plans, scoped_accounts, spending
+from kwak_api.services.budget import (
+    core_plan,
+    crossing_by_month,
+    list_plans,
+    scoped_accounts,
+    spending,
+)
 
 
 def _categories(db: Session, household_id: UUID) -> dict[UUID, Category]:
@@ -54,8 +68,9 @@ def review(
     scope: Scope = Scope.HOUSEHOLD,
     band: Decimal = DEFAULT_BAND,
 ) -> Review:
-    core = core_plan(plan)
+    core = for_scope(core_plan(plan), scope)
     expense, spent = spending(db, viewer, core.months, scope)
+    accounts = scoped_accounts(db, viewer, scope)
     return review_plan(
         core,
         [(c.id, c.parent_id, c.name) for c in expense],
@@ -63,6 +78,7 @@ def review(
         _income(db, viewer, core.months, scope),
         today,
         band,
+        paid=crossing_by_month(db, accounts, core.months) if accounts else None,
     )
 
 

@@ -7,7 +7,15 @@ from fastapi import APIRouter, HTTPException, Query, status
 from kwak_core.accounts import Scope
 from kwak_core.budget import BudgetStatus, Cell, Month, Row, month_range
 from kwak_core.money import require_cents
-from kwak_core.plans import ComparisonRow, CumulativePoint, Period, PeriodKind, Review, ReviewRow
+from kwak_core.plans import (
+    ComparisonRow,
+    CumulativePoint,
+    PaidFrom,
+    Period,
+    PeriodKind,
+    Review,
+    ReviewRow,
+)
 from pydantic import AfterValidator, BaseModel, Field
 
 from kwak_api.auth.routes import CurrentSession, Db, Now
@@ -129,6 +137,13 @@ class CloseIn(BaseModel):
 class PlanTargetOut(BaseModel):
     category_id: UUID
     amount: Decimal
+    paid_from: PaidFrom | None
+    """Which accounts pay the category: narrow scopes judge only their own targets."""
+
+
+class PaidFromIn(BaseModel):
+    paid_from: PaidFrom | None
+    """"joint", "personal", or null to count the target in every scope."""
 
 
 class PlanOut(BaseModel):
@@ -158,7 +173,7 @@ class PlanOut(BaseModel):
             start=str(Month.of(plan.start_month)),
             end=str(Month.of(plan.end_month)),
             targets=[
-                PlanTargetOut(category_id=t.category_id, amount=t.amount)
+                PlanTargetOut(category_id=t.category_id, amount=t.amount, paid_from=t.paid_from)
                 for t in sorted(plan.targets, key=lambda t: str(t.category_id))
             ],
             expected_income=plan.expected_income,
@@ -208,6 +223,27 @@ def set_plan_target(
         raise HTTPException(status.HTTP_409_CONFLICT, str(exc)) from None
     except ValueError as exc:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, str(exc)) from None
+    return PlanOut.of(plan, now.date())
+
+
+@router.put("/plans/{plan_id}/targets/{category_id}/paid-from")
+def set_target_paid_from(
+    plan_id: UUID,
+    category_id: UUID,
+    body: PaidFromIn,
+    user_session: CurrentSession,
+    db: Db,
+    now: Now,
+) -> PlanOut:
+    """Who pays a target's category; allowed on a frozen plan, the envelopes stay the same."""
+    household_id = user_session.user.household_id
+    plan = _plan(db, household_id, plan_id)
+    category = _category(db, household_id, category_id)
+    try:
+        service.set_paid_from(plan, category, body.paid_from)
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, str(exc)) from None
+    db.flush()
     return PlanOut.of(plan, now.date())
 
 
@@ -335,8 +371,12 @@ class ReviewOut(BaseModel):
     provisional: bool
     """Spending left to categorise may still change the result."""
     income: Decimal
+    paid_in: Decimal
+    """Transfers from accounts outside the scope; 0 for the household."""
+    paid_out: Decimal
+    """Transfers to accounts outside the scope; 0 for the household."""
     savings: Decimal
-    """income - total spent."""
+    """income + paid_in - total spent - paid_out."""
     savings_rate: Decimal | None
     planned_savings: Decimal | None
     """Expected income x months - total envelope, when the plan has an expected income."""
@@ -355,6 +395,8 @@ class ReviewOut(BaseModel):
             uncategorised=review.uncategorised.quantize(CENTS),
             provisional=review.provisional,
             income=review.income.quantize(CENTS),
+            paid_in=review.paid_in.quantize(CENTS),
+            paid_out=review.paid_out.quantize(CENTS),
             savings=review.savings.quantize(CENTS),
             savings_rate=_ratio(review.savings_rate),
             planned_savings=_cents(review.planned_savings),

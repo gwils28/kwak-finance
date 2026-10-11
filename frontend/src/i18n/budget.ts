@@ -15,6 +15,12 @@ export const budgetEn = {
   legendNone: "No colour: no target.",
   invalidTarget: "enter a positive amount in euros, e.g. 300 or 12.50.",
   targetFor: (name: string) => `Monthly target for ${name}`,
+  paidFrom: {
+    label: (name: string) => `Paid from, ${name}`,
+    any: "Any account",
+    joint: "Joint account",
+    personal: "Personal accounts",
+  },
   sum: (amount: string) => `${amount} (sum)`,
   sumHelp: "Sum of the subcategories' targets. Type an amount to set one for the whole category.",
   plan: {
@@ -77,6 +83,12 @@ export const budgetFr: typeof budgetEn = {
   legendNone: "Sans couleur : pas d'objectif.",
   invalidTarget: "saisissez un montant positif en euros, par ex. 300 ou 12,50.",
   targetFor: (name) => `Objectif mensuel pour ${name}`,
+  paidFrom: {
+    label: (name) => `Payé par, ${name}`,
+    any: "Tous les comptes",
+    joint: "Compte commun",
+    personal: "Comptes perso",
+  },
   sum: (amount) => `${amount} (somme)`,
   sumHelp:
     "Somme des objectifs des sous-catégories. Saisissez un montant pour en fixer un pour toute la catégorie.",

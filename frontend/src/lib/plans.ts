@@ -1,6 +1,6 @@
 /** Budget plans over calendar periods: "2027" (year), "2027-S1" (semester), "2027-Q3" (quarter). */
 
-import type { PeriodKind, PlanOut } from "../api/generated";
+import type { PaidFrom, PeriodKind, PlanOut, Scope } from "../api/generated";
 import { daysInMonth, shiftMonth } from "./months";
 
 export type Period = { kind: PeriodKind; year: number; number: number };
@@ -78,7 +78,15 @@ export function editableUntil(plan: PlanOut): string {
 }
 
 /** Monthly targets by category; a parent without its own target gets its children's sum. */
-export type PlanTarget = { amount: string; fromChildren: boolean };
+export type PlanTarget = { amount: string; fromChildren: boolean; paidFrom: PaidFrom | null };
+
+/** The plan as a scope judges it: a narrow scope keeps the targets paid from it, and the
+ * unassigned ones (as kwak_core.plans.for_scope). */
+export function scopedPlan(plan: PlanOut, scope: Scope): PlanOut {
+  if (scope === "household") return plan;
+  const other: PaidFrom = scope === "joint" ? "personal" : "joint";
+  return { ...plan, targets: plan.targets.filter((t) => t.paid_from !== other) };
+}
 
 // API amounts always have two decimals: "400.00" -> 40000 cents, summed as whole numbers.
 const cents = (amount: string) => Number(amount.replace(".", ""));
@@ -90,6 +98,7 @@ export function planTargets(
   categories: { category_id: string | null; parent_id: string | null; level: number }[],
 ): { byCategory: Map<string, PlanTarget>; total: string | null } {
   const own = new Map(plan.targets.map((t) => [t.category_id, t.amount]));
+  const paidFrom = new Map(plan.targets.map((t) => [t.category_id, t.paid_from]));
   const byCategory = new Map<string, PlanTarget>();
   let total = 0;
   let any = false;
@@ -97,7 +106,11 @@ export function planTargets(
     if (!row.category_id) continue;
     const amount = own.get(row.category_id);
     if (amount !== undefined) {
-      byCategory.set(row.category_id, { amount, fromChildren: false });
+      byCategory.set(row.category_id, {
+        amount,
+        fromChildren: false,
+        paidFrom: paidFrom.get(row.category_id) ?? null,
+      });
     } else if (row.level === 0) {
       const children = categories
         .map((c) =>
@@ -108,6 +121,7 @@ export function planTargets(
         byCategory.set(row.category_id, {
           amount: euros(children.reduce((sum, a) => sum + cents(a), 0)),
           fromChildren: true,
+          paidFrom: null,
         });
     }
     const top = row.level === 0 ? byCategory.get(row.category_id) : undefined;

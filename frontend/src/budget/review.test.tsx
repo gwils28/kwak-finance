@@ -100,6 +100,15 @@ test("once over, the review gives the final result with the planned savings", as
   expect(screen.queryByRole("region", { name: "Drifting categories" })).toBeNull();
 });
 
+test("the transfers crossing the scope show next to the income", async () => {
+  api(runningReview({ paid_in: "1100.00", paid_out: "0.00" }));
+  render(<TestApp path="/budget/review?plan=p-current" />);
+
+  const summary = await screen.findByRole("region", { name: "Summary" });
+  expect(summary).toHaveTextContent("Paid in from other accounts€1,100");
+  expect(summary).not.toHaveTextContent("Paid out to other accounts");
+});
+
 test("a plan closed early is labelled so, with its reason", async () => {
   const closed = current({ closed_early: true, close_reason: "job loss", editable: false });
   api(runningReview({ plan: closed }), [closed]);

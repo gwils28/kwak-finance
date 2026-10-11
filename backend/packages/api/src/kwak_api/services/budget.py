@@ -1,5 +1,6 @@
 """Budget plans and the monthly budget matrix (F-BUD-1, 2, 3, 4, 6, 7)."""
 
+from collections import defaultdict
 from datetime import date
 from decimal import Decimal
 from uuid import UUID
@@ -7,13 +8,16 @@ from uuid import UUID
 from kwak_core.accounts import CASH_TYPES, Scope, in_scope
 from kwak_core.budget import DEFAULT_BAND, Matrix, Month, build_matrix
 from kwak_core.categories import CategoryKind
+from kwak_core.kpis import TransferLeg, crossing
 from kwak_core.plans import (
+    PaidFrom,
     Period,
     PeriodKind,
     Plan,
     check_no_overlap,
     close_early,
     editable,
+    for_scope,
     new_plan,
     replacement,
 )
@@ -44,6 +48,7 @@ def core_plan(plan: BudgetPlan) -> Plan:
         plan.expected_income,
         plan.note,
         plan.close_reason,
+        {t.category_id: t.paid_from for t in plan.targets if t.paid_from is not None},
     )
 
 
@@ -81,7 +86,8 @@ def _insert(db: Session, household_id: UUID, plan: Plan) -> BudgetPlan:
         expected_income=plan.expected_income,
         note=plan.note,
         targets=[
-            BudgetPlanTarget(category_id=cid, amount=amount) for cid, amount in plan.targets.items()
+            BudgetPlanTarget(category_id=cid, amount=amount, paid_from=plan.paid_from.get(cid))
+            for cid, amount in plan.targets.items()
         ],
     )
     db.add(row)
@@ -153,10 +159,18 @@ def delete_plan(db: Session, plan: BudgetPlan, today: date) -> None:
     db.flush()
 
 
+def set_paid_from(plan: BudgetPlan, category: Category, paid_from: PaidFrom | None) -> None:
+    """Who pays a target's category. Allowed on a frozen plan: no envelope changes."""
+    target = next((t for t in plan.targets if t.category_id == category.id), None)
+    if target is None:
+        raise ValueError("set a target for this category first")
+    target.paid_from = paid_from
+
+
 def target_history(
-    db: Session, household_id: UUID
+    db: Session, household_id: UUID, scope: Scope = Scope.HOUSEHOLD
 ) -> dict[UUID, list[tuple[Month, Decimal | None]]]:
-    return plans_history([core_plan(p) for p in list_plans(db, household_id)])
+    return plans_history([for_scope(core_plan(p), scope) for p in list_plans(db, household_id)])
 
 
 def scoped_accounts(db: Session, viewer: User, scope: Scope) -> list[UUID]:
@@ -167,6 +181,49 @@ def scoped_accounts(db: Session, viewer: User, scope: Scope) -> list[UUID]:
         if a.type in CASH_TYPES
         and in_scope(scope, owner_id=a.owner_id, visibility=a.visibility, viewer_id=viewer.id)
     ]
+
+
+def crossing_by_month(
+    db: Session, accounts: list[UUID], months: list[Month]
+) -> dict[Month, tuple[Decimal, Decimal]]:
+    """(paid in, paid out) of `accounts` per month by transfers with any other account."""
+    groups = (
+        select(Transaction.transfer_group_id)
+        .where(
+            Transaction.account_id.in_(accounts),
+            Transaction.transfer_group_id.is_not(None),
+            Transaction.booked_on >= months[0].first_day(),
+            Transaction.booked_on < months[-1].next().first_day(),
+        )
+        .scalar_subquery()
+    )
+    rows = db.execute(
+        select(
+            Transaction.transfer_group_id,
+            Transaction.account_id,
+            Transaction.amount,
+            Transaction.booked_on,
+        ).where(Transaction.transfer_group_id.in_(groups))
+    ).all()
+    legs = [
+        (group, account, amount, booked_on)
+        for group, account, amount, booked_on in rows
+        if group is not None
+    ]
+    # A transfer belongs to the month of its leg in scope; its other leg comes along.
+    by_month: dict[Month, set[UUID]] = defaultdict(set)
+    scope = set(accounts)
+    for group, account, _amount, booked_on in legs:
+        if account in scope:
+            by_month[Month.of(booked_on)].add(group)
+    return {
+        m: crossing(
+            [TransferLeg(g, a, amount) for g, a, amount, _ in legs if g in groups_of_month],
+            scope,
+        )
+        for m, groups_of_month in by_month.items()
+        if m in months
+    }
 
 
 def spending(
@@ -222,7 +279,7 @@ def matrix(
     expense, spent = spending(db, viewer, months, scope)
     return build_matrix(
         [(c.id, c.parent_id, c.name) for c in expense],
-        target_history(db, viewer.household_id),
+        target_history(db, viewer.household_id, scope),
         spent,
         months,
         band,

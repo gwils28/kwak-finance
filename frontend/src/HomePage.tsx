@@ -137,14 +137,26 @@ function KpiRow({
       </Tile>
       <Tile label={t.dashboard.income} value={formatEurWhole(kpis.income)} />
       <Tile label={t.dashboard.net} value={formatEurSigned(kpis.net)}>
-        <p className="text-muted">{t.dashboard.netHelp}</p>
+        {Number(kpis.paid_in) !== 0 && <p>{t.dashboard.paidIn(formatEurSigned(kpis.paid_in))}</p>}
+        {Number(kpis.paid_out) !== 0 && (
+          <p>{t.dashboard.paidOut(formatEurSigned(`-${kpis.paid_out}`))}</p>
+        )}
+        <p className="text-muted">
+          {Number(kpis.paid_in) || Number(kpis.paid_out)
+            ? t.dashboard.netHelpCrossing
+            : t.dashboard.netHelp}
+        </p>
       </Tile>
       <Tile
         label={t.dashboard.savingsRate}
         value={kpis.savings_rate === null ? "—" : formatPercent(kpis.savings_rate)}
       >
         <p className="text-muted">
-          {kpis.savings_rate === null ? t.dashboard.noIncome : t.dashboard.savingsHelp}
+          {kpis.savings_rate === null
+            ? t.dashboard.noIncome
+            : Number(kpis.paid_in)
+              ? t.dashboard.savingsHelpCrossing
+              : t.dashboard.savingsHelp}
         </p>
       </Tile>
       <Tile label={t.dashboard.toCategorise} value={String(toCategorise.count)}>

@@ -688,6 +688,14 @@ export type Kpis = {
      */
     net: string;
     /**
+     * Paid In
+     */
+    paid_in: string;
+    /**
+     * Paid Out
+     */
+    paid_out: string;
+    /**
      * Previous Spent
      */
     previous_spent: string;
@@ -790,6 +798,20 @@ export type MonthPoint = {
      * Spent
      */
     spent: string;
+};
+
+/**
+ * PaidFrom
+ *
+ * Which accounts pay a target's category, so narrow scopes judge only their own.
+ */
+export type PaidFrom = 'joint' | 'personal';
+
+/**
+ * PaidFromIn
+ */
+export type PaidFromIn = {
+    paid_from: PaidFrom | null;
 };
 
 /**
@@ -914,6 +936,7 @@ export type PlanTargetOut = {
      * Category Id
      */
     category_id: string;
+    paid_from: PaidFrom | null;
 };
 
 /**
@@ -1093,6 +1116,14 @@ export type ReviewOut = {
      * Income
      */
     income: string;
+    /**
+     * Paid In
+     */
+    paid_in: string;
+    /**
+     * Paid Out
+     */
+    paid_out: string;
     plan: PlanOut;
     /**
      * Planned Savings
@@ -2391,6 +2422,40 @@ export type SetPlanTargetResponses = {
 };
 
 export type SetPlanTargetResponse = SetPlanTargetResponses[keyof SetPlanTargetResponses];
+
+export type SetTargetPaidFromData = {
+    body: PaidFromIn;
+    path: {
+        /**
+         * Plan Id
+         */
+        plan_id: string;
+        /**
+         * Category Id
+         */
+        category_id: string;
+    };
+    query?: never;
+    url: '/api/budget/plans/{plan_id}/targets/{category_id}/paid-from';
+};
+
+export type SetTargetPaidFromErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type SetTargetPaidFromError = SetTargetPaidFromErrors[keyof SetTargetPaidFromErrors];
+
+export type SetTargetPaidFromResponses = {
+    /**
+     * Successful Response
+     */
+    200: PlanOut;
+};
+
+export type SetTargetPaidFromResponse = SetTargetPaidFromResponses[keyof SetTargetPaidFromResponses];
 
 export type ListCategoriesData = {
     body?: never;

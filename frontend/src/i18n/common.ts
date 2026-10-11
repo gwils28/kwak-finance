@@ -110,6 +110,7 @@ export const API_MESSAGES_FR: Record<string, string> = {
     "seul le titulaire du compte peut changer sa visibilité",
   "only the household owner can do this": "seul le propriétaire du foyer peut faire cela",
   "rule not found": "règle introuvable",
+  "set a target for this category first": "fixez d'abord un objectif pour cette catégorie",
   "second factor required": "double authentification requise",
   "start is after end": "le début est après la fin",
   "targets are set on expense categories": "les objectifs se fixent sur des catégories de dépense",

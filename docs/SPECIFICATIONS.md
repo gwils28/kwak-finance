@@ -48,7 +48,7 @@ Priority: **M** = MVP, **S** = should (later in MVP), **L** = later phase.
 - F-TX-2: Import preview before commit: parsed rows, detected duplicates, and errors with line numbers.
 - F-TX-3: Deduplication via an import fingerprint (account, date, amount, normalised label) plus a hash of the source file. Re-importing the same file is a no-op.
 - F-TX-4: Manual creation and editing, split transactions (one bank line spread over several categories), notes and tags.
-- F-TX-5: Transfers between two own accounts are linked and excluded from income/expense totals.
+- F-TX-5: Transfers between two own accounts are linked and excluded from income/expense totals. In a scope narrower than the household (§3: *mine*, *joint*), a transfer with an account outside the scope is shown apart as *paid in* or *paid out*, and counts in the net cash flow and savings (savings rate = net / (income + paid in)); transfers within the scope still net to zero.
 - F-TX-6: Every import is recorded (file hash, profile, row count, user, timestamp) and can be rolled back.
 
 ### 4.4 Categorisation (M)
@@ -74,7 +74,8 @@ Goal of the budget module: **follow spending simply**, whether entered by hand o
   The 5 % band is a setting. A category without a target shows its spending without a colour. A total row sums every category; a "to categorise" row (F-BUD-5) is always visible. Clicking a cell opens that month's transactions for the category. The monthly target shown is the one of the plan covering the month (F-BUD-7); a month outside any plan has no target.
 - F-BUD-7: **Budget plans by period**, so targets follow life changes (job loss, a raise, a new recurring expense). A plan covers one **calendar period**: a year (January–December), a semester (January–June, July–December) or a quarter (January–March, …). It holds one **monthly target** per expense category (parent or child, as F-BUD-1) and, optionally, the expected monthly income and a note. A category's **envelope** for the plan is its monthly target times the plan's number of months.
   - Plans never overlap: a month belongs to one plan at most. Consecutive plans may have different lengths (e.g. S1 2027, then Q3 and Q4). A month outside any plan has no target.
-  - A new plan starts pre-filled with the targets of the latest plan.
+  - A new plan starts pre-filled with the targets of the latest plan, and with who pays each.
+  - Each target may say who pays its category: the **joint** accounts or **personal** ones (§3). This can change at any time, the envelopes stay the same. The *joint* and *mine* scopes judge only the targets paid from them, plus the unassigned ones; *household* keeps every target. The expected income is the household's, so only the *household* scope shows the planned savings.
   - A plan's targets can be edited until the end of its first month (to fix the set-up). After that, changes go through an **early close**: the user closes the plan at the end of a month, with an optional reason. The closed plan keeps its targets and is reviewed over the months it covered. A **replacement plan** then covers the rest of the original period (e.g. Q1 closed at the end of February → a replacement plan for March), pre-filled from the closed one; the calendar resumes after it.
   - The monthly targets of v0.2 are migrated into quarterly plans: one per past or current quarter in which a target was in force, with the targets in force in its first month; a change of target within a quarter becomes an early close followed by a replacement plan, so the matrix shows the same targets as before.
 - F-BUD-8: **Plan review**, available during and after a plan, per category (parents with their children) and in total:
@@ -188,6 +189,7 @@ Budget status colours (F-BUD-6) are semantic tokens built from the palette, defi
 9. A category's envelope equals its monthly target times the plan's number of months; a parent without a target of its own takes the sum of its children's.
 10. A plan review and the budget matrix never disagree: the spending of a plan equals the sum of the matrix cells of its months, category by category.
 11. The *mine* and *joint* scopes never share an account, and the *household* scope is exactly *mine*, plus *joint*, plus the accounts other members share.
+12. For any split of the accounts into two groups, what one group pays out by transfer is exactly what the other pays in; within the household scope nothing is paid in or out.
 
 ## 9. Open questions
 
