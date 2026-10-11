@@ -210,9 +210,11 @@ test("a rule is edited, deleted, and all rules can be re-applied", async () => {
   });
 });
 
-test("the header links to the categories", async () => {
+test("the account menu links to the categories", async () => {
   api({ "GET /api/dashboard": () => Response.json({}, { status: 500 }) });
   render(<TestApp path="/" />);
-  await userEvent.setup().click(await screen.findByRole("link", { name: "Categories" }));
+  const user = userEvent.setup();
+  await user.click(await screen.findByRole("button", { name: "Account menu: Wilson" }));
+  await user.click(screen.getByRole("link", { name: "Categories" }));
   expect(await screen.findByRole("heading", { name: "Categories" })).toBeInTheDocument();
 });

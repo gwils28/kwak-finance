@@ -3,14 +3,21 @@ import { Link, Outlet, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { logout, updateMe } from "./api/generated";
 import { meQuery } from "./auth/session";
+import { AccountMenu } from "./components/AccountMenu";
 import { Footer } from "./components/Footer";
-import { LanguageSelect } from "./components/LanguageSelect";
-import { ThemeToggle } from "./components/ThemeToggle";
-import { Button } from "./components/ui";
+import { Icon } from "./components/icons";
 import { useI18n } from "./i18n";
 
-const NAV_LINK = "rounded-md px-2 py-1 text-sm hover:text-accent";
-const ACTIVE = { className: "text-accent" };
+/** The everyday pages. A new functional page (net worth…) adds its tab here. */
+const TABS = [
+  { to: "/", label: "overview", exact: true },
+  { to: "/accounts", label: "accounts", exact: false },
+  { to: "/transactions", label: "transactions", exact: false },
+  { to: "/budget", label: "budget", exact: false },
+] as const;
+
+const TAB =
+  "flex shrink-0 items-center border-b-2 py-3 text-sm font-medium whitespace-nowrap hover:text-fg md:py-0";
 
 /** Header shared by every signed-in page. */
 export function AppLayout() {
@@ -39,38 +46,48 @@ export function AppLayout() {
 
   return (
     <div className="flex min-h-screen flex-col">
-      <header className="border-b border-border bg-surface">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-4 py-3">
-          <nav className="flex flex-wrap items-center gap-4">
-            <Link to="/" className="text-xl font-black tracking-tight">
-              {t.common.appName}
-            </Link>
-            <Link to="/accounts" className={NAV_LINK} activeProps={ACTIVE}>
-              {t.nav.accounts}
-            </Link>
-            <Link to="/transactions" className={NAV_LINK} activeProps={ACTIVE}>
-              {t.nav.transactions}
-            </Link>
-            <Link to="/budget" className={NAV_LINK} activeProps={ACTIVE}>
-              {t.nav.budget}
-            </Link>
-            <Link to="/categories" className={NAV_LINK} activeProps={ACTIVE}>
-              {t.nav.categories}
-            </Link>
-            <Link to="/members" className={NAV_LINK} activeProps={ACTIVE}>
-              {t.nav.members}
-            </Link>
-            <Link to="/guide" className={NAV_LINK} activeProps={ACTIVE}>
-              {t.nav.guide}
-            </Link>
+      <header className="sticky top-0 z-10 border-b border-border bg-surface/95 backdrop-blur">
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-8 px-4 md:h-14 md:flex-nowrap">
+          <Link
+            to="/"
+            className="flex h-14 items-center font-display text-xl font-black tracking-tight"
+          >
+            {t.common.appName}
+          </Link>
+          <nav
+            aria-label={t.nav.mainLabel}
+            className="-mx-4 order-last flex w-[calc(100%+2rem)] gap-6 self-stretch overflow-x-auto border-t border-border px-4 md:order-none md:mx-0 md:w-auto md:border-t-0 md:px-0"
+          >
+            {TABS.map(({ to, label, exact }) => (
+              <Link
+                key={to}
+                to={to}
+                activeOptions={{ exact }}
+                className={TAB}
+                activeProps={{ className: "border-accent text-fg" }}
+                inactiveProps={{ className: "border-transparent text-muted" }}
+              >
+                {t.nav[label]}
+              </Link>
+            ))}
           </nav>
-          <div className="flex items-center gap-3">
-            <span className="text-sm">{user.display_name}</span>
-            <LanguageSelect onChange={saveLanguage} />
-            <ThemeToggle />
-            <Button variant="ghost" onClick={signOut}>
-              {t.common.signOut}
-            </Button>
+          <div className="ml-auto flex items-center gap-3">
+            <Link
+              to="/guide"
+              className="flex items-center gap-1.5 rounded-md px-2 py-1.5 text-sm hover:text-accent"
+              activeProps={{ className: "text-accent" }}
+              inactiveProps={{ className: "text-muted" }}
+            >
+              <Icon name="help" className="size-5" />
+              <span className="hidden sm:inline">{t.nav.guide}</span>
+            </Link>
+            <span aria-hidden="true" className="h-6 w-px bg-border" />
+            <AccountMenu
+              name={user.display_name}
+              email={user.email}
+              onLanguageChange={saveLanguage}
+              onSignOut={signOut}
+            />
           </div>
         </div>
       </header>

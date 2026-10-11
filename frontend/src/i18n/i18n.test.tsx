@@ -55,10 +55,12 @@ test("switching the language translates the page and saves it with the account",
 
   await screen.findByRole("heading", { name: "Accounts" });
   expect(await screen.findByRole("listitem")).toHaveTextContent("€1,234.56");
-  await user.selectOptions(screen.getByLabelText("Language"), "fr");
+  await user.click(screen.getByRole("button", { name: "Account menu: Wilson" }));
+  await user.click(screen.getByRole("radio", { name: "Français" }));
 
   expect(await screen.findByRole("heading", { name: "Comptes" })).toBeInTheDocument();
-  expect(screen.getByLabelText("Langue")).toHaveValue("fr");
+  await user.click(screen.getByRole("button", { name: "Menu du compte : Wilson" }));
+  expect(screen.getByRole("radio", { name: "Français" })).toBeChecked();
   await waitFor(() => expect(patches(calls)).toEqual([{ language: "fr" }]));
   expect(localStorage.getItem("kwak-language")).toBe("fr");
 });
