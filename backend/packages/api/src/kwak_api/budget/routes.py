@@ -4,6 +4,7 @@ from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Query, status
+from kwak_core.accounts import Scope
 from kwak_core.budget import BudgetStatus, Cell, Month, Row, month_range
 from kwak_core.money import require_cents
 from kwak_core.plans import ComparisonRow, CumulativePoint, Period, PeriodKind, Review, ReviewRow
@@ -367,7 +368,7 @@ def review_plan(
     user_session: CurrentSession,
     db: Db,
     now: Now,
-    scope: service.Scope = service.Scope.HOUSEHOLD,
+    scope: Scope = Scope.HOUSEHOLD,
     band: Band = Decimal("0.05"),
 ) -> ReviewOut:
     """Where the plan stands: during the plan against the pace, after it the final result."""
@@ -404,7 +405,7 @@ def plan_cumulative(
     category_id: Annotated[
         UUID | None, Query(description="An expense category; default: every category")
     ] = None,
-    scope: service.Scope = service.Scope.HOUSEHOLD,
+    scope: Scope = Scope.HOUSEHOLD,
 ) -> CumulativeOut:
     """Cumulative spending day by day against the envelope line (F-DSH-6)."""
     household_id = user_session.user.household_id
@@ -469,7 +470,7 @@ def plan_comparison(
     against: Annotated[
         UUID | None, Query(description="The reference plan; default: the previous plan")
     ] = None,
-    scope: service.Scope = service.Scope.HOUSEHOLD,
+    scope: Scope = Scope.HOUSEHOLD,
 ) -> ComparisonOut:
     """Two plans side by side on monthly figures, so plans of different lengths compare."""
     household_id = user_session.user.household_id
@@ -494,7 +495,7 @@ def budget_matrix(
         str | None, Query(description="YYYY-MM; default: 11 months before end")
     ] = None,
     end: Annotated[str | None, Query(description="YYYY-MM; default: this month")] = None,
-    scope: service.Scope = service.Scope.HOUSEHOLD,
+    scope: Scope = Scope.HOUSEHOLD,
     band: Band = Decimal("0.05"),
 ) -> BudgetMatrix:
     """Spending per expense category and month against the targets (F-BUD-6)."""

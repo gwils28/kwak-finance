@@ -2543,9 +2543,11 @@
         "type": "object"
       },
       "Scope": {
+        "description": "Which accounts an aggregated view (budget, dashboard) covers (F-BUD-3).",
         "enum": [
           "household",
-          "mine"
+          "mine",
+          "joint"
         ],
         "title": "Scope",
         "type": "string"
@@ -3017,7 +3019,8 @@
       "Visibility": {
         "enum": [
           "private",
-          "shared"
+          "shared",
+          "joint"
         ],
         "title": "Visibility",
         "type": "string"

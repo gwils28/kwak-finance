@@ -1374,8 +1374,10 @@ export type RulePreview = {
 
 /**
  * Scope
+ *
+ * Which accounts an aggregated view (budget, dashboard) covers (F-BUD-3).
  */
-export type Scope = 'household' | 'mine';
+export type Scope = 'household' | 'mine' | 'joint';
 
 /**
  * ToCategorise
@@ -1653,7 +1655,7 @@ export type ValidationError = {
 /**
  * Visibility
  */
-export type Visibility = 'private' | 'shared';
+export type Visibility = 'private' | 'shared' | 'joint';
 
 export type ListAccountsData = {
     body?: never;

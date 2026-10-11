@@ -33,10 +33,10 @@ def _account(client: TestClient, **changes: Any) -> str:
     return account_id
 
 
-def _import_and_categorise(client: TestClient) -> str:
-    account = _account(client)
+def _import_and_categorise(client: TestClient, **account: Any) -> str:
+    account_id = _account(client, **account)
     files = {"file": ("export.csv", CHECKING_CSV, "text/csv")}
-    client.post(f"/api/accounts/{account}/imports", files=files, headers=csrf(client))
+    client.post(f"/api/accounts/{account_id}/imports", files=files, headers=csrf(client))
     items = client.get("/api/transactions").json()["items"]
     bakery = _category(client, "Bakery and coffee")
     ids = [t["id"] for t in items if "BOULANGERIE" in t["label"] or "CAFE" in t["label"]]
@@ -51,7 +51,7 @@ def _import_and_categorise(client: TestClient) -> str:
         json={"transaction_ids": salary, "category_id": _category(client, "Salary")},
         headers=csrf(client),
     )
-    return account
+    return account_id
 
 
 def _target(client: TestClient, name: str, amount: str | None, period: str = "2026-Q1") -> Any:
@@ -174,6 +174,18 @@ def test_scope_mine_keeps_only_my_accounts(client: TestClient, clock: Clock) -> 
     log_in(client, clock, "member@example.com")
     assert _matrix(client, **MARCH)["total"]["cells"][1]["spent"] == "1621.04"
     assert _matrix(client, **MARCH, scope="mine")["total"]["cells"][1]["spent"] == "0.00"
+
+
+@pytest.mark.usefixtures("member")
+def test_scope_joint_keeps_the_joint_accounts_out_of_mine(client: TestClient, clock: Clock) -> None:
+    log_in(client, clock)
+    _import_and_categorise(client, visibility="joint")
+
+    assert _matrix(client, **MARCH, scope="mine")["total"]["cells"][1]["spent"] == "0.00"
+    assert _matrix(client, **MARCH, scope="joint")["total"]["cells"][1]["spent"] == "1621.04"
+    log_in(client, clock, "member@example.com")
+    assert _matrix(client, **MARCH, scope="joint")["total"]["cells"][1]["spent"] == "1621.04"
+    assert _matrix(client, **MARCH)["total"]["cells"][1]["spent"] == "1621.04"
 
 
 def test_budget_requires_a_full_sign_in(client: TestClient) -> None:

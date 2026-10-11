@@ -12,6 +12,7 @@ import {
   setPlanTarget,
 } from "../api/generated";
 import { apiErrorMessage, detailSentence } from "../auth/errors";
+import { ScopeSelect } from "../components/ScopeSelect";
 import { ErrorAlert } from "../components/ui";
 import { useI18n } from "../i18n";
 import {
@@ -48,7 +49,7 @@ const STICKY_TARGET = "sticky left-52 z-10 w-40 min-w-40 bg-surface border-r bor
 
 export function BudgetPage() {
   const { t } = useI18n();
-  const ids = { period: useId(), scope: useId(), band: useId() };
+  const ids = { period: useId(), band: useId() };
   const [period, setPeriod] = useState(12);
   const [scope, setScope] = useState<Scope>("household");
   const [band, setBand] = useState("0.05");
@@ -98,18 +99,12 @@ export function BudgetPage() {
               ))}
             </select>
           </label>
-          <label htmlFor={ids.scope} className="flex flex-col gap-1 text-sm font-medium">
-            {t.dashboard.scope}
-            <select
-              id={ids.scope}
-              className={fieldClass}
-              value={scope}
-              onChange={(e) => setScope(e.target.value as Scope)}
-            >
-              <option value="household">{t.dashboard.household}</option>
-              <option value="mine">{t.dashboard.mine}</option>
-            </select>
-          </label>
+          <ScopeSelect
+            value={scope}
+            onChange={setScope}
+            labelClassName="flex flex-col gap-1 text-sm font-medium"
+            fieldClassName={fieldClass}
+          />
           <label htmlFor={ids.band} className="flex flex-col gap-1 text-sm font-medium">
             {t.budget.margin}
             <select

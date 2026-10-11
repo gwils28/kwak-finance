@@ -39,7 +39,7 @@ export const guideEn = {
       title: "Accounts",
       paragraphs: [
         "Add each bank account with its institution and type (checking, savings…). Its opening date is the first day of the first statement you will import, and its opening balance the balance on that day, before its first operation: operations dated earlier are ignored.",
-        "An account is visible to every household member or only to you; only its owner can change that. A closed account keeps its history and can be reopened.",
+        "An account is visible only to you, to every household member, or is the household's joint account (the one shared expenses are paid from: rent, childminder, groceries…); only the member who created it can change that. Keep the same categories on every account: the account tells who pays, the category what for. A closed account keeps its history and can be reopened.",
       ],
       link: { to: "/accounts", label: "Open the accounts" },
     },
@@ -105,7 +105,7 @@ export const guideEn = {
       title: "Overview",
       paragraphs: [
         "The overview sums up a month: spending, income, net and savings rate, compared with the previous month and the 12-month average, then the spending by category, the last 12 months and this month's spending against your budget.",
-        "“Household” counts every account you can see, “Only mine” your own accounts.",
+        "“Household” counts every account you can see, “Joint accounts” only the household's joint accounts (offered once there is one), “Only mine” your own accounts without the joint ones.",
       ],
       link: { to: "/", label: "Open the overview" },
     },
@@ -155,7 +155,7 @@ export const guideFr: typeof guideEn = {
       title: "Comptes",
       paragraphs: [
         "Ajoutez chaque compte bancaire avec son établissement et son type (courant, livret…). Sa date d'ouverture est le premier jour du premier relevé que vous importerez, et son solde d'ouverture le solde ce jour-là, avant sa première opération : les opérations antérieures sont ignorées.",
-        "Un compte est visible de tout le foyer ou de vous seul ; seul son titulaire peut changer cela. Un compte clôturé garde son historique et peut être rouvert.",
+        "Un compte est visible de vous seul, de tout le foyer, ou c'est le compte commun du foyer (celui qui paie les dépenses partagées : loyer, assistante maternelle, courses…) ; seul le membre qui l'a créé peut changer cela. Gardez les mêmes catégories sur tous les comptes : le compte dit qui paie, la catégorie pour quoi. Un compte clôturé garde son historique et peut être rouvert.",
       ],
       link: { to: "/accounts", label: "Ouvrir les comptes" },
     },
@@ -221,7 +221,7 @@ export const guideFr: typeof guideEn = {
       title: "Vue d'ensemble",
       paragraphs: [
         "La vue d'ensemble résume un mois : dépenses, revenus, solde et taux d'épargne, comparés au mois précédent et à la moyenne sur 12 mois, puis les dépenses par catégorie, les 12 derniers mois et les dépenses du mois face à votre budget.",
-        "« Foyer » compte tous les comptes que vous voyez, « Seulement les miens » vos propres comptes.",
+        "« Foyer » compte tous les comptes que vous voyez, « Comptes communs » seulement les comptes communs du foyer (proposé dès qu'il y en a un), « Seulement les miens » vos propres comptes, sans les comptes communs.",
       ],
       link: { to: "/", label: "Ouvrir la vue d'ensemble" },
     },

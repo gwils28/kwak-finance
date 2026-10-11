@@ -49,10 +49,11 @@ const dashboard = {
   budget_target: "1800.00",
 };
 
-function api(data: unknown = dashboard) {
+function api(data: unknown = dashboard, accounts: unknown[] = []) {
   return fakeApi({
     "GET /api/auth/me": () => Response.json(owner),
     "GET /api/dashboard": () => Response.json(data),
+    "GET /api/accounts": () => Response.json(accounts),
   });
 }
 
@@ -130,6 +131,29 @@ test("choosing a month refetches it", async () => {
   fireEvent.change(await screen.findByLabelText("Month"), { target: { value: "2026-02" } });
 
   await vi.waitFor(() => expect(dashboardQueries().at(-1)?.get("month")).toBe("2026-02"));
+});
+
+test("the joint accounts can be looked at alone, once the household has one", async () => {
+  api(dashboard, [{ id: "a1", type: "checking", visibility: "joint" }]);
+  render(<TestApp path="/" />);
+
+  const scope = await screen.findByLabelText("Accounts");
+  await screen.findByRole("option", { name: "Joint accounts" });
+  fireEvent.change(scope, { target: { value: "joint" } });
+
+  await vi.waitFor(() => expect(dashboardQueries().at(-1)?.get("scope")).toBe("joint"));
+});
+
+test("without a joint account, the scope offers the household or mine only", async () => {
+  api();
+  render(<TestApp path="/" />);
+
+  const scope = await screen.findByLabelText("Accounts");
+  expect(
+    within(scope)
+      .getAllByRole("option")
+      .map((o) => o.textContent),
+  ).toEqual(["Household", "Only mine"]);
 });
 
 test("a household without transactions is pointed to the first import", async () => {

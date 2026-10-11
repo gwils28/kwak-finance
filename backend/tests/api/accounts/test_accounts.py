@@ -97,6 +97,16 @@ def test_members_see_shared_accounts_and_their_own_only(client: TestClient, cloc
 
 
 @pytest.mark.usefixtures("member")
+def test_a_joint_account_is_seen_by_every_member(client: TestClient, clock: Clock) -> None:
+    log_in(client, clock)
+    joint = _create(client, name="Helios", institution_name="Helios", visibility="joint")
+    assert joint["visibility"] == "joint"
+
+    log_in(client, clock, "member@example.com")
+    assert [a["name"] for a in client.get("/api/accounts").json()] == ["Helios"]
+
+
+@pytest.mark.usefixtures("member")
 def test_a_private_account_of_someone_else_is_not_found(client: TestClient, clock: Clock) -> None:
     log_in(client, clock)
     private = _create(client, visibility="private")
