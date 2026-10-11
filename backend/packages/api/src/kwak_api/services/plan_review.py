@@ -1,13 +1,16 @@
 """Budget plan review and its steering dashboards (F-BUD-8, F-DSH-6)."""
 
 from collections import defaultdict
+from dataclasses import dataclass
 from datetime import date
 from decimal import Decimal
 from uuid import UUID
 
-from kwak_core.accounts import Scope
+from kwak_core.accounts import AccountType, Scope
 from kwak_core.budget import DEFAULT_BAND, Month
 from kwak_core.categories import CategoryKind
+from kwak_core.flows import Flow as MoneyFlow
+from kwak_core.flows import money_flows, saved
 from kwak_core.kpis import Flow, month_figures
 from kwak_core.plans import (
     ComparisonRow,
@@ -22,12 +25,14 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from kwak_api.models import BudgetPlan, Category, Transaction, User
+from kwak_api.services.accounts import visible_accounts
 from kwak_api.services.budget import (
     core_plan,
     crossing_by_month,
     list_plans,
     scoped_accounts,
     spending,
+    transfer_legs,
 )
 
 
@@ -146,4 +151,59 @@ def comparison(
     """Plan b's rows next to plan a's, on monthly figures."""
     return compare(
         review(db, viewer, a, today, scope=scope), review(db, viewer, b, today, scope=scope)
+    )
+
+
+@dataclass
+class PlanFlows:
+    flows: list[MoneyFlow]
+    categories: dict[UUID, Category]
+
+
+def flows(db: Session, viewer: User, plan: BudgetPlan, *, scope: Scope) -> PlanFlows:
+    """Where the plan's money came from and went (F-DSH-2), by the review's rules."""
+    months = core_plan(plan).months
+    categories = _categories(db, viewer.household_id)
+    in_scope = set(scoped_accounts(db, viewer, scope))
+    visible = [a for a in visible_accounts(db, viewer, include_closed=True) if a.id in in_scope]
+    accounts = [a.id for a in visible]
+    income: dict[UUID, Decimal] = defaultdict(Decimal)
+    spent: dict[UUID, Decimal] = defaultdict(Decimal)
+    uncategorised_in = uncategorised_out = Decimal(0)
+    outflow = (Transaction.amount < 0).label("outflow")
+    rows = db.execute(
+        select(Transaction.category_id, outflow, func.sum(Transaction.amount))
+        .where(
+            Transaction.account_id.in_(accounts),
+            Transaction.transfer_group_id.is_(None),
+            Transaction.booked_on >= months[0].first_day(),
+            Transaction.booked_on < months[-1].next().first_day(),
+        )
+        .group_by(Transaction.category_id, outflow)
+    )
+    for category_id, is_outflow, total in rows:
+        amount = Decimal(total)
+        if category_id is None:
+            if is_outflow:
+                uncategorised_out -= amount
+            else:
+                uncategorised_in += amount
+        elif categories[category_id].kind is CategoryKind.EXPENSE:
+            spent[category_id] -= amount
+        else:
+            income[category_id] += amount
+    crossed = crossing_by_month(db, accounts, months)
+    legs = [leg for leg, _ in transfer_legs(db, accounts, months)]
+    savings = {a.id for a in visible if a.type is AccountType.SAVINGS}
+    return PlanFlows(
+        money_flows(
+            income=income,
+            spending=spent,
+            uncategorised_in=uncategorised_in,
+            uncategorised_out=uncategorised_out,
+            paid_in=sum((p[0] for p in crossed.values()), Decimal(0)),
+            paid_out=sum((p[1] for p in crossed.values()), Decimal(0)),
+            saved=saved(legs, in_scope, savings=savings),
+        ),
+        categories,
     )

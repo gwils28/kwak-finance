@@ -116,6 +116,7 @@ Goal of the budget module: **follow spending simply**, whether entered by hand o
 - F-DSH-6: **Plan steering dashboards**, on the plan review (F-BUD-8):
   - **cumulative chart**: cumulative spending by day over the plan against the cumulative envelope line, in total or for one category;
   - **gap chart**: the projected gap in % per category ((projection − envelope) / envelope, the gap itself once the plan is over), coloured with the status;
+  - **money flows** (Sankey, a first piece of F-DSH-2): income by category and transfers paid in on the left, a central "available" node, then spending by top-level category (or subcategory, on demand), transfers paid out, **savings** (net transfers from the scope's other accounts into its savings accounts) and the **unallocated** rest on the right; a shortfall comes in on the left as a deficit, money taken back from savings as such. Both sides add up to the same total;
   - **drift list** (during a plan): categories ranked by projected overrun in €;
   - **plan comparison**: two plans side by side (by default the current one and the previous one, or the same period a year before), per category: monthly target and monthly average spent (for a running plan, its projection ÷ its number of months), with the change in € and in %. Monthly averages make plans of different lengths comparable.
 - F-DSH-2: Income/expense reports by category and period, with a cash-flow chart (Sankey).
@@ -190,6 +191,7 @@ Budget status colours (F-BUD-6) are semantic tokens built from the palette, defi
 10. A plan review and the budget matrix never disagree: the spending of a plan equals the sum of the matrix cells of its months, category by category.
 11. The *mine* and *joint* scopes never share an account, and the *household* scope is exactly *mine*, plus *joint*, plus the accounts other members share.
 12. For any split of the accounts into two groups, what one group pays out by transfer is exactly what the other pays in; within the household scope nothing is paid in or out.
+13. A plan's money flows balance: what comes in (income, paid in, taken from savings, deficit) equals what goes out (spending, paid out, saved, unallocated).
 
 ## 9. Open questions
 

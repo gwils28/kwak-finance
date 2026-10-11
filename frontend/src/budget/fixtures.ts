@@ -3,6 +3,8 @@
 import type {
   ComparisonOut,
   CumulativeOut,
+  FlowOut,
+  FlowsOut,
   PlanOut,
   ReviewOut,
   ReviewRowOut,
@@ -281,3 +283,51 @@ export const previous = (changes: Partial<PlanOut> = {}): PlanOut =>
     editable: false,
     ...changes,
   });
+
+const flow = (changes: Partial<FlowOut>): FlowOut => ({
+  kind: "spending",
+  side: "out",
+  amount: "0.00",
+  category_id: null,
+  name: null,
+  parent_id: null,
+  parent_name: null,
+  ...changes,
+});
+
+export const planFlows = (): FlowsOut => ({
+  flows: [
+    flow({
+      kind: "income",
+      side: "in",
+      amount: "7800.00",
+      category_id: "c-salary",
+      name: "Salary",
+    }),
+    flow({ kind: "paid_in", side: "in", amount: "300.00" }),
+    flow({
+      amount: "3450.00",
+      category_id: "c-rent",
+      name: "Rent",
+      parent_id: "c-housing",
+      parent_name: "Housing",
+    }),
+    flow({
+      amount: "270.00",
+      category_id: "c-energy",
+      name: "Energy",
+      parent_id: "c-housing",
+      parent_name: "Housing",
+    }),
+    flow({
+      amount: "600.00",
+      category_id: "c-groceries",
+      name: "Groceries",
+      parent_id: "c-food",
+      parent_name: "Food",
+    }),
+    flow({ kind: "uncategorised", amount: "80.00" }),
+    flow({ kind: "saved", amount: "1500.00" }),
+    flow({ kind: "unallocated", amount: "2200.00" }),
+  ],
+});

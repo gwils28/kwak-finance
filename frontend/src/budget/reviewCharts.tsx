@@ -1,7 +1,7 @@
 /**
  * Plan steering charts (F-DSH-6), in the dashboard's style: each has its table twin.
  */
-import type { ReactNode } from "react";
+import { type ReactNode, useId, useState } from "react";
 import {
   Area,
   Bar,
@@ -13,11 +13,20 @@ import {
   Line,
   ReferenceLine,
   ResponsiveContainer,
+  Sankey,
+  type SankeyLinkProps,
+  type SankeyNodeProps,
   Tooltip,
   XAxis,
   YAxis,
 } from "recharts";
-import type { BudgetStatus, CumulativeOut, ReviewRowOut } from "../api/generated";
+import type {
+  BudgetStatus,
+  CumulativeOut,
+  FlowKind,
+  FlowOut,
+  ReviewRowOut,
+} from "../api/generated";
 import {
   ACCENT,
   AXIS,
@@ -31,7 +40,7 @@ import {
 } from "../dashboard/charts";
 import { useI18n } from "../i18n";
 import { formatDate } from "../lib/dates";
-import { formatEurWhole, formatPercentSigned } from "../lib/money";
+import { formatEurWhole, formatPercent, formatPercentSigned } from "../lib/money";
 
 const STATUS_FILL: Record<BudgetStatus, string> = {
   under: "var(--color-chart-under)",
@@ -173,6 +182,205 @@ export function CumulativeChart({ chart, aside }: { chart: CumulativeOut; aside:
             formatEurWhole(p.spent as string),
             formatEurWhole(p.envelope),
           ])}
+      />
+    </Card>
+  );
+}
+
+type FlowRole = "income" | "spent" | "kept" | "deficit" | "transfer";
+
+const ROLE_FILL: Record<FlowRole, string> = {
+  income: ACCENT,
+  kept: ACCENT,
+  spent: CONTEXT,
+  transfer: CONTEXT,
+  deficit: "var(--color-chart-over)",
+};
+
+const KIND_ROLE: Record<FlowKind, FlowRole> = {
+  income: "income",
+  spending: "spent",
+  uncategorised: "spent",
+  paid_in: "transfer",
+  paid_out: "transfer",
+  saved: "kept",
+  from_savings: "transfer",
+  unallocated: "kept",
+  deficit: "deficit",
+};
+
+type FlowEntry = { key: string; label: string; side: "in" | "out"; role: FlowRole; amount: number };
+
+/**
+ * One entry per Sankey node: income by category, spending by top-level category (or by
+ * subcategory with `detail`), then transfers, savings and what is left.
+ */
+function flowEntries(flows: FlowOut[], detail: boolean, name: (f: FlowOut) => string) {
+  const entries = new Map<string, FlowEntry>();
+  for (const f of flows) {
+    const grouped = f.kind === "spending" && !detail && f.parent_id;
+    const key = `${f.side}:${f.kind}:${grouped ? f.parent_id : (f.category_id ?? "")}`;
+    const label = grouped ? (f.parent_name as string) : name(f);
+    const entry = entries.get(key) ?? {
+      key,
+      label,
+      side: f.side,
+      role: KIND_ROLE[f.kind],
+      amount: 0,
+    };
+    entry.amount += Number(f.amount);
+    entries.set(key, entry);
+  }
+  const byCategory = (e: FlowEntry) =>
+    e.role === "income" || (e.role === "spent" && !e.key.includes(":uncategorised:"));
+  const sorted = (side: "in" | "out") => {
+    const all = [...entries.values()].filter((e) => e.side === side);
+    return [
+      ...all.filter(byCategory).sort((a, b) => b.amount - a.amount),
+      ...all.filter((e) => !byCategory(e)),
+    ];
+  };
+  return { left: sorted("in"), right: sorted("out") };
+}
+
+const NODE_WIDTH = 12;
+
+/** Where the plan's money came from and went (F-DSH-2), every node labelled, with its table. */
+export function FlowsChart({ flows }: { flows: FlowOut[] }) {
+  const { t } = useI18n();
+  const detailId = useId();
+  const [detail, setDetail] = useState(false);
+  const name = (f: FlowOut): string => {
+    const words = t.review.flows;
+    if (f.kind === "income" || f.kind === "spending") {
+      const crossed = (f.kind === "income") !== (f.side === "in");
+      return crossed ? words.crossed(f.name as string) : (f.name as string);
+    }
+    if (f.kind === "uncategorised")
+      return f.side === "in" ? words.uncategorisedIn : words.uncategorised;
+    return words[f.kind];
+  };
+  const { left, right } = flowEntries(flows, detail, name);
+  const total = left.reduce((sum, e) => sum + e.amount, 0);
+  const entries = [...left, ...right];
+  const hub = left.length;
+  const data = {
+    nodes: [
+      ...left,
+      { key: "hub", label: t.review.flows.hub, role: "transfer", amount: total },
+      ...right,
+    ],
+    links: [
+      ...left.map((e, i) => ({ source: i, target: hub, value: e.amount, role: e.role })),
+      ...right.map((e, i) => ({ source: hub, target: hub + 1 + i, value: e.amount, role: e.role })),
+    ],
+  };
+  const height = Math.max(240, Math.max(left.length, right.length) * 44 + 40);
+
+  const Node = ({ x, y, width, height: h, payload, index }: SankeyNodeProps) => {
+    const node = payload as unknown as FlowEntry;
+    const isLeft = index < hub;
+    const isHub = index === hub;
+    const textX = isHub ? x + width / 2 : isLeft ? x - 8 : x + width + 8;
+    const anchor = isHub ? "middle" : isLeft ? "end" : "start";
+    return (
+      <g>
+        <rect
+          x={x}
+          y={y}
+          width={width}
+          height={Math.max(h, 2)}
+          rx={2}
+          fill={ROLE_FILL[node.role]}
+        />
+        <text
+          x={textX}
+          y={isHub ? y - 8 : y + h / 2}
+          textAnchor={anchor}
+          dominantBaseline={isHub ? "auto" : "middle"}
+          fontSize={12}
+          fill="var(--color-fg)"
+        >
+          {node.label}
+          <tspan fill="var(--color-muted)"> {formatEurWhole(node.amount)}</tspan>
+        </text>
+      </g>
+    );
+  };
+
+  const Link = (props: SankeyLinkProps) => {
+    const {
+      sourceX,
+      targetX,
+      sourceY,
+      targetY,
+      sourceControlX,
+      targetControlX,
+      linkWidth,
+      payload,
+    } = props;
+    const role = (payload as unknown as { role: FlowRole }).role;
+    return (
+      <path
+        d={`M${sourceX},${sourceY} C${sourceControlX},${sourceY} ${targetControlX},${targetY} ${targetX},${targetY}`}
+        fill="none"
+        stroke={ROLE_FILL[role]}
+        strokeOpacity={0.35}
+        strokeWidth={Math.max(linkWidth, 1)}
+      />
+    );
+  };
+
+  const toggle = (
+    <label htmlFor={detailId} className="flex items-center gap-2 text-sm">
+      <input
+        id={detailId}
+        type="checkbox"
+        checked={detail}
+        onChange={(e) => setDetail(e.target.checked)}
+      />
+      {t.review.flows.detail}
+    </label>
+  );
+
+  return (
+    <Card title={t.review.flows.title} subtitle={t.review.flows.help} aside={toggle}>
+      {total === 0 ? (
+        <p className="text-sm text-muted">{t.review.flows.none}</p>
+      ) : (
+        <div className="overflow-x-auto">
+          <div style={{ height, minWidth: 640 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <Sankey
+                data={data}
+                nameKey="label"
+                node={Node}
+                link={Link}
+                nodeWidth={NODE_WIDTH}
+                nodePadding={16}
+                sort={false}
+                margin={{ top: 24, right: 200, bottom: 8, left: 200 }}
+              >
+                <Tooltip {...TOOLTIP} />
+              </Sankey>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      )}
+      <DataTable
+        label={t.review.flows.title}
+        head={[
+          t.review.flows.side,
+          t.review.flows.flow,
+          t.review.flows.amount,
+          t.review.flows.share,
+        ]}
+        rows={entries.map((e) => [
+          e.side === "in" ? t.review.flows.in : t.review.flows.out,
+          e.label,
+          formatEurWhole(e.amount),
+          formatPercent(total ? e.amount / total : 0),
+        ])}
       />
     </Card>
   );

@@ -156,6 +156,39 @@ def test_a_narrow_scope_judges_only_the_targets_paid_from_it(
     assert household["planned_savings"] == "5100.00"
 
 
+def test_the_flows_balance_and_agree_with_the_review(owner_client: TestClient, q1: Any) -> None:
+    livret = _account(owner_client, name="Livret A", type="savings", opening_date="2025-12-01")
+    ids = []
+    for account, amount in ((q1["account"], "-300.00"), (livret, "300.00")):
+        created = owner_client.post(
+            "/api/transactions",
+            json={"account_id": account, "booked_on": "2026-02-02", "amount": amount, "label": "x"},
+            headers=csrf(owner_client),
+        )
+        ids.append(created.json()["id"])
+    owner_client.post(
+        "/api/transfers",
+        json={"outflow_id": ids[0], "inflow_id": ids[1]},
+        headers=csrf(owner_client),
+    )
+
+    response = owner_client.get(f"/api/budget/plans/{q1['id']}/flows")
+    assert response.status_code == 200, response.text
+    flows = response.json()["flows"]
+    by_kind = {(f["kind"], f["side"], f["name"]): f["amount"] for f in flows}
+    assert by_kind == {
+        ("income", "in", "Salary"): "2000.00",
+        ("spending", "out", "Groceries"): "680.00",
+        ("uncategorised", "out", None): "50.00",
+        ("saved", "out", None): "300.00",
+        ("unallocated", "out", None): "970.00",
+    }
+    groceries = next(f for f in flows if f["name"] == "Groceries")
+    assert groceries["parent_name"] == "Food"
+    review = _review(owner_client, q1)
+    assert review["savings"] == "1270.00"  # saved + unallocated: what the plan kept
+
+
 def test_the_review_and_the_matrix_agree(owner_client: TestClient, q1: Any) -> None:
     """Invariant 10: a plan's spending is the sum of the matrix cells of its months."""
     matrix = _matrix(owner_client, start="2026-01", end="2026-03")
