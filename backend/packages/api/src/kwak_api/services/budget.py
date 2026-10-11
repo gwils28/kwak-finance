@@ -1,11 +1,10 @@
 """Budget plans and the monthly budget matrix (F-BUD-1, 2, 3, 4, 6, 7)."""
 
-import enum
 from datetime import date
 from decimal import Decimal
 from uuid import UUID
 
-from kwak_core.accounts import CASH_TYPES
+from kwak_core.accounts import CASH_TYPES, Scope, in_scope
 from kwak_core.budget import DEFAULT_BAND, Matrix, Month, build_matrix
 from kwak_core.categories import CategoryKind
 from kwak_core.plans import (
@@ -24,13 +23,6 @@ from sqlalchemy.orm import Session
 
 from kwak_api.models import BudgetPlan, BudgetPlanTarget, Category, Transaction, User
 from kwak_api.services.accounts import visible_accounts
-
-
-class Scope(enum.StrEnum):
-    HOUSEHOLD = "household"
-    """Every account the viewer can see."""
-    MINE = "mine"
-    """Only the viewer's own accounts."""
 
 
 class PlanConflictError(Exception):
@@ -172,7 +164,8 @@ def scoped_accounts(db: Session, viewer: User, scope: Scope) -> list[UUID]:
     return [
         a.id
         for a in visible_accounts(db, viewer, include_closed=True)
-        if a.type in CASH_TYPES and (scope is Scope.HOUSEHOLD or a.owner_id == viewer.id)
+        if a.type in CASH_TYPES
+        and in_scope(scope, owner_id=a.owner_id, visibility=a.visibility, viewer_id=viewer.id)
     ]
 
 

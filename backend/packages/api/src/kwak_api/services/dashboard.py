@@ -6,6 +6,7 @@ from datetime import date
 from decimal import Decimal
 from uuid import UUID
 
+from kwak_core.accounts import Scope
 from kwak_core.budget import Month, month_range
 from kwak_core.categories import CategoryKind
 from kwak_core.kpis import (
@@ -20,7 +21,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from kwak_api.models import Category, Transaction, User
-from kwak_api.services.budget import Scope, matrix, scoped_accounts
+from kwak_api.services.budget import matrix, scoped_accounts
 
 HISTORY_MONTHS = 12
 

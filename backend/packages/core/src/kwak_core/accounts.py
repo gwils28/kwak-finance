@@ -23,9 +23,29 @@ CASH_TYPES = frozenset({AccountType.CHECKING, AccountType.SAVINGS})
 
 class Visibility(enum.StrEnum):
     PRIVATE = "private"  # its owner only
-    SHARED = "shared"  # every household member
+    SHARED = "shared"  # every household member, still one member's account
+    JOINT = "joint"  # the household's common account: every member, nobody's own
 
 
 def can_view(*, owner_id: UUID, visibility: Visibility, viewer_id: UUID) -> bool:
-    """Within one household: the owner sees everything, others see shared accounts."""
-    return owner_id == viewer_id or visibility is Visibility.SHARED
+    """Within one household: the owner sees everything, others all but private accounts."""
+    return owner_id == viewer_id or visibility is not Visibility.PRIVATE
+
+
+class Scope(enum.StrEnum):
+    """Which accounts an aggregated view (budget, dashboard) covers (F-BUD-3)."""
+
+    HOUSEHOLD = "household"
+    """Every account the viewer can see."""
+    MINE = "mine"
+    """The viewer's own accounts, without the joint ones even if the viewer created them."""
+    JOINT = "joint"
+    """The household's joint accounts, whoever created them."""
+
+
+def in_scope(scope: Scope, *, owner_id: UUID, visibility: Visibility, viewer_id: UUID) -> bool:
+    if scope is Scope.MINE:
+        return owner_id == viewer_id and visibility is not Visibility.JOINT
+    if scope is Scope.JOINT:
+        return visibility is Visibility.JOINT
+    return can_view(owner_id=owner_id, visibility=visibility, viewer_id=viewer_id)

@@ -2,6 +2,7 @@ import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { type ReactNode, useId, useState } from "react";
 import { dashboard as fetchDashboard, type Kpis, type Scope } from "./api/generated";
+import { ScopeSelect } from "./components/ScopeSelect";
 import { ErrorAlert } from "./components/ui";
 import { SpendingByCategory, SpendingOverMonths, SpendingPace } from "./dashboard/charts";
 import { GettingStarted } from "./guide/GettingStarted";
@@ -13,7 +14,7 @@ const fieldClass = "rounded-md border border-border bg-surface px-3 py-2";
 
 export function HomePage() {
   const { t } = useI18n();
-  const ids = { month: useId(), scope: useId() };
+  const ids = { month: useId() };
   const [month, setMonth] = useState(thisMonth());
   const [scope, setScope] = useState<Scope>("household");
   const query = useQuery({
@@ -41,18 +42,12 @@ export function HomePage() {
               onChange={(e) => e.target.value && setMonth(e.target.value)}
             />
           </label>
-          <label htmlFor={ids.scope} className="flex flex-col gap-1 text-sm font-medium">
-            {t.dashboard.scope}
-            <select
-              id={ids.scope}
-              className={fieldClass}
-              value={scope}
-              onChange={(e) => setScope(e.target.value as Scope)}
-            >
-              <option value="household">{t.dashboard.household}</option>
-              <option value="mine">{t.dashboard.mine}</option>
-            </select>
-          </label>
+          <ScopeSelect
+            value={scope}
+            onChange={setScope}
+            labelClassName="flex flex-col gap-1 text-sm font-medium"
+            fieldClassName={fieldClass}
+          />
         </div>
       </div>
       <GettingStarted />

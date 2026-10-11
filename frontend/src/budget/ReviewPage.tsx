@@ -12,6 +12,7 @@ import {
   reviewPlan,
   type Scope,
 } from "../api/generated";
+import { ScopeSelect } from "../components/ScopeSelect";
 import { ErrorAlert } from "../components/ui";
 import { Card } from "../dashboard/charts";
 import { useI18n } from "../i18n";
@@ -34,7 +35,7 @@ export function ReviewPage({ planId }: { planId: string | undefined }) {
   const { t } = useI18n();
   const navigate = useNavigate();
   const label = usePeriodLabel();
-  const ids = { plan: useId(), scope: useId(), band: useId() };
+  const ids = { plan: useId(), band: useId() };
   const [scope, setScope] = useState<Scope>("household");
   const [band, setBand] = useState("0.05");
 
@@ -89,18 +90,12 @@ export function ReviewPage({ planId }: { planId: string | undefined }) {
                 ))}
               </select>
             </label>
-            <label htmlFor={ids.scope} className={labelClass}>
-              {t.dashboard.scope}
-              <select
-                id={ids.scope}
-                className={fieldClass}
-                value={scope}
-                onChange={(e) => setScope(e.target.value as Scope)}
-              >
-                <option value="household">{t.dashboard.household}</option>
-                <option value="mine">{t.dashboard.mine}</option>
-              </select>
-            </label>
+            <ScopeSelect
+              value={scope}
+              onChange={setScope}
+              labelClassName={labelClass}
+              fieldClassName={fieldClass}
+            />
             <label htmlFor={ids.band} className={labelClass}>
               {t.budget.margin}
               <select

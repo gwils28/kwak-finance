@@ -109,8 +109,16 @@ function AccountRow({ account, onEdit }: { account: AccountOut; onEdit: () => vo
         </p>
         <p className="text-sm text-muted">
           {t.accounts.types[account.type]} ·{" "}
-          {account.visibility === "shared" ? t.accounts.shared : t.accounts.private}
-          {account.owner_id !== user.id && ` · ${account.owner_name}`}
+          {account.visibility === "joint" ? (
+            <span className="rounded-full bg-primary-100 px-2 py-0.5 text-xs font-semibold text-primary-800 dark:bg-primary-900 dark:text-primary-200">
+              {t.accounts.joint}
+            </span>
+          ) : (
+            <>
+              {account.visibility === "shared" ? t.accounts.shared : t.accounts.private}
+              {account.owner_id !== user.id && ` · ${account.owner_name}`}
+            </>
+          )}
         </p>
       </div>
       <div className="flex items-center gap-3">
@@ -272,6 +280,7 @@ function AccountForm({ account, onDone }: { account: AccountOut | null; onDone: 
         >
           <option value="private">{t.accounts.onlyMe}</option>
           <option value="shared">{t.accounts.everyone}</option>
+          <option value="joint">{t.accounts.jointOption}</option>
         </select>
         {!ownedByMe && account && (
           <p className="text-xs text-muted">{t.accounts.onlyOwnerChanges(account.owner_name)}</p>

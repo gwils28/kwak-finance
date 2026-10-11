@@ -4,13 +4,13 @@ from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Query, status
+from kwak_core.accounts import Scope
 from kwak_core.budget import Month
 from kwak_core.kpis import TopCategory, change, savings_rate
 from pydantic import BaseModel
 
 from kwak_api.auth.routes import CurrentSession, Db, Now
 from kwak_api.services import dashboard as service
-from kwak_api.services.budget import Scope
 
 router = APIRouter(prefix="/api", tags=["dashboard"])
 

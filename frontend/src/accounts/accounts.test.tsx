@@ -73,6 +73,40 @@ test("accounts are grouped by institution with their opening balance", async () 
   expect(rows[1]).toHaveTextContent("-€20.00");
 });
 
+test("a joint account is marked as the household's, without an owner's name", async () => {
+  const helios = {
+    ...partnerSavings,
+    id: "a3",
+    name: "Compte commun",
+    institution: "Helios",
+    type: "checking",
+    visibility: "joint",
+  };
+  api([helios]);
+  render(<TestApp path="/accounts" />);
+
+  const row = within(await screen.findByRole("list", { name: "Helios" })).getByRole("listitem");
+  expect(row).toHaveTextContent("Joint account");
+  expect(row).not.toHaveTextContent("Partner");
+});
+
+test("an account can be created as the household's joint account", async () => {
+  const calls = api([], {
+    "POST /api/accounts": (body) => Response.json({ ...checking, ...(body as object) }),
+  });
+  render(<TestApp path="/accounts" />);
+
+  const user = await openForm();
+  await user.selectOptions(screen.getByLabelText("Visible to"), "joint");
+  await fillForm(user, "0");
+
+  await vi.waitFor(() =>
+    expect(calls.find((c) => c.route === "POST /api/accounts")?.body).toMatchObject({
+      visibility: "joint",
+    }),
+  );
+});
+
 test("an empty household is invited to add its first account", async () => {
   api([]);
   render(<TestApp path="/accounts" />);

@@ -23,7 +23,7 @@ The project doubles as a reference implementation of the maintainer's Claude Cod
 
 - **Owner**: creates the household, manages members, backups and settings.
 - **Member**: full access to shared accounts and to their own private accounts.
-- Visibility is per account: `private` (owner only) or `shared` (all household members). Aggregated views (net worth, budget) let each user toggle *mine* / *household*.
+- Visibility is per account: `private` (owner only), `shared` (all household members, still the owner's account) or `joint` (the household's common account, e.g. the one paying rent and groceries: all members, nobody's own). Aggregated views (net worth, budget) let each user choose *household* (every visible account), *joint* (the joint accounts) or *mine* (their own accounts, joint ones excluded).
 
 ## 4. Functional requirements
 
@@ -64,7 +64,7 @@ Goal of the budget module: **follow spending simply**, whether entered by hand o
 
 - F-BUD-1: A monthly target per category (or per parent category, covering its children), set within a budget plan (F-BUD-7). Within a plan, a cheaper month offsets a dearer one (the period envelope): this replaces a month-to-month rollover.
 - F-BUD-2: Target vs actual for the current month, per category: spent, remaining, share used, with a progress bar, a warning at a configurable threshold (default 80 %) and an alert when exceeded. A "pace" marker shows where spending should be at today's date.
-- F-BUD-3: Personal or household scope.
+- F-BUD-3: Household, joint or personal scope (§3).
 - F-BUD-4: Target vs actual over past months and year to date, to see which categories are regularly over or under target.
 - F-BUD-5: Transactions without a category are listed as "to categorise" and counted apart, so totals are never silently wrong.
 - F-BUD-6: **Budget matrix**, the main view of F-BUD-4. One row per expense category (parent categories with their total, children below), one column per month (default: the last 12), plus a first column with the category's **monthly target**. Each cell shows the month's spending, its **gap to the target in € and in %** ((spent − target) / target), and a colour:
@@ -187,6 +187,7 @@ Budget status colours (F-BUD-6) are semantic tokens built from the palette, defi
 8. Budget plans never overlap, and each lies within one calendar period (year, semester or quarter).
 9. A category's envelope equals its monthly target times the plan's number of months; a parent without a target of its own takes the sum of its children's.
 10. A plan review and the budget matrix never disagree: the spending of a plan equals the sum of the matrix cells of its months, category by category.
+11. The *mine* and *joint* scopes never share an account, and the *household* scope is exactly *mine*, plus *joint*, plus the accounts other members share.
 
 ## 9. Open questions
 
