@@ -13,6 +13,8 @@ beforeAll(() => {
 });
 afterEach(() => vi.unstubAllGlobals());
 
+const plain = (text: string | null) => text?.replace(/[\u00a0\u202f]/g, " ");
+
 const monthly = Array.from({ length: 12 }, (_, i) => {
   const month = `${i < 2 ? 2025 : 2026}-${String(((i + 3) % 12) + 1).padStart(2, "0")}`;
   const by_category =
@@ -29,6 +31,8 @@ const dashboard = {
   kpis: {
     spent: "1621.04",
     income: "2518.65",
+    paid_in: "0.00",
+    paid_out: "0.00",
     net: "897.61",
     savings_rate: "0.3564",
     previous_spent: "1400.00",
@@ -154,6 +158,17 @@ test("without a joint account, the scope offers the household or mine only", asy
       .getAllByRole("option")
       .map((o) => o.textContent),
   ).toEqual(["Household", "Only mine"]);
+});
+
+test("the net tile shows what was paid in or out by transfers crossing the scope", async () => {
+  const kpis = { ...dashboard.kpis, paid_in: "0.00", paid_out: "1100.00", net: "1359.00" };
+  api({ ...dashboard, kpis });
+  render(<TestApp path="/" />);
+
+  const tile = await screen.findByRole("region", { name: "Net" });
+  expect(plain(tile.textContent)).toContain("-€1,100 paid out to other accounts");
+  expect(tile).not.toHaveTextContent("paid in");
+  expect(tile).not.toHaveTextContent("transfers excluded");
 });
 
 test("a household without transactions is pointed to the first import", async () => {

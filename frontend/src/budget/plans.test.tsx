@@ -188,3 +188,53 @@ test("periods read in French", async () => {
     new RegExp(`^T${quarter.number} ${quarter.year}`),
   );
 });
+
+const jointAccount = { id: "a-joint", type: "checking", visibility: "joint" };
+
+test("with a joint account, who pays a target is chosen even on a locked plan", async () => {
+  const calls = api([current({ editable: false })], {
+    "GET /api/accounts": () => Response.json([jointAccount]),
+    "PUT /api/budget/plans/p-current/targets/c-bakery/paid-from": () =>
+      Response.json(current({ editable: false })),
+  });
+  render(<TestApp path="/budget" />);
+
+  const user = userEvent.setup();
+  const paidFrom = await screen.findByLabelText("Paid from, Bakery and coffee");
+  expect(screen.queryByLabelText("Paid from, Food")).toBeNull(); // the sum of its children
+  await user.selectOptions(paidFrom, "personal");
+
+  await vi.waitFor(() =>
+    expect(calls.find((c) => c.route.endsWith("/paid-from"))?.body).toEqual({
+      paid_from: "personal",
+    }),
+  );
+});
+
+test("without a joint account, nobody is asked who pays", async () => {
+  api([current()], { "GET /api/accounts": () => Response.json([]) });
+  render(<TestApp path="/budget" />);
+
+  await screen.findByLabelText("Monthly target for Bakery and coffee");
+  expect(screen.queryByLabelText("Paid from, Bakery and coffee")).toBeNull();
+});
+
+test("a narrow scope shows only the targets paid from it", async () => {
+  const plan = current({
+    targets: [
+      { category_id: "c-bakery", amount: "60.00", paid_from: "personal" },
+      { category_id: "c-groceries", amount: "300.00", paid_from: "joint" },
+    ],
+  });
+  api([plan], { "GET /api/accounts": () => Response.json([jointAccount]) });
+  render(<TestApp path="/budget" />);
+
+  const user = userEvent.setup();
+  await screen.findByRole("option", { name: "Joint accounts" });
+  await user.selectOptions(screen.getByLabelText("Accounts"), "joint");
+
+  await vi.waitFor(() =>
+    expect(screen.getByLabelText("Monthly target for Bakery and coffee")).toHaveValue(""),
+  );
+  expect(screen.getByLabelText("Monthly target for Groceries")).toHaveValue("300");
+});

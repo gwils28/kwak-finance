@@ -1,3 +1,4 @@
+from dataclasses import replace
 from datetime import date, timedelta
 from decimal import Decimal
 from uuid import UUID, uuid4
@@ -5,8 +6,10 @@ from uuid import UUID, uuid4
 import pytest
 from hypothesis import given
 from hypothesis import strategies as st
+from kwak_core.accounts import Scope
 from kwak_core.budget import BudgetStatus, Month, build_matrix
 from kwak_core.plans import (
+    PaidFrom,
     Period,
     PeriodKind,
     Plan,
@@ -19,6 +22,7 @@ from kwak_core.plans import (
     editable,
     elapsed_share,
     envelopes,
+    for_scope,
     new_plan,
     replacement,
     review_plan,
@@ -287,6 +291,18 @@ def test_the_review_totals_income_savings_and_the_planned_savings() -> None:
     assert review.planned_savings == D("4800")
 
 
+def test_the_review_savings_count_what_crossed_the_scope_by_transfer() -> None:
+    plan = Plan.covering(Q1, {GROCERIES: D("400")})
+    spending = {(GROCERIES, m): D("400") for m in (JAN, FEB, MAR)}
+    income = {m: D("300") for m in (JAN, FEB, MAR)}
+    paid = {JAN: (D("200"), D("0")), FEB: (D("200"), D("50")), APR: (D("9999"), D("0"))}
+    review = review_plan(plan, CATEGORIES, spending, income, date(2027, 4, 1), paid=paid)
+    assert review.paid_in == D("400")
+    assert review.paid_out == D("50")
+    assert review.savings == D("900") + D("400") - D("50") - D("1200")
+    assert review.savings_rate == D("50") / D("1300")
+
+
 def test_a_plan_closed_early_is_reviewed_over_its_own_months() -> None:
     plan = close_early(q1_plan(groceries="400"), JAN, reason="raise")
     spending = {(GROCERIES, JAN): D("390"), (GROCERIES, FEB): D("999")}
@@ -418,3 +434,46 @@ def test_invariant_10_the_review_agrees_with_the_matrix(
             (c.spent for c in matrix_row.cells), D(0)
         )
     assert review.total.spent == sum((c.spent for c in matrix.total.cells), D(0))
+
+
+def _paid_plan() -> Plan:
+    plan = Plan.covering(
+        Q1,
+        {HOUSING: D("1150"), GROCERIES: D("200"), BAKERY: D("30")},
+        expected_income=D("3900"),
+    )
+    return replace(plan, paid_from={HOUSING: PaidFrom.JOINT, BAKERY: PaidFrom.PERSONAL})
+
+
+def test_a_narrow_scope_keeps_the_targets_paid_from_it_and_the_unassigned_ones() -> None:
+    plan = _paid_plan()
+    assert for_scope(plan, Scope.HOUSEHOLD) == plan
+    assert for_scope(plan, Scope.JOINT).targets == {HOUSING: D("1150"), GROCERIES: D("200")}
+    assert for_scope(plan, Scope.MINE).targets == {GROCERIES: D("200"), BAKERY: D("30")}
+
+
+def test_the_planned_savings_are_the_households_only() -> None:
+    plan = _paid_plan()
+    assert for_scope(plan, Scope.JOINT).expected_income is None
+    assert for_scope(plan, Scope.MINE).expected_income is None
+
+
+@given(
+    st.dictionaries(
+        st.sampled_from([FOOD, GROCERIES, BAKERY, HOUSING]), st.sampled_from(list(PaidFrom))
+    )
+)
+def test_every_assigned_target_shows_in_exactly_one_narrow_scope(
+    paid_from: dict[UUID, PaidFrom],
+) -> None:
+    targets = {cid: D("10") for cid in (FOOD, GROCERIES, BAKERY, HOUSING)}
+    plan = replace(Plan.covering(Q1, targets), paid_from=paid_from)
+    joint, mine = for_scope(plan, Scope.JOINT).targets, for_scope(plan, Scope.MINE).targets
+    for cid in targets:
+        assert (cid in joint) + (cid in mine) == (1 if cid in paid_from else 2)
+
+
+def test_who_pays_carries_over_to_the_next_plan_and_the_replacement() -> None:
+    plan = _paid_plan()
+    assert new_plan(Period(PeriodKind.QUARTER, 2027, 2), plan).paid_from == plan.paid_from
+    assert replacement(close_early(plan, JAN)).paid_from == plan.paid_from

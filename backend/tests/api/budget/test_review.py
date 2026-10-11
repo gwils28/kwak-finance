@@ -110,6 +110,52 @@ def test_spending_left_to_categorise_makes_the_review_provisional(
     assert review["planned_savings"] == "5100.00"  # 3 x 2000 - 900
 
 
+def test_the_review_savings_count_the_transfers_crossing_the_scope(
+    owner_client: TestClient, q1: Any
+) -> None:
+    joint = _account(owner_client, name="Joint", visibility="joint", opening_date="2025-12-01")
+    ids = []
+    for account, amount in ((q1["account"], "-500.00"), (joint, "500.00")):
+        created = owner_client.post(
+            "/api/transactions",
+            json={"account_id": account, "booked_on": "2026-02-01", "amount": amount, "label": "x"},
+            headers=csrf(owner_client),
+        )
+        ids.append(created.json()["id"])
+    linked = owner_client.post(
+        "/api/transfers",
+        json={"outflow_id": ids[0], "inflow_id": ids[1]},
+        headers=csrf(owner_client),
+    )
+    assert linked.status_code == 201, linked.text
+
+    response = owner_client.get(f"/api/budget/plans/{q1['id']}/review", params={"scope": "mine"})
+    mine = response.json()
+    assert (mine["paid_in"], mine["paid_out"], mine["savings"]) == ("0.00", "500.00", "770.00")
+    household = _review(owner_client, q1)
+    assert (household["paid_in"], household["paid_out"]) == ("0.00", "0.00")
+    assert household["savings"] == "1270.00"
+
+
+def test_a_narrow_scope_judges_only_the_targets_paid_from_it(
+    owner_client: TestClient, q1: Any
+) -> None:
+    paid = owner_client.put(
+        f"/api/budget/plans/{q1['id']}/targets/{_category(owner_client, 'Groceries')}/paid-from",
+        json={"paid_from": "personal"},
+        headers=csrf(owner_client),
+    )
+    assert paid.status_code == 200, paid.text
+
+    response = owner_client.get(f"/api/budget/plans/{q1['id']}/review", params={"scope": "joint"})
+    joint = response.json()
+    assert "Groceries" not in [r["name"] for r in joint["rows"] if r["envelope"] is not None]
+    assert joint["planned_savings"] is None
+    household = _review(owner_client, q1)
+    assert household["total"]["envelope"] == "900.00"
+    assert household["planned_savings"] == "5100.00"
+
+
 def test_the_review_and_the_matrix_agree(owner_client: TestClient, q1: Any) -> None:
     """Invariant 10: a plan's spending is the sum of the matrix cells of its months."""
     matrix = _matrix(owner_client, start="2026-01", end="2026-03")

@@ -75,7 +75,7 @@ export const guideEn = {
       id: "plans",
       title: "Budget plans",
       paragraphs: [
-        "A budget plan holds a monthly target per spending category for a calendar period: a year, a semester or a quarter. A category's envelope is its monthly target times the plan's months, so a cheaper month offsets a dearer one. A parent category without a target of its own takes the sum of its subcategories'.",
+        "A budget plan holds a monthly target per spending category for a calendar period: a year, a semester or a quarter. A category's envelope is its monthly target times the plan's months, so a cheaper month offsets a dearer one. A parent category without a target of its own takes the sum of its subcategories'. With a joint account, say under each target who pays it, the joint account or personal ones (even once the plan is locked): the “Joint accounts” and “Only mine” views then judge only their own targets, while “Household” keeps them all.",
         "A new plan starts with the targets of the latest one. You can change its targets and its expected income until the end of its first month; the note can change at any time.",
         "When life changes (a new job, a raise, a new recurring expense), close the plan early: it keeps its targets and is reviewed over its months, and a replacement plan, pre-filled with the same targets, covers the rest of the period. Change the targets there.",
       ],
@@ -105,7 +105,7 @@ export const guideEn = {
       title: "Overview",
       paragraphs: [
         "The overview sums up a month: spending, income, net and savings rate, compared with the previous month and the 12-month average, then the spending by category, the last 12 months and this month's spending against your budget.",
-        "“Household” counts every account you can see, “Joint accounts” only the household's joint accounts (offered once there is one), “Only mine” your own accounts without the joint ones.",
+        "“Household” counts every account you can see, “Joint accounts” only the household's joint accounts (offered once there is one), “Only mine” your own accounts without the joint ones. In those two, a transfer with an account left out shows in the net: what you pay into the joint account is paid out of yours and paid into it, so each view's savings stay right.",
       ],
       link: { to: "/", label: "Open the overview" },
     },
@@ -191,7 +191,7 @@ export const guideFr: typeof guideEn = {
       id: "plans",
       title: "Plans budgétaires",
       paragraphs: [
-        "Un plan budgétaire contient un objectif mensuel par catégorie de dépense pour une période du calendrier : une année, un semestre ou un trimestre. L'enveloppe d'une catégorie est son objectif mensuel multiplié par le nombre de mois du plan : un mois moins cher compense un mois plus cher. Une catégorie parente sans objectif propre prend la somme de ses sous-catégories.",
+        "Un plan budgétaire contient un objectif mensuel par catégorie de dépense pour une période du calendrier : une année, un semestre ou un trimestre. L'enveloppe d'une catégorie est son objectif mensuel multiplié par le nombre de mois du plan : un mois moins cher compense un mois plus cher. Une catégorie parente sans objectif propre prend la somme de ses sous-catégories. Avec un compte commun, indiquez sous chaque objectif qui le paie, le compte commun ou les comptes perso (même une fois le plan verrouillé) : les vues « Comptes communs » et « Seulement les miens » ne jugent alors que leurs propres objectifs, « Foyer » les garde tous.",
         "Un nouveau plan reprend les objectifs du plan le plus récent. Ses objectifs et son revenu attendu se modifient jusqu'à la fin de son premier mois ; la note se modifie à tout moment.",
         "Quand la vie change (nouvel emploi, augmentation, nouvelle dépense récurrente), clôturez le plan par anticipation : il garde ses objectifs et sera évalué sur ses mois, et un plan de remplacement, pré-rempli avec les mêmes objectifs, couvre le reste de la période. Modifiez les objectifs là.",
       ],
@@ -221,7 +221,7 @@ export const guideFr: typeof guideEn = {
       title: "Vue d'ensemble",
       paragraphs: [
         "La vue d'ensemble résume un mois : dépenses, revenus, solde et taux d'épargne, comparés au mois précédent et à la moyenne sur 12 mois, puis les dépenses par catégorie, les 12 derniers mois et les dépenses du mois face à votre budget.",
-        "« Foyer » compte tous les comptes que vous voyez, « Comptes communs » seulement les comptes communs du foyer (proposé dès qu'il y en a un), « Seulement les miens » vos propres comptes, sans les comptes communs.",
+        "« Foyer » compte tous les comptes que vous voyez, « Comptes communs » seulement les comptes communs du foyer (proposé dès qu'il y en a un), « Seulement les miens » vos propres comptes, sans les comptes communs. Dans ces deux vues, un virement avec un compte laissé de côté compte dans le solde net : ce que vous versez au compte commun sort de vos comptes et y entre, donc l'épargne de chaque vue reste juste.",
       ],
       link: { to: "/", label: "Ouvrir la vue d'ensemble" },
     },

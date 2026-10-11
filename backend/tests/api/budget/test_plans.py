@@ -61,7 +61,7 @@ def test_the_matrix_takes_its_targets_from_the_plans(owner_client: TestClient) -
     response = _set(owner_client, plan, "Groceries", "400.00")
     assert response.status_code == 200, response.text
     assert response.json()["targets"] == [
-        {"category_id": _category(owner_client, "Groceries"), "amount": "400.00"}
+        {"category_id": _category(owner_client, "Groceries"), "amount": "400.00", "paid_from": None}
     ]
     cells = _row(_matrix(owner_client, **Q1), "Groceries")["cells"]
     assert [c["target"] for c in cells] == ["400.00", "400.00", "400.00", None]
@@ -186,3 +186,41 @@ def test_an_unknown_plan_is_not_found(owner_client: TestClient) -> None:
 
 def test_plans_require_a_full_sign_in(client: TestClient) -> None:
     assert client.get("/api/budget/plans").status_code == 401
+
+
+def _paid_from(client: TestClient, plan: Any, name: str, paid_from: str | None) -> Any:
+    return client.put(
+        f"/api/budget/plans/{plan['id']}/targets/{_category(client, name)}/paid-from",
+        json={"paid_from": paid_from},
+        headers=csrf(client),
+    )
+
+
+def test_who_pays_a_target_can_be_set_even_once_the_plan_is_frozen(
+    owner_client: TestClient, clock: Clock
+) -> None:
+    plan = _plan(owner_client, "2026-Q1")
+    assert _set(owner_client, plan, "Groceries", "300.00").status_code == 200
+    _next_month(owner_client, clock)
+
+    response = _paid_from(owner_client, plan, "Groceries", "joint")
+    assert response.status_code == 200, response.text
+    assert response.json()["targets"][0]["paid_from"] == "joint"
+    assert (
+        _paid_from(owner_client, plan, "Groceries", None).json()["targets"][0]["paid_from"] is None
+    )
+
+
+def test_who_pays_needs_a_target(owner_client: TestClient) -> None:
+    plan = _plan(owner_client, "2026-Q1")
+    response = _paid_from(owner_client, plan, "Groceries", "joint")
+    assert response.status_code == 422
+    assert response.json()["detail"] == "set a target for this category first"
+
+
+def test_who_pays_carries_over_to_the_next_plan(owner_client: TestClient) -> None:
+    plan = _plan(owner_client, "2026-Q1")
+    _set(owner_client, plan, "Groceries", "300.00")
+    _paid_from(owner_client, plan, "Groceries", "personal")
+    following = _plan(owner_client, "2026-Q2")
+    assert following["targets"][0]["paid_from"] == "personal"

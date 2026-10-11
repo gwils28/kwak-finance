@@ -29,10 +29,14 @@ def _ratio(value: Decimal | None) -> Decimal | None:
 class Kpis(BaseModel):
     spent: Decimal
     income: Decimal
+    paid_in: Decimal
+    """Transfers from accounts outside the scope; 0 for the household."""
+    paid_out: Decimal
+    """Transfers to accounts outside the scope; 0 for the household."""
     net: Decimal
-    """income - spent: the sum of the month's transactions, transfers excluded."""
+    """income + paid_in - spent - paid_out. Transfers within the scope net to zero."""
     savings_rate: Decimal | None
-    """net / income, e.g. 0.3564; null without income."""
+    """net / (income + paid_in), e.g. 0.3564; null without any."""
     previous_spent: Decimal
     average_spent: Decimal
     """Average monthly spending over the previous 12 months that have transactions."""
@@ -112,8 +116,10 @@ def dashboard(
         kpis=Kpis(
             spent=_cents(current.spent),
             income=_cents(current.income),
+            paid_in=_cents(current.paid_in),
+            paid_out=_cents(current.paid_out),
             net=_cents(current.net),
-            savings_rate=_ratio(savings_rate(current.income, current.net)),
+            savings_rate=_ratio(savings_rate(current.inflow, current.net)),
             previous_spent=_cents(d.previous.spent),
             average_spent=_cents(d.average_spent),
             spent_change_vs_previous=_ratio(change(current.spent, d.previous.spent)),

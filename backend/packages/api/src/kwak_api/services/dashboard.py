@@ -1,7 +1,7 @@
 """Spending KPIs and chart series for the home page (F-DSH-4, 5)."""
 
 from collections import defaultdict
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import date
 from decimal import Decimal
 from uuid import UUID
@@ -21,7 +21,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from kwak_api.models import Category, Transaction, User
-from kwak_api.services.budget import matrix, scoped_accounts
+from kwak_api.services.budget import crossing_by_month, matrix, scoped_accounts
 
 HISTORY_MONTHS = 12
 
@@ -93,8 +93,11 @@ def dashboard(db: Session, viewer: User, month: Month, scope: Scope) -> Dashboar
     for start, category_id, _outflow, total in rows:
         flows[Month.of(start)].append(Flow(category_id, Decimal(total)))
 
+    crossed = crossing_by_month(db, accounts, months) if accounts else {}
+
     def summary(m: Month) -> MonthSummary:
-        figures = month_figures(flows[m], kinds)
+        paid_in, paid_out = crossed.get(m, (Decimal(0), Decimal(0)))
+        figures = replace(month_figures(flows[m], kinds), paid_in=paid_in, paid_out=paid_out)
         spending: dict[UUID, Decimal] = defaultdict(Decimal)
         for f in flows[m]:
             if f.category_id and kinds.get(f.category_id) is CategoryKind.EXPENSE:

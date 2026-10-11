@@ -15,6 +15,7 @@ from datetime import date, timedelta
 from decimal import Decimal
 from uuid import UUID
 
+from kwak_core.accounts import Scope
 from kwak_core.budget import (
     DEFAULT_BAND,
     BudgetStatus,
@@ -87,6 +88,13 @@ class Period:
         return f"{self.year}-{_SUFFIX[self.kind]}{self.index}"
 
 
+class PaidFrom(enum.StrEnum):
+    """Which accounts pay a target's category, so narrow scopes judge only their own."""
+
+    JOINT = "joint"
+    PERSONAL = "personal"
+
+
 @dataclass(frozen=True)
 class Plan:
     """Monthly targets per category from `start` to `end`, within one calendar period.
@@ -103,6 +111,8 @@ class Plan:
     """Expected monthly income, for the planned savings."""
     note: str | None = None
     close_reason: str | None = None
+    paid_from: Mapping[UUID, PaidFrom] = field(default_factory=dict)
+    """Who pays each target's category; a category left out counts in every scope."""
 
     def __post_init__(self) -> None:
         if not self.period.start <= self.start <= self.end <= self.period.end:
@@ -149,7 +159,8 @@ def new_plan(period: Period, latest: Plan | None) -> Plan:
     """A plan over `period`, pre-filled with the latest plan's targets and income."""
     if latest is None:
         return Plan.covering(period, {})
-    return Plan.covering(period, dict(latest.targets), expected_income=latest.expected_income)
+    plan = Plan.covering(period, dict(latest.targets), expected_income=latest.expected_income)
+    return replace(plan, paid_from=dict(latest.paid_from))
 
 
 def editable(plan: Plan, today: date) -> bool:
@@ -174,7 +185,20 @@ def replacement(closed: Plan) -> Plan:
         closed.end.next(),
         closed.period.end,
         closed.expected_income,
+        paid_from=dict(closed.paid_from),
     )
+
+
+def for_scope(plan: Plan, scope: Scope) -> Plan:
+    """The plan as a scope judges it (§3): a narrow scope keeps the targets paid from it and
+    the unassigned ones. The expected income is the household's, so a narrow scope has no
+    planned savings.
+    """
+    if scope is Scope.HOUSEHOLD:
+        return plan
+    other = PaidFrom.PERSONAL if scope is Scope.JOINT else PaidFrom.JOINT
+    targets = {c: a for c, a in plan.targets.items() if plan.paid_from.get(c) is not other}
+    return replace(plan, targets=targets, expected_income=None)
 
 
 def _monthly_targets(
@@ -271,6 +295,10 @@ class Review:
     savings_rate: Decimal | None
     planned_savings: Decimal | None
     drifting_rows: list[ReviewRow] = field(default_factory=list)
+    paid_in: Decimal = ZERO
+    """Transfers from accounts outside the scope (kpis.crossing)."""
+    paid_out: Decimal = ZERO
+    """Transfers to accounts outside the scope."""
     """Drifting categories, the largest projected overrun first."""
 
     @property
@@ -352,8 +380,13 @@ def review_plan(
     income: Mapping[Month, Decimal],
     today: date,
     band: Decimal = DEFAULT_BAND,
+    *,
+    paid: Mapping[Month, tuple[Decimal, Decimal]] | None = None,
 ) -> Review:
-    """Where the plan stands on `today`: during the plan, or its final result once over."""
+    """Where the plan stands on `today`: during the plan, or its final result once over.
+
+    `paid` holds each month's (paid in, paid out) by transfers crossing the scope.
+    """
     matrix = build_matrix(categories, target_history([plan]), spending, plan.months, band)
     elapsed = elapsed_share(plan, today)
     current = Month.of(today)
@@ -373,13 +406,16 @@ def review_plan(
     ]
     total = _review_row(None, "Total", None, 0, matrix.total.cells, elapsed, current, band)
     earned = sum((income.get(m, ZERO) for m in plan.months), ZERO)
-    savings = earned - total.spent
+    crossed = [(paid or {}).get(m, (ZERO, ZERO)) for m in plan.months]
+    paid_in = sum((p[0] for p in crossed), ZERO)
+    paid_out = sum((p[1] for p in crossed), ZERO)
+    savings = earned + paid_in - paid_out - total.spent
     planned = (
         None
         if plan.expected_income is None or total.envelope is None
         else plan.expected_income * len(plan.months) - total.envelope
     )
-    rate = savings_rate(earned, savings)
+    rate = savings_rate(earned + paid_in, savings)
     drifting = sorted((r for r in rows if r.drifting), key=lambda r: -(r.drift or ZERO))
     return Review(
         plan,
@@ -393,6 +429,8 @@ def review_plan(
         rate,
         planned,
         drifting,
+        paid_in,
+        paid_out,
     )
 
 

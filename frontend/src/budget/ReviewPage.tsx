@@ -234,6 +234,12 @@ function Summary({ review }: { review: ReviewOut }) {
           <Figure label={t.review.projected}>{formatEurWhole(total.projection)}</Figure>
         )}
         <Figure label={t.review.income}>{formatEurWhole(review.income)}</Figure>
+        {Number(review.paid_in) !== 0 && (
+          <Figure label={t.review.paidIn}>{formatEurWhole(review.paid_in)}</Figure>
+        )}
+        {Number(review.paid_out) !== 0 && (
+          <Figure label={t.review.paidOut}>{formatEurWhole(review.paid_out)}</Figure>
+        )}
         <Figure label={t.review.savings}>{formatEurWhole(review.savings)}</Figure>
         {review.savings_rate !== null && (
           <Figure label={t.review.savingsRate}>{formatPercent(review.savings_rate)}</Figure>

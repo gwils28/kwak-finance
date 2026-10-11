@@ -1,6 +1,6 @@
 from datetime import date
 from decimal import Decimal
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 import pytest
 from hypothesis import given
@@ -8,7 +8,10 @@ from hypothesis import strategies as st
 from kwak_core.categories import CategoryKind
 from kwak_core.kpis import (
     Flow,
+    MonthFigures,
+    TransferLeg,
     change,
+    crossing,
     cumulative_by_day,
     month_figures,
     savings_rate,
@@ -87,3 +90,57 @@ def test_cumulative_spending_by_day_covers_every_day_of_the_month() -> None:
     assert series[0] == (date(2026, 2, 1), D("0"))
     assert series[2] == (date(2026, 2, 3), D("10"))
     assert series[-1] == (date(2026, 2, 28), D("15"))
+
+
+PERSONAL, JOINT, PARTNER = uuid4(), uuid4(), uuid4()
+
+
+def _transfer(source: UUID, target: UUID, amount: str) -> list[TransferLeg]:
+    group = uuid4()
+    return [TransferLeg(group, source, -D(amount)), TransferLeg(group, target, D(amount))]
+
+
+def test_a_transfer_into_the_scope_is_paid_in_and_one_out_of_it_paid_out() -> None:
+    legs = _transfer(PERSONAL, JOINT, "1100") + _transfer(JOINT, PARTNER, "50")
+
+    assert crossing(legs, {JOINT}) == (D("1100"), D("50"))
+    assert crossing(legs, {PERSONAL}) == (D(0), D("1100"))
+
+
+def test_a_transfer_within_the_scope_crosses_nothing() -> None:
+    assert crossing(_transfer(PERSONAL, JOINT, "1100"), {PERSONAL, JOINT}) == (D(0), D(0))
+
+
+def test_paid_in_counts_with_income_and_paid_out_with_spending() -> None:
+    figures = MonthFigures(spent=D("141"), income=D("2600"), paid_out=D("1100"))
+    assert figures.net == D("1359")
+    assert figures.inflow == D("2600")
+
+    joint = MonthFigures(spent=D("2151"), income=D("1300"), paid_in=D("1100"))
+    assert joint.net == D("249")
+    assert joint.inflow == D("2400")
+
+
+ACCOUNTS = [PERSONAL, JOINT, PARTNER, uuid4()]
+transfers = st.lists(
+    st.tuples(
+        st.sampled_from(ACCOUNTS),
+        st.sampled_from(ACCOUNTS),
+        st.decimals(min_value=D("0.01"), max_value=D("10000"), places=2),
+    ).filter(lambda t: t[0] != t[1]),
+    max_size=10,
+)
+
+
+@given(transfers, st.sets(st.sampled_from(ACCOUNTS)))
+def test_what_leaves_some_accounts_reaches_the_others(
+    raw: list[tuple[UUID, UUID, Decimal]], scope: set[UUID]
+) -> None:
+    legs = [leg for source, target, amount in raw for leg in _transfer(source, target, str(amount))]
+    rest = set(ACCOUNTS) - scope
+
+    paid_in, paid_out = crossing(legs, scope)
+    other_in, other_out = crossing(legs, rest)
+
+    assert (paid_in, paid_out) == (other_out, other_in)
+    assert crossing(legs, set(ACCOUNTS)) == (D(0), D(0))

@@ -1264,6 +1264,16 @@
             "title": "Net",
             "type": "string"
           },
+          "paid_in": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Paid In",
+            "type": "string"
+          },
+          "paid_out": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Paid Out",
+            "type": "string"
+          },
           "previous_spent": {
             "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Previous Spent",
@@ -1314,6 +1324,8 @@
         "required": [
           "spent",
           "income",
+          "paid_in",
+          "paid_out",
           "net",
           "savings_rate",
           "previous_spent",
@@ -1444,6 +1456,34 @@
           "by_category"
         ],
         "title": "MonthPoint",
+        "type": "object"
+      },
+      "PaidFrom": {
+        "description": "Which accounts pay a target's category, so narrow scopes judge only their own.",
+        "enum": [
+          "joint",
+          "personal"
+        ],
+        "title": "PaidFrom",
+        "type": "string"
+      },
+      "PaidFromIn": {
+        "properties": {
+          "paid_from": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PaidFrom"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "paid_from"
+        ],
+        "title": "PaidFromIn",
         "type": "object"
       },
       "PasswordConfirmation": {
@@ -1657,11 +1697,22 @@
             "format": "uuid",
             "title": "Category Id",
             "type": "string"
+          },
+          "paid_from": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PaidFrom"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
           "category_id",
-          "amount"
+          "amount",
+          "paid_from"
         ],
         "title": "PlanTargetOut",
         "type": "object"
@@ -1927,6 +1978,16 @@
             "title": "Income",
             "type": "string"
           },
+          "paid_in": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Paid In",
+            "type": "string"
+          },
+          "paid_out": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Paid Out",
+            "type": "string"
+          },
           "plan": {
             "$ref": "#/components/schemas/PlanOut"
           },
@@ -1989,6 +2050,8 @@
           "uncategorised",
           "provisional",
           "income",
+          "paid_in",
+          "paid_out",
           "savings",
           "savings_rate",
           "planned_savings",
@@ -4658,6 +4721,86 @@
           }
         },
         "summary": "Set Plan Target",
+        "tags": [
+          "budget"
+        ]
+      }
+    },
+    "/api/budget/plans/{plan_id}/targets/{category_id}/paid-from": {
+      "put": {
+        "description": "Who pays a target's category; allowed on a frozen plan, the envelopes stay the same.",
+        "operationId": "setTargetPaidFrom",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "plan_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Plan Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "category_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Category Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "kwak_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Kwak Session"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PaidFromIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlanOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Set Target Paid From",
         "tags": [
           "budget"
         ]

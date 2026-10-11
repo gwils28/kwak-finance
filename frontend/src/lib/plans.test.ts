@@ -17,7 +17,7 @@ const plan = (period: string, start: string, end: string, targets: [string, stri
     kind: parsePeriod(period).kind,
     start,
     end,
-    targets: targets.map(([category_id, amount]) => ({ category_id, amount })),
+    targets: targets.map(([category_id, amount]) => ({ category_id, amount, paid_from: null })),
     expected_income: null,
     note: null,
     closed_early: false,
@@ -67,8 +67,12 @@ test("a parent without its own target shows its children's sum, counted once in 
     ["home", "900.00"],
   ]);
   const { byCategory, total } = planTargets(q4, rows);
-  expect(byCategory.get("food")).toEqual({ amount: "360.50", fromChildren: true });
-  expect(byCategory.get("home")).toEqual({ amount: "900.00", fromChildren: false });
+  expect(byCategory.get("food")).toEqual({ amount: "360.50", fromChildren: true, paidFrom: null });
+  expect(byCategory.get("home")).toEqual({
+    amount: "900.00",
+    fromChildren: false,
+    paidFrom: null,
+  });
   expect(total).toBe("1260.50");
   expect(planTargets(plan("2027", "2027-01", "2027-12"), rows).total).toBeNull();
 });

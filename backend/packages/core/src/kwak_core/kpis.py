@@ -4,10 +4,15 @@ Spending and income use the budget matrix's rules, so the two pages agree: expen
 categories count net of refunds, income categories net of reversals, and an uncategorised
 transaction counts by its sign. Hence net = income - spent = the sum of the month's
 transactions (transfers excluded upstream).
+
+A view narrower than the household (one member's accounts, the joint ones) also counts the
+transfers that cross its edge: money paid in from, or out to, an account outside the view.
+A transfer between two accounts of the view still nets to zero (invariant §8.3).
 """
 
 import calendar
-from collections.abc import Iterable, Mapping
+from collections import defaultdict
+from collections.abc import Collection, Iterable, Mapping
 from dataclasses import dataclass
 from datetime import date
 from decimal import Decimal
@@ -28,10 +33,19 @@ class Flow:
 class MonthFigures:
     spent: Decimal
     income: Decimal
+    paid_in: Decimal = ZERO
+    """Transfers from accounts outside the view."""
+    paid_out: Decimal = ZERO
+    """Transfers to accounts outside the view."""
+
+    @property
+    def inflow(self) -> Decimal:
+        """What the view received: the base of its savings rate."""
+        return self.income + self.paid_in
 
     @property
     def net(self) -> Decimal:
-        return self.income - self.spent
+        return self.inflow - self.spent - self.paid_out
 
 
 def month_figures(flows: Iterable[Flow], kinds: Mapping[UUID, CategoryKind]) -> MonthFigures:
@@ -43,6 +57,35 @@ def month_figures(flows: Iterable[Flow], kinds: Mapping[UUID, CategoryKind]) -> 
         else:
             income += flow.amount
     return MonthFigures(spent, income)
+
+
+@dataclass(frozen=True)
+class TransferLeg:
+    group_id: UUID
+    account_id: UUID
+    amount: Decimal
+
+
+def crossing(legs: Iterable[TransferLeg], scope: Collection[UUID]) -> tuple[Decimal, Decimal]:
+    """(paid in, paid out) of the scope's accounts by transfers with an account outside it.
+
+    `legs` holds every leg of the transfers involved, including the ones outside the scope.
+    """
+    groups: dict[UUID, list[TransferLeg]] = defaultdict(list)
+    for leg in legs:
+        groups[leg.group_id].append(leg)
+    paid_in = paid_out = ZERO
+    for group in groups.values():
+        if all(leg.account_id in scope for leg in group):
+            continue
+        for leg in group:
+            if leg.account_id not in scope:
+                continue
+            if leg.amount > 0:
+                paid_in += leg.amount
+            else:
+                paid_out -= leg.amount
+    return paid_in, paid_out
 
 
 def savings_rate(income: Decimal, net: Decimal) -> Decimal | None:

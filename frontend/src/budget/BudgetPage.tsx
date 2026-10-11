@@ -6,13 +6,15 @@ import {
   budgetMatrix,
   type CellOut,
   listPlans,
+  type PaidFrom,
   type PlanOut,
   type RowOut,
   type Scope,
   setPlanTarget,
+  setTargetPaidFrom,
 } from "../api/generated";
 import { apiErrorMessage, detailSentence } from "../auth/errors";
-import { ScopeSelect } from "../components/ScopeSelect";
+import { ScopeSelect, useHasJointAccount } from "../components/ScopeSelect";
 import { ErrorAlert } from "../components/ui";
 import { useI18n } from "../i18n";
 import {
@@ -24,7 +26,7 @@ import {
   parseEurInput,
 } from "../lib/money";
 import { monthBounds, monthLabel, shiftMonth, thisMonth } from "../lib/months";
-import { defaultPlan, type PlanTarget, planTargets } from "../lib/plans";
+import { defaultPlan, type PlanTarget, planTargets, scopedPlan } from "../lib/plans";
 import { PLANS_KEY, PlanPanel, usePeriodLabel } from "./PlanPanel";
 
 const STATUS_CLASS: Record<BudgetStatus, string> = {
@@ -72,7 +74,9 @@ export function BudgetPage() {
     queryFn: async () => (await listPlans({ throwOnError: true })).data,
   });
   const plan = plans.data?.find((p) => p.id === planId) ?? defaultPlan(plans.data ?? [], end);
-  const targets = plan && matrix.data ? planTargets(plan, matrix.data.rows) : null;
+  const targets =
+    plan && matrix.data ? planTargets(scopedPlan(plan, scope), matrix.data.rows) : null;
+  const askPaidFrom = useHasJointAccount();
 
   const bandPercent = formatPercent(band);
 
@@ -165,6 +169,7 @@ export function BudgetPage() {
                   row={row}
                   plan={plan}
                   target={row.category_id ? targets?.byCategory.get(row.category_id) : undefined}
+                  askPaidFrom={askPaidFrom}
                   onError={setError}
                   categoryParam={row.category_id ?? "none"}
                 />
@@ -172,7 +177,11 @@ export function BudgetPage() {
               <MatrixRow row={matrix.data.uncategorised} onError={setError} categoryParam="none" />
               <MatrixRow
                 row={matrix.data.total}
-                target={targets?.total ? { amount: targets.total, fromChildren: true } : undefined}
+                target={
+                  targets?.total
+                    ? { amount: targets.total, fromChildren: true, paidFrom: null }
+                    : undefined
+                }
                 onError={setError}
                 isTotal
               />
@@ -219,6 +228,7 @@ function MatrixRow({
   row,
   plan,
   target,
+  askPaidFrom = false,
   onError,
   isTotal = false,
   categoryParam,
@@ -227,6 +237,8 @@ function MatrixRow({
   /** The plan whose targets the row edits; none for the "to categorise" and total rows. */
   plan?: PlanOut;
   target?: PlanTarget;
+  /** With a joint account, each own target says which accounts pay it. */
+  askPaidFrom?: boolean;
   onError: (message: string | null) => void;
   isTotal?: boolean;
   categoryParam?: string;
@@ -261,6 +273,15 @@ function MatrixRow({
           >
             {target ? formatEurWhole(target.amount) : ""}
           </span>
+        )}
+        {askPaidFrom && plan && target && !target.fromChildren && row.category_id && (
+          <PaidFromSelect
+            row={row}
+            plan={plan}
+            paidFrom={target.paidFrom}
+            categoryId={row.category_id}
+            onError={onError}
+          />
         )}
       </td>
       {row.cells.map((cell) => (
@@ -308,6 +329,50 @@ function MatrixCell({
         content
       )}
     </td>
+  );
+}
+
+function PaidFromSelect({
+  row,
+  plan,
+  paidFrom,
+  categoryId,
+  onError,
+}: {
+  row: RowOut;
+  plan: PlanOut;
+  paidFrom: PaidFrom | null;
+  categoryId: string;
+  onError: (message: string | null) => void;
+}) {
+  const { t } = useI18n();
+  const queryClient = useQueryClient();
+  const save = useMutation({
+    mutationFn: async (next: PaidFrom | null) => {
+      const { data, error, response } = await setTargetPaidFrom({
+        path: { plan_id: plan.id, category_id: categoryId },
+        body: { paid_from: next },
+      });
+      if (!data) throw new Error(detailSentence(error) ?? apiErrorMessage(t, response));
+      return data;
+    },
+    onSuccess: () => {
+      onError(null);
+      return queryClient.invalidateQueries({ queryKey: ["budget"] });
+    },
+    onError: (exc) => onError(`${row.name}: ${exc.message}`),
+  });
+  return (
+    <select
+      aria-label={t.budget.paidFrom.label(row.name)}
+      className="mt-1 block w-32 rounded-md border border-border bg-surface px-1 py-0.5 text-xs text-muted"
+      value={paidFrom ?? ""}
+      onChange={(e) => save.mutate((e.target.value || null) as PaidFrom | null)}
+    >
+      <option value="">{t.budget.paidFrom.any}</option>
+      <option value="joint">{t.budget.paidFrom.joint}</option>
+      <option value="personal">{t.budget.paidFrom.personal}</option>
+    </select>
   );
 }
 
