@@ -13,6 +13,7 @@ from tests.api.conftest import Clock, csrf, log_in
 FIXTURES = Path(__file__).parents[2] / "fixtures" / "import" / "societe_generale"
 CHECKING_CSV = (FIXTURES / "checking.csv").read_bytes()
 SAVINGS_CSV = (FIXTURES / "savings.csv").read_bytes()
+HELIOS_CSV = (FIXTURES.parent / "helios" / "statement.csv").read_bytes()
 
 
 @pytest.fixture
@@ -151,6 +152,23 @@ def test_the_savings_layout_is_detected(owner_client: TestClient) -> None:
     assert batch["balance_check"] is None
 
 
+def test_a_helios_statement_is_imported_once(owner_client: TestClient) -> None:
+    account = _account(
+        owner_client,
+        name="Compte commun",
+        institution_name="Helios",
+        visibility="joint",
+        opening_date="2026-08-01",
+    )
+    batch = _send(owner_client, account, HELIOS_CSV).json()
+    assert batch["format"] == "helios"
+    assert batch["imported_count"] == 8
+    assert batch["balance_check"] is None
+    labels = {t["label"] for t in owner_client.get("/api/transactions").json()["items"]}
+    assert "Agence Immobilière Exemple · Loyer septembre" in labels
+    assert _send(owner_client, account, HELIOS_CSV).json()["imported_count"] == 0
+
+
 def test_bad_rows_are_reported_and_the_rest_imported(owner_client: TestClient) -> None:
     account = _account(owner_client)
     broken = CHECKING_CSV.replace(
@@ -170,7 +188,9 @@ def test_an_unknown_file_is_rejected(owner_client: TestClient) -> None:
     account = _account(owner_client)
     response = _send(owner_client, account, b"date,amount\n2026-01-01,12\n", preview=True)
     assert response.status_code == 422
-    assert "format" in response.json()["detail"]
+    assert response.json()["detail"] == (
+        "unrecognised file format: export a CSV of the operations from Société Générale or Helios"
+    )
 
 
 def test_a_large_file_is_rejected(owner_client: TestClient) -> None:

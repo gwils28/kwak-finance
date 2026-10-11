@@ -135,8 +135,9 @@ export const API_MESSAGES_FR: Record<string, string> = {
   "unknown account": "compte inconnu",
   "unknown category": "catégorie inconnue",
   "unknown parent category": "catégorie parente inconnue",
-  "unrecognised file format: export a CSV of the operations from Société Générale":
-    "format de fichier non reconnu : exportez les opérations au format CSV depuis la Société Générale",
+  "unrecognised file format: export a CSV of the operations from Société Générale or Helios":
+    "format de fichier non reconnu : exportez les opérations au format CSV depuis la Société Générale ou Helios",
+  "not a Helios export": "ce n'est pas un export Helios",
 };
 
 /** API messages that carry a value: [English pattern, French replacement]. */
@@ -177,4 +178,8 @@ export const API_PATTERNS_FR: [RegExp, string][] = [
     "ce n'est pas un export Société Générale du bon type de compte",
   ],
   [/^unreadable summary line$/, "ligne de synthèse illisible"],
+  [
+    /^operation not executed yet \((.*)\): import it once it is$/,
+    "opération pas encore exécutée ($1) : importez-la une fois exécutée",
+  ],
 ];
