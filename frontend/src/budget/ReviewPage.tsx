@@ -7,6 +7,7 @@ import {
   type PlanOut,
   planComparison,
   planCumulative,
+  planFlows,
   type ReviewOut,
   type ReviewRowOut,
   reviewPlan,
@@ -20,7 +21,7 @@ import { formatEurSigned, formatEurWhole, formatPercent, formatPercentSigned } f
 import { monthBounds, monthLabel, thisMonth } from "../lib/months";
 import { defaultPlan } from "../lib/plans";
 import { PLANS_KEY, usePeriodLabel } from "./PlanPanel";
-import { CumulativeChart, GapChart } from "./reviewCharts";
+import { CumulativeChart, FlowsChart, GapChart } from "./reviewCharts";
 
 const STATUS_CLASS: Record<BudgetStatus, string> = {
   under: "bg-budget-under-bg text-budget-under-fg",
@@ -174,6 +175,7 @@ function Review({
       <Summary review={review} />
       {!review.finished && <DriftList review={review} />}
       <CategoryTable review={review} />
+      <Flows plan={plan} scope={scope} />
       <div className="grid gap-6 lg:grid-cols-2">
         <GapChart rows={review.rows} />
         <Cumulative plan={plan} rows={review.rows} scope={scope} />
@@ -389,6 +391,22 @@ function Cumulative({ plan, rows, scope }: { plan: PlanOut; rows: ReviewRowOut[]
   );
   if (!chart.data) return null;
   return <CumulativeChart chart={chart.data} aside={select} />;
+}
+
+function Flows({ plan, scope }: { plan: PlanOut; scope: Scope }) {
+  const flows = useQuery({
+    queryKey: ["budget", "flows", plan.id, scope],
+    queryFn: async () =>
+      (
+        await planFlows({
+          path: { plan_id: plan.id },
+          query: { scope },
+          throwOnError: true,
+        })
+      ).data,
+  });
+  if (!flows.data) return null;
+  return <FlowsChart flows={flows.data.flows} />;
 }
 
 function Comparison({ plan, plans, scope }: { plan: PlanOut; plans: PlanOut[]; scope: Scope }) {

@@ -6,6 +6,7 @@ from uuid import UUID
 from fastapi import APIRouter, HTTPException, Query, status
 from kwak_core.accounts import Scope
 from kwak_core.budget import BudgetStatus, Cell, Month, Row, month_range
+from kwak_core.flows import FlowKind, Side
 from kwak_core.money import require_cents
 from kwak_core.plans import (
     ComparisonRow,
@@ -462,6 +463,53 @@ def plan_cumulative(
     return CumulativeOut(
         envelope=envelope.quantize(CENTS), points=[CumulativePointOut.of(p) for p in points]
     )
+
+
+class FlowOut(BaseModel):
+    kind: FlowKind
+    side: Side
+    """"in": where the money came from; "out": where it went."""
+    amount: Decimal
+    category_id: UUID | None
+    name: str | None
+    """The category's name, for income and spending flows."""
+    parent_id: UUID | None
+    parent_name: str | None
+
+
+class FlowsOut(BaseModel):
+    flows: list[FlowOut]
+    """Both sides always add up to the same total."""
+
+
+@router.get("/plans/{plan_id}/flows")
+def plan_flows(
+    plan_id: UUID,
+    user_session: CurrentSession,
+    db: Db,
+    scope: Scope = Scope.HOUSEHOLD,
+) -> FlowsOut:
+    """Where the plan's money came from and went, for a Sankey diagram (F-DSH-2)."""
+    plan = _plan(db, user_session.user.household_id, plan_id)
+    result = plan_review.flows(db, user_session.user, plan, scope=scope)
+    out = []
+    for f in result.flows:
+        category = result.categories.get(f.category_id) if f.category_id else None
+        parent = (
+            result.categories.get(category.parent_id) if category and category.parent_id else None
+        )
+        out.append(
+            FlowOut(
+                kind=f.kind,
+                side=f.side,
+                amount=f.amount.quantize(CENTS),
+                category_id=f.category_id,
+                name=category.name if category else None,
+                parent_id=parent.id if parent else None,
+                parent_name=parent.name if parent else None,
+            )
+        )
+    return FlowsOut(flows=out)
 
 
 class ComparisonRowOut(BaseModel):

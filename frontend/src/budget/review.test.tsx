@@ -10,6 +10,7 @@ import {
   current,
   currentLabel,
   matrix,
+  planFlows,
   previous,
   runningReview,
 } from "./fixtures";
@@ -31,6 +32,7 @@ function api(review: ReviewOut = runningReview(), plans: PlanOut[] = [previous()
     "GET /api/budget/matrix": () => Response.json(matrix),
     "GET /api/budget/plans/p-current/review": () => Response.json(review),
     "GET /api/budget/plans/p-current/cumulative": () => Response.json(cumulativeChart()),
+    "GET /api/budget/plans/p-current/flows": () => Response.json(planFlows()),
     "GET /api/budget/plans/p-current/comparison": (_body, url) =>
       Response.json(comparison(url.searchParams.get("against") === "p-other" ? other : previous())),
   });
@@ -186,4 +188,45 @@ test("with no plan at all, the review says how to start", async () => {
 
   expect(await screen.findByText(/No budget plan yet/)).toBeInTheDocument();
   expect(screen.getByRole("link", { name: "Go to the budget" })).toHaveAttribute("href", "/budget");
+});
+
+test("the flows show where the plan's money came from and went, in a table too", async () => {
+  api();
+  render(<TestApp path="/budget/review?plan=p-current" />);
+
+  const section = await screen.findByRole("region", { name: "Money flows" });
+  const table = await within(section).findByRole("table", { name: "Money flows" });
+  const rows = within(table)
+    .getAllByRole("row")
+    .slice(1)
+    .map((r) => r.textContent);
+  expect(rows).toEqual([
+    "InSalary€7,80096%",
+    "InPaid in from other accounts€3004%",
+    "OutHousing€3,72046%",
+    "OutFood€6007%",
+    "OutTo categorise€801%",
+    "OutSaved€1,50019%",
+    "OutUnallocated€2,20027%",
+  ]);
+});
+
+test("the flows can detail the spending by subcategory", async () => {
+  api();
+  render(<TestApp path="/budget/review?plan=p-current" />);
+
+  const section = await screen.findByRole("region", { name: "Money flows" });
+  await userEvent.setup().click(within(section).getByLabelText("Detail the subcategories"));
+
+  const table = within(section).getByRole("table", { name: "Money flows" });
+  expect(table).toHaveTextContent("Rent€3,450");
+  expect(table).toHaveTextContent("Energy€270");
+  expect(table).not.toHaveTextContent("Housing");
+});
+
+test("the flows follow the accounts chosen", async () => {
+  api();
+  render(<TestApp path="/budget/review?plan=p-current" />);
+  await screen.findByRole("region", { name: "Money flows" });
+  expect(queries("/api/budget/plans/p-current/flows").at(-1)?.get("scope")).toBe("household");
 });

@@ -942,6 +942,109 @@
         "title": "DayPoint",
         "type": "object"
       },
+      "FlowKind": {
+        "enum": [
+          "income",
+          "spending",
+          "uncategorised",
+          "paid_in",
+          "paid_out",
+          "saved",
+          "from_savings",
+          "unallocated",
+          "deficit"
+        ],
+        "title": "FlowKind",
+        "type": "string"
+      },
+      "FlowOut": {
+        "properties": {
+          "amount": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Amount",
+            "type": "string"
+          },
+          "category_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category Id"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/FlowKind"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "parent_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Id"
+          },
+          "parent_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Name"
+          },
+          "side": {
+            "$ref": "#/components/schemas/Side"
+          }
+        },
+        "required": [
+          "kind",
+          "side",
+          "amount",
+          "category_id",
+          "name",
+          "parent_id",
+          "parent_name"
+        ],
+        "title": "FlowOut",
+        "type": "object"
+      },
+      "FlowsOut": {
+        "properties": {
+          "flows": {
+            "items": {
+              "$ref": "#/components/schemas/FlowOut"
+            },
+            "title": "Flows",
+            "type": "array"
+          }
+        },
+        "required": [
+          "flows"
+        ],
+        "title": "FlowsOut",
+        "type": "object"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -2613,6 +2716,14 @@
           "joint"
         ],
         "title": "Scope",
+        "type": "string"
+      },
+      "Side": {
+        "enum": [
+          "in",
+          "out"
+        ],
+        "title": "Side",
         "type": "string"
       },
       "ToCategorise": {
@@ -4553,6 +4664,75 @@
           }
         },
         "summary": "Plan Cumulative",
+        "tags": [
+          "budget"
+        ]
+      }
+    },
+    "/api/budget/plans/{plan_id}/flows": {
+      "get": {
+        "description": "Where the plan's money came from and went, for a Sankey diagram (F-DSH-2).",
+        "operationId": "planFlows",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "plan_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Plan Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "scope",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/Scope",
+              "default": "household"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "kwak_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Kwak Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FlowsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Plan Flows",
         "tags": [
           "budget"
         ]

@@ -494,6 +494,49 @@ export type DayPoint = {
 };
 
 /**
+ * FlowKind
+ */
+export type FlowKind = 'income' | 'spending' | 'uncategorised' | 'paid_in' | 'paid_out' | 'saved' | 'from_savings' | 'unallocated' | 'deficit';
+
+/**
+ * FlowOut
+ */
+export type FlowOut = {
+    /**
+     * Amount
+     */
+    amount: string;
+    /**
+     * Category Id
+     */
+    category_id: string | null;
+    kind: FlowKind;
+    /**
+     * Name
+     */
+    name: string | null;
+    /**
+     * Parent Id
+     */
+    parent_id: string | null;
+    /**
+     * Parent Name
+     */
+    parent_name: string | null;
+    side: Side;
+};
+
+/**
+ * FlowsOut
+ */
+export type FlowsOut = {
+    /**
+     * Flows
+     */
+    flows: Array<FlowOut>;
+};
+
+/**
  * HTTPValidationError
  */
 export type HttpValidationError = {
@@ -1409,6 +1452,11 @@ export type RulePreview = {
  * Which accounts an aggregated view (budget, dashboard) covers (F-BUD-3).
  */
 export type Scope = 'household' | 'mine' | 'joint';
+
+/**
+ * Side
+ */
+export type Side = 'in' | 'out';
 
 /**
  * ToCategorise
@@ -2352,6 +2400,38 @@ export type PlanCumulativeResponses = {
 };
 
 export type PlanCumulativeResponse = PlanCumulativeResponses[keyof PlanCumulativeResponses];
+
+export type PlanFlowsData = {
+    body?: never;
+    path: {
+        /**
+         * Plan Id
+         */
+        plan_id: string;
+    };
+    query?: {
+        scope?: Scope;
+    };
+    url: '/api/budget/plans/{plan_id}/flows';
+};
+
+export type PlanFlowsErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type PlanFlowsError = PlanFlowsErrors[keyof PlanFlowsErrors];
+
+export type PlanFlowsResponses = {
+    /**
+     * Successful Response
+     */
+    200: FlowsOut;
+};
+
+export type PlanFlowsResponse = PlanFlowsResponses[keyof PlanFlowsResponses];
 
 export type ReviewPlanData = {
     body?: never;

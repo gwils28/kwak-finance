@@ -183,10 +183,10 @@ def scoped_accounts(db: Session, viewer: User, scope: Scope) -> list[UUID]:
     ]
 
 
-def crossing_by_month(
+def transfer_legs(
     db: Session, accounts: list[UUID], months: list[Month]
-) -> dict[Month, tuple[Decimal, Decimal]]:
-    """(paid in, paid out) of `accounts` per month by transfers with any other account."""
+) -> list[tuple[TransferLeg, date]]:
+    """Every leg of the transfers touching `accounts` within `months`, other legs included."""
     groups = (
         select(Transaction.transfer_group_id)
         .where(
@@ -205,22 +205,26 @@ def crossing_by_month(
             Transaction.booked_on,
         ).where(Transaction.transfer_group_id.in_(groups))
     ).all()
-    legs = [
-        (group, account, amount, booked_on)
+    return [
+        (TransferLeg(group, account, amount), booked_on)
         for group, account, amount, booked_on in rows
         if group is not None
     ]
+
+
+def crossing_by_month(
+    db: Session, accounts: list[UUID], months: list[Month]
+) -> dict[Month, tuple[Decimal, Decimal]]:
+    """(paid in, paid out) of `accounts` per month by transfers with any other account."""
+    legs = transfer_legs(db, accounts, months)
     # A transfer belongs to the month of its leg in scope; its other leg comes along.
     by_month: dict[Month, set[UUID]] = defaultdict(set)
     scope = set(accounts)
-    for group, account, _amount, booked_on in legs:
-        if account in scope:
-            by_month[Month.of(booked_on)].add(group)
+    for leg, booked_on in legs:
+        if leg.account_id in scope:
+            by_month[Month.of(booked_on)].add(leg.group_id)
     return {
-        m: crossing(
-            [TransferLeg(g, a, amount) for g, a, amount, _ in legs if g in groups_of_month],
-            scope,
-        )
+        m: crossing([leg for leg, _ in legs if leg.group_id in groups_of_month], scope)
         for m, groups_of_month in by_month.items()
         if m in months
     }

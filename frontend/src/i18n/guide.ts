@@ -96,7 +96,7 @@ export const guideEn = {
       paragraphs: [
         "“See the review” on the budget page tells where a plan stands. While it runs: the share of time elapsed, what was expected by now, and the spending projected at the end of the plan. Completed months count as spent, the others at least at their target, or at your actual pace if it is higher: rent paid on the 1st is not a drift, while spending above the target shows at once.",
         "Categories projected above their envelope are listed as drifting, largest overrun first. Once the plan is over, the review gives the final result with income, savings and the planned savings when the plan has an expected income.",
-        "Below: the projected gap per category, the cumulative spending day by day against the envelope line, and a comparison with the previous plan (or any other) on monthly figures. While transactions are left to categorise, the review is marked provisional.",
+        "Below: the money flows (where the income went: spending, savings, what is left unallocated; tick the box to detail the subcategories), the projected gap per category, the cumulative spending day by day against the envelope line, and a comparison with the previous plan (or any other) on monthly figures. While transactions are left to categorise, the review is marked provisional.",
       ],
       link: { to: "/budget/review", label: "Open the review" },
     },
@@ -212,7 +212,7 @@ export const guideFr: typeof guideEn = {
       paragraphs: [
         "« Voir le bilan » sur la page Budget indique où en est un plan. Pendant le plan : la part du temps écoulé, ce qui était prévu à ce jour, et la dépense projetée en fin de plan. Les mois terminés comptent tels quels, les autres au moins pour leur objectif, ou à votre rythme réel s'il est plus élevé : un loyer payé le 1er n'est pas une dérive, alors qu'une dépense au-dessus de l'objectif apparaît tout de suite.",
         "Les catégories projetées au-dessus de leur enveloppe sont listées comme dérapant, du plus gros dépassement au plus petit. Une fois le plan terminé, le bilan donne le résultat final avec les revenus, l'épargne et l'épargne prévue quand le plan a un revenu attendu.",
-        "Plus bas : l'écart projeté par catégorie, les dépenses cumulées jour après jour face à la ligne d'enveloppe, et une comparaison avec le plan précédent (ou un autre) en chiffres mensuels. Tant que des opérations restent à catégoriser, le bilan est marqué provisoire.",
+        "Plus bas : les flux du plan (où sont allés les revenus : dépenses, épargne, restant non alloué ; cochez la case pour détailler les sous-catégories), l'écart projeté par catégorie, les dépenses cumulées jour après jour face à la ligne d'enveloppe, et une comparaison avec le plan précédent (ou un autre) en chiffres mensuels. Tant que des opérations restent à catégoriser, le bilan est marqué provisoire.",
       ],
       link: { to: "/budget/review", label: "Ouvrir le bilan" },
     },
