@@ -1,6 +1,6 @@
 # Functional Specifications
 
-Status: draft v0.4 — 2026-10-10. Owner: sole maintainer.
+Status: draft v0.5 — 2026-10-12. Owner: sole maintainer.
 
 ## 1. Purpose
 
@@ -54,6 +54,7 @@ Priority: **M** = MVP, **S** = should (later in MVP), **L** = later phase.
 ### 4.4 Categorisation (M)
 
 - F-CAT-1: Two-level category tree (e.g. *Housing > Rent*), with a default seed set that can be edited.
+- F-CAT-4: Each category has a **kind**, shared by its subcategories: **expense**, **income** or **savings** (*Savings & investments*). A savings category holds the money moved to savings or investments that are not tracked as an account of the app (a PEA, a life insurance or a PER until phase 3, a savings account that is not imported): its net outflows are **saved**, a withdrawal brought back counts against it. It is never spending nor income: the money stays in the net cash flow and the savings rate, as money moved to a savings account of the app does. A transfer to an account of the app stays a transfer (F-TX-5), whatever its category. The default seed has one: *Savings & investments* (*Savings accounts*, *Investments*, *Retirement*). An expense rule catches outflows, an income rule inflows, a savings rule both.
 - F-CAT-2: Ordered rules (label contains/regex, amount range, account) that assign a category automatically on import. Rules can be re-applied to past transactions.
 - F-CAT-3: Bulk recategorisation, plus a "create rule from this transaction" action.
 - L: ML-assisted categorisation suggestions (phase 4, local LLM or classifier).
@@ -62,7 +63,7 @@ Priority: **M** = MVP, **S** = should (later in MVP), **L** = later phase.
 
 Goal of the budget module: **follow spending simply**, whether entered by hand or imported from the bank's export of recent operations; **turn it into KPIs and charts**; and **compare spending per category with a target** set beforehand.
 
-- F-BUD-1: A monthly target per category (or per parent category, covering its children), set within a budget plan (F-BUD-7). Within a plan, a cheaper month offsets a dearer one (the period envelope): this replaces a month-to-month rollover.
+- F-BUD-1: A monthly target per expense category (or per parent category, covering its children), set within a budget plan (F-BUD-7). Within a plan, a cheaper month offsets a dearer one (the period envelope): this replaces a month-to-month rollover.
 - F-BUD-2: Target vs actual for the current month, per category: spent, remaining, share used, with a progress bar, a warning at a configurable threshold (default 80 %) and an alert when exceeded. A "pace" marker shows where spending should be at today's date.
 - F-BUD-3: Household, joint or personal scope (§3).
 - F-BUD-4: Target vs actual over past months and year to date, to see which categories are regularly over or under target.
@@ -85,6 +86,7 @@ Goal of the budget module: **follow spending simply**, whether entered by hand o
   - **after the plan**: the final result per category and in total, with income, spending, savings and savings rate over the period (as F-DSH-4); when the plan has an expected income, the planned savings (expected income − envelopes) next to the actual ones;
   - a plan closed early is labelled so, with its reason, and reviewed over the months it covered;
   - while transactions in the period are left to categorise (F-BUD-5), their amount is shown apart and the review is marked provisional.
+- F-BUD-9: **Savings objectives**. A savings category (F-CAT-4) may have a monthly **objective**, set in a plan like a target (F-BUD-7: parent or child, who pays it, frozen after the first month). An objective is a minimum: saving more is good. Its status mirrors a target's, with the same band and colours: **ahead** (saved more than the band above the objective) in green, **on** in neutral, **behind** (more than the band below) in burnt orange. Savings categories have their own section, below the expenses, in the matrix (F-BUD-6) and the review (F-BUD-8), with their own total; they never enter the spending total. In the review, the projection follows F-BUD-8 and a category projected behind its objective is flagged as drifting; the planned savings (expected income − expense envelopes) are shown next to the sum of the objectives.
 
 ### 4.6 Recurring transactions (M)
 
@@ -111,12 +113,12 @@ Goal of the budget module: **follow spending simply**, whether entered by hand o
 ### 4.9 Dashboard and reporting (M)
 
 - F-DSH-1: Home page showing net worth with its change, the month's cash flow, budget status, upcoming recurring items and recent transactions.
-- F-DSH-4: Spending KPIs for any month (default: current): total spent, total income, net cash flow and savings rate ((income − spending) / income); change vs the previous month and vs the 12-month average; top 5 categories; number of transactions left to categorise.
+- F-DSH-4: Spending KPIs for any month (default: current): total spent, total income, net cash flow and savings rate ((income − spending) / income), with the part of the net cash flow put in savings categories (F-CAT-4); change vs the previous month and vs the 12-month average; top 5 categories; number of transactions left to categorise.
 - F-DSH-5: Spending charts: by category (bar chart, one level, drill-down to subcategories); monthly evolution over 12 months (stacked bars by category, income line); cumulative spending within the month against the budget line. Transfers between own accounts are excluded everywhere (F-TX-5).
 - F-DSH-6: **Plan steering dashboards**, on the plan review (F-BUD-8):
   - **cumulative chart**: cumulative spending by day over the plan against the cumulative envelope line, in total or for one category;
   - **gap chart**: the projected gap in % per category ((projection − envelope) / envelope, the gap itself once the plan is over), coloured with the status;
-  - **money flows** (Sankey, a first piece of F-DSH-2): income by category and transfers paid in on the left, a central "available" node, then spending by top-level category (or subcategory, on demand), transfers paid out, **savings** (net transfers from the scope's other accounts into its savings accounts) and the **unallocated** rest on the right; a shortfall comes in on the left as a deficit, money taken back from savings as such. Both sides add up to the same total;
+  - **money flows** (Sankey, a first piece of F-DSH-2): income by category and transfers paid in on the left, a central "available" node, then spending by top-level category (or subcategory, on demand), transfers paid out, **savings** (net transfers from the scope's other accounts into its savings accounts, plus the savings categories, F-CAT-4) and the **unallocated** rest on the right; a shortfall comes in on the left as a deficit, money taken back from savings as such. Both sides add up to the same total;
   - **drift list** (during a plan): categories ranked by projected overrun in €;
   - **plan comparison**: two plans side by side (by default the current one and the previous one, or the same period a year before), per category: monthly target and monthly average spent (for a running plan, its projection ÷ its number of months), with the change in € and in %. Monthly averages make plans of different lengths comparable.
 - F-DSH-2: Income/expense reports by category and period, with a cash-flow chart (Sankey).
@@ -192,6 +194,7 @@ Budget status colours (F-BUD-6) are semantic tokens built from the palette, defi
 11. The *mine* and *joint* scopes never share an account, and the *household* scope is exactly *mine*, plus *joint*, plus the accounts other members share.
 12. For any split of the accounts into two groups, what one group pays out by transfer is exactly what the other pays in; within the household scope nothing is paid in or out.
 13. A plan's money flows balance: what comes in (income, paid in, taken from savings, deficit) equals what goes out (spending, paid out, saved, unallocated).
+14. Savings categories are never spending nor income: the net cash flow of a period (income − spending, before transfers crossing the scope) equals the sum of its transactions, transfers excluded, plus what its savings categories received (net of withdrawals).
 
 ## 9. Open questions
 
