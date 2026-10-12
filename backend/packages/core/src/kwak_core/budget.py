@@ -1,6 +1,7 @@
 """Monthly budget: targets per category and the budget matrix (F-BUD-1, 2, 4, 6).
 
-Spending is a positive number: the outflows of a category minus its refunds.
+Spending is a positive number: the outflows of a category minus its refunds. Savings
+categories (F-BUD-9) have their own section: what they received, against a minimum objective.
 """
 
 import enum
@@ -61,23 +62,37 @@ class BudgetStatus(enum.StrEnum):
     UNDER = "under"
     ON = "on"
     OVER = "over"
+    AHEAD = "ahead"
+    """Saved more than the objective, beyond the band (F-BUD-9)."""
+    BEHIND = "behind"
+    """Saved less than the objective, beyond the band."""
     NONE = "none"
     """No target to compare with."""
 
 
 def budget_status(
-    spent: Decimal, target: Decimal | None, band: Decimal = DEFAULT_BAND
+    spent: Decimal, target: Decimal | None, band: Decimal = DEFAULT_BAND, *, minimum: bool = False
 ) -> BudgetStatus:
-    """Under or over when the gap exceeds `band` (a share of the target) either way."""
+    """Under or over when the gap exceeds `band` (a share of the target) either way.
+
+    A `minimum` target is a savings objective: above it is ahead, below it behind.
+    """
     if target is None:
         return BudgetStatus.NONE
+    below, above = (
+        (BudgetStatus.BEHIND, BudgetStatus.AHEAD)
+        if minimum
+        else (BudgetStatus.UNDER, BudgetStatus.OVER)
+    )
     if target == 0:
-        return BudgetStatus.ON if spent <= 0 else BudgetStatus.OVER
+        if spent == 0 or (spent < 0 and not minimum):
+            return BudgetStatus.ON
+        return above if spent > 0 else below
     ratio = (spent - target) / target
     if ratio < -band:
-        return BudgetStatus.UNDER
+        return below
     if ratio > band:
-        return BudgetStatus.OVER
+        return above
     return BudgetStatus.ON
 
 
@@ -93,10 +108,14 @@ class Cell:
     status: BudgetStatus
 
 
-def _cell(month: Month, spent: Decimal, target: Decimal | None, band: Decimal) -> Cell:
+def _cell(
+    month: Month, spent: Decimal, target: Decimal | None, band: Decimal, minimum: bool = False
+) -> Cell:
     gap = None if target is None else spent - target
     ratio = None if gap is None or not target else gap / target
-    return Cell(month, spent, target, gap, ratio, budget_status(spent, target, band))
+    return Cell(
+        month, spent, target, gap, ratio, budget_status(spent, target, band, minimum=minimum)
+    )
 
 
 @dataclass(frozen=True)
@@ -119,21 +138,57 @@ class Matrix:
     rows: list[Row]
     uncategorised: Row
     total: Row
+    savings: list[Row]
+    """Savings categories (F-BUD-9): what they received, against their objective."""
+    savings_total: Row
+
+
+Categories = Sequence[tuple[UUID, UUID | None, str]]
+"""(id, parent_id, name) of one kind of category, two levels deep."""
+
+
+def _total_row(
+    name: str,
+    rows: list[Row],
+    months: Sequence[Month],
+    band: Decimal,
+    *,
+    extra: Row | None = None,
+    minimum: bool = False,
+) -> Row:
+    """Every top-level row (plus `extra`, the uncategorised row) month by month."""
+    zero = Decimal(0)
+    top = [r for r in rows if r.level == 0]
+
+    def total_target(i: int) -> Decimal | None:
+        set_targets = [t for r in top if (t := r.cells[i].target) is not None]
+        return sum(set_targets, zero) if set_targets else None
+
+    cells = [
+        _cell(
+            m,
+            sum((r.cells[i].spent for r in top), zero) + (extra.cells[i].spent if extra else zero),
+            total_target(i),
+            band,
+            minimum,
+        )
+        for i, m in enumerate(months)
+    ]
+    return Row(None, name, None, 0, cells[-1].target if cells else None, cells)
 
 
 def build_matrix(
-    categories: Sequence[tuple[UUID, UUID | None, str]],
+    categories: Categories,
     targets: Mapping[UUID, Sequence[tuple[Month, Decimal | None]]],
     spending: Mapping[tuple[UUID | None, Month], Decimal],
     months: Sequence[Month],
     band: Decimal = DEFAULT_BAND,
+    *,
+    savings: Categories = (),
 ) -> Matrix:
-    """`categories` are (id, parent_id, name) of expense categories, two levels deep."""
+    """`categories` are the expense categories, `savings` the savings ones; `spending` holds
+    what each one spent or received, by month (None: to categorise)."""
     zero = Decimal(0)
-    children: dict[UUID, list[tuple[UUID, str]]] = {}
-    for cid, parent, name in categories:
-        if parent is not None:
-            children.setdefault(parent, []).append((cid, name))
 
     def spent(cid: UUID | None, month: Month) -> Decimal:
         return spending.get((cid, month), zero)
@@ -141,32 +196,46 @@ def build_matrix(
     def own_target(cid: UUID, month: Month) -> Decimal | None:
         return target_for(targets.get(cid, ()), month)
 
-    def row(cid: UUID, parent: UUID | None, name: str, level: int, kids: list[UUID]) -> Row:
-        cells = []
-        targets_by_month = []
-        from_children = False
-        for month in months:
-            total = spent(cid, month) + sum((spent(k, month) for k in kids), zero)
-            target = own_target(cid, month)
-            from_children = target is None and bool(kids)
-            if target is None and kids:
-                child_targets = [t for k in kids if (t := own_target(k, month)) is not None]
-                target = sum(child_targets, zero) if child_targets else None
-            targets_by_month.append(target)
-            cells.append(_cell(month, total, target, band))
-        last_target = targets_by_month[-1] if months else None
-        return Row(
-            cid, name, parent, level, last_target, cells, from_children and last_target is not None
-        )
+    def section(categories: Categories, minimum: bool) -> list[Row]:
+        children: dict[UUID, list[tuple[UUID, str]]] = {}
+        for cid, parent, name in categories:
+            if parent is not None:
+                children.setdefault(parent, []).append((cid, name))
 
-    rows = []
-    for cid, _parent, name in sorted(
-        (c for c in categories if c[1] is None), key=lambda c: c[2].lower()
-    ):
-        kids = sorted(children.get(cid, []), key=lambda k: k[1].lower())
-        rows.append(row(cid, None, name, 0, [k for k, _ in kids]))
-        rows.extend(row(k, cid, kname, 1, []) for k, kname in kids)
+        def row(cid: UUID, parent: UUID | None, name: str, level: int, kids: list[UUID]) -> Row:
+            cells = []
+            targets_by_month = []
+            from_children = False
+            for month in months:
+                total = spent(cid, month) + sum((spent(k, month) for k in kids), zero)
+                target = own_target(cid, month)
+                from_children = target is None and bool(kids)
+                if target is None and kids:
+                    child_targets = [t for k in kids if (t := own_target(k, month)) is not None]
+                    target = sum(child_targets, zero) if child_targets else None
+                targets_by_month.append(target)
+                cells.append(_cell(month, total, target, band, minimum))
+            last_target = targets_by_month[-1] if months else None
+            return Row(
+                cid,
+                name,
+                parent,
+                level,
+                last_target,
+                cells,
+                from_children and last_target is not None,
+            )
 
+        rows = []
+        for cid, _parent, name in sorted(
+            (c for c in categories if c[1] is None), key=lambda c: c[2].lower()
+        ):
+            kids = sorted(children.get(cid, []), key=lambda k: k[1].lower())
+            rows.append(row(cid, None, name, 0, [k for k, _ in kids]))
+            rows.extend(row(k, cid, kname, 1, []) for k, kname in kids)
+        return rows
+
+    rows = section(categories, minimum=False)
     uncategorised = Row(
         None,
         "To categorise",
@@ -175,21 +244,12 @@ def build_matrix(
         None,
         [_cell(m, spent(None, m), None, band) for m in months],
     )
-    top = [r for r in rows if r.level == 0]
-
-    def total_target(i: int) -> Decimal | None:
-        set_targets = [t for r in top if (t := r.cells[i].target) is not None]
-        return sum(set_targets, zero) if set_targets else None
-
-    total_cells = [
-        _cell(
-            m,
-            sum((r.cells[i].spent for r in top), zero) + uncategorised.cells[i].spent,
-            total_target(i),
-            band,
-        )
-        for i, m in enumerate(months)
-    ]
-    last_target = total_cells[-1].target if total_cells else None
-    total = Row(None, "Total", None, 0, last_target, total_cells)
-    return Matrix(list(months), rows, uncategorised, total)
+    saving_rows = section(savings, minimum=True)
+    return Matrix(
+        list(months),
+        rows,
+        uncategorised,
+        _total_row("Total", rows, months, band, extra=uncategorised),
+        saving_rows,
+        _total_row("Total saved", saving_rows, months, band, minimum=True),
+    )

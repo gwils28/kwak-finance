@@ -19,12 +19,13 @@ from kwak_core.kpis import (
 )
 
 D = Decimal
-FOOD, GROCERIES, HOUSING, SALARY = uuid4(), uuid4(), uuid4(), uuid4()
+FOOD, GROCERIES, HOUSING, SALARY, PEA = uuid4(), uuid4(), uuid4(), uuid4(), uuid4()
 KINDS = {
     FOOD: CategoryKind.EXPENSE,
     GROCERIES: CategoryKind.EXPENSE,
     HOUSING: CategoryKind.EXPENSE,
     SALARY: CategoryKind.INCOME,
+    PEA: CategoryKind.SAVINGS,
 }
 
 
@@ -44,6 +45,20 @@ def test_spending_and_income_follow_the_category_kind_and_sign_for_the_rest() ->
 amounts = st.integers(min_value=-1_000_00, max_value=1_000_00).map(lambda c: Decimal(c) / 100)
 
 
+def test_savings_categories_are_saved_not_spent() -> None:
+    flows = [
+        Flow(SALARY, D("2500")),
+        Flow(GROCERIES, D("-300")),
+        Flow(PEA, D("-500")),
+        Flow(PEA, D("100")),  # a withdrawal brought back counts against it
+    ]
+    figures = month_figures(flows, KINDS)
+    assert (figures.spent, figures.income, figures.saved) == (D("300"), D("2500"), D("400"))
+    # The money put in the PEA is kept, not spent: it stays in the net cash flow.
+    assert figures.net == D("2200")
+    assert savings_rate(figures.inflow, figures.net) == D("0.88")
+
+
 @given(
     st.lists(
         st.tuples(st.sampled_from([FOOD, GROCERIES, HOUSING, SALARY, None]), amounts), max_size=40
@@ -52,6 +67,19 @@ amounts = st.integers(min_value=-1_000_00, max_value=1_000_00).map(lambda c: Dec
 def test_net_is_the_sum_of_the_months_transactions(raw: list[tuple[object, Decimal]]) -> None:
     flows = [Flow(c, a) for c, a in raw]  # type: ignore[arg-type]
     assert month_figures(flows, KINDS).net == sum((a for _, a in raw), Decimal(0))
+
+
+@given(
+    st.lists(st.tuples(st.sampled_from([FOOD, GROCERIES, SALARY, PEA, None]), amounts), max_size=40)
+)
+def test_invariant_14_savings_categories_are_neither_spending_nor_income(
+    raw: list[tuple[object, Decimal]],
+) -> None:
+    flows = [Flow(c, a) for c, a in raw]  # type: ignore[arg-type]
+    figures = month_figures(flows, KINDS)
+    without_savings = month_figures([f for f in flows if f.category_id != PEA], KINDS)
+    assert (figures.spent, figures.income) == (without_savings.spent, without_savings.income)
+    assert figures.net == sum((a for _, a in raw), Decimal(0)) + figures.saved
 
 
 @pytest.mark.parametrize(

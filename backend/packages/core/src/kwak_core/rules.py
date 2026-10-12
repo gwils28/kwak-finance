@@ -24,7 +24,8 @@ def fold(text: str) -> str:
 class Rule:
     category_id: UUID
     kind: CategoryKind
-    """The category's kind: an expense rule only catches outflows, an income rule inflows."""
+    """The category's kind: an expense rule only catches outflows, an income rule inflows, a
+    savings rule both (a deposit and its withdrawal)."""
     priority: int
     """Lower runs first."""
     label_contains: str | None = None
@@ -49,7 +50,9 @@ def validate_rule(rule: Rule) -> None:
 
 
 def _matches(rule: Rule, needle: str, *, haystack: str, amount: Decimal, account_id: UUID) -> bool:
-    if (amount < 0) != (rule.kind is CategoryKind.EXPENSE):
+    if rule.kind is not CategoryKind.SAVINGS and (amount < 0) != (
+        rule.kind is CategoryKind.EXPENSE
+    ):
         return False
     if rule.account_id is not None and rule.account_id != account_id:
         return False

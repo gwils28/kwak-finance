@@ -5,9 +5,9 @@ from kwak_core.categories import DEFAULT_CATEGORIES, CategoryKind, HierarchyErro
 from kwak_core.users import Language
 
 
-def test_the_default_tree_has_two_levels_and_both_kinds() -> None:
+def test_the_default_tree_has_two_levels_and_every_kind() -> None:
     kinds = {parent.kind for parent in DEFAULT_CATEGORIES}
-    assert kinds == {CategoryKind.EXPENSE, CategoryKind.INCOME}
+    assert kinds == set(CategoryKind)
     assert all(
         parent.children for parent in DEFAULT_CATEGORIES if parent.kind is CategoryKind.EXPENSE
     )

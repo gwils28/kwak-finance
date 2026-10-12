@@ -1,7 +1,8 @@
 """Budget plans by calendar period and their review (F-BUD-7, F-BUD-8, F-DSH-6).
 
-A plan holds monthly targets for a year, a semester or a quarter. It is judged on its
-envelope (monthly target x months), so a cheaper month offsets a dearer one. The review is
+A plan holds monthly targets for a year, a semester or a quarter, and the monthly objectives
+of savings categories (F-BUD-9), a minimum to reach. It is judged on its envelope (monthly
+target x months), so a cheaper month offsets a dearer one. The review is
 built on the budget matrix, so both always show the same spending (invariant 10).
 """
 
@@ -19,8 +20,10 @@ from kwak_core.accounts import Scope
 from kwak_core.budget import (
     DEFAULT_BAND,
     BudgetStatus,
+    Categories,
     Cell,
     Month,
+    Row,
     budget_status,
     build_matrix,
     month_range,
@@ -275,6 +278,8 @@ class ReviewRow:
     months_on: int = 0
     months_under: int = 0
     target_from_children: bool = False
+    savings: bool = False
+    """A savings category: its target is an objective, a minimum (F-BUD-9)."""
 
     @property
     def projected_gap_ratio(self) -> Decimal | None:
@@ -294,12 +299,15 @@ class Review:
     savings: Decimal
     savings_rate: Decimal | None
     planned_savings: Decimal | None
+    savings_rows: list[ReviewRow]
+    """Savings categories: what they received against their objectives (F-BUD-9)."""
+    savings_total: ReviewRow
     drifting_rows: list[ReviewRow] = field(default_factory=list)
+    """Drifting categories, the largest projected gap first: overruns and shortfalls."""
     paid_in: Decimal = ZERO
     """Transfers from accounts outside the scope (kpis.crossing)."""
     paid_out: Decimal = ZERO
     """Transfers to accounts outside the scope."""
-    """Drifting categories, the largest projected overrun first."""
 
     @property
     def provisional(self) -> bool:
@@ -340,6 +348,8 @@ def _review_row(
     current: Month,
     band: Decimal,
     from_children: bool = False,
+    *,
+    savings: bool = False,
 ) -> ReviewRow:
     spent = sum((c.spent for c in cells), ZERO)
     monthly = cells[0].target if cells else None
@@ -348,8 +358,12 @@ def _review_row(
     pace = None if envelope is None else quantize(envelope * elapsed)
     projection = _projection(cells, current, elapsed)
     drift = None if envelope is None or projection is None else projection - envelope
-    status = budget_status(spent if projection is None else projection, envelope, band)
-    drifting = not finished and envelope is not None and status is BudgetStatus.OVER
+    status = budget_status(
+        spent if projection is None else projection, envelope, band, minimum=savings
+    )
+    drifting = (
+        not finished and envelope is not None and status in (BudgetStatus.OVER, BudgetStatus.BEHIND)
+    )
     completed = [c.status for c in cells if c.month < current]
     return ReviewRow(
         category_id,
@@ -366,32 +380,38 @@ def _review_row(
         projection,
         drift,
         drifting,
-        completed.count(BudgetStatus.OVER),
+        completed.count(BudgetStatus.OVER) + completed.count(BudgetStatus.AHEAD),
         completed.count(BudgetStatus.ON),
-        completed.count(BudgetStatus.UNDER),
+        completed.count(BudgetStatus.UNDER) + completed.count(BudgetStatus.BEHIND),
         from_children,
+        savings,
     )
 
 
 def review_plan(
     plan: Plan,
-    categories: Sequence[tuple[UUID, UUID | None, str]],
+    categories: Categories,
     spending: Mapping[tuple[UUID | None, Month], Decimal],
     income: Mapping[Month, Decimal],
     today: date,
     band: Decimal = DEFAULT_BAND,
     *,
     paid: Mapping[Month, tuple[Decimal, Decimal]] | None = None,
+    savings: Categories = (),
 ) -> Review:
     """Where the plan stands on `today`: during the plan, or its final result once over.
 
-    `paid` holds each month's (paid in, paid out) by transfers crossing the scope.
+    `spending` also holds what the `savings` categories received. `paid` holds each month's
+    (paid in, paid out) by transfers crossing the scope.
     """
-    matrix = build_matrix(categories, target_history([plan]), spending, plan.months, band)
+    matrix = build_matrix(
+        categories, target_history([plan]), spending, plan.months, band, savings=savings
+    )
     elapsed = elapsed_share(plan, today)
     current = Month.of(today)
-    rows = [
-        _review_row(
+
+    def review_row(r: Row, *, minimum: bool) -> ReviewRow:
+        return _review_row(
             r.category_id,
             r.name,
             r.parent_id,
@@ -401,22 +421,26 @@ def review_plan(
             current,
             band,
             r.target_from_children,
+            savings=minimum,
         )
-        for r in matrix.rows
-    ]
-    total = _review_row(None, "Total", None, 0, matrix.total.cells, elapsed, current, band)
+
+    rows = [review_row(r, minimum=False) for r in matrix.rows]
+    total = review_row(matrix.total, minimum=False)
+    saving_rows = [review_row(r, minimum=True) for r in matrix.savings]
     earned = sum((income.get(m, ZERO) for m in plan.months), ZERO)
     crossed = [(paid or {}).get(m, (ZERO, ZERO)) for m in plan.months]
     paid_in = sum((p[0] for p in crossed), ZERO)
     paid_out = sum((p[1] for p in crossed), ZERO)
-    savings = earned + paid_in - paid_out - total.spent
+    kept = earned + paid_in - paid_out - total.spent
     planned = (
         None
         if plan.expected_income is None or total.envelope is None
         else plan.expected_income * len(plan.months) - total.envelope
     )
-    rate = savings_rate(earned + paid_in, savings)
-    drifting = sorted((r for r in rows if r.drifting), key=lambda r: -(r.drift or ZERO))
+    rate = savings_rate(earned + paid_in, kept)
+    drifting = sorted(
+        (r for r in [*rows, *saving_rows] if r.drifting), key=lambda r: -abs(r.drift or ZERO)
+    )
     return Review(
         plan,
         elapsed,
@@ -425,9 +449,11 @@ def review_plan(
         total,
         sum((c.spent for c in matrix.uncategorised.cells), ZERO),
         earned,
-        savings,
+        kept,
         rate,
         planned,
+        saving_rows,
+        review_row(matrix.savings_total, minimum=True),
         drifting,
         paid_in,
         paid_out,
@@ -473,6 +499,8 @@ class ComparisonRow:
     change: Decimal | None
     """average_b - average_a."""
     change_ratio: Decimal | None
+    savings: bool = False
+    """A savings category or the savings total: its targets are objectives."""
 
 
 def _average(review: Review, row: ReviewRow) -> Decimal | None:
@@ -483,11 +511,20 @@ def _average(review: Review, row: ReviewRow) -> Decimal | None:
 
 
 def compare(a: Review, b: Review) -> list[ComparisonRow]:
-    """Two plans side by side on monthly figures, so a quarter compares with a year."""
-    rows_a = {r.category_id: r for r in a.rows}
+    """Two plans side by side on monthly figures, so a quarter compares with a year.
+
+    The savings section (F-BUD-9) follows the spending total when either plan has one.
+    """
+    rows_a = {r.category_id: r for r in [*a.rows, *a.savings_rows]}
     result = []
-    for row_b in [*b.rows, b.total]:
-        row_a = a.total if row_b is b.total else rows_a.get(row_b.category_id)
+    saving_rows = [*b.savings_rows, b.savings_total] if a.savings_rows or b.savings_rows else []
+    for row_b in [*b.rows, b.total, *saving_rows]:
+        if row_b is b.total:
+            row_a: ReviewRow | None = a.total
+        elif row_b is b.savings_total:
+            row_a = a.savings_total
+        else:
+            row_a = rows_a.get(row_b.category_id)
         avg_a = None if row_a is None else _average(a, row_a)
         avg_b = _average(b, row_b)
         diff = None if avg_a is None or avg_b is None else avg_b - avg_a
@@ -504,6 +541,7 @@ def compare(a: Review, b: Review) -> list[ComparisonRow]:
                 avg_b,
                 diff,
                 ratio,
+                row_b.savings,
             )
         )
     return result

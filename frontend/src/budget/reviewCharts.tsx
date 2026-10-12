@@ -46,6 +46,8 @@ const STATUS_FILL: Record<BudgetStatus, string> = {
   under: "var(--color-chart-under)",
   on: "var(--color-chart-on)",
   over: "var(--color-chart-over)",
+  ahead: "var(--color-chart-under)",
+  behind: "var(--color-chart-over)",
   none: "var(--color-chart-on)",
 };
 
