@@ -25,7 +25,7 @@ class FlowKind(enum.StrEnum):
     PAID_IN = "paid_in"
     PAID_OUT = "paid_out"
     SAVED = "saved"
-    """Moved from spending accounts to savings ones."""
+    """Moved from spending accounts to savings ones, or put in savings categories."""
     FROM_SAVINGS = "from_savings"
     """Taken back from savings accounts."""
     UNALLOCATED = "unallocated"

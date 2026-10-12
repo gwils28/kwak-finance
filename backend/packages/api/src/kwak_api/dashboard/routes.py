@@ -35,6 +35,8 @@ class Kpis(BaseModel):
     """Transfers to accounts outside the scope; 0 for the household."""
     net: Decimal
     """income + paid_in - spent - paid_out. Transfers within the scope net to zero."""
+    saved: Decimal
+    """The part of `net` put in savings categories (F-CAT-4)."""
     savings_rate: Decimal | None
     """net / (income + paid_in), e.g. 0.3564; null without any."""
     previous_spent: Decimal
@@ -119,6 +121,7 @@ def dashboard(
             paid_in=_cents(current.paid_in),
             paid_out=_cents(current.paid_out),
             net=_cents(current.net),
+            saved=_cents(current.saved),
             savings_rate=_ratio(savings_rate(current.inflow, current.net)),
             previous_spent=_cents(d.previous.spent),
             average_spent=_cents(d.average_spent),

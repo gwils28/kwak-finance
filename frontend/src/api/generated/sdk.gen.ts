@@ -182,7 +182,8 @@ export const totpVerify = <ThrowOnError extends boolean = false>(options: Option
 /**
  * Budget Matrix
  *
- * Spending per expense category and month against the targets (F-BUD-6).
+ * Spending per expense category and month against the targets (F-BUD-6), and the
+ * savings categories against their objectives (F-BUD-9).
  */
 export const budgetMatrix = <ThrowOnError extends boolean = false>(options?: Options<BudgetMatrixData, ThrowOnError>): RequestResult<BudgetMatrixResponses, BudgetMatrixErrors, ThrowOnError> => (options?.client ?? client).get<BudgetMatrixResponses, BudgetMatrixErrors, ThrowOnError>({ url: '/api/budget/matrix', ...options });
 

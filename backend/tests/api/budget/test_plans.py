@@ -224,3 +224,9 @@ def test_who_pays_carries_over_to_the_next_plan(owner_client: TestClient) -> Non
     _paid_from(owner_client, plan, "Groceries", "personal")
     following = _plan(owner_client, "2026-Q2")
     assert following["targets"][0]["paid_from"] == "personal"
+
+
+def test_a_savings_category_takes_an_objective(owner_client: TestClient) -> None:
+    plan = _plan(owner_client, "2026-Q1")
+    response = _set(owner_client, plan, "Retirement", "150.00")
+    assert response.status_code == 200, response.text

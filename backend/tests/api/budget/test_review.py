@@ -88,6 +88,7 @@ def test_during_a_plan_the_review_judges_the_projection_against_the_envelope(
         "months_on": 0,
         "months_under": 1,
         "target_from_children": False,
+        "savings": False,
     }
     assert _row(review, "Food")["target_from_children"] is True
     assert review["drifting"] == [
@@ -259,7 +260,10 @@ def test_two_plans_compare_on_monthly_figures(owner_client: TestClient, q1: Any)
     # Q1 runs: its average is its projection's, 980 / 3.
     assert (groceries["average_a"], groceries["average_b"]) == ("50.00", "326.67")
     assert (groceries["change"], groceries["change_ratio"]) == ("276.67", "5.5334")
-    assert comparison["rows"][-1]["name"] == "Total"
+    names = [r["name"] for r in comparison["rows"]]
+    # The spending total, then the savings section of the default categories.
+    assert names.index("Total") < names.index("Savings & investments")
+    assert names[-1] == "Total saved"
 
 
 def test_any_two_plans_can_be_compared(owner_client: TestClient, q1: Any) -> None:
@@ -277,3 +281,48 @@ def test_the_first_plan_has_nothing_to_compare_with(owner_client: TestClient, q1
 def test_another_households_plan_is_not_reviewed(owner_client: TestClient) -> None:
     url = "/api/budget/plans/0192f0a0-0000-7000-8000-000000000099/review"
     assert owner_client.get(url).status_code == 404
+
+
+@pytest.fixture
+def q1_saving(owner_client: TestClient, clock: Clock) -> Any:
+    """The q1 plan, with an objective of 200 a month on Investments."""
+    plan = _plan(owner_client, "2026-Q1")
+    _set(owner_client, plan, "Groceries", "300.00")
+    _set(owner_client, plan, "Investments", "200.00")
+    _advance(owner_client, clock, 45)
+    account = _account(owner_client, opening_date="2025-12-01")
+    _spend(owner_client, account, "2026-01-10", "-280.00", "Groceries")
+    _spend(owner_client, account, "2026-01-31", "2000.00", "Salary")
+    _spend(owner_client, account, "2026-02-05", "-400.00", "Groceries")
+    _spend(owner_client, account, "2026-02-12", "-50.00", None)
+    _spend(owner_client, account, "2026-02-03", "-150.00", "Investments")
+    return plan
+
+
+def test_savings_objectives_are_reviewed_apart_and_feed_the_flows(
+    owner_client: TestClient, q1_saving: Any
+) -> None:
+    q1 = q1_saving
+    review = _review(owner_client, q1)
+
+    assert review["total"]["spent"] == "730.00"  # the PEA money is not spending
+    investments = next(r for r in review["savings_rows"] if r["name"] == "Investments")
+    # January saved nothing, February 150 so far and expected at 200, March at 200.
+    assert (investments["envelope"], investments["spent"]) == ("600.00", "150.00")
+    assert (investments["projection"], investments["status"]) == ("400.00", "behind")
+    assert investments["drifting"]
+    assert investments["category_id"] in review["drifting"]
+    assert review["savings_total"]["spent"] == "150.00"
+    assert review["savings"] == "1270.00"  # still kept: income - spending
+
+    flows = owner_client.get(f"/api/budget/plans/{q1['id']}/flows").json()["flows"]
+    by_kind = {(f["kind"], f["side"]): f["amount"] for f in flows if f["kind"] != "spending"}
+    assert by_kind[("saved", "out")] == "150.00"
+    assert by_kind[("unallocated", "out")] == "1120.00"
+    # The savings category is not income: Salary is the only income flow.
+    assert [f["name"] for f in flows if f["kind"] == "income"] == ["Salary"]
+
+    comparison = owner_client.get(
+        f"/api/budget/plans/{q1['id']}/comparison", params={"against": q1["id"]}
+    ).json()
+    assert [r["name"] for r in comparison["rows"] if r["savings"]][-1] == "Total saved"

@@ -74,16 +74,18 @@ def review(
     band: Decimal = DEFAULT_BAND,
 ) -> Review:
     core = for_scope(core_plan(plan), scope)
-    expense, spent = spending(db, viewer, core.months, scope)
+    spent = spending(db, viewer, core.months, scope)
+    expense, savings = spent.matrix_categories()
     accounts = scoped_accounts(db, viewer, scope)
     return review_plan(
         core,
-        [(c.id, c.parent_id, c.name) for c in expense],
-        spent,
+        expense,
+        spent.amounts,
         _income(db, viewer, core.months, scope),
         today,
         band,
         paid=crossing_by_month(db, accounts, core.months) if accounts else None,
+        savings=savings,
     )
 
 
@@ -169,7 +171,7 @@ def flows(db: Session, viewer: User, plan: BudgetPlan, *, scope: Scope) -> PlanF
     accounts = [a.id for a in visible]
     income: dict[UUID, Decimal] = defaultdict(Decimal)
     spent: dict[UUID, Decimal] = defaultdict(Decimal)
-    uncategorised_in = uncategorised_out = Decimal(0)
+    uncategorised_in = uncategorised_out = in_categories = Decimal(0)
     outflow = (Transaction.amount < 0).label("outflow")
     rows = db.execute(
         select(Transaction.category_id, outflow, func.sum(Transaction.amount))
@@ -190,6 +192,8 @@ def flows(db: Session, viewer: User, plan: BudgetPlan, *, scope: Scope) -> PlanF
                 uncategorised_in += amount
         elif categories[category_id].kind is CategoryKind.EXPENSE:
             spent[category_id] -= amount
+        elif categories[category_id].kind is CategoryKind.SAVINGS:
+            in_categories -= amount  # saved like a transfer to a savings account (F-CAT-4)
         else:
             income[category_id] += amount
     crossed = crossing_by_month(db, accounts, months)
@@ -203,7 +207,7 @@ def flows(db: Session, viewer: User, plan: BudgetPlan, *, scope: Scope) -> PlanF
             uncategorised_out=uncategorised_out,
             paid_in=sum((p[0] for p in crossed.values()), Decimal(0)),
             paid_out=sum((p[1] for p in crossed.values()), Decimal(0)),
-            saved=saved(legs, in_scope, savings=savings),
+            saved=saved(legs, in_scope, savings=savings) + in_categories,
         ),
         categories,
     )
