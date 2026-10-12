@@ -41,6 +41,24 @@ def test_status_uses_a_5_percent_band(spent: str, target: str | None, status: Bu
     assert budget_status(D(spent), None if target is None else D(target)) is status
 
 
+@pytest.mark.parametrize(
+    ("saved", "objective", "status"),
+    [
+        ("94.99", "100", BudgetStatus.BEHIND),
+        ("95.00", "100", BudgetStatus.ON),
+        ("105.00", "100", BudgetStatus.ON),
+        ("105.01", "100", BudgetStatus.AHEAD),
+        ("0", "0", BudgetStatus.ON),
+        ("1", "0", BudgetStatus.AHEAD),
+        ("-1", "0", BudgetStatus.BEHIND),
+        ("50", None, BudgetStatus.NONE),
+    ],
+)
+def test_an_objective_is_a_minimum(saved: str, objective: str | None, status: BudgetStatus) -> None:
+    target = None if objective is None else D(objective)
+    assert budget_status(D(saved), target, minimum=True) is status
+
+
 def test_the_band_is_a_setting() -> None:
     assert budget_status(D("108"), D("100"), band=D("0.10")) is BudgetStatus.ON
 
@@ -140,3 +158,36 @@ def test_a_row_says_when_its_target_is_its_childrens_sum() -> None:
     assert (food.target, food.target_from_children) == (D("300"), True)
     own = _matrix({}, {FOOD: [(JAN, D("500"))]})
     assert next(r for r in own.rows if r.category_id == FOOD).target_from_children is False
+
+
+PEA, LIVRET, SAVINGS = uuid4(), uuid4(), uuid4()
+SAVINGS_CATEGORIES = [
+    (SAVINGS, None, "Savings"),
+    (LIVRET, SAVINGS, "Livret"),
+    (PEA, SAVINGS, "PEA"),
+]
+
+
+def test_savings_have_their_own_section_and_total_apart_from_spending() -> None:
+    matrix = build_matrix(
+        CATEGORIES,
+        {PEA: [(JAN, D("300"))], LIVRET: [(JAN, D("100"))], HOUSING: [(JAN, D("800"))]},
+        {(HOUSING, JAN): D("800"), (PEA, JAN): D("300"), (LIVRET, JAN): D("50")},
+        [JAN],
+        savings=SAVINGS_CATEGORIES,
+    )
+    assert [r.name for r in matrix.savings] == ["Savings", "Livret", "PEA"]
+    assert [r.category_id for r in matrix.rows] == [FOOD, BAKERY, GROCERIES, HOUSING]
+    assert (matrix.total.cells[0].spent, matrix.total.target) == (D("800"), D("800"))
+    total = matrix.savings_total
+    assert (total.cells[0].spent, total.target) == (D("350"), D("400"))
+    assert total.cells[0].status is BudgetStatus.BEHIND
+    livret, pea = matrix.savings[1], matrix.savings[2]
+    assert (livret.cells[0].status, pea.cells[0].status) == (BudgetStatus.BEHIND, BudgetStatus.ON)
+
+
+def test_without_savings_categories_the_savings_section_is_empty() -> None:
+    matrix = _matrix({}, {})
+    assert matrix.savings == []
+    assert matrix.savings_total.cells[1].spent == 0
+    assert matrix.savings_total.target is None

@@ -7,7 +7,7 @@ from hypothesis import strategies as st
 from kwak_core.categories import CategoryKind
 from kwak_core.rules import Rule, RuleError, first_match, fold, validate_rule
 
-GROCERIES, SALARY = uuid4(), uuid4()
+GROCERIES, SALARY, PEA = uuid4(), uuid4(), uuid4()
 CHECKING, SAVINGS = uuid4(), uuid4()
 
 
@@ -86,3 +86,10 @@ def test_the_order_rules_are_given_in_does_not_matter(priorities: list[int]) -> 
 def test_invalid_rules_are_rejected(conditions: dict[str, object], message: str) -> None:
     with pytest.raises(RuleError, match=message):
         validate_rule(_rule(**conditions))
+
+
+def test_a_savings_rule_catches_money_both_ways() -> None:
+    """A deposit to a PEA and a withdrawal from it go to the same savings category."""
+    rules = [_rule(category=PEA, kind=CategoryKind.SAVINGS, label_contains="FORTUNEO")]
+    assert _match(rules, "VIR FORTUNEO PEA", "-200.00") == PEA
+    assert _match(rules, "VIR FORTUNEO PEA", "150.00") == PEA

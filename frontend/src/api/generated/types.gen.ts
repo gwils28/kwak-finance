@@ -217,7 +217,7 @@ export type BudgetMatrix = {
 /**
  * BudgetStatus
  */
-export type BudgetStatus = 'under' | 'on' | 'over' | 'none';
+export type BudgetStatus = 'under' | 'on' | 'over' | 'ahead' | 'behind' | 'none';
 
 /**
  * Categorise
@@ -261,7 +261,7 @@ export type CategoryIn = {
 /**
  * CategoryKind
  */
-export type CategoryKind = 'expense' | 'income';
+export type CategoryKind = 'expense' | 'income' | 'savings';
 
 /**
  * CategoryOut

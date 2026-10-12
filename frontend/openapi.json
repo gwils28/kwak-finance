@@ -386,6 +386,8 @@
           "under",
           "on",
           "over",
+          "ahead",
+          "behind",
           "none"
         ],
         "title": "BudgetStatus",
@@ -466,7 +468,8 @@
       "CategoryKind": {
         "enum": [
           "expense",
-          "income"
+          "income",
+          "savings"
         ],
         "title": "CategoryKind",
         "type": "string"

@@ -56,7 +56,14 @@ export const reviewEn = {
   monthlyTarget: "Monthly target",
   pace: "Expected",
   status: "Status",
-  statusName: { under: "under", on: "on target", over: "over", none: "" },
+  statusName: {
+    under: "under",
+    on: "on target",
+    over: "over",
+    ahead: "ahead",
+    behind: "behind",
+    none: "",
+  },
   months: "Months over · on · under",
   gapChart: "Projected gap",
   gapChartHelp:
@@ -140,7 +147,14 @@ export const reviewFr: typeof reviewEn = {
   monthlyTarget: "Objectif mensuel",
   pace: "Prévu",
   status: "Statut",
-  statusName: { under: "en dessous", on: "dans l'objectif", over: "au-dessus", none: "" },
+  statusName: {
+    under: "en dessous",
+    on: "dans l'objectif",
+    over: "au-dessus",
+    ahead: "en avance",
+    behind: "en retard",
+    none: "",
+  },
   months: "Mois au-dessus · dans · en dessous",
   gapChart: "Écart projeté",
   gapChartHelp:

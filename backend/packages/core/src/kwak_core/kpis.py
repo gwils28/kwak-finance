@@ -3,7 +3,8 @@
 Spending and income use the budget matrix's rules, so the two pages agree: expense
 categories count net of refunds, income categories net of reversals, and an uncategorised
 transaction counts by its sign. Hence net = income - spent = the sum of the month's
-transactions (transfers excluded upstream).
+transactions (transfers excluded upstream), plus what savings categories received: that money
+is kept, not spent (invariant §8.14).
 
 A view narrower than the household (one member's accounts, the joint ones) also counts the
 transfers that cross its edge: money paid in from, or out to, an account outside the view.
@@ -37,6 +38,8 @@ class MonthFigures:
     """Transfers from accounts outside the view."""
     paid_out: Decimal = ZERO
     """Transfers to accounts outside the view."""
+    saved: Decimal = ZERO
+    """Net amount put in savings categories: part of the net, never spent."""
 
     @property
     def inflow(self) -> Decimal:
@@ -49,14 +52,16 @@ class MonthFigures:
 
 
 def month_figures(flows: Iterable[Flow], kinds: Mapping[UUID, CategoryKind]) -> MonthFigures:
-    spent = income = ZERO
+    spent = income = saved = ZERO
     for flow in flows:
         kind = kinds.get(flow.category_id) if flow.category_id else None
-        if kind is CategoryKind.EXPENSE or (kind is None and flow.amount < 0):
+        if kind is CategoryKind.SAVINGS:
+            saved -= flow.amount
+        elif kind is CategoryKind.EXPENSE or (kind is None and flow.amount < 0):
             spent -= flow.amount
         else:
             income += flow.amount
-    return MonthFigures(spent, income)
+    return MonthFigures(spent, income, saved=saved)
 
 
 @dataclass(frozen=True)

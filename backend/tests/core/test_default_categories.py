@@ -191,3 +191,10 @@ def apply(existing: list[Existing], plan: RestorePlan) -> list[Existing]:
     for cid in plan.deletes:
         del current[cid]
     return list(current.values())
+
+
+def test_the_defaults_have_a_savings_category() -> None:
+    savings = [d for d in DEFAULT_CATEGORIES if d.kind is CategoryKind.SAVINGS]
+    assert [d.name(Language.EN) for d in savings] == ["Savings & investments"]
+    assert [d.name(Language.FR) for d in savings] == ["Épargne et placements"]
+    assert [c.fr for c in savings[0].children] == ["Livrets", "Placements", "Retraite"]

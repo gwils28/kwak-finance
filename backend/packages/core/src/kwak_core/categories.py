@@ -11,6 +11,9 @@ from kwak_core.users import Language
 class CategoryKind(enum.StrEnum):
     EXPENSE = "expense"
     INCOME = "income"
+    SAVINGS = "savings"
+    """Money moved to savings or investments the app does not track as an account (F-CAT-4):
+    never spending nor income."""
 
 
 class HierarchyError(ValueError):
@@ -61,7 +64,7 @@ class DefaultCategory:
         return self.names.name(language)
 
 
-_E, _I, N = CategoryKind.EXPENSE, CategoryKind.INCOME, Names
+_E, _I, _S, N = CategoryKind.EXPENSE, CategoryKind.INCOME, CategoryKind.SAVINGS, Names
 
 # Seeded for every new household; everything can be renamed, moved or deleted.
 DEFAULT_CATEGORIES: tuple[DefaultCategory, ...] = (
@@ -147,6 +150,15 @@ DEFAULT_CATEGORIES: tuple[DefaultCategory, ...] = (
             N("Refunds", "Remboursements"),
             N("Interest", "Intérêts"),
             N("Other income", "Autres revenus"),
+        ),
+    ),
+    DefaultCategory(
+        N("Savings & investments", "Épargne et placements"),
+        _S,
+        (
+            N("Savings accounts", "Livrets"),
+            N("Investments", "Placements"),
+            N("Retirement", "Retraite"),
         ),
     ),
 )

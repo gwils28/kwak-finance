@@ -47,7 +47,7 @@ def q1_plan(**targets: str) -> Plan:
 
 
 def row(review: Review, cid: UUID | None) -> ReviewRow:
-    return next(r for r in review.rows if r.category_id == cid)
+    return next(r for r in [*review.rows, *review.savings_rows] if r.category_id == cid)
 
 
 # Periods
@@ -477,3 +477,93 @@ def test_who_pays_carries_over_to_the_next_plan_and_the_replacement() -> None:
     plan = _paid_plan()
     assert new_plan(Period(PeriodKind.QUARTER, 2027, 2), plan).paid_from == plan.paid_from
     assert replacement(close_early(plan, JAN)).paid_from == plan.paid_from
+
+
+# Savings objectives (F-BUD-9)
+
+SAVINGS, PEA = uuid4(), uuid4()
+SAVINGS_CATEGORIES = [(SAVINGS, None, "Savings & investments"), (PEA, SAVINGS, "PEA")]
+
+
+def test_savings_objectives_are_reviewed_apart_from_spending() -> None:
+    plan = Plan.covering(Q1, {GROCERIES: D("400"), PEA: D("300")}, expected_income=D("2000"))
+    spending = {(GROCERIES, m): D("400") for m in (JAN, FEB, MAR)} | {
+        (PEA, JAN): D("300"),
+        (PEA, FEB): D("400"),
+        (PEA, MAR): D("200"),
+    }
+    income = {m: D("2000") for m in (JAN, FEB, MAR)}
+    review = review_plan(
+        plan, CATEGORIES, spending, income, date(2027, 4, 1), savings=SAVINGS_CATEGORIES
+    )
+    assert (review.total.spent, review.total.envelope) == (D("1200"), D("1200"))
+    pea = row(review, PEA)
+    assert (pea.envelope, pea.spent, pea.gap) == (D("900"), D("900"), D("0"))
+    assert pea.status is BudgetStatus.ON
+    # Months above the objective are ahead, below it behind: one each, one on.
+    assert (pea.months_over, pea.months_on, pea.months_under) == (1, 1, 1)
+    assert (review.savings_total.spent, review.savings_total.envelope) == (D("900"), D("900"))
+    # The PEA money is part of the savings, never of the spending.
+    assert review.savings == D("4800")
+    assert review.planned_savings == D("4800")
+
+
+def test_saving_more_than_the_objective_is_ahead_and_less_is_a_drift() -> None:
+    plan = Plan.covering(Q1, {PEA: D("300"), SAVINGS: D("500")})
+    review = review_plan(
+        plan, CATEGORIES, {(PEA, JAN): D("100")}, {}, date(2027, 2, 3), savings=SAVINGS_CATEGORIES
+    )
+    pea = row(review, PEA)
+    # January short by 200, February and March expected at the objective.
+    assert (pea.projection, pea.drift) == (D("700"), D("-200"))
+    assert pea.status is BudgetStatus.BEHIND
+    assert pea.drifting
+    assert PEA in [r.category_id for r in review.drifting_rows]
+    ahead = review_plan(
+        plan, CATEGORIES, {(PEA, JAN): D("2000")}, {}, date(2027, 2, 3), savings=SAVINGS_CATEGORIES
+    )
+    assert row(ahead, PEA).status is BudgetStatus.AHEAD
+    assert not row(ahead, PEA).drifting
+
+
+def test_plans_compare_their_savings_objectives_too() -> None:
+    plan = Plan.covering(Q1, {PEA: D("300")})
+    spending = {(PEA, m): D("300") for m in (JAN, FEB, MAR)}
+    review = review_plan(
+        plan, CATEGORIES, spending, {}, date(2027, 4, 1), savings=SAVINGS_CATEGORIES
+    )
+    rows = compare(review, review)
+    pea = next(r for r in rows if r.category_id == PEA)
+    assert pea.savings
+    assert (pea.target_b, pea.average_b) == (D("300"), D("300.00"))
+    assert [r.name for r in rows if r.savings and r.category_id is None] == ["Total saved"]
+    # Without savings categories, the comparison ends on the spending total.
+    plain = review_plan(plan, CATEGORIES, {}, {}, date(2027, 4, 1))
+    assert compare(plain, plain)[-1].name == "Total"
+
+
+@given(
+    st.dictionaries(
+        st.tuples(
+            st.sampled_from([FOOD, GROCERIES, HOUSING, SAVINGS, PEA, None]),
+            st.sampled_from([JAN, FEB, MAR, APR]),
+        ),
+        amounts,
+    ),
+    st.integers(0, 120),
+)
+def test_invariant_10_the_review_agrees_with_the_matrix_on_savings_too(
+    spending: dict[tuple[UUID | None, Month], Decimal], offset: int
+) -> None:
+    plan = Plan.covering(Q1, {GROCERIES: D("400"), PEA: D("300")})
+    today = date(2027, 1, 1) + timedelta(days=offset)
+    review = review_plan(plan, CATEGORIES, spending, {}, today, savings=SAVINGS_CATEGORIES)
+    matrix = build_matrix(
+        CATEGORIES, target_history([plan]), spending, plan.months, savings=SAVINGS_CATEGORIES
+    )
+    for matrix_row in [*matrix.rows, *matrix.savings]:
+        assert row(review, matrix_row.category_id).spent == sum(
+            (c.spent for c in matrix_row.cells), D(0)
+        )
+    assert review.total.spent == sum((c.spent for c in matrix.total.cells), D(0))
+    assert review.savings_total.spent == sum((c.spent for c in matrix.savings_total.cells), D(0))

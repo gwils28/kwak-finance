@@ -27,6 +27,9 @@ const STATUS_CLASS: Record<BudgetStatus, string> = {
   under: "bg-budget-under-bg text-budget-under-fg",
   on: "bg-budget-on-bg text-budget-on-fg",
   over: "bg-budget-over-bg text-budget-over-fg",
+  // A savings objective is a minimum: ahead is good, behind is not.
+  ahead: "bg-budget-under-bg text-budget-under-fg",
+  behind: "bg-budget-over-bg text-budget-over-fg",
   none: "",
 };
 const fieldClass = "rounded-md border border-border bg-surface px-3 py-2";
