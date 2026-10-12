@@ -364,6 +364,16 @@
             "title": "Rows",
             "type": "array"
           },
+          "savings": {
+            "items": {
+              "$ref": "#/components/schemas/RowOut"
+            },
+            "title": "Savings",
+            "type": "array"
+          },
+          "savings_total": {
+            "$ref": "#/components/schemas/RowOut"
+          },
           "total": {
             "$ref": "#/components/schemas/RowOut"
           },
@@ -376,7 +386,9 @@
           "band",
           "rows",
           "uncategorised",
-          "total"
+          "total",
+          "savings",
+          "savings_total"
         ],
         "title": "BudgetMatrix",
         "type": "object"
@@ -772,6 +784,10 @@
             ],
             "title": "Parent Id"
           },
+          "savings": {
+            "title": "Savings",
+            "type": "boolean"
+          },
           "target_a": {
             "anyOf": [
               {
@@ -807,7 +823,8 @@
           "average_a",
           "average_b",
           "change",
-          "change_ratio"
+          "change_ratio",
+          "savings"
         ],
         "title": "ComparisonRowOut",
         "type": "object"
@@ -1385,6 +1402,11 @@
             "title": "Previous Spent",
             "type": "string"
           },
+          "saved": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Saved",
+            "type": "string"
+          },
           "savings_rate": {
             "anyOf": [
               {
@@ -1433,6 +1455,7 @@
           "paid_in",
           "paid_out",
           "net",
+          "saved",
           "savings_rate",
           "previous_spent",
           "average_spent",
@@ -2137,6 +2160,16 @@
             ],
             "title": "Savings Rate"
           },
+          "savings_rows": {
+            "items": {
+              "$ref": "#/components/schemas/ReviewRowOut"
+            },
+            "title": "Savings Rows",
+            "type": "array"
+          },
+          "savings_total": {
+            "$ref": "#/components/schemas/ReviewRowOut"
+          },
           "total": {
             "$ref": "#/components/schemas/ReviewRowOut"
           },
@@ -2161,6 +2194,8 @@
           "savings",
           "savings_rate",
           "planned_savings",
+          "savings_rows",
+          "savings_total",
           "drifting"
         ],
         "title": "ReviewOut",
@@ -2312,6 +2347,10 @@
             ],
             "title": "Projection"
           },
+          "savings": {
+            "title": "Savings",
+            "type": "boolean"
+          },
           "spent": {
             "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Spent",
@@ -2344,7 +2383,8 @@
           "months_over",
           "months_on",
           "months_under",
-          "target_from_children"
+          "target_from_children",
+          "savings"
         ],
         "title": "ReviewRowOut",
         "type": "object"
@@ -4081,7 +4121,7 @@
     },
     "/api/budget/matrix": {
       "get": {
-        "description": "Spending per expense category and month against the targets (F-BUD-6).",
+        "description": "Spending per expense category and month against the targets (F-BUD-6), and the\nsavings categories against their objectives (F-BUD-9).",
         "operationId": "budgetMatrix",
         "parameters": [
           {

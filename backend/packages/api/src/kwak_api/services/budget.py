@@ -1,12 +1,13 @@
-"""Budget plans and the monthly budget matrix (F-BUD-1, 2, 3, 4, 6, 7)."""
+"""Budget plans and the monthly budget matrix (F-BUD-1, 2, 3, 4, 6, 7, 9)."""
 
 from collections import defaultdict
+from dataclasses import dataclass
 from datetime import date
 from decimal import Decimal
 from uuid import UUID
 
 from kwak_core.accounts import CASH_TYPES, Scope, in_scope
-from kwak_core.budget import DEFAULT_BAND, Matrix, Month, build_matrix
+from kwak_core.budget import DEFAULT_BAND, Categories, Matrix, Month, build_matrix
 from kwak_core.categories import CategoryKind
 from kwak_core.kpis import TransferLeg, crossing
 from kwak_core.plans import (
@@ -110,9 +111,10 @@ def _require_editable(plan: BudgetPlan, today: date) -> None:
 def set_plan_target(
     db: Session, plan: BudgetPlan, category: Category, amount: Decimal | None, today: date
 ) -> None:
-    """Set (or remove, with None) the category's monthly target in the plan."""
-    if category.kind is not CategoryKind.EXPENSE:
-        raise ValueError("targets are set on expense categories")
+    """Set (or remove, with None) the category's monthly target in the plan: an objective, a
+    minimum, for a savings category (F-BUD-9)."""
+    if category.kind is CategoryKind.INCOME:
+        raise ValueError("targets are set on expense and savings categories")
     if amount is not None and amount < 0:
         raise ValueError("a target cannot be negative")
     _require_editable(plan, today)
@@ -230,22 +232,37 @@ def crossing_by_month(
     }
 
 
-def spending(
-    db: Session, viewer: User, months: list[Month], scope: Scope
-) -> tuple[list[Category], dict[tuple[UUID | None, Month], Decimal]]:
-    """The expense categories, and spending per category (None: to categorise) and month."""
+@dataclass
+class Spending:
+    expense: list[Category]
+    savings: list[Category]
+    amounts: dict[tuple[UUID | None, Month], Decimal]
+    """Per category (None: to categorise) and month: what an expense category spent, net of
+    refunds, and what a savings category received, net of withdrawals."""
+
+    def matrix_categories(self) -> tuple[Categories, Categories]:
+        return (
+            [(c.id, c.parent_id, c.name) for c in self.expense],
+            [(c.id, c.parent_id, c.name) for c in self.savings],
+        )
+
+
+def spending(db: Session, viewer: User, months: list[Month], scope: Scope) -> Spending:
     accounts = scoped_accounts(db, viewer, scope)
-    expense = list(
+    categories = list(
         db.scalars(
             select(Category).where(
                 Category.household_id == viewer.household_id,
-                Category.kind == CategoryKind.EXPENSE,
+                Category.kind != CategoryKind.INCOME,
             )
         )
     )
-    expense_ids = {c.id for c in expense}
+    expense = [c for c in categories if c.kind is CategoryKind.EXPENSE]
+    savings = [c for c in categories if c.kind is CategoryKind.SAVINGS]
+    counted = {c.id for c in categories}
     month_start = func.date_trunc("month", Transaction.booked_on)
-    # Categorised: outflows minus refunds. Uncategorised: outflows only (an inflow may be income).
+    # Categorised: outflows minus refunds (or withdrawals, for savings). Uncategorised: outflows
+    # only (an inflow may be income).
     spent = func.sum(
         case(
             (
@@ -267,9 +284,9 @@ def spending(
     )
     result: dict[tuple[UUID | None, Month], Decimal] = {}
     for category_id, start, total in rows:
-        if category_id is None or category_id in expense_ids:
+        if category_id is None or category_id in counted:
             result[(category_id, Month.of(start))] = Decimal(total)
-    return expense, result
+    return Spending(expense, savings, result)
 
 
 def matrix(
@@ -280,11 +297,13 @@ def matrix(
     scope: Scope = Scope.HOUSEHOLD,
     band: Decimal = DEFAULT_BAND,
 ) -> Matrix:
-    expense, spent = spending(db, viewer, months, scope)
+    spent = spending(db, viewer, months, scope)
+    expense, savings = spent.matrix_categories()
     return build_matrix(
-        [(c.id, c.parent_id, c.name) for c in expense],
+        expense,
         target_history(db, viewer.household_id, scope),
-        spent,
+        spent.amounts,
         months,
         band,
+        savings=savings,
     )

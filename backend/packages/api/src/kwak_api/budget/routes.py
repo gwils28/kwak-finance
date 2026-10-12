@@ -44,7 +44,8 @@ def _month(text: str) -> Month:
 class CellOut(BaseModel):
     month: str
     spent: Decimal
-    """Outflows minus refunds (outflows only for "to categorise")."""
+    """Outflows minus refunds (outflows only for "to categorise"); for a savings category,
+    what it received minus withdrawals."""
     target: Decimal | None
     gap: Decimal | None
     """spent - target."""
@@ -97,6 +98,9 @@ class BudgetMatrix(BaseModel):
     """Expense categories: each parent (with its subcategories' total) then its subcategories."""
     uncategorised: RowOut
     total: RowOut
+    savings: list[RowOut]
+    """Savings categories, against their objectives (a minimum): never in `total`."""
+    savings_total: RowOut
 
 
 def _category(db: Db, household_id: UUID, category_id: UUID) -> Category:
@@ -326,12 +330,14 @@ class ReviewRowOut(BaseModel):
     projected_gap_ratio: Decimal | None
     """drift / envelope, rounded to 4 decimals: the gap the status is judged on."""
     drifting: bool
-    """Projected above the envelope while the plan runs."""
+    """Projected above the envelope while the plan runs: below it, for a savings objective."""
     months_over: int
     months_on: int
     months_under: int
     """Completed months over / on / under the monthly target."""
     target_from_children: bool
+    savings: bool
+    """A savings category: its target is an objective, a minimum."""
 
     @classmethod
     def of(cls, row: ReviewRow) -> "ReviewRowOut":
@@ -355,6 +361,7 @@ class ReviewRowOut(BaseModel):
             months_on=row.months_on,
             months_under=row.months_under,
             target_from_children=row.target_from_children,
+            savings=row.savings,
         )
 
 
@@ -381,8 +388,12 @@ class ReviewOut(BaseModel):
     savings_rate: Decimal | None
     planned_savings: Decimal | None
     """Expected income x months - total envelope, when the plan has an expected income."""
+    savings_rows: list[ReviewRowOut]
+    """Savings categories against their objectives; part of `savings`, never of the total."""
+    savings_total: ReviewRowOut
     drifting: list[UUID | None]
-    """Drifting categories (ids of `rows`), the largest projected overrun first."""
+    """Drifting categories (ids of `rows` and `savings_rows`), the largest projected gap
+    first."""
 
     @classmethod
     def of(cls, review: Review, plan: BudgetPlan, today: date, band: Decimal) -> "ReviewOut":
@@ -401,6 +412,8 @@ class ReviewOut(BaseModel):
             savings=review.savings.quantize(CENTS),
             savings_rate=_ratio(review.savings_rate),
             planned_savings=_cents(review.planned_savings),
+            savings_rows=[ReviewRowOut.of(r) for r in review.savings_rows],
+            savings_total=ReviewRowOut.of(review.savings_total),
             drifting=[r.category_id for r in review.drifting_rows],
         )
 
@@ -526,6 +539,8 @@ class ComparisonRowOut(BaseModel):
     """average_b - average_a."""
     change_ratio: Decimal | None
     """change / average_a, rounded to 4 decimals."""
+    savings: bool
+    """A savings category or the savings total: its targets are objectives."""
 
     @classmethod
     def of(cls, row: ComparisonRow) -> "ComparisonRowOut":
@@ -540,6 +555,7 @@ class ComparisonRowOut(BaseModel):
             average_b=_cents(row.average_b),
             change=_cents(row.change),
             change_ratio=_ratio(row.change_ratio),
+            savings=row.savings,
         )
 
 
@@ -548,7 +564,8 @@ class ComparisonOut(BaseModel):
     """The reference plan."""
     b: PlanOut
     rows: list[ComparisonRowOut]
-    """Plan b's categories, then the total."""
+    """Plan b's categories, then the total; then its savings categories and their total, when
+    either plan has some."""
 
 
 @router.get("/plans/{plan_id}/comparison")
@@ -588,7 +605,8 @@ def budget_matrix(
     scope: Scope = Scope.HOUSEHOLD,
     band: Band = Decimal("0.05"),
 ) -> BudgetMatrix:
-    """Spending per expense category and month against the targets (F-BUD-6)."""
+    """Spending per expense category and month against the targets (F-BUD-6), and the
+    savings categories against their objectives (F-BUD-9)."""
     last = _month(end) if end else Month.of(now.date())
     first = _month(start) if start else _back(last, 11)
     months = month_range(first, last)
@@ -605,6 +623,8 @@ def budget_matrix(
         rows=[RowOut.of(r) for r in result.rows],
         uncategorised=RowOut.of(result.uncategorised),
         total=RowOut.of(result.total),
+        savings=[RowOut.of(r) for r in result.savings],
+        savings_total=RowOut.of(result.savings_total),
     )
 
 

@@ -99,6 +99,15 @@ export const matrix = {
       cell("2026-03", "387.50", "360.00", "over", "27.50", "0.0764"),
     ],
   },
+  savings: [],
+  savings_total: {
+    category_id: null,
+    name: "Total saved",
+    parent_id: null,
+    level: 0,
+    target: null,
+    cells: [cell("2026-02", "0.00", null, "none"), cell("2026-03", "0.00", null, "none")],
+  },
 };
 
 // Plans are built around the real current month, as the page reads it.
@@ -142,6 +151,7 @@ const reviewRow = (changes: Partial<ReviewRowOut> & { name: string }): ReviewRow
   months_on: 0,
   months_under: 0,
   target_from_children: false,
+  savings: false,
   ...changes,
 });
 
@@ -221,6 +231,8 @@ export const runningReview = (changes: Partial<ReviewOut> = {}): ReviewOut => ({
     drifting: true,
   }),
   uncategorised: "40.00",
+  savings_rows: [],
+  savings_total: reviewRow({ name: "Total saved", category_id: null, savings: true }),
   provisional: true,
   income: "2400.00",
   paid_in: "0.00",
@@ -258,6 +270,7 @@ export const comparison = (a: PlanOut): ComparisonOut => ({
       average_b: "455.00",
       change: "97.00",
       change_ratio: "0.2709",
+      savings: false,
     },
     {
       category_id: null,
@@ -270,6 +283,7 @@ export const comparison = (a: PlanOut): ComparisonOut => ({
       average_b: "1340.00",
       change: "132.00",
       change_ratio: "0.1093",
+      savings: false,
     },
   ],
 });

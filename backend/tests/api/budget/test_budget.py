@@ -190,3 +190,42 @@ def test_scope_joint_keeps_the_joint_accounts_out_of_mine(client: TestClient, cl
 
 def test_budget_requires_a_full_sign_in(client: TestClient) -> None:
     assert client.get("/api/budget/matrix").status_code == 401
+
+
+def _post(client: TestClient, account: str, day: str, amount: str, name: str) -> None:
+    created = client.post(
+        "/api/transactions",
+        json={"account_id": account, "booked_on": day, "amount": amount, "label": "x"},
+        headers=csrf(client),
+    )
+    client.post(
+        "/api/transactions/categorise",
+        json={"transaction_ids": [created.json()["id"]], "category_id": _category(client, name)},
+        headers=csrf(client),
+    )
+
+
+def test_savings_categories_have_their_own_section_against_their_objectives(
+    owner_client: TestClient,
+) -> None:
+    account = _account(owner_client)
+    _post(owner_client, account, "2026-03-05", "-150.00", "Investments")
+    _post(owner_client, account, "2026-03-06", "-40.00", "Groceries")
+    assert _target(owner_client, "Investments", "200.00").status_code == 200
+
+    matrix = _matrix(owner_client)
+
+    assert "Investments" not in [r["name"] for r in matrix["rows"]]
+    assert matrix["total"]["cells"][1]["spent"] == "40.00"
+    investments = next(r for r in matrix["savings"] if r["name"] == "Investments")
+    assert investments["cells"][1] | {"month": None} == {
+        "month": None,
+        "spent": "150.00",
+        "target": "200.00",
+        "gap": "-50.00",
+        "gap_ratio": "-0.2500",
+        "status": "behind",
+    }
+    assert matrix["savings"][0]["name"] == "Savings & investments"
+    assert matrix["savings_total"]["cells"][1]["spent"] == "150.00"
+    assert matrix["savings_total"]["target"] == "200.00"

@@ -180,3 +180,32 @@ def test_a_narrow_scope_counts_the_transfers_crossing_its_edge(owner_client: Tes
     household = _dashboard(owner_client)["kpis"]
     assert (household["paid_in"], household["paid_out"]) == ("0.00", "0.00")
     assert household["net"] == "1100.00"
+
+
+def test_money_put_in_savings_categories_is_saved_not_spent(owner_client: TestClient) -> None:
+    _setup(owner_client)
+    account = owner_client.get("/api/accounts").json()[0]["id"]
+    created = owner_client.post(
+        "/api/transactions",
+        json={
+            "account_id": account,
+            "booked_on": "2026-03-20",
+            "amount": "-300.00",
+            "label": "PEA",
+        },
+        headers=csrf(owner_client),
+    )
+    owner_client.post(
+        "/api/transactions/categorise",
+        json={
+            "transaction_ids": [created.json()["id"]],
+            "category_id": _category(owner_client, "Investments"),
+        },
+        headers=csrf(owner_client),
+    )
+
+    kpis = _dashboard(owner_client)["kpis"]
+
+    assert kpis["spent"] == "1621.04"
+    assert kpis["saved"] == "300.00"
+    assert kpis["net"] == "897.61"  # the money is kept, only moved

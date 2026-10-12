@@ -210,6 +210,11 @@ export type BudgetMatrix = {
      * Rows
      */
     rows: Array<RowOut>;
+    /**
+     * Savings
+     */
+    savings: Array<RowOut>;
+    savings_total: RowOut;
     total: RowOut;
     uncategorised: RowOut;
 };
@@ -409,6 +414,10 @@ export type ComparisonRowOut = {
      * Parent Id
      */
     parent_id: string | null;
+    /**
+     * Savings
+     */
+    savings: boolean;
     /**
      * Target A
      */
@@ -742,6 +751,10 @@ export type Kpis = {
      * Previous Spent
      */
     previous_spent: string;
+    /**
+     * Saved
+     */
+    saved: string;
     /**
      * Savings Rate
      */
@@ -1188,6 +1201,11 @@ export type ReviewOut = {
      * Savings Rate
      */
     savings_rate: string | null;
+    /**
+     * Savings Rows
+     */
+    savings_rows: Array<ReviewRowOut>;
+    savings_total: ReviewRowOut;
     total: ReviewRowOut;
     /**
      * Uncategorised
@@ -1263,6 +1281,10 @@ export type ReviewRowOut = {
      * Projection
      */
     projection: string | null;
+    /**
+     * Savings
+     */
+    savings: boolean;
     /**
      * Spent
      */
