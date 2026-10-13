@@ -19,6 +19,7 @@ import { HomePage } from "./HomePage";
 import { AcceptInvitePage } from "./household/AcceptInvitePage";
 import { MembersPage } from "./household/MembersPage";
 import { ImportPage } from "./imports/ImportPage";
+import { RecurringPage } from "./recurring/RecurringPage";
 import { RunGuidePage } from "./runGuide/RunGuidePage";
 import { parseTransactionSearch, TransactionsPage } from "./transactions/TransactionsPage";
 
@@ -70,6 +71,12 @@ const transactionsRoute = createRoute({
   path: "/transactions",
   validateSearch: parseTransactionSearch,
   component: TransactionsPage,
+});
+
+const recurringRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: "/recurring",
+  component: RecurringPage,
 });
 
 const budgetRoute = createRoute({
@@ -128,6 +135,7 @@ const routeTree = rootRoute.addChildren([
     accountsRoute,
     importRoute,
     transactionsRoute,
+    recurringRoute,
     budgetRoute,
     reviewRoute,
     categoriesRoute,

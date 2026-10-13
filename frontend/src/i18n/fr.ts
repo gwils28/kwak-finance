@@ -8,6 +8,7 @@ import type { Messages } from "./en";
 import { guideFr } from "./guide";
 import { householdFr } from "./household";
 import { importsFr } from "./imports";
+import { recurringFr } from "./recurring";
 import { reviewFr } from "./review";
 import { runGuideFr } from "./runGuide";
 import { transactionsFr } from "./transactions";
@@ -22,6 +23,7 @@ export const fr: Messages = {
   dashboard: dashboardFr,
   household: householdFr,
   transactions: transactionsFr,
+  recurring: recurringFr,
   budget: budgetFr,
   review: reviewFr,
   categories: categoriesFr,

@@ -531,6 +531,20 @@ export type DayPoint = {
 };
 
 /**
+ * Dismiss
+ */
+export type Dismiss = {
+    /**
+     * Account Id
+     */
+    account_id: string;
+    /**
+     * Label
+     */
+    label: string;
+};
+
+/**
  * EnteredOut
  *
  * A manual entry, as the user entered it.
@@ -596,6 +610,11 @@ export type FlowsOut = {
      */
     flows: Array<FlowOut>;
 };
+
+/**
+ * Frequency
+ */
+export type Frequency = 'weekly' | 'monthly' | 'quarterly' | 'yearly';
 
 /**
  * HTTPValidationError
@@ -917,6 +936,38 @@ export type MonthPoint = {
 };
 
 /**
+ * OccurrenceOut
+ */
+export type OccurrenceOut = {
+    /**
+     * Due
+     */
+    due: string;
+    /**
+     * Enter On
+     */
+    enter_on: string;
+    /**
+     * Expected
+     */
+    expected: string;
+    /**
+     * Item Id
+     */
+    item_id: string;
+    status: OccurrenceStatus;
+    /**
+     * Transaction Id
+     */
+    transaction_id: string | null;
+};
+
+/**
+ * OccurrenceStatus
+ */
+export type OccurrenceStatus = 'fulfilled' | 'upcoming' | 'late' | 'skipped';
+
+/**
  * PaidFrom
  *
  * Which accounts pay a target's category, so narrow scopes judge only their own.
@@ -1218,6 +1269,154 @@ export type RecoveryCodesOut = {
      * Recovery Codes
      */
     recovery_codes: Array<string>;
+};
+
+/**
+ * RecurringIn
+ */
+export type RecurringIn = {
+    /**
+     * Account Id
+     */
+    account_id: string;
+    /**
+     * Amount
+     */
+    amount: number | string;
+    /**
+     * Category Id
+     */
+    category_id?: string | null;
+    /**
+     * Day
+     */
+    day: number;
+    /**
+     * End On
+     */
+    end_on?: string | null;
+    /**
+     * Estimated
+     */
+    estimated?: boolean;
+    frequency: Frequency;
+    /**
+     * Label
+     */
+    label: string;
+    /**
+     * Paused
+     */
+    paused?: boolean;
+    /**
+     * Start On
+     */
+    start_on: string;
+};
+
+/**
+ * RecurringOut
+ */
+export type RecurringOut = {
+    /**
+     * Account Id
+     */
+    account_id: string;
+    /**
+     * Account Name
+     */
+    account_name: string;
+    /**
+     * Amount
+     */
+    amount: string;
+    /**
+     * Category Id
+     */
+    category_id: string | null;
+    /**
+     * Category Name
+     */
+    category_name: string | null;
+    /**
+     * Day
+     */
+    day: number;
+    /**
+     * End On
+     */
+    end_on: string | null;
+    /**
+     * Estimated
+     */
+    estimated: boolean;
+    frequency: Frequency;
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Label
+     */
+    label: string;
+    next: OccurrenceOut | null;
+    /**
+     * Paused
+     */
+    paused: boolean;
+    /**
+     * Recent
+     */
+    recent: Array<OccurrenceOut>;
+    /**
+     * Start On
+     */
+    start_on: string;
+};
+
+/**
+ * RecurringPatch
+ *
+ * Only the fields present change.
+ */
+export type RecurringPatch = {
+    /**
+     * Account Id
+     */
+    account_id?: string | null;
+    /**
+     * Amount
+     */
+    amount?: number | string | null;
+    /**
+     * Category Id
+     */
+    category_id?: string | null;
+    /**
+     * Day
+     */
+    day?: number | null;
+    /**
+     * End On
+     */
+    end_on?: string | null;
+    /**
+     * Estimated
+     */
+    estimated?: boolean | null;
+    frequency?: Frequency | null;
+    /**
+     * Label
+     */
+    label?: string | null;
+    /**
+     * Paused
+     */
+    paused?: boolean | null;
+    /**
+     * Start On
+     */
+    start_on?: string | null;
 };
 
 /**
@@ -1652,6 +1851,49 @@ export type ShiftPreviewOut = {
 export type Side = 'in' | 'out';
 
 /**
+ * SuggestionOut
+ */
+export type SuggestionOut = {
+    /**
+     * Account Id
+     */
+    account_id: string;
+    /**
+     * Account Name
+     */
+    account_name: string;
+    /**
+     * Amount
+     */
+    amount: string;
+    /**
+     * Category Id
+     */
+    category_id: string | null;
+    /**
+     * Count
+     */
+    count: number;
+    /**
+     * Day
+     */
+    day: number;
+    /**
+     * Estimated
+     */
+    estimated: boolean;
+    frequency: Frequency;
+    /**
+     * Label
+     */
+    label: string;
+    /**
+     * Start On
+     */
+    start_on: string;
+};
+
+/**
  * ToCategorise
  */
 export type ToCategorise = {
@@ -1716,6 +1958,10 @@ export type TransactionIn = {
      * Booked On
      */
     booked_on: string;
+    /**
+     * Category Id
+     */
+    category_id?: string | null;
     /**
      * Label
      */
@@ -1886,6 +2132,71 @@ export type TransferSide = {
 export type TransferSuggestion = {
     inflow: TransferSide;
     outflow: TransferSide;
+};
+
+/**
+ * UpcomingOccurrence
+ */
+export type UpcomingOccurrence = {
+    /**
+     * Account Id
+     */
+    account_id: string;
+    /**
+     * Account Name
+     */
+    account_name: string;
+    /**
+     * Category Id
+     */
+    category_id: string | null;
+    /**
+     * Due
+     */
+    due: string;
+    /**
+     * Enter On
+     */
+    enter_on: string;
+    /**
+     * Estimated
+     */
+    estimated: boolean;
+    /**
+     * Expected
+     */
+    expected: string;
+    /**
+     * Item Id
+     */
+    item_id: string;
+    /**
+     * Label
+     */
+    label: string;
+    status: OccurrenceStatus;
+    /**
+     * Transaction Id
+     */
+    transaction_id: string | null;
+};
+
+/**
+ * UpcomingOut
+ */
+export type UpcomingOut = {
+    /**
+     * Current Balance
+     */
+    current_balance: string;
+    /**
+     * Occurrences
+     */
+    occurrences: Array<UpcomingOccurrence>;
+    /**
+     * Projected Balance
+     */
+    projected_balance: string;
 };
 
 /**
@@ -3302,6 +3613,265 @@ export type RevokeInviteResponses = {
 };
 
 export type RevokeInviteResponse = RevokeInviteResponses[keyof RevokeInviteResponses];
+
+export type ListRecurringData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/recurring';
+};
+
+export type ListRecurringErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ListRecurringError = ListRecurringErrors[keyof ListRecurringErrors];
+
+export type ListRecurringResponses = {
+    /**
+     * Response Listrecurring
+     *
+     * Successful Response
+     */
+    200: Array<RecurringOut>;
+};
+
+export type ListRecurringResponse = ListRecurringResponses[keyof ListRecurringResponses];
+
+export type CreateRecurringData = {
+    body: RecurringIn;
+    path?: never;
+    query?: never;
+    url: '/api/recurring';
+};
+
+export type CreateRecurringErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type CreateRecurringError = CreateRecurringErrors[keyof CreateRecurringErrors];
+
+export type CreateRecurringResponses = {
+    /**
+     * Successful Response
+     */
+    201: RecurringOut;
+};
+
+export type CreateRecurringResponse = CreateRecurringResponses[keyof CreateRecurringResponses];
+
+export type RecurringSuggestionsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/recurring/suggestions';
+};
+
+export type RecurringSuggestionsErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type RecurringSuggestionsError = RecurringSuggestionsErrors[keyof RecurringSuggestionsErrors];
+
+export type RecurringSuggestionsResponses = {
+    /**
+     * Response Recurringsuggestions
+     *
+     * Successful Response
+     */
+    200: Array<SuggestionOut>;
+};
+
+export type RecurringSuggestionsResponse = RecurringSuggestionsResponses[keyof RecurringSuggestionsResponses];
+
+export type DismissSuggestionData = {
+    body: Dismiss;
+    path?: never;
+    query?: never;
+    url: '/api/recurring/suggestions/dismiss';
+};
+
+export type DismissSuggestionErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type DismissSuggestionError = DismissSuggestionErrors[keyof DismissSuggestionErrors];
+
+export type DismissSuggestionResponses = {
+    /**
+     * Successful Response
+     */
+    204: void;
+};
+
+export type DismissSuggestionResponse = DismissSuggestionResponses[keyof DismissSuggestionResponses];
+
+export type UpcomingRecurringData = {
+    body?: never;
+    path?: never;
+    query?: {
+        scope?: Scope;
+    };
+    url: '/api/recurring/upcoming';
+};
+
+export type UpcomingRecurringErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type UpcomingRecurringError = UpcomingRecurringErrors[keyof UpcomingRecurringErrors];
+
+export type UpcomingRecurringResponses = {
+    /**
+     * Successful Response
+     */
+    200: UpcomingOut;
+};
+
+export type UpcomingRecurringResponse = UpcomingRecurringResponses[keyof UpcomingRecurringResponses];
+
+export type DeleteRecurringData = {
+    body?: never;
+    path: {
+        /**
+         * Item Id
+         */
+        item_id: string;
+    };
+    query?: never;
+    url: '/api/recurring/{item_id}';
+};
+
+export type DeleteRecurringErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type DeleteRecurringError = DeleteRecurringErrors[keyof DeleteRecurringErrors];
+
+export type DeleteRecurringResponses = {
+    /**
+     * Successful Response
+     */
+    204: void;
+};
+
+export type DeleteRecurringResponse = DeleteRecurringResponses[keyof DeleteRecurringResponses];
+
+export type UpdateRecurringData = {
+    body: RecurringPatch;
+    path: {
+        /**
+         * Item Id
+         */
+        item_id: string;
+    };
+    query?: never;
+    url: '/api/recurring/{item_id}';
+};
+
+export type UpdateRecurringErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type UpdateRecurringError = UpdateRecurringErrors[keyof UpdateRecurringErrors];
+
+export type UpdateRecurringResponses = {
+    /**
+     * Successful Response
+     */
+    200: RecurringOut;
+};
+
+export type UpdateRecurringResponse = UpdateRecurringResponses[keyof UpdateRecurringResponses];
+
+export type UnskipOccurrenceData = {
+    body?: never;
+    path: {
+        /**
+         * Item Id
+         */
+        item_id: string;
+        /**
+         * Due
+         */
+        due: string;
+    };
+    query?: never;
+    url: '/api/recurring/{item_id}/skips/{due}';
+};
+
+export type UnskipOccurrenceErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type UnskipOccurrenceError = UnskipOccurrenceErrors[keyof UnskipOccurrenceErrors];
+
+export type UnskipOccurrenceResponses = {
+    /**
+     * Successful Response
+     */
+    204: void;
+};
+
+export type UnskipOccurrenceResponse = UnskipOccurrenceResponses[keyof UnskipOccurrenceResponses];
+
+export type SkipOccurrenceData = {
+    body?: never;
+    path: {
+        /**
+         * Item Id
+         */
+        item_id: string;
+        /**
+         * Due
+         */
+        due: string;
+    };
+    query?: never;
+    url: '/api/recurring/{item_id}/skips/{due}';
+};
+
+export type SkipOccurrenceErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type SkipOccurrenceError = SkipOccurrenceErrors[keyof SkipOccurrenceErrors];
+
+export type SkipOccurrenceResponses = {
+    /**
+     * Successful Response
+     */
+    204: void;
+};
+
+export type SkipOccurrenceResponse = SkipOccurrenceResponses[keyof SkipOccurrenceResponses];
 
 export type ListRulesData = {
     body?: never;

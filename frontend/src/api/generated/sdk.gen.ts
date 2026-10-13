@@ -2,7 +2,7 @@
 
 import { type Client, type ClientMeta, formDataBodySerializer, type Options as Options2, type RequestResult, type TDataShape } from './client';
 import { client } from './client.gen';
-import type { AcceptInviteData, AcceptInviteErrors, AcceptInviteResponses, AcceptTransferSuggestionsData, AcceptTransferSuggestionsErrors, AcceptTransferSuggestionsResponses, ApplyRulesData, ApplyRulesErrors, ApplyRulesResponses, BudgetMatrixData, BudgetMatrixErrors, BudgetMatrixResponses, CategoriseTransactionsData, CategoriseTransactionsErrors, CategoriseTransactionsResponses, ClosePlanData, ClosePlanErrors, ClosePlanResponses, CreateAccountData, CreateAccountErrors, CreateAccountResponses, CreateCategoryData, CreateCategoryErrors, CreateCategoryResponses, CreateImportData, CreateImportErrors, CreateImportResponses, CreateInviteData, CreateInviteErrors, CreateInviteResponses, CreatePlanData, CreatePlanErrors, CreatePlanResponses, CreateRuleData, CreateRuleErrors, CreateRuleResponses, CreateTransactionData, CreateTransactionErrors, CreateTransactionResponses, DashboardData, DashboardErrors, DashboardResponses, DeleteCategoryData, DeleteCategoryErrors, DeleteCategoryResponses, DeletePlanData, DeletePlanErrors, DeletePlanResponses, DeleteRuleData, DeleteRuleErrors, DeleteRuleResponses, DeleteTransactionData, DeleteTransactionErrors, DeleteTransactionResponses, GetSettingsData, GetSettingsErrors, GetSettingsResponses, HealthData, HealthResponses, LinkTransferData, LinkTransferErrors, LinkTransferResponses, ListAccountsData, ListAccountsErrors, ListAccountsResponses, ListCategoriesData, ListCategoriesErrors, ListCategoriesResponses, ListImportsData, ListImportsErrors, ListImportsResponses, ListInstitutionsData, ListInstitutionsErrors, ListInstitutionsResponses, ListInvitesData, ListInvitesErrors, ListInvitesResponses, ListMembersData, ListMembersErrors, ListMembersResponses, ListPlansData, ListPlansErrors, ListPlansResponses, ListRulesData, ListRulesErrors, ListRulesResponses, ListTransactionsData, ListTransactionsErrors, ListTransactionsResponses, LoginData, LoginErrors, LoginResponses, LogoutData, LogoutErrors, LogoutResponses, MeData, MeErrors, MeResponses, MonthSoFarData, MonthSoFarErrors, MonthSoFarResponses, PlanComparisonData, PlanComparisonErrors, PlanComparisonResponses, PlanCumulativeData, PlanCumulativeErrors, PlanCumulativeResponses, PlanFlowsData, PlanFlowsErrors, PlanFlowsResponses, PreviewImportData, PreviewImportErrors, PreviewImportResponses, PreviewInviteData, PreviewInviteErrors, PreviewInviteResponses, PreviewRestoreData, PreviewRestoreErrors, PreviewRestoreResponses, PreviewRuleData, PreviewRuleErrors, PreviewRuleResponses, PreviewShiftData, PreviewShiftErrors, PreviewShiftResponses, RecoveryData, RecoveryErrors, RecoveryResponses, RegenerateRecoveryCodesData, RegenerateRecoveryCodesErrors, RegenerateRecoveryCodesResponses, RestoreDefaultsData, RestoreDefaultsErrors, RestoreDefaultsResponses, ReviewPlanData, ReviewPlanErrors, ReviewPlanResponses, RevokeInviteData, RevokeInviteErrors, RevokeInviteResponses, RollbackImportData, RollbackImportErrors, RollbackImportResponses, SetPlanTargetData, SetPlanTargetErrors, SetPlanTargetResponses, SetTargetPaidFromData, SetTargetPaidFromErrors, SetTargetPaidFromResponses, TotpConfirmData, TotpConfirmErrors, TotpConfirmResponses, TotpSetupData, TotpSetupErrors, TotpSetupResponses, TotpVerifyData, TotpVerifyErrors, TotpVerifyResponses, TransferSuggestionsData, TransferSuggestionsErrors, TransferSuggestionsResponses, UnlinkTransferData, UnlinkTransferErrors, UnlinkTransferResponses, UpdateAccountData, UpdateAccountErrors, UpdateAccountResponses, UpdateCategoryData, UpdateCategoryErrors, UpdateCategoryResponses, UpdateMeData, UpdateMeErrors, UpdateMeResponses, UpdatePlanData, UpdatePlanErrors, UpdatePlanResponses, UpdateRuleData, UpdateRuleErrors, UpdateRuleResponses, UpdateSettingsData, UpdateSettingsErrors, UpdateSettingsResponses, UpdateTransactionData, UpdateTransactionErrors, UpdateTransactionResponses } from './types.gen';
+import type { AcceptInviteData, AcceptInviteErrors, AcceptInviteResponses, AcceptTransferSuggestionsData, AcceptTransferSuggestionsErrors, AcceptTransferSuggestionsResponses, ApplyRulesData, ApplyRulesErrors, ApplyRulesResponses, BudgetMatrixData, BudgetMatrixErrors, BudgetMatrixResponses, CategoriseTransactionsData, CategoriseTransactionsErrors, CategoriseTransactionsResponses, ClosePlanData, ClosePlanErrors, ClosePlanResponses, CreateAccountData, CreateAccountErrors, CreateAccountResponses, CreateCategoryData, CreateCategoryErrors, CreateCategoryResponses, CreateImportData, CreateImportErrors, CreateImportResponses, CreateInviteData, CreateInviteErrors, CreateInviteResponses, CreatePlanData, CreatePlanErrors, CreatePlanResponses, CreateRecurringData, CreateRecurringErrors, CreateRecurringResponses, CreateRuleData, CreateRuleErrors, CreateRuleResponses, CreateTransactionData, CreateTransactionErrors, CreateTransactionResponses, DashboardData, DashboardErrors, DashboardResponses, DeleteCategoryData, DeleteCategoryErrors, DeleteCategoryResponses, DeletePlanData, DeletePlanErrors, DeletePlanResponses, DeleteRecurringData, DeleteRecurringErrors, DeleteRecurringResponses, DeleteRuleData, DeleteRuleErrors, DeleteRuleResponses, DeleteTransactionData, DeleteTransactionErrors, DeleteTransactionResponses, DismissSuggestionData, DismissSuggestionErrors, DismissSuggestionResponses, GetSettingsData, GetSettingsErrors, GetSettingsResponses, HealthData, HealthResponses, LinkTransferData, LinkTransferErrors, LinkTransferResponses, ListAccountsData, ListAccountsErrors, ListAccountsResponses, ListCategoriesData, ListCategoriesErrors, ListCategoriesResponses, ListImportsData, ListImportsErrors, ListImportsResponses, ListInstitutionsData, ListInstitutionsErrors, ListInstitutionsResponses, ListInvitesData, ListInvitesErrors, ListInvitesResponses, ListMembersData, ListMembersErrors, ListMembersResponses, ListPlansData, ListPlansErrors, ListPlansResponses, ListRecurringData, ListRecurringErrors, ListRecurringResponses, ListRulesData, ListRulesErrors, ListRulesResponses, ListTransactionsData, ListTransactionsErrors, ListTransactionsResponses, LoginData, LoginErrors, LoginResponses, LogoutData, LogoutErrors, LogoutResponses, MeData, MeErrors, MeResponses, MonthSoFarData, MonthSoFarErrors, MonthSoFarResponses, PlanComparisonData, PlanComparisonErrors, PlanComparisonResponses, PlanCumulativeData, PlanCumulativeErrors, PlanCumulativeResponses, PlanFlowsData, PlanFlowsErrors, PlanFlowsResponses, PreviewImportData, PreviewImportErrors, PreviewImportResponses, PreviewInviteData, PreviewInviteErrors, PreviewInviteResponses, PreviewRestoreData, PreviewRestoreErrors, PreviewRestoreResponses, PreviewRuleData, PreviewRuleErrors, PreviewRuleResponses, PreviewShiftData, PreviewShiftErrors, PreviewShiftResponses, RecoveryData, RecoveryErrors, RecoveryResponses, RecurringSuggestionsData, RecurringSuggestionsErrors, RecurringSuggestionsResponses, RegenerateRecoveryCodesData, RegenerateRecoveryCodesErrors, RegenerateRecoveryCodesResponses, RestoreDefaultsData, RestoreDefaultsErrors, RestoreDefaultsResponses, ReviewPlanData, ReviewPlanErrors, ReviewPlanResponses, RevokeInviteData, RevokeInviteErrors, RevokeInviteResponses, RollbackImportData, RollbackImportErrors, RollbackImportResponses, SetPlanTargetData, SetPlanTargetErrors, SetPlanTargetResponses, SetTargetPaidFromData, SetTargetPaidFromErrors, SetTargetPaidFromResponses, SkipOccurrenceData, SkipOccurrenceErrors, SkipOccurrenceResponses, TotpConfirmData, TotpConfirmErrors, TotpConfirmResponses, TotpSetupData, TotpSetupErrors, TotpSetupResponses, TotpVerifyData, TotpVerifyErrors, TotpVerifyResponses, TransferSuggestionsData, TransferSuggestionsErrors, TransferSuggestionsResponses, UnlinkTransferData, UnlinkTransferErrors, UnlinkTransferResponses, UnskipOccurrenceData, UnskipOccurrenceErrors, UnskipOccurrenceResponses, UpcomingRecurringData, UpcomingRecurringErrors, UpcomingRecurringResponses, UpdateAccountData, UpdateAccountErrors, UpdateAccountResponses, UpdateCategoryData, UpdateCategoryErrors, UpdateCategoryResponses, UpdateMeData, UpdateMeErrors, UpdateMeResponses, UpdatePlanData, UpdatePlanErrors, UpdatePlanResponses, UpdateRecurringData, UpdateRecurringErrors, UpdateRecurringResponses, UpdateRuleData, UpdateRuleErrors, UpdateRuleResponses, UpdateSettingsData, UpdateSettingsErrors, UpdateSettingsResponses, UpdateTransactionData, UpdateTransactionErrors, UpdateTransactionResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -457,6 +457,84 @@ export const acceptInvite = <ThrowOnError extends boolean = false>(options: Opti
  * Revoke Invite
  */
 export const revokeInvite = <ThrowOnError extends boolean = false>(options: Options<RevokeInviteData, ThrowOnError>): RequestResult<RevokeInviteResponses, RevokeInviteErrors, ThrowOnError> => (options.client ?? client).delete<RevokeInviteResponses, RevokeInviteErrors, ThrowOnError>({ url: '/api/invites/{invite_id}', ...options });
+
+/**
+ * List Recurring
+ *
+ * The items on accounts the user can see, with their next and past occurrences.
+ */
+export const listRecurring = <ThrowOnError extends boolean = false>(options?: Options<ListRecurringData, ThrowOnError>): RequestResult<ListRecurringResponses, ListRecurringErrors, ThrowOnError> => (options?.client ?? client).get<ListRecurringResponses, ListRecurringErrors, ThrowOnError>({ url: '/api/recurring', ...options });
+
+/**
+ * Create Recurring
+ */
+export const createRecurring = <ThrowOnError extends boolean = false>(options: Options<CreateRecurringData, ThrowOnError>): RequestResult<CreateRecurringResponses, CreateRecurringErrors, ThrowOnError> => (options.client ?? client).post<CreateRecurringResponses, CreateRecurringErrors, ThrowOnError>({
+    url: '/api/recurring',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Recurring Suggestions
+ *
+ * Regular series of the last 6 months to confirm as items (F-REC-2).
+ */
+export const recurringSuggestions = <ThrowOnError extends boolean = false>(options?: Options<RecurringSuggestionsData, ThrowOnError>): RequestResult<RecurringSuggestionsResponses, RecurringSuggestionsErrors, ThrowOnError> => (options?.client ?? client).get<RecurringSuggestionsResponses, RecurringSuggestionsErrors, ThrowOnError>({ url: '/api/recurring/suggestions', ...options });
+
+/**
+ * Dismiss Suggestion
+ *
+ * This series is not suggested again.
+ */
+export const dismissSuggestion = <ThrowOnError extends boolean = false>(options: Options<DismissSuggestionData, ThrowOnError>): RequestResult<DismissSuggestionResponses, DismissSuggestionErrors, ThrowOnError> => (options.client ?? client).post<DismissSuggestionResponses, DismissSuggestionErrors, ThrowOnError>({
+    url: '/api/recurring/suggestions/dismiss',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Upcoming Recurring
+ *
+ * What is still expected this month, and the balance it leads to (F-REC-4).
+ */
+export const upcomingRecurring = <ThrowOnError extends boolean = false>(options?: Options<UpcomingRecurringData, ThrowOnError>): RequestResult<UpcomingRecurringResponses, UpcomingRecurringErrors, ThrowOnError> => (options?.client ?? client).get<UpcomingRecurringResponses, UpcomingRecurringErrors, ThrowOnError>({ url: '/api/recurring/upcoming', ...options });
+
+/**
+ * Delete Recurring
+ *
+ * Past transactions stay; only the expectation goes.
+ */
+export const deleteRecurring = <ThrowOnError extends boolean = false>(options: Options<DeleteRecurringData, ThrowOnError>): RequestResult<DeleteRecurringResponses, DeleteRecurringErrors, ThrowOnError> => (options.client ?? client).delete<DeleteRecurringResponses, DeleteRecurringErrors, ThrowOnError>({ url: '/api/recurring/{item_id}', ...options });
+
+/**
+ * Update Recurring
+ */
+export const updateRecurring = <ThrowOnError extends boolean = false>(options: Options<UpdateRecurringData, ThrowOnError>): RequestResult<UpdateRecurringResponses, UpdateRecurringErrors, ThrowOnError> => (options.client ?? client).patch<UpdateRecurringResponses, UpdateRecurringErrors, ThrowOnError>({
+    url: '/api/recurring/{item_id}',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Unskip Occurrence
+ */
+export const unskipOccurrence = <ThrowOnError extends boolean = false>(options: Options<UnskipOccurrenceData, ThrowOnError>): RequestResult<UnskipOccurrenceResponses, UnskipOccurrenceErrors, ThrowOnError> => (options.client ?? client).delete<UnskipOccurrenceResponses, UnskipOccurrenceErrors, ThrowOnError>({ url: '/api/recurring/{item_id}/skips/{due}', ...options });
+
+/**
+ * Skip Occurrence
+ *
+ * The occurrence due on this date is no longer expected (F-REC-3).
+ */
+export const skipOccurrence = <ThrowOnError extends boolean = false>(options: Options<SkipOccurrenceData, ThrowOnError>): RequestResult<SkipOccurrenceResponses, SkipOccurrenceErrors, ThrowOnError> => (options.client ?? client).put<SkipOccurrenceResponses, SkipOccurrenceErrors, ThrowOnError>({ url: '/api/recurring/{item_id}/skips/{due}', ...options });
 
 /**
  * List Rules
