@@ -1,6 +1,6 @@
 # Functional Specifications
 
-Status: draft v0.5 — 2026-10-12. Owner: sole maintainer.
+Status: draft v0.6 — 2026-10-13. Owner: sole maintainer.
 
 ## 1. Purpose
 
@@ -50,11 +50,13 @@ Priority: **M** = MVP, **S** = should (later in MVP), **L** = later phase.
 - F-TX-4: Manual creation and editing, split transactions (one bank line spread over several categories), notes and tags.
 - F-TX-5: Transfers between two own accounts are linked and excluded from income/expense totals. In a scope narrower than the household (§3: *mine*, *joint*), a transfer with an account outside the scope is shown apart as *paid in* or *paid out*, and counts in the net cash flow and savings (savings rate = net / (income + paid in)); transfers within the scope still net to zero.
 - F-TX-6: Every import is recorded (file hash, profile, row count, user, timestamp) and can be rolled back.
+- F-TX-7: **Budget month**. Each transaction keeps its real booking date and also counts in a **budget month**: by default the month of its date, shifted to the next month by its category's setting (F-CAT-5), or set by hand on the transaction to its booking month, the month before or the month after (e.g. a salary paid early, a bonus meant for another month). A hand-set month wins over the category's setting and is kept when the transaction is recategorised. Every figure by month uses the budget month: the budget matrix, plans and their review (projection, drift, money flows), the overview's KPIs and charts; in a day-by-day chart, a transaction counted in a later month is placed on that month's first day, in an earlier month on its last day. Account balances, imports, deduplication and the transaction list keep the real date; the list shows the budget month next to a shifted transaction and can be filtered by budget month, which is what a matrix cell opens. A transfer between two own accounts (F-TX-5) always counts in its booking month, as both its legs must; the parts of a split transaction (F-TX-4) share their parent's budget month.
 
 ### 4.4 Categorisation (M)
 
 - F-CAT-1: Two-level category tree (e.g. *Housing > Rent*), with a default seed set that can be edited.
 - F-CAT-4: Each category has a **kind**, shared by its subcategories: **expense**, **income** or **savings** (*Savings & investments*). A savings category holds the money moved to savings or investments that are not tracked as an account of the app (a PEA, a life insurance or a PER until phase 3, a savings account that is not imported): its net outflows are **saved**, a withdrawal brought back counts against it. It is never spending nor income: the money stays in the net cash flow and the savings rate, as money moved to a savings account of the app does. A transfer to an account of the app stays a transfer (F-TX-5), whatever its category. The default seed has one: *Savings & investments* (*Savings accounts*, *Investments*, *Retirement*). An expense rule catches outflows, an income rule inflows, a savings rule both.
+- F-CAT-5: **Next-month shift**. A category may say that a transaction booked **on or after a given day** (default: the 15th) counts for the **next month** (F-TX-7), e.g. a salary paid on the 20th or the 28th that pays for the next month's spending, or a rent taken on the 28th for the next month. Off by default, for any kind of category; a subcategory without a setting of its own follows its parent's. The setting applies to every transaction of the category, past ones included, except those whose budget month was set by hand: before saving, the page says how many transactions change month and which locked plans' reviews change with them. With a shifted salary, the first month of the household's history has no salary unless the previous month's statement is imported too.
 - F-CAT-2: Ordered rules (label contains/regex, amount range, account) that assign a category automatically on import. Rules can be re-applied to past transactions.
 - F-CAT-3: Bulk recategorisation, plus a "create rule from this transaction" action.
 - L: ML-assisted categorisation suggestions (phase 4, local LLM or classifier).
@@ -197,6 +199,7 @@ Money flows colours (the Sankey of the plan review, F-DSH-6) are semantic tokens
 12. For any split of the accounts into two groups, what one group pays out by transfer is exactly what the other pays in; within the household scope nothing is paid in or out.
 13. A plan's money flows balance: what comes in (income, paid in, taken from savings, deficit) equals what goes out (spending, paid out, saved, unallocated).
 14. Savings categories are never spending nor income: the net cash flow of a period (income − spending, before transfers crossing the scope) equals the sum of its transactions, transfers excluded, plus what its savings categories received (net of withdrawals).
+15. Every transaction counts in exactly one budget month, at most one month away from its booking month, and a transfer in its booking month: summed over all months, income, spending and savings are the same by budget month as by booking month. Shifting a transaction's month never changes an account balance.
 
 ## 9. Open questions
 
