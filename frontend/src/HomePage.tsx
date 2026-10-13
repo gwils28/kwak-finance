@@ -7,6 +7,7 @@ import { ScopeSelect } from "./components/ScopeSelect";
 import { ErrorAlert } from "./components/ui";
 import { SpendingByCategory, SpendingOverMonths, SpendingPace } from "./dashboard/charts";
 import { MonthProgress } from "./dashboard/MonthProgress";
+import { Upcoming } from "./dashboard/Upcoming";
 import { GettingStarted } from "./guide/GettingStarted";
 import { useI18n } from "./i18n";
 import { formatEurSigned, formatEurWhole, formatPercent, formatPercentSigned } from "./lib/money";
@@ -68,6 +69,7 @@ export function HomePage() {
         <div className={`flex flex-col gap-6 ${query.isFetching ? "opacity-60" : ""}`}>
           <KpiRow kpis={data.kpis} month={data.month} toCategorise={data.to_categorise} />
           <MonthProgress month={data.month} scope={scope} isOwner={user.role === "owner"} />
+          <Upcoming scope={scope} />
           <div className="grid gap-6 lg:grid-cols-2">
             <SpendingByCategory
               month={data.month}

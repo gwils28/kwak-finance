@@ -7,6 +7,7 @@ import { dashboardEn } from "./dashboard";
 import { guideEn } from "./guide";
 import { householdEn } from "./household";
 import { importsEn } from "./imports";
+import { recurringEn } from "./recurring";
 import { reviewEn } from "./review";
 import { runGuideEn } from "./runGuide";
 import { transactionsEn } from "./transactions";
@@ -22,6 +23,7 @@ export const en = {
   dashboard: dashboardEn,
   household: householdEn,
   transactions: transactionsEn,
+  recurring: recurringEn,
   budget: budgetEn,
   review: reviewEn,
   categories: categoriesEn,

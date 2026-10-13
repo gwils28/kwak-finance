@@ -88,6 +88,8 @@ class TransactionIn(BaseModel):
     amount: Cents
     """Negative = outflow, as a string with at most 2 decimals: "-12.50"."""
     label: str
+    category_id: UUID | None = None
+    """Its category; by default the rules choose (F-CAT-2)."""
 
 
 class TransactionPatch(BaseModel):
@@ -179,6 +181,9 @@ def create_transaction(body: TransactionIn, user_session: CurrentSession, db: Db
         )
     except ValueError as exc:
         raise _unprocessable(exc) from None
+    if body.category_id is not None:
+        category = _category(db, user_session.user.household_id, body.category_id)
+        service.set_category(db, transaction, category)
     return TransactionOut.of(transaction, account, _categories(db, user_session.user.household_id))
 
 

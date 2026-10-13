@@ -159,6 +159,7 @@ test("an expense is entered as a positive amount and stored negative", async () 
     booked_on: "2026-03-20",
     amount: "-12.50",
     label: "Market",
+    category_id: null, // the rules decide
   });
 });
 

@@ -309,3 +309,72 @@ test("the owner changes the warning threshold", async () => {
     }),
   );
 });
+
+const upcoming = {
+  occurrences: [
+    {
+      item_id: "r1",
+      due: "2026-03-03",
+      expected: "-950.00",
+      status: "late",
+      transaction_id: null,
+      enter_on: "2026-03-03",
+      label: "LOYER",
+      account_id: "a1",
+      account_name: "Compte courant",
+      category_id: null,
+      estimated: false,
+    },
+    {
+      item_id: "r3",
+      due: "2026-03-28",
+      expected: "2500.00",
+      status: "upcoming",
+      transaction_id: null,
+      enter_on: "2026-03-13",
+      label: "SALAIRE",
+      account_id: "a1",
+      account_name: "Compte courant",
+      category_id: null,
+      estimated: false,
+    },
+  ],
+  current_balance: "984.01",
+  projected_balance: "2534.01",
+};
+
+test("the overview lists what is still expected this month and the projected balance", async () => {
+  const checking = { id: "a1", name: "Compte courant", institution: "SG", type: "checking" };
+  const calls = api(dashboard, [checking], {
+    "GET /api/recurring/upcoming": () => Response.json(upcoming),
+    "PUT /api/recurring/r1/skips/2026-03-03": () => new Response(null, { status: 204 }),
+  });
+  render(<TestApp path="/" />);
+
+  const block = await screen.findByRole("region", { name: "Still expected this month" });
+  expect(block).toHaveTextContent("Projected at month end€2,534");
+  expect(block).toHaveTextContent("Balance today: €984");
+  const [late, salary] = within(block).getAllByRole("listitem");
+  expect(late).toHaveTextContent("3 Mar 2026LateLOYER");
+  expect(salary).toHaveTextContent("€2,500.00");
+
+  const user = userEvent.setup();
+  await user.click(within(block).getByRole("button", { name: "Enter SALAIRE of 28 Mar 2026" }));
+  const form = within(block).getByRole("form", { name: "New transaction" });
+  expect(within(form).getByLabelText("Date")).toHaveValue("2026-03-13"); // the 28th is to come
+  expect(within(form).getByRole("radio", { name: "Income" })).toBeChecked();
+
+  await user.click(within(block).getByRole("button", { name: "Skip LOYER of 3 Mar 2026" }));
+  expect(calls.map((c) => c.route)).toContain("PUT /api/recurring/r1/skips/2026-03-03");
+});
+
+test("the overview shows nothing expected without recurring items", async () => {
+  api(dashboard, [], {
+    "GET /api/recurring/upcoming": () =>
+      Response.json({ occurrences: [], current_balance: "0.00", projected_balance: "0.00" }),
+  });
+  render(<TestApp path="/" />);
+
+  await screen.findByRole("region", { name: "Spent" });
+  expect(screen.queryByRole("region", { name: "Still expected this month" })).toBeNull();
+});

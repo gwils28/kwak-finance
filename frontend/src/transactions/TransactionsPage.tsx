@@ -1,11 +1,10 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { getRouteApi } from "@tanstack/react-router";
+import { getRouteApi, Link } from "@tanstack/react-router";
 import { type FormEvent, useId, useState } from "react";
 import {
   type AccountOut,
   type CategoryOut,
   categoriseTransactions,
-  createTransaction,
   deleteTransaction,
   listAccounts,
   listTransactions,
@@ -13,15 +12,15 @@ import {
   unlinkTransfer,
   updateTransaction,
 } from "../api/generated";
-import { apiErrorMessage, detailSentence } from "../auth/errors";
 import { Icon } from "../components/icons";
-import { Button, ErrorAlert, TextField } from "../components/ui";
+import { Button, ErrorAlert } from "../components/ui";
 import { useI18n } from "../i18n";
-import { formatDate, todayIso } from "../lib/dates";
-import { amountInput, formatEur, parseEurInput } from "../lib/money";
+import { formatDate } from "../lib/dates";
+import { formatEur } from "../lib/money";
 import { monthLabel, shiftMonth } from "../lib/months";
 import { CategoryOptions, categoriesQuery } from "./categories";
 import { RuleForm } from "./RuleForm";
+import { TransactionForm } from "./TransactionForm";
 import { afterTransferChange, TransferBanner } from "./TransferBanner";
 
 export const PAGE_SIZE = 50;
@@ -123,14 +122,22 @@ export function TransactionsPage() {
             </Button>
           )}
         </div>
-        <Button
-          onClick={() => {
-            setEditing(null);
-            setAdding(true);
-          }}
-        >
-          {t.transactions.add}
-        </Button>
+        <div className="flex flex-wrap items-center gap-3">
+          <Link
+            to="/recurring"
+            className="rounded-md border border-border bg-surface px-3 py-2 text-sm hover:border-accent"
+          >
+            {t.recurring.open}
+          </Link>
+          <Button
+            onClick={() => {
+              setEditing(null);
+              setAdding(true);
+            }}
+          >
+            {t.transactions.add}
+          </Button>
+        </div>
       </div>
       {(adding || editing) && accounts.data && (
         <TransactionForm
@@ -661,144 +668,5 @@ function MonthSelect({
         );
       })}
     </select>
-  );
-}
-
-function TransactionForm({
-  transaction,
-  accounts,
-  onDone,
-}: {
-  transaction: TransactionOut | null;
-  accounts: AccountOut[];
-  onDone: () => void;
-}) {
-  const { t } = useI18n();
-  const queryClient = useQueryClient();
-  const isIncome = transaction ? !transaction.amount.startsWith("-") : false;
-  const [accountId, setAccountId] = useState(transaction?.account_id ?? accounts[0]?.id ?? "");
-  const [bookedOn, setBookedOn] = useState(transaction?.booked_on ?? todayIso());
-  const [kind, setKind] = useState<"expense" | "income">(isIncome ? "income" : "expense");
-  const [amount, setAmount] = useState(
-    transaction ? amountInput(transaction.amount.replace("-", "")) : "",
-  );
-  const [label, setLabel] = useState(transaction?.label ?? "");
-  const [invalid, setInvalid] = useState(false);
-  const ids = { account: useId(), kind: useId() };
-
-  const save = useMutation({
-    mutationFn: async (signed: string) => {
-      const fields = { booked_on: bookedOn, amount: signed, label };
-      const { data, error, response } = transaction
-        ? await updateTransaction({ path: { transaction_id: transaction.id }, body: fields })
-        : await createTransaction({ body: { account_id: accountId, ...fields } });
-      if (!data) {
-        throw new Error(
-          response?.status === 422 || response?.status === 409
-            ? (detailSentence(error) ?? t.errors.checkForm)
-            : apiErrorMessage(t, response),
-        );
-      }
-      return data;
-    },
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["transactions"] });
-      await queryClient.invalidateQueries({ queryKey: ["accounts"] });
-      onDone();
-    },
-  });
-
-  const submit = (event: FormEvent) => {
-    event.preventDefault();
-    const parsed = parseEurInput(amount);
-    const ok = parsed !== null && !parsed.startsWith("-") && parsed !== "0.00";
-    setInvalid(!ok);
-    if (ok) save.mutate(kind === "expense" ? `-${parsed}` : parsed);
-  };
-
-  const title = transaction ? t.transactions.editTitle : t.transactions.newTitle;
-  return (
-    <form
-      aria-label={title}
-      onSubmit={submit}
-      className="grid gap-4 rounded-lg border border-accent bg-surface p-4 sm:grid-cols-2"
-    >
-      <h2 className="text-lg font-bold sm:col-span-2">{title}</h2>
-      {transaction ? (
-        <p className="text-sm sm:col-span-2">
-          {t.transactions.accountLine(transaction.account_name)}
-        </p>
-      ) : (
-        <div className="flex flex-col gap-1">
-          <label htmlFor={ids.account} className="text-sm font-medium">
-            {t.transactions.account}
-          </label>
-          <select
-            id={ids.account}
-            className={fieldClass}
-            value={accountId}
-            onChange={(e) => setAccountId(e.target.value)}
-          >
-            {accounts.map((a) => (
-              <option key={a.id} value={a.id}>
-                {a.name} ({a.institution})
-              </option>
-            ))}
-          </select>
-        </div>
-      )}
-      <TextField
-        label={t.transactions.date}
-        type="date"
-        required
-        value={bookedOn}
-        onChange={(e) => setBookedOn(e.target.value)}
-      />
-      <fieldset className="flex items-center gap-4">
-        <legend className="sr-only">{t.transactions.direction}</legend>
-        {(["expense", "income"] as const).map((value) => (
-          <label key={value} className="flex items-center gap-2 text-sm">
-            <input
-              type="radio"
-              name={ids.kind}
-              value={value}
-              checked={kind === value}
-              onChange={() => setKind(value)}
-            />
-            {value === "expense" ? t.transactions.expense : t.transactions.income}
-          </label>
-        ))}
-      </fieldset>
-      <TextField
-        label={t.transactions.amountEur}
-        inputMode="decimal"
-        required
-        className="tabular"
-        value={amount}
-        onChange={(e) => setAmount(e.target.value)}
-      />
-      <div className="sm:col-span-2">
-        <TextField
-          label={t.transactions.label}
-          required
-          maxLength={200}
-          value={label}
-          onChange={(e) => setLabel(e.target.value)}
-        />
-      </div>
-      <div className="sm:col-span-2">
-        <ErrorAlert
-          message={invalid ? t.transactions.invalidAmount : (save.error?.message ?? null)}
-        />
-      </div>
-      <div className="flex gap-3 sm:col-span-2">
-        <Button type="submit" disabled={save.isPending}>
-          {t.common.save}
-        </Button>
-        <Button variant="ghost" onClick={onDone}>
-          {t.common.cancel}
-        </Button>
-      </div>
-    </form>
   );
 }

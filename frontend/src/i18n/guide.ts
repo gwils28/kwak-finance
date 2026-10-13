@@ -8,6 +8,7 @@ export type GuidePage =
   | "/"
   | "/accounts"
   | "/transactions"
+  | "/recurring"
   | "/budget"
   | "/budget/review"
   | "/categories"
@@ -59,9 +60,19 @@ export const guideEn = {
       paragraphs: [
         "Filter by account, category, dates or label. Select several transactions to give them a category at once, or pick it on a single row. “Rule” creates a rule from a transaction's label, so the next imports are categorised for you.",
         "Each transaction keeps its real date and also counts for a budget month: its date's month, or the next one when its category says so; the list says “counted in …” under the date when it differs. Click that note (or the calendar icon next to the date) to set it by hand (the date's month, the one before or the one after), e.g. for a salary paid early; “Automatic” goes back to the category's rule. Transfers between your accounts stay in their month. The “Budget month” filter shows what a budget cell counts.",
-        "Transfers between your own accounts are detected and offered for linking: linked, they count neither as spending nor as income. “Add a transaction” records cash or anything your bank does not export.",
+        "Transfers between your own accounts are detected and offered for linking: linked, they count neither as spending nor as income. “Add a transaction” records cash or anything your bank does not export; pick its category there, or leave it to the rules.",
       ],
       link: { to: "/transactions", label: "Open the transactions" },
+    },
+    {
+      id: "recurring",
+      title: "Recurring items",
+      paragraphs: [
+        "“Recurring”, at the top of the transactions, lists what comes back regularly: salary, rent, subscriptions, a weekly market. Each item has an account, a label found in the transactions' labels (like a rule), an amount, a frequency (weekly, monthly, quarterly or yearly), a day and a category. Tick “Variable amount” for a bill that changes, such as electricity: Kwak then expects the average of its last 3 payments, shown “≈”.",
+        "Kwak never enters anything by itself. A transaction of the item's account whose label matches, within 10 % of the amount (any amount for a variable one) and 5 days of the date, counts as that occurrence. Without one, the occurrence is late 5 days after its date: “Enter it” opens a new transaction filled in with the item's account, label, category and amount, on the expected date (today if that is still to come), for you to check and save. “Skip” tells Kwak an occurrence will not happen (a subscription paused for a month); “History” shows the past ones and restores a skipped one. Pause an item, or give it an end date, when it stops.",
+        "Suggestions list the series found in the last 6 months: at least 3 transactions of one account with the same label, every week or every month, the amounts within 10 %. “Follow” opens the form filled in to check and save; “Dismiss” stops suggesting it. Quarterly and yearly items are too rare to detect: add them by hand.",
+      ],
+      link: { to: "/recurring", label: "Open the recurring items" },
     },
     {
       id: "categories",
@@ -113,6 +124,7 @@ export const guideEn = {
       paragraphs: [
         "The overview sums up a month: spending, income, net (with the part put in savings categories) and savings rate, compared with the previous month and the 12-month average, then the spending by category, the last 12 months and this month's spending against your budget.",
         "“Targets this month” lists each category with a monthly target in the plan covering the month, the most used first: what it spent, what is left (or the overrun) and a bar. It says “Watch” from the warning threshold (80 % of the target by default; the household owner can change it there) and “Over” beyond the target. For the current month, a line on the bar marks how much of the month has gone by: spending ahead of that line is going faster than the calendar. One-off categories, paid once in the month, have no line and no “Watch”: paid as planned, they stay on track. Click a category to see its transactions.",
+        "“Still expected this month” lists the recurring items still to come by the end of the month, late ones (up to a month back) first, each with “Enter it” and “Skip”, and the projected balance at the end of the month: today's balance of the cash accounts in view plus everything listed. It uses real dates, not budget months: a salary expected on the 28th counts this month.",
         "“Household” counts every account you can see, “Joint accounts” only the household's joint accounts (offered once there is one), “Only mine” your own accounts without the joint ones. In those two, a transfer with an account left out shows in the net: what you pay into the joint account is paid out of yours and paid into it, so each view's savings stay right.",
       ],
       link: { to: "/", label: "Open the overview" },
@@ -183,9 +195,19 @@ export const guideFr: typeof guideEn = {
       paragraphs: [
         "Filtrez par compte, catégorie, dates ou libellé. Sélectionnez plusieurs opérations pour leur donner une catégorie d'un coup, ou choisissez-la sur une ligne. « Règle » crée une règle à partir du libellé d'une opération, pour que les prochains imports soient catégorisés à votre place.",
         "Chaque opération garde sa vraie date, et compte aussi pour un mois budgétaire : celui de sa date, ou le suivant si sa catégorie le prévoit ; la liste indique « compté en … » sous la date quand il diffère. Cliquez sur cette mention (ou sur l'icône calendrier à côté de la date) pour le fixer à la main (le mois de la date, celui d'avant ou celui d'après), par ex. pour un salaire versé en avance ; « Automatique » revient à la règle de la catégorie. Les virements entre vos comptes restent dans leur mois. Le filtre « Mois budgétaire » montre ce qu'une case du budget compte.",
-        "Les transferts entre vos propres comptes sont détectés et proposés au rapprochement : rapprochés, ils ne comptent ni comme dépense ni comme revenu. « Ajouter une opération » enregistre les espèces ou ce que votre banque n'exporte pas.",
+        "Les transferts entre vos propres comptes sont détectés et proposés au rapprochement : rapprochés, ils ne comptent ni comme dépense ni comme revenu. « Ajouter une opération » enregistre les espèces ou ce que votre banque n'exporte pas ; choisissez-y sa catégorie, ou laissez faire les règles.",
       ],
       link: { to: "/transactions", label: "Ouvrir les opérations" },
+    },
+    {
+      id: "recurring",
+      title: "Récurrences",
+      paragraphs: [
+        "« Récurrences », en haut des opérations, liste ce qui revient régulièrement : salaire, loyer, abonnements, un marché chaque semaine. Chaque récurrence a un compte, un libellé cherché dans celui des opérations (comme une règle), un montant, une fréquence (hebdomadaire, mensuelle, trimestrielle ou annuelle), un jour et une catégorie. Cochez « Montant variable » pour une facture qui change, comme l'électricité : Kwak attend alors la moyenne de ses 3 derniers paiements, affichée « ≈ ».",
+        "Kwak ne saisit jamais rien tout seul. Une opération du compte de la récurrence dont le libellé correspond, à 10 % près du montant (n'importe quel montant pour une récurrence variable) et à 5 jours près de la date, compte pour cette échéance. Sans elle, l'échéance passe en retard 5 jours après sa date : « La saisir » ouvre une nouvelle opération remplie avec le compte, le libellé, la catégorie et le montant, à la date prévue (aujourd'hui si elle est encore à venir), à vérifier puis enregistrer. « Sauter » indique qu'une échéance n'aura pas lieu (un abonnement suspendu un mois) ; « Historique » montre les échéances passées et rétablit une échéance sautée. Mettez une récurrence en pause, ou donnez-lui une date de fin, quand elle s'arrête.",
+        "Les suggestions listent les séries trouvées sur les 6 derniers mois : au moins 3 opérations d'un même compte avec le même libellé, chaque semaine ou chaque mois, les montants à 10 % près. « Suivre » ouvre le formulaire rempli, à vérifier puis enregistrer ; « Ignorer » ne la propose plus. Les récurrences trimestrielles et annuelles sont trop rares pour être détectées : ajoutez-les à la main.",
+      ],
+      link: { to: "/recurring", label: "Ouvrir les récurrences" },
     },
     {
       id: "categories",
@@ -237,6 +259,7 @@ export const guideFr: typeof guideEn = {
       paragraphs: [
         "La vue d'ensemble résume un mois : dépenses, revenus, solde (avec la part mise en épargne et placements) et taux d'épargne, comparés au mois précédent et à la moyenne sur 12 mois, puis les dépenses par catégorie, les 12 derniers mois et les dépenses du mois face à votre budget.",
         "« Objectifs du mois » liste chaque catégorie qui a un objectif mensuel dans le plan du mois, la plus avancée d'abord : ce qu'elle a dépensé, ce qui reste (ou le dépassement) et une barre. Elle indique « Attention » à partir du seuil d'alerte (80 % de l'objectif par défaut ; le propriétaire du foyer peut le changer ici) et « Dépassé » au-delà de l'objectif. Pour le mois en cours, un trait sur la barre marque la part du mois écoulée : une dépense en avance sur ce trait va plus vite que le calendrier. Les catégories ponctuelles, payées une fois dans le mois, n'ont ni trait ni « Attention » : payées comme prévu, elles restent dans les clous. Cliquez sur une catégorie pour voir ses opérations.",
+        "« Encore attendu ce mois-ci » liste les récurrences encore à venir d'ici la fin du mois, les retards (jusqu'à un mois en arrière) d'abord, chacune avec « La saisir » et « Sauter », et le solde prévu en fin de mois : le solde d'aujourd'hui des comptes courants et d'épargne de la vue, plus tout ce qui est listé. Il suit les vraies dates, pas les mois budgétaires : un salaire attendu le 28 compte ce mois-ci.",
         "« Foyer » compte tous les comptes que vous voyez, « Comptes communs » seulement les comptes communs du foyer (proposé dès qu'il y en a un), « Seulement les miens » vos propres comptes, sans les comptes communs. Dans ces deux vues, un virement avec un compte laissé de côté compte dans le solde net : ce que vous versez au compte commun sort de vos comptes et y entre, donc l'épargne de chaque vue reste juste.",
       ],
       link: { to: "/", label: "Ouvrir la vue d'ensemble" },

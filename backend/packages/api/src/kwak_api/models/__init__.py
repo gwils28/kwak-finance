@@ -7,6 +7,7 @@ from kwak_api.models.category import Category
 from kwak_api.models.household import Household, Role, User
 from kwak_api.models.invite import Invite
 from kwak_api.models.recovery_code import RecoveryCode
+from kwak_api.models.recurring import DismissedSuggestion, RecurringItem, RecurringSkip
 from kwak_api.models.rule import CategorizationRule
 from kwak_api.models.session import UserSession
 from kwak_api.models.transaction import ImportBatch, Transaction
@@ -18,11 +19,14 @@ __all__ = [
     "BudgetPlanTarget",
     "CategorizationRule",
     "Category",
+    "DismissedSuggestion",
     "Household",
     "ImportBatch",
     "Institution",
     "Invite",
     "RecoveryCode",
+    "RecurringItem",
+    "RecurringSkip",
     "Role",
     "Transaction",
     "User",

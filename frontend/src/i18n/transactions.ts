@@ -56,6 +56,7 @@ export const transactionsEn = {
   income: "Income",
   amountEur: "Amount (€)",
   invalidAmount: "Enter a positive amount in euros, e.g. 12.50, and pick Expense or Income.",
+  categoryByRules: "Automatic: the rules decide",
   newRule: "New rule",
   ruleSource: (label: string) => `From: ${label}`,
   labelContains: "Label contains",
@@ -135,6 +136,7 @@ export const transactionsFr: typeof transactionsEn = {
   amountEur: "Montant (€)",
   invalidAmount:
     "Saisissez un montant positif en euros, par ex. 12,50, et choisissez Dépense ou Revenu.",
+  categoryByRules: "Automatique : les règles décident",
   newRule: "Nouvelle règle",
   ruleSource: (label) => `À partir de : ${label}`,
   labelContains: "Le libellé contient",

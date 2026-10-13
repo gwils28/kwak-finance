@@ -128,6 +128,7 @@ test("the guide is in the header and has a section per feature", async () => {
     "Accounts",
     "Importing statements",
     "Transactions",
+    "Recurring items",
     "Categories and rules",
     "Budget plans",
     "The budget table",
@@ -135,7 +136,7 @@ test("the guide is in the header and has a section per feature", async () => {
     "Overview",
     "Members and security",
   ]);
-  expect(entries[5]).toHaveAttribute("href", "#plans");
+  expect(entries[6]).toHaveAttribute("href", "#plans");
   const plans = screen.getByRole("region", { name: "Budget plans" });
   expect(within(plans).getByRole("link", { name: "Open the budget" })).toHaveAttribute(
     "href",
