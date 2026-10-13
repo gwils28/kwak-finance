@@ -6,6 +6,9 @@ export const categoriesEn = {
     'Two levels: categories and their subcategories. Deleting one sends its transactions back to "to categorise".',
   spending: "Spending",
   income: "Income",
+  savings: "Savings & investments",
+  savingsHelp:
+    "Money moved to savings or investments the app does not track as an account (a PEA, a life insurance, a PER…). It is never spending nor income, and can have a monthly objective in a budget plan.",
   treeLabel: (title: string) => `${title} categories`,
   newCategory: "New category",
   name: "Name",
@@ -83,7 +86,12 @@ export const categoriesFr: typeof categoriesEn = {
     "Deux niveaux : les catégories et leurs sous-catégories. En supprimer une renvoie ses opérations dans « à catégoriser ».",
   spending: "Dépenses",
   income: "Revenus",
-  treeLabel: (title) => `Catégories de ${title.toLowerCase()}`,
+  savings: "Épargne et placements",
+  savingsHelp:
+    "L'argent mis de côté ou placé sur des supports que l'app ne suit pas comme un compte (un PEA, une assurance-vie, un PER…). Ce n'est jamais une dépense ni un revenu, et une catégorie d'épargne peut avoir un objectif mensuel dans un plan budgétaire.",
+  // "de dépenses", "de revenus", but "d'épargne et placements".
+  treeLabel: (title) =>
+    `Catégories ${/^[aeiouyéè]/i.test(title) ? "d'" : "de "}${title.toLowerCase()}`,
   newCategory: "Nouvelle catégorie",
   name: "Nom",
   kind: "Type",

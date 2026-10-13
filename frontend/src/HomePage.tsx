@@ -141,6 +141,7 @@ function KpiRow({
         {Number(kpis.paid_out) !== 0 && (
           <p>{t.dashboard.paidOut(formatEurSigned(`-${kpis.paid_out}`))}</p>
         )}
+        {Number(kpis.saved) !== 0 && <p>{t.dashboard.saved(formatEurWhole(kpis.saved))}</p>}
         <p className="text-muted">
           {Number(kpis.paid_in) || Number(kpis.paid_out)
             ? t.dashboard.netHelpCrossing

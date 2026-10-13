@@ -13,6 +13,8 @@ const categories = [
   { id: "c-housing", name: "Housing", kind: "expense", parent_id: null },
   { id: "c-income", name: "Income", kind: "income", parent_id: null },
   { id: "c-salary", name: "Salary", kind: "income", parent_id: "c-income" },
+  { id: "c-savings", name: "Savings & investments", kind: "savings", parent_id: null },
+  { id: "c-pea", name: "Investments", kind: "savings", parent_id: "c-savings" },
 ];
 const rule = (id: string, priority: number, extra: object) => ({
   id,
@@ -52,6 +54,31 @@ test("categories are shown as a tree, spending then income", async () => {
     /Bakery and coffee.*Groceries/,
   );
   expect(screen.getByRole("list", { name: "Income categories" })).toHaveTextContent("Salary");
+  const savings = screen.getByRole("list", { name: "Savings & investments categories" });
+  expect(savings).toHaveTextContent("Investments");
+  expect(spending).not.toHaveTextContent("Investments");
+});
+
+test("a new top-level category can be a savings category", async () => {
+  const calls = api({
+    "POST /api/categories": (body) =>
+      Response.json({ id: "c-new", ...(body as object) }, { status: 201 }),
+  });
+  render(<TestApp path="/categories" />);
+
+  const user = userEvent.setup();
+  const form = await screen.findByRole("form", { name: "New category" });
+  await user.type(within(form).getByLabelText("Name"), "Crypto");
+  await user.selectOptions(within(form).getByLabelText("Kind"), "savings");
+  await user.click(within(form).getByRole("button", { name: "Add" }));
+
+  await vi.waitFor(() =>
+    expect(calls.find((c) => c.route === "POST /api/categories")?.body).toEqual({
+      name: "Crypto",
+      kind: "savings",
+      parent_id: null,
+    }),
+  );
 });
 
 test("a category is renamed in place", async () => {

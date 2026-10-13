@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, expect, test, vi } from "vitest";
 import { fakeApi, owner } from "../test/fakeApi";
 import { TestApp } from "../test/TestApp";
-import { current, currentLabel, matrix } from "./fixtures";
+import { current, currentLabel, matrix, savingsMatrix } from "./fixtures";
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -108,4 +108,54 @@ test("categories with no spending and no target are hidden until asked for", asy
 
   expect(within(table).getByRole("row", { name: /Education/ })).toBeInTheDocument();
   expect(within(table).getByRole("row", { name: /Books/ })).toBeInTheDocument();
+});
+
+test("savings categories have their own section, judged against an objective", async () => {
+  const plan = current({
+    targets: [
+      { category_id: "c-bakery", amount: "60.00", paid_from: null },
+      { category_id: "c-pea", amount: "300.00", paid_from: null },
+    ],
+  });
+  const calls = api({
+    "GET /api/budget/matrix": () => Response.json(savingsMatrix),
+    "GET /api/budget/plans": () => Response.json([plan]),
+    "PUT /api/budget/plans/p-current/targets/c-pea": (body) => Response.json(body),
+  });
+  render(<TestApp path="/budget" />);
+
+  const table = await screen.findByRole("table", { name: "Budget by category and month" });
+  const section = within(table).getByRole("rowgroup", { name: "Savings & investments" });
+  const pea = within(section).getByRole("row", { name: /Investments/ });
+  const [february, march] = within(pea).getAllByRole("cell").slice(-2) as HTMLElement[];
+  expect(february).toHaveAttribute("data-status", "ahead");
+  expect(march).toHaveAttribute("data-status", "behind");
+  expect(march).toHaveTextContent("-€150 · -50%");
+  expect(within(section).getByRole("row", { name: /Total saved/ })).toHaveTextContent("€400");
+  // Savings never enter the spending total.
+  const total = within(table).getByRole("rowheader", { name: "Total" }).closest("tr");
+  expect(total).toHaveTextContent("€388");
+  expect(total).not.toHaveTextContent("€400");
+
+  const user = userEvent.setup();
+  const objective = within(section).getByLabelText("Monthly objective for Investments");
+  expect(objective).toHaveValue("300");
+  await user.clear(objective);
+  await user.type(objective, "350{Enter}");
+  await vi.waitFor(() =>
+    expect(calls.find((c) => c.route.startsWith("PUT"))?.body).toEqual({ amount: "350.00" }),
+  );
+});
+
+test("in French, the matrix names its own rows in French", async () => {
+  api({
+    "GET /api/auth/me": () => Response.json({ ...owner, language: "fr" }),
+    "GET /api/budget/matrix": () => Response.json(savingsMatrix),
+  });
+  render(<TestApp path="/budget" />);
+
+  const table = await screen.findByRole("table", { name: "Budget par catégorie et par mois" });
+  expect(within(table).getByRole("rowheader", { name: "À catégoriser" })).toBeInTheDocument();
+  expect(within(table).getByRole("rowheader", { name: "Total épargné" })).toBeInTheDocument();
+  expect(within(table).queryByText("To categorise")).toBeNull();
 });

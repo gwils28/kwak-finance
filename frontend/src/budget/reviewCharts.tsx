@@ -23,8 +23,8 @@ import {
 import type {
   BudgetStatus,
   CumulativeOut,
-  FlowKind,
   FlowOut,
+  ReviewOut,
   ReviewRowOut,
 } from "../api/generated";
 import {
@@ -189,52 +189,87 @@ export function CumulativeChart({ chart, aside }: { chart: CumulativeOut; aside:
   );
 }
 
-type FlowRole = "income" | "spent" | "kept" | "deficit" | "transfer";
+type FlowRole = "income" | "spent" | "overspent" | "saved" | "savedBehind" | "deficit" | "other";
+type FlowStatus = "withinTarget" | "overTarget" | "objectiveMet" | "belowObjective";
 
 const ROLE_FILL: Record<FlowRole, string> = {
-  income: ACCENT,
-  kept: ACCENT,
-  spent: CONTEXT,
-  transfer: CONTEXT,
-  deficit: "var(--color-chart-over)",
+  income: "var(--color-flow-in)",
+  spent: "var(--color-flow-spent)",
+  overspent: "var(--color-flow-overspent)",
+  saved: "var(--color-flow-saved)",
+  savedBehind: "var(--color-flow-saved-behind)",
+  deficit: "var(--color-flow-overspent)",
+  other: "var(--color-flow-other)",
 };
+const ROLE_ORDER: FlowRole[] = [
+  "income",
+  "spent",
+  "overspent",
+  "saved",
+  "savedBehind",
+  "deficit",
+  "other",
+];
 
-const KIND_ROLE: Record<FlowKind, FlowRole> = {
-  income: "income",
-  spending: "spent",
-  uncategorised: "spent",
-  paid_in: "transfer",
-  paid_out: "transfer",
-  saved: "kept",
-  from_savings: "transfer",
-  unallocated: "kept",
-  deficit: "deficit",
+/** What the review says of a flow's category: spending against its target, savings
+ * against the objectives. Without a target, nothing. */
+type Judged = { role: FlowRole; status: FlowStatus | null };
+
+function judge(f: FlowOut, categoryId: string | null, review: ReviewOut): Judged {
+  if (f.kind === "deficit") return { role: "deficit", status: null };
+  // Everything coming in is money in: income, transfers paid in, savings taken back.
+  if (f.side === "in") return { role: "income", status: null };
+  if (f.kind === "saved") {
+    const status = review.savings_total.status;
+    if (status === "behind") return { role: "savedBehind", status: "belowObjective" };
+    return { role: "saved", status: status === "none" ? null : "objectiveMet" };
+  }
+  if (f.kind === "spending") {
+    const status = review.rows.find((r) => r.category_id === categoryId)?.status;
+    if (status === "over") return { role: "overspent", status: "overTarget" };
+    if (status === "under" || status === "on") return { role: "spent", status: "withinTarget" };
+    return { role: "spent", status: null };
+  }
+  if (f.kind === "income" || f.kind === "uncategorised") return { role: "spent", status: null };
+  return { role: "other", status: null };
+}
+
+type FlowEntry = {
+  key: string;
+  label: string;
+  side: "in" | "out";
+  role: FlowRole;
+  status: FlowStatus | null;
+  amount: number;
 };
-
-type FlowEntry = { key: string; label: string; side: "in" | "out"; role: FlowRole; amount: number };
 
 /**
  * One entry per Sankey node: income by category, spending by top-level category (or by
  * subcategory with `detail`), then transfers, savings and what is left.
  */
-function flowEntries(flows: FlowOut[], detail: boolean, name: (f: FlowOut) => string) {
+function flowEntries(
+  flows: FlowOut[],
+  detail: boolean,
+  name: (f: FlowOut) => string,
+  review: ReviewOut,
+) {
   const entries = new Map<string, FlowEntry>();
   for (const f of flows) {
     const grouped = f.kind === "spending" && !detail && f.parent_id;
-    const key = `${f.side}:${f.kind}:${grouped ? f.parent_id : (f.category_id ?? "")}`;
+    const categoryId = grouped ? f.parent_id : f.category_id;
+    const key = `${f.side}:${f.kind}:${categoryId ?? ""}`;
     const label = grouped ? (f.parent_name as string) : name(f);
     const entry = entries.get(key) ?? {
       key,
       label,
       side: f.side,
-      role: KIND_ROLE[f.kind],
+      ...judge(f, categoryId, review),
       amount: 0,
     };
     entry.amount += Number(f.amount);
     entries.set(key, entry);
   }
-  const byCategory = (e: FlowEntry) =>
-    e.role === "income" || (e.role === "spent" && !e.key.includes(":uncategorised:"));
+  const byCategory = (e: FlowEntry) => e.key.includes(":income:") || e.key.includes(":spending:");
   const sorted = (side: "in" | "out") => {
     const all = [...entries.values()].filter((e) => e.side === side);
     return [
@@ -248,7 +283,7 @@ function flowEntries(flows: FlowOut[], detail: boolean, name: (f: FlowOut) => st
 const NODE_WIDTH = 12;
 
 /** Where the plan's money came from and went (F-DSH-2), every node labelled, with its table. */
-export function FlowsChart({ flows }: { flows: FlowOut[] }) {
+export function FlowsChart({ flows, review }: { flows: FlowOut[]; review: ReviewOut }) {
   const { t } = useI18n();
   const detailId = useId();
   const [detail, setDetail] = useState(false);
@@ -262,14 +297,14 @@ export function FlowsChart({ flows }: { flows: FlowOut[] }) {
       return f.side === "in" ? words.uncategorisedIn : words.uncategorised;
     return words[f.kind];
   };
-  const { left, right } = flowEntries(flows, detail, name);
+  const { left, right } = flowEntries(flows, detail, name, review);
   const total = left.reduce((sum, e) => sum + e.amount, 0);
   const entries = [...left, ...right];
   const hub = left.length;
   const data = {
     nodes: [
       ...left,
-      { key: "hub", label: t.review.flows.hub, role: "transfer", amount: total },
+      { key: "hub", label: t.review.flows.hub, role: "other", amount: total },
       ...right,
     ],
     links: [
@@ -369,6 +404,22 @@ export function FlowsChart({ flows }: { flows: FlowOut[] }) {
           </div>
         </div>
       )}
+      {total !== 0 && (
+        <ul
+          aria-label={t.review.flows.legend}
+          className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted"
+        >
+          {ROLE_ORDER.filter((role) => entries.some((e) => e.role === role)).map((role) => (
+            <li key={role} className="flex items-center gap-1.5">
+              <span
+                className="inline-block h-3 w-3 rounded-sm"
+                style={{ background: ROLE_FILL[role] }}
+              />
+              {t.review.flows.roles[role]}
+            </li>
+          ))}
+        </ul>
+      )}
       <DataTable
         label={t.review.flows.title}
         head={[
@@ -376,12 +427,14 @@ export function FlowsChart({ flows }: { flows: FlowOut[] }) {
           t.review.flows.flow,
           t.review.flows.amount,
           t.review.flows.share,
+          t.review.flows.status,
         ]}
         rows={entries.map((e) => [
           e.side === "in" ? t.review.flows.in : t.review.flows.out,
           e.label,
           formatEurWhole(e.amount),
           formatPercent(total ? e.amount / total : 0),
+          e.status ? t.review.flows[e.status] : "",
         ])}
       />
     </Card>

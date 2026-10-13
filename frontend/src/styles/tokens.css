@@ -77,6 +77,16 @@
   --color-chart-under: var(--color-primary-600);
   --color-chart-on: var(--color-neutral-400);
   --color-chart-over: var(--color-secondary-600);
+  /* Money flows (F-DSH-2): blue money in, ochre / burnt orange spending within / over its
+     target, green / pale green savings meeting / below their objective, grey the rest.
+     The blue is the one hue outside the blog palette, a steel blue that sits with its muted
+     greens. CVD dE >= 9.5, normal >= 15.3 on white (dataviz validator, all pairs). */
+  --color-flow-in: rgb(47 123 168);
+  --color-flow-spent: var(--color-secondary-500);
+  --color-flow-overspent: var(--color-secondary-800);
+  --color-flow-saved: var(--color-primary-600);
+  --color-flow-saved-behind: var(--color-primary-300);
+  --color-flow-other: var(--color-neutral-400);
 }
 
 @layer base {
@@ -106,6 +116,13 @@
     --color-chart-under: var(--color-primary-500);
     --color-chart-on: var(--color-neutral-300);
     --color-chart-over: var(--color-secondary-500);
+    /* CVD dE >= 9.3 on the dark surface; every flow is labelled and has its table row. */
+    --color-flow-in: rgb(76 155 232);
+    --color-flow-spent: var(--color-secondary-400);
+    --color-flow-overspent: var(--color-secondary-700);
+    --color-flow-saved: var(--color-primary-500);
+    --color-flow-saved-behind: var(--color-primary-200);
+    --color-flow-other: var(--color-neutral-400);
   }
 
   body {

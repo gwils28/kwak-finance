@@ -15,6 +15,13 @@ export const budgetEn = {
   legendNone: "No colour: no target.",
   invalidTarget: "enter a positive amount in euros, e.g. 300 or 12.50.",
   targetFor: (name: string) => `Monthly target for ${name}`,
+  objectiveFor: (name: string) => `Monthly objective for ${name}`,
+  savings: "Savings & investments",
+  savingsLegend: (band: string) =>
+    `Objectives are a minimum. Green: more than ${band} above the objective; burnt orange: more than ${band} below. Never counted in the spending total.`,
+  savingsTotal: "Total saved",
+  uncategorised: "To categorise",
+  total: "Total",
   paidFrom: {
     label: (name: string) => `Paid from, ${name}`,
     any: "Any account",
@@ -83,6 +90,13 @@ export const budgetFr: typeof budgetEn = {
   legendNone: "Sans couleur : pas d'objectif.",
   invalidTarget: "saisissez un montant positif en euros, par ex. 300 ou 12,50.",
   targetFor: (name) => `Objectif mensuel pour ${name}`,
+  objectiveFor: (name) => `Objectif d'épargne mensuel pour ${name}`,
+  savings: "Épargne et placements",
+  savingsLegend: (band) =>
+    `Les objectifs d'épargne sont un minimum. Vert : plus de ${band} au-dessus de l'objectif ; terre brûlée : plus de ${band} en dessous. Jamais compté dans le total des dépenses.`,
+  savingsTotal: "Total épargné",
+  uncategorised: "À catégoriser",
+  total: "Total",
   paidFrom: {
     label: (name) => `Payé par, ${name}`,
     any: "Tous les comptes",
