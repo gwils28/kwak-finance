@@ -14,6 +14,7 @@ import {
   updateTransaction,
 } from "../api/generated";
 import { apiErrorMessage, detailSentence } from "../auth/errors";
+import { Icon } from "../components/icons";
 import { Button, ErrorAlert, TextField } from "../components/ui";
 import { useI18n } from "../i18n";
 import { formatDate, todayIso } from "../lib/dates";
@@ -466,7 +467,7 @@ function TransactionTable({
           </thead>
           <tbody className="divide-y divide-border">
             {items.map((tx) => (
-              <tr key={tx.id} className={selected.has(tx.id) ? "bg-bg" : ""}>
+              <tr key={tx.id} className={`group ${selected.has(tx.id) ? "bg-bg" : ""}`}>
                 <td className="px-3 py-2">
                   <input
                     type="checkbox"
@@ -477,10 +478,12 @@ function TransactionTable({
                 </td>
                 <td className="whitespace-nowrap px-3 py-2">
                   {formatDate(tx.booked_on)}
-                  {tx.budget_month && tx.budget_month !== tx.booked_on.slice(0, 7) && (
-                    <span className="block text-xs text-muted">
-                      {t.transactions.countedIn(monthLabel(tx.budget_month))}
-                    </span>
+                  {!tx.transfer_group_id && (
+                    <MonthToggle
+                      tx={tx}
+                      open={choosingMonth === tx.id}
+                      onClick={() => setChoosingMonth(choosingMonth === tx.id ? null : tx.id)}
+                    />
                   )}
                   {choosingMonth === tx.id && (
                     <MonthSelect
@@ -534,17 +537,6 @@ function TransactionTable({
                 </td>
                 <td className="whitespace-nowrap px-3 py-2 text-right">
                   <span className="flex items-center justify-end gap-2">
-                    {!tx.transfer_group_id && (
-                      <Button
-                        variant="ghost"
-                        aria-label={t.transactions.budgetMonthOf(tx.label)}
-                        aria-expanded={choosingMonth === tx.id}
-                        title={t.transactions.monthHelp}
-                        onClick={() => setChoosingMonth(choosingMonth === tx.id ? null : tx.id)}
-                      >
-                        {t.transactions.monthShort}
-                      </Button>
-                    )}
                     <Button
                       variant="ghost"
                       aria-label={t.transactions.ruleFrom(tx.label)}
@@ -594,6 +586,43 @@ function TransactionTable({
         </table>
       </div>
     </div>
+  );
+}
+
+/** Opens the month choice from the date cell: the "counted in" note when the transaction counts
+ * in another month, else a calendar icon shown on row hover (always on touch screens). */
+function MonthToggle({
+  tx,
+  open,
+  onClick,
+}: {
+  tx: TransactionOut;
+  open: boolean;
+  onClick: () => void;
+}) {
+  const { t } = useI18n();
+  const moved = Boolean(tx.budget_month) && tx.budget_month !== tx.booked_on.slice(0, 7);
+  const focus =
+    "rounded focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
+  return (
+    <button
+      type="button"
+      aria-label={t.transactions.budgetMonthOf(tx.label)}
+      aria-expanded={open}
+      title={t.transactions.monthHelp}
+      onClick={onClick}
+      className={
+        moved
+          ? `block text-xs text-muted underline-offset-2 hover:text-accent hover:underline ${focus}`
+          : `ml-1 inline-block align-middle text-muted opacity-0 hover:text-accent focus-visible:opacity-100 group-hover:opacity-100 pointer-coarse:opacity-100 ${open ? "opacity-100" : ""} ${focus}`
+      }
+    >
+      {moved ? (
+        t.transactions.countedIn(monthLabel(tx.budget_month))
+      ) : (
+        <Icon name="calendar" className="size-3.5" />
+      )}
+    </button>
   );
 }
 
