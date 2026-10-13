@@ -10,7 +10,8 @@ const categories = [
   { id: "c-food", name: "Food", kind: "expense", parent_id: null },
   { id: "c-bakery", name: "Bakery and coffee", kind: "expense", parent_id: "c-food" },
   { id: "c-groceries", name: "Groceries", kind: "expense", parent_id: "c-food" },
-  { id: "c-housing", name: "Housing", kind: "expense", parent_id: null },
+  { id: "c-housing", name: "Housing", kind: "expense", parent_id: null, one_off: true },
+  { id: "c-rent", name: "Rent", kind: "expense", parent_id: "c-housing" },
   { id: "c-income", name: "Income", kind: "income", parent_id: null, shift_day: 20 },
   { id: "c-salary", name: "Salary", kind: "income", parent_id: "c-income" },
   { id: "c-bonus", name: "Bonus", kind: "income", parent_id: "c-income", shift_day: 0 },
@@ -252,7 +253,7 @@ test("a category's next-month shift is previewed, then saved", async () => {
     "GET /api/categories/c-salary/shift-preview": () =>
       Response.json({ moved: 3, months: ["2025-12", "2026-01"], locked_plans: ["2025-Q4"] }),
     "PATCH /api/categories/c-salary": (body) =>
-      Response.json({ ...categories[5], ...(body as object) }),
+      Response.json({ ...categories[6], ...(body as object) }),
   });
   render(<TestApp path="/categories" />);
 
@@ -265,7 +266,7 @@ test("a category's next-month shift is previewed, then saved", async () => {
     "Never shifted",
   );
 
-  await user.click(within(salary).getByRole("button", { name: "Budget month of Salary" }));
+  await user.click(within(salary).getByRole("button", { name: "Budget settings of Salary" }));
   await user.selectOptions(within(salary).getByLabelText("Counts for the next month"), "day");
   const day = within(salary).getByLabelText("From day");
   await user.clear(day);
@@ -289,4 +290,44 @@ test("a category's next-month shift is previewed, then saved", async () => {
       shift_day: 15,
     }),
   );
+});
+
+test("a subcategory is one-off like its parent until it says otherwise", async () => {
+  const calls = api({
+    "PATCH /api/categories/c-rent": (body) =>
+      Response.json({ ...categories[4], ...(body as object) }),
+  });
+  render(<TestApp path="/categories" />);
+
+  const user = userEvent.setup();
+  const housing = await screen.findByRole("listitem", { name: "Housing" });
+  const rent = within(housing).getByRole("listitem", { name: "Rent" });
+  expect(
+    within(housing).getByRole("button", { name: "Budget settings of Housing" }),
+  ).toHaveTextContent("One-off");
+  expect(
+    within(rent).getByRole("button", { name: "Budget settings of Rent" }),
+  ).not.toHaveTextContent("One-off");
+
+  await user.click(within(rent).getByRole("button", { name: "Budget settings of Rent" }));
+  const field = within(rent).getByLabelText("Paid once in the month");
+  expect(field).toHaveValue("inherit");
+  await user.selectOptions(field, "no");
+
+  await vi.waitFor(() =>
+    expect(calls.find((c) => c.route === "PATCH /api/categories/c-rent")?.body).toEqual({
+      one_off: false,
+    }),
+  );
+});
+
+test("an income category has no one-off setting", async () => {
+  api();
+  render(<TestApp path="/categories" />);
+
+  const user = userEvent.setup();
+  const income = await screen.findByRole("listitem", { name: "Income" });
+  const salary = within(income).getByRole("listitem", { name: "Salary" });
+  await user.click(within(salary).getByRole("button", { name: "Budget settings of Salary" }));
+  expect(within(salary).queryByLabelText("Paid once in the month")).toBeNull();
 });

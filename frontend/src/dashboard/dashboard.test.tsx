@@ -1,4 +1,5 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { afterEach, beforeAll, expect, test, vi } from "vitest";
 import { fakeApi, owner } from "../test/fakeApi";
 import { TestApp } from "../test/TestApp";
@@ -54,11 +55,63 @@ const dashboard = {
   budget_target: "1800.00",
 };
 
-function api(data: unknown = dashboard, accounts: unknown[] = []) {
+const line = (extra: object) => ({
+  parent_id: null,
+  spent: "0.00",
+  target: "100.00",
+  remaining: "100.00",
+  share: "0.0000",
+  status: "on_track",
+  pace: "0.4839",
+  ...extra,
+});
+const progress = {
+  month: "2026-03",
+  plan: "2026-Q1",
+  warn_at: "0.80",
+  lines: [
+    line({
+      category_id: "c-leisure",
+      name: "Leisure",
+      spent: "130.00",
+      remaining: "-30.00",
+      share: "1.3000",
+      status: "over",
+    }),
+    line({
+      category_id: "c-rent",
+      name: "Rent",
+      parent_id: "c-housing",
+      spent: "850.00",
+      target: "850.00",
+      remaining: "0.00",
+      share: "1.0000",
+      status: "watch",
+      pace: null,
+    }),
+    line({
+      category_id: "c-food",
+      name: "Food",
+      spent: "406.40",
+      target: "500.00",
+      remaining: "93.60",
+      share: "0.8128",
+      status: "watch",
+    }),
+  ],
+};
+
+function api(
+  data: unknown = dashboard,
+  accounts: unknown[] = [],
+  extra: Record<string, (body: unknown) => Response> = {},
+) {
   return fakeApi({
     "GET /api/auth/me": () => Response.json(owner),
     "GET /api/dashboard": () => Response.json(data),
+    "GET /api/budget/progress": () => Response.json(progress),
     "GET /api/accounts": () => Response.json(accounts),
+    ...extra,
   });
 }
 
@@ -192,4 +245,67 @@ test("a household without transactions is pointed to the first import", async ()
 
   expect(await screen.findByText(/No transactions yet/)).toBeInTheDocument();
   expect(screen.getByRole("link", { name: "Go to Accounts" })).toHaveAttribute("href", "/accounts");
+});
+
+test("the month's targets show each category's progress, its status and the pace", async () => {
+  api();
+  render(<TestApp path="/" />);
+
+  const section = await screen.findByRole("region", { name: "Targets, Mar 2026" });
+  const items = await within(section).findAllByRole("listitem");
+  expect(items.map((i) => within(i).getByRole("link").textContent)).toEqual([
+    "Leisure",
+    "Rent",
+    "Food",
+  ]);
+  const [leisure, rent, food] = items as [HTMLElement, HTMLElement, HTMLElement];
+  expect(plain(leisure.textContent)).toContain("€130 of €100 · €30 over");
+  expect(leisure).toHaveTextContent("Over · 130% used");
+  expect(rent).toHaveTextContent("Paid once in the month: no pace");
+  expect(plain(food.textContent)).toContain("€94 left");
+  expect(food).toHaveTextContent("Watch · 81% used");
+  expect(food).toHaveTextContent("Pace: 48% of the month gone");
+  expect(
+    within(food).getByRole("link", { name: "Transactions of Food this month" }),
+  ).toHaveAttribute("href", "/transactions?category=c-food&month=2026-03");
+  expect(section).toHaveTextContent("Watch from 80% of a target");
+});
+
+test("a month outside any plan points to the budget", async () => {
+  api(dashboard, [], {
+    "GET /api/budget/progress": () => Response.json({ ...progress, plan: null, lines: [] }),
+  });
+  render(<TestApp path="/" />);
+
+  const section = await screen.findByRole("region", { name: "Targets, Mar 2026" });
+  expect(await within(section).findByText(/No budget plan covers this month/)).toBeInTheDocument();
+  expect(within(section).getByRole("link", { name: "Create one in Budget" })).toHaveAttribute(
+    "href",
+    "/budget",
+  );
+});
+
+test("the owner changes the warning threshold", async () => {
+  const calls = api(dashboard, [], {
+    "PATCH /api/household/settings": (body) => Response.json(body),
+  });
+  render(<TestApp path="/" />);
+
+  const user = userEvent.setup();
+  const section = await screen.findByRole("region", { name: "Targets, Mar 2026" });
+  await user.click(await within(section).findByRole("button", { name: "Change" }));
+  const field = within(section).getByLabelText("Warning threshold (%)");
+  await user.clear(field);
+  await user.type(field, "120");
+  await user.click(within(section).getByRole("button", { name: "Save" }));
+  expect(section).toHaveTextContent("Enter a whole number from 50 to 100.");
+
+  await user.clear(field);
+  await user.type(field, "90");
+  await user.click(within(section).getByRole("button", { name: "Save" }));
+  await vi.waitFor(() =>
+    expect(calls.find((c) => c.route === "PATCH /api/household/settings")?.body).toEqual({
+      warn_at: "0.90",
+    }),
+  );
 });
