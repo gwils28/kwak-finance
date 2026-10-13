@@ -493,7 +493,9 @@ function TransactionTable({
                     />
                   )}
                 </td>
-                <td className="px-3 py-2">{tx.label}</td>
+                <td className="px-3 py-2" title={tx.bank_label ?? undefined}>
+                  {tx.label}
+                </td>
                 <td className="px-3 py-2">
                   {tx.transfer_group_id ? (
                     <span className="flex items-center gap-2">
