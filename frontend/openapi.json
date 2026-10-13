@@ -500,6 +500,17 @@
             "title": "Name",
             "type": "string"
           },
+          "one_off": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "One Off"
+          },
           "parent_id": {
             "anyOf": [
               {
@@ -529,7 +540,8 @@
           "name",
           "kind",
           "parent_id",
-          "shift_day"
+          "shift_day",
+          "one_off"
         ],
         "title": "CategoryOut",
         "type": "object"
@@ -547,6 +559,17 @@
               }
             ],
             "title": "Name"
+          },
+          "one_off": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "One Off"
           },
           "parent_id": {
             "anyOf": [
@@ -1974,6 +1997,134 @@
         "title": "PreviewRow",
         "type": "object"
       },
+      "ProgressLineOut": {
+        "properties": {
+          "category_id": {
+            "format": "uuid",
+            "title": "Category Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "pace": {
+            "anyOf": [
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pace"
+          },
+          "parent_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Id"
+          },
+          "remaining": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Remaining",
+            "type": "string"
+          },
+          "share": {
+            "anyOf": [
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Share"
+          },
+          "spent": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Spent",
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ProgressStatus"
+          },
+          "target": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Target",
+            "type": "string"
+          }
+        },
+        "required": [
+          "category_id",
+          "name",
+          "parent_id",
+          "spent",
+          "target",
+          "remaining",
+          "share",
+          "status",
+          "pace"
+        ],
+        "title": "ProgressLineOut",
+        "type": "object"
+      },
+      "ProgressOut": {
+        "properties": {
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/ProgressLineOut"
+            },
+            "title": "Lines",
+            "type": "array"
+          },
+          "month": {
+            "title": "Month",
+            "type": "string"
+          },
+          "plan": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Plan"
+          },
+          "warn_at": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Warn At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "month",
+          "plan",
+          "warn_at",
+          "lines"
+        ],
+        "title": "ProgressOut",
+        "type": "object"
+      },
+      "ProgressStatus": {
+        "enum": [
+          "on_track",
+          "watch",
+          "over"
+        ],
+        "title": "ProgressStatus",
+        "type": "string"
+      },
       "RecoveryCodeIn": {
         "properties": {
           "code": {
@@ -2783,6 +2934,41 @@
         ],
         "title": "Scope",
         "type": "string"
+      },
+      "SettingsOut": {
+        "properties": {
+          "warn_at": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Warn At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "warn_at"
+        ],
+        "title": "SettingsOut",
+        "type": "object"
+      },
+      "SettingsPatch": {
+        "properties": {
+          "warn_at": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d{0,2}0*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Warn At"
+          }
+        },
+        "title": "SettingsPatch",
+        "type": "object"
       },
       "ShiftPreviewOut": {
         "description": "What setting a category's shift day would change (F-CAT-5).",
@@ -5103,6 +5289,83 @@
         ]
       }
     },
+    "/api/budget/progress": {
+      "get": {
+        "description": "Each category's spending in the month against its monthly target (F-BUD-2).",
+        "operationId": "monthSoFar",
+        "parameters": [
+          {
+            "description": "YYYY-MM; default: this month",
+            "in": "query",
+            "name": "month",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "YYYY-MM; default: this month",
+              "title": "Month"
+            }
+          },
+          {
+            "in": "query",
+            "name": "scope",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/Scope",
+              "default": "household"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "kwak_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Kwak Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProgressOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Month So Far",
+        "tags": [
+          "budget"
+        ]
+      }
+    },
     "/api/categories": {
       "get": {
         "description": "Parents first, each followed by its subcategories.",
@@ -5655,6 +5918,112 @@
           }
         },
         "summary": "List Members",
+        "tags": [
+          "household"
+        ]
+      }
+    },
+    "/api/household/settings": {
+      "get": {
+        "operationId": "getSettings",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "kwak_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Kwak Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SettingsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Settings",
+        "tags": [
+          "household"
+        ]
+      },
+      "patch": {
+        "operationId": "updateSettings",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "kwak_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Kwak Session"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SettingsPatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SettingsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Update Settings",
         "tags": [
           "household"
         ]

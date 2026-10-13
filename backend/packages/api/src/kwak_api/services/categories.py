@@ -42,7 +42,12 @@ class CategoryInUseError(Exception):
 
 def seed_defaults(db: Session, household_id: UUID, language: Language = Language.EN) -> None:
     for default in DEFAULT_CATEGORIES:
-        parent = Category(household_id=household_id, name=default.name(language), kind=default.kind)
+        parent = Category(
+            household_id=household_id,
+            name=default.name(language),
+            kind=default.kind,
+            one_off=default.one_off or None,
+        )
         db.add(parent)
         db.flush()
         db.add_all(
@@ -119,9 +124,15 @@ def update_category(
     parent: Category | None,
     move: bool,
     shift: tuple[int | None] | None = None,
+    one_off: tuple[bool | None] | None = None,
 ) -> None:
     """Rename and/or move (`move` with `parent` None puts it at the top level), and/or set the
-    day from which its transactions count for the next month (`shift`: (day,), F-CAT-5)."""
+    day from which its transactions count for the next month (`shift`: (day,), F-CAT-5),
+    and/or whether it is paid once in the month (`one_off`: (value,), F-CAT-6)."""
+    if one_off is not None:
+        if one_off[0] is not None and category.kind is not CategoryKind.EXPENSE:
+            raise ValueError("only an expense category can be one-off")
+        category.one_off = one_off[0]
     if shift is not None:
         if shift[0] is not None:
             check_shift_day(shift[0])
@@ -244,8 +255,14 @@ def _apply(
     def resolve(parent: UUID | str | None) -> UUID | None:
         return created[parent] if isinstance(parent, str) else parent
 
+    one_off = {d.names.en for d in DEFAULT_CATEGORIES if d.one_off}
     for new in [c for c in plan.creates if c.parent is None]:
-        row = Category(household_id=household_id, name=new.name, kind=new.kind)
+        row = Category(
+            household_id=household_id,
+            name=new.name,
+            kind=new.kind,
+            one_off=True if new.key in one_off else None,
+        )
         db.add(row)
         db.flush()
         created[new.key] = row.id
