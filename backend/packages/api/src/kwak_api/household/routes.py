@@ -1,16 +1,18 @@
 """Household members and invitations."""
 
 from datetime import datetime
+from decimal import Decimal
 from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from kwak_core.invites import InviteState
-from pydantic import BaseModel
+from kwak_core.progress import check_warn_at
+from pydantic import AfterValidator, BaseModel, Field
 from sqlalchemy import select
 
 from kwak_api.auth.routes import CurrentSession, Db, Now
-from kwak_api.models import Invite, Role, User, UserSession
+from kwak_api.models import Household, Invite, Role, User, UserSession
 from kwak_api.services import invites as service
 
 router = APIRouter(prefix="/api", tags=["household"])
@@ -71,6 +73,36 @@ class InvitePreview(BaseModel):
 class InviteAccept(BaseModel):
     display_name: str
     password: str
+
+
+class SettingsOut(BaseModel):
+    warn_at: Decimal
+    """The share of a monthly target from which a category is to watch (F-BUD-2)."""
+
+
+def _warn_at(value: Decimal) -> Decimal:
+    check_warn_at(value)
+    return value.quantize(Decimal("0.01"))
+
+
+class SettingsPatch(BaseModel):
+    warn_at: Annotated[Decimal, Field(decimal_places=2), AfterValidator(_warn_at)] | None = None
+    """From 0.50 to 1, in whole percents. Leave it out to keep it."""
+
+
+@router.get("/household/settings")
+def get_settings(user_session: CurrentSession, db: Db) -> SettingsOut:
+    household = db.get_one(Household, user_session.user.household_id)
+    return SettingsOut(warn_at=household.warn_at)
+
+
+@router.patch("/household/settings")
+def update_settings(body: SettingsPatch, user_session: OwnerSession, db: Db) -> SettingsOut:
+    household = db.get_one(Household, user_session.user.household_id)
+    if body.warn_at is not None:
+        household.warn_at = body.warn_at
+    db.flush()
+    return SettingsOut(warn_at=household.warn_at)
 
 
 @router.get("/household/members")

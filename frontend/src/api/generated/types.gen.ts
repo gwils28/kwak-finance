@@ -282,6 +282,10 @@ export type CategoryOut = {
      */
     name: string;
     /**
+     * One Off
+     */
+    one_off: boolean | null;
+    /**
      * Parent Id
      */
     parent_id: string | null;
@@ -301,6 +305,10 @@ export type CategoryPatch = {
      * Name
      */
     name?: string | null;
+    /**
+     * One Off
+     */
+    one_off?: boolean | null;
     /**
      * Parent Id
      */
@@ -1078,6 +1086,72 @@ export type PreviewRow = {
 };
 
 /**
+ * ProgressLineOut
+ */
+export type ProgressLineOut = {
+    /**
+     * Category Id
+     */
+    category_id: string;
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Pace
+     */
+    pace: string | null;
+    /**
+     * Parent Id
+     */
+    parent_id: string | null;
+    /**
+     * Remaining
+     */
+    remaining: string;
+    /**
+     * Share
+     */
+    share: string | null;
+    /**
+     * Spent
+     */
+    spent: string;
+    status: ProgressStatus;
+    /**
+     * Target
+     */
+    target: string;
+};
+
+/**
+ * ProgressOut
+ */
+export type ProgressOut = {
+    /**
+     * Lines
+     */
+    lines: Array<ProgressLineOut>;
+    /**
+     * Month
+     */
+    month: string;
+    /**
+     * Plan
+     */
+    plan: string | null;
+    /**
+     * Warn At
+     */
+    warn_at: string;
+};
+
+/**
+ * ProgressStatus
+ */
+export type ProgressStatus = 'on_track' | 'watch' | 'over';
+
+/**
  * RecoveryCodeIn
  */
 export type RecoveryCodeIn = {
@@ -1482,6 +1556,26 @@ export type RulePreview = {
  * Which accounts an aggregated view (budget, dashboard) covers (F-BUD-3).
  */
 export type Scope = 'household' | 'mine' | 'joint';
+
+/**
+ * SettingsOut
+ */
+export type SettingsOut = {
+    /**
+     * Warn At
+     */
+    warn_at: string;
+};
+
+/**
+ * SettingsPatch
+ */
+export type SettingsPatch = {
+    /**
+     * Warn At
+     */
+    warn_at?: number | string | null;
+};
 
 /**
  * ShiftPreviewOut
@@ -2599,6 +2693,39 @@ export type SetTargetPaidFromResponses = {
 
 export type SetTargetPaidFromResponse = SetTargetPaidFromResponses[keyof SetTargetPaidFromResponses];
 
+export type MonthSoFarData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Month
+         *
+         * YYYY-MM; default: this month
+         */
+        month?: string | null;
+        scope?: Scope;
+    };
+    url: '/api/budget/progress';
+};
+
+export type MonthSoFarErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type MonthSoFarError = MonthSoFarErrors[keyof MonthSoFarErrors];
+
+export type MonthSoFarResponses = {
+    /**
+     * Successful Response
+     */
+    200: ProgressOut;
+};
+
+export type MonthSoFarResponse = MonthSoFarResponses[keyof MonthSoFarResponses];
+
 export type ListCategoriesData = {
     body?: never;
     path?: never;
@@ -2873,6 +3000,56 @@ export type ListMembersResponses = {
 };
 
 export type ListMembersResponse = ListMembersResponses[keyof ListMembersResponses];
+
+export type GetSettingsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/household/settings';
+};
+
+export type GetSettingsErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type GetSettingsError = GetSettingsErrors[keyof GetSettingsErrors];
+
+export type GetSettingsResponses = {
+    /**
+     * Successful Response
+     */
+    200: SettingsOut;
+};
+
+export type GetSettingsResponse = GetSettingsResponses[keyof GetSettingsResponses];
+
+export type UpdateSettingsData = {
+    body: SettingsPatch;
+    path?: never;
+    query?: never;
+    url: '/api/household/settings';
+};
+
+export type UpdateSettingsErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type UpdateSettingsError = UpdateSettingsErrors[keyof UpdateSettingsErrors];
+
+export type UpdateSettingsResponses = {
+    /**
+     * Successful Response
+     */
+    200: SettingsOut;
+};
+
+export type UpdateSettingsResponse = UpdateSettingsResponses[keyof UpdateSettingsResponses];
 
 export type RollbackImportData = {
     body?: never;

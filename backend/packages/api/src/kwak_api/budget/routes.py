@@ -17,6 +17,7 @@ from kwak_core.plans import (
     Review,
     ReviewRow,
 )
+from kwak_core.progress import ProgressLine, ProgressStatus
 from pydantic import AfterValidator, BaseModel, Field
 
 from kwak_api.auth.routes import CurrentSession, Db, Now
@@ -631,3 +632,66 @@ def budget_matrix(
 def _back(month: Month, count: int) -> Month:
     index = month.year * 12 + month.month - 1 - count
     return Month(index // 12, index % 12 + 1)
+
+
+class ProgressLineOut(BaseModel):
+    category_id: UUID
+    name: str
+    parent_id: UUID | None
+    spent: Decimal
+    """As in the matrix cell: outflows minus refunds."""
+    target: Decimal
+    remaining: Decimal
+    """target - spent: negative once over."""
+    share: Decimal | None
+    """spent / target, rounded to 4 decimals; null for a zero target."""
+    status: ProgressStatus
+    pace: Decimal | None
+    """Share of the month elapsed, rounded to 4 decimals; null for a one-off category
+    (F-CAT-6) or another month than the current one."""
+
+    @classmethod
+    def of(cls, line: ProgressLine) -> "ProgressLineOut":
+        def ratio(value: Decimal | None) -> Decimal | None:
+            return None if value is None else value.quantize(Decimal("0.0001"))
+
+        return cls(
+            category_id=line.category_id,
+            name=line.name,
+            parent_id=line.parent_id,
+            spent=line.spent.quantize(Decimal("0.01")),
+            target=line.target,
+            remaining=line.remaining.quantize(Decimal("0.01")),
+            share=ratio(line.share),
+            status=line.status,
+            pace=ratio(line.pace),
+        )
+
+
+class ProgressOut(BaseModel):
+    month: str
+    plan: str | None
+    """The period of the plan covering the month; null outside any plan (and no lines)."""
+    warn_at: Decimal
+    """The household's warning threshold, e.g. 0.80."""
+    lines: list[ProgressLineOut]
+    """Expense categories with a target of their own, highest share used first."""
+
+
+@router.get("/progress")
+def month_so_far(
+    user_session: CurrentSession,
+    db: Db,
+    now: Now,
+    month: Annotated[str | None, Query(description="YYYY-MM; default: this month")] = None,
+    scope: Scope = Scope.HOUSEHOLD,
+) -> ProgressOut:
+    """Each category's spending in the month against its monthly target (F-BUD-2)."""
+    when = _month(month) if month else Month.of(now.date())
+    result = service.progress(db, user_session.user, when, now.date(), scope=scope)
+    return ProgressOut(
+        month=str(when),
+        plan=None if result.plan is None else str(result.plan.period),
+        warn_at=result.warn_at,
+        lines=[ProgressLineOut.of(line) for line in result.lines],
+    )

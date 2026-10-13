@@ -39,3 +39,6 @@ class Category(UUIDPrimaryKey, Timestamps, Base):
     # F-CAT-5: transactions booked on or after this day count for the next month. NULL: no
     # setting of its own (a subcategory follows its parent's); 0: never shifted.
     shift_day: Mapped[int | None] = mapped_column(SmallInteger)
+    # F-CAT-6: an expense paid once in the month, never judged against the month's pace. NULL:
+    # no setting of its own (a subcategory follows its parent's).
+    one_off: Mapped[bool | None]

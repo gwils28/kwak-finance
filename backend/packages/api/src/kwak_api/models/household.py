@@ -1,5 +1,6 @@
 import enum
 from datetime import datetime
+from decimal import Decimal
 from uuid import UUID
 
 from kwak_core.users import Language
@@ -11,6 +12,7 @@ from sqlalchemy import (
     ForeignKey,
     Index,
     LargeBinary,
+    Numeric,
     String,
     text,
 )
@@ -21,8 +23,11 @@ from kwak_api.db import Base, Timestamps, UUIDPrimaryKey
 
 class Household(UUIDPrimaryKey, Timestamps, Base):
     __tablename__ = "household"
+    __table_args__ = (CheckConstraint("warn_at BETWEEN 0.5 AND 1", name="warn_at_range"),)
 
     name: Mapped[str] = mapped_column(String(100))
+    # F-BUD-2: the share of a monthly target from which a category is to watch.
+    warn_at: Mapped[Decimal] = mapped_column(Numeric(3, 2), server_default=text("0.80"))
 
     users: Mapped[list["User"]] = relationship(back_populates="household")
 

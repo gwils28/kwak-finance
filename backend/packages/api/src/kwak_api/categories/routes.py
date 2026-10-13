@@ -26,6 +26,9 @@ class CategoryOut(BaseModel):
     shift_day: int | None
     """From this day of the month, its transactions count for the next month (F-CAT-5). null:
     no setting of its own (a subcategory follows its parent's); 0: never shifted."""
+    one_off: bool | None
+    """Paid once in the month, so never judged against the month's pace (F-CAT-6). null: no
+    setting of its own (a subcategory follows its parent's)."""
 
     @classmethod
     def of(cls, category: Category) -> "CategoryOut":
@@ -35,6 +38,7 @@ class CategoryOut(BaseModel):
             kind=category.kind,
             parent_id=category.parent_id,
             shift_day=category.shift_day,
+            one_off=category.one_off,
         )
 
 
@@ -52,6 +56,9 @@ class CategoryPatch(BaseModel):
     parent_id: UUID | None = None
     shift_day: int | None = None
     """0-31; null removes the category's own setting. Leave it out to keep it."""
+    one_off: bool | None = None
+    """Expense categories only; null removes the category's own setting. Leave it out to keep
+    it."""
 
 
 class ShiftPreviewOut(BaseModel):
@@ -115,6 +122,7 @@ def update_category(
             parent=_parent(db, household_id, body.parent_id) if move else None,
             move=move,
             shift=(body.shift_day,) if "shift_day" in body.model_fields_set else None,
+            one_off=(body.one_off,) if "one_off" in body.model_fields_set else None,
         )
     except (ValueError, HierarchyError) as exc:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, str(exc)) from None

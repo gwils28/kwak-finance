@@ -1,4 +1,4 @@
-"""Budget plans and the monthly budget matrix (F-BUD-1, 2, 3, 4, 6, 7, 9)."""
+"""Budget plans, the monthly budget matrix and the month so far (F-BUD-1, 2, 3, 4, 6, 7, 9)."""
 
 from collections import defaultdict
 from dataclasses import dataclass
@@ -23,10 +23,18 @@ from kwak_core.plans import (
     replacement,
 )
 from kwak_core.plans import target_history as plans_history
+from kwak_core.progress import ProgressLine, month_progress
 from sqlalchemy import case, func, select
 from sqlalchemy.orm import Session
 
-from kwak_api.models import BudgetPlan, BudgetPlanTarget, Category, Transaction, User
+from kwak_api.models import (
+    BudgetPlan,
+    BudgetPlanTarget,
+    Category,
+    Household,
+    Transaction,
+    User,
+)
 from kwak_api.services import budget_month
 from kwak_api.services.accounts import visible_accounts
 
@@ -307,3 +315,35 @@ def matrix(
         band,
         savings=savings,
     )
+
+
+@dataclass
+class Progress:
+    plan: Plan | None
+    """The plan covering the month, if any."""
+    warn_at: Decimal
+    lines: list[ProgressLine]
+
+
+def progress(
+    db: Session, viewer: User, month: Month, today: date, *, scope: Scope = Scope.HOUSEHOLD
+) -> Progress:
+    """The month so far (F-BUD-2): read from the month's matrix, so it agrees with it."""
+    household = db.get_one(Household, viewer.household_id)
+    plan = next(
+        (p for p in map(core_plan, list_plans(db, viewer.household_id)) if month in p.months),
+        None,
+    )
+    if plan is None:
+        return Progress(None, household.warn_at, [])
+    spent = spending(db, viewer, [month], scope)
+    expense, _ = spent.matrix_categories()
+    lines = month_progress(
+        build_matrix(
+            expense, target_history(db, viewer.household_id, scope), spent.amounts, [month]
+        ),
+        today=today,
+        settings={c.id: c.one_off for c in spent.expense if c.one_off is not None},
+        warn_at=household.warn_at,
+    )
+    return Progress(plan, household.warn_at, lines)
