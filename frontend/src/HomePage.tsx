@@ -8,7 +8,7 @@ import { SpendingByCategory, SpendingOverMonths, SpendingPace } from "./dashboar
 import { GettingStarted } from "./guide/GettingStarted";
 import { useI18n } from "./i18n";
 import { formatEurSigned, formatEurWhole, formatPercent, formatPercentSigned } from "./lib/money";
-import { monthBounds, monthLabel, thisMonth } from "./lib/months";
+import { monthLabel, thisMonth } from "./lib/months";
 
 const fieldClass = "rounded-md border border-border bg-surface px-3 py-2";
 
@@ -164,7 +164,7 @@ function KpiRow({
         {toCategorise.count > 0 ? (
           <Link
             to="/transactions"
-            search={{ category: "none", ...monthBounds(month) }}
+            search={{ category: "none", month }}
             className="text-accent hover:underline"
           >
             {t.dashboard.categoriseThem(formatEurWhole(toCategorise.spent), monthLabel(month))}

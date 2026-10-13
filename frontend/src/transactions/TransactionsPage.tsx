@@ -18,6 +18,7 @@ import { Button, ErrorAlert, TextField } from "../components/ui";
 import { useI18n } from "../i18n";
 import { formatDate, todayIso } from "../lib/dates";
 import { amountInput, formatEur, parseEurInput } from "../lib/money";
+import { monthLabel, shiftMonth } from "../lib/months";
 import { CategoryOptions, categoriesQuery } from "./categories";
 import { RuleForm } from "./RuleForm";
 import { afterTransferChange, TransferBanner } from "./TransferBanner";
@@ -31,10 +32,13 @@ export type TransactionSearch = {
   q?: string;
   /** A category id, or "none" for transactions to categorise. */
   category?: string;
+  /** "2026-04": the transactions counted in that budget month (F-TX-7). */
+  month?: string;
   page?: number;
 };
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
+const ISO_MONTH = /^\d{4}-(0[1-9]|1[0-2])$/;
 
 /** Search params of /transactions, validated: anything malformed is dropped. */
 export function parseTransactionSearch(search: Record<string, unknown>): TransactionSearch {
@@ -47,6 +51,8 @@ export function parseTransactionSearch(search: Record<string, unknown>): Transac
     to: day(search.to),
     q: text(search.q),
     category: text(search.category),
+    month:
+      typeof search.month === "string" && ISO_MONTH.test(search.month) ? search.month : undefined,
     page: Number.isInteger(page) && page > 1 ? page : undefined,
   };
 }
@@ -82,6 +88,7 @@ export function TransactionsPage() {
             q: search.q,
             category_id: search.category === "none" ? undefined : search.category,
             uncategorised: search.category === "none" ? true : undefined,
+            budget_month: search.month,
             limit: PAGE_SIZE,
             offset: (page - 1) * PAGE_SIZE,
           },
@@ -216,7 +223,7 @@ function Filters({
 }) {
   const { t } = useI18n();
   const [text, setText] = useState(search.q ?? "");
-  const ids = { account: useId(), from: useId(), to: useId(), q: useId() };
+  const ids = { account: useId(), from: useId(), to: useId(), q: useId(), month: useId() };
   const submit = (event: FormEvent) => {
     event.preventDefault();
     onChange({ q: text.trim() || undefined });
@@ -224,7 +231,7 @@ function Filters({
   return (
     <form
       onSubmit={submit}
-      className="grid gap-3 rounded-lg border border-border bg-surface p-4 sm:grid-cols-2 lg:grid-cols-5"
+      className="grid gap-3 rounded-lg border border-border bg-surface p-4 sm:grid-cols-3 lg:grid-cols-6"
     >
       <div className="flex flex-col gap-1">
         <label htmlFor={ids.account} className="text-sm font-medium">
@@ -284,6 +291,18 @@ function Filters({
         />
       </div>
       <div className="flex flex-col gap-1">
+        <label htmlFor={ids.month} className="text-sm font-medium" title={t.transactions.monthHelp}>
+          {t.transactions.budgetMonth}
+        </label>
+        <input
+          id={ids.month}
+          type="month"
+          className={fieldClass}
+          value={search.month ?? ""}
+          onChange={(e) => onChange({ month: e.target.value || undefined })}
+        />
+      </div>
+      <div className="flex flex-col gap-1">
         <label htmlFor={ids.q} className="text-sm font-medium">
           {t.transactions.search}
         </label>
@@ -324,6 +343,7 @@ function TransactionTable({
   const { t } = useI18n();
   const queryClient = useQueryClient();
   const [confirming, setConfirming] = useState<string | null>(null);
+  const [choosingMonth, setChoosingMonth] = useState<string | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkCategory, setBulkCategory] = useState("");
   const bulkSelect = useId();
@@ -349,6 +369,20 @@ function TransactionTable({
         throwOnError: true,
       }),
     onSuccess: refresh,
+  });
+  const setMonth = useMutation({
+    mutationFn: async ({ id, month }: { id: string; month: string | null }) =>
+      updateTransaction({
+        path: { transaction_id: id },
+        body: { budget_month: month },
+        throwOnError: true,
+      }),
+    onSuccess: async () => {
+      setChoosingMonth(null);
+      await refresh();
+      await queryClient.invalidateQueries({ queryKey: ["budget"] });
+      await queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+    },
   });
   const unlink = useMutation({
     mutationFn: async (groupId: string) =>
@@ -441,7 +475,21 @@ function TransactionTable({
                     onChange={() => toggle(tx.id)}
                   />
                 </td>
-                <td className="whitespace-nowrap px-3 py-2">{formatDate(tx.booked_on)}</td>
+                <td className="whitespace-nowrap px-3 py-2">
+                  {formatDate(tx.booked_on)}
+                  {tx.budget_month && tx.budget_month !== tx.booked_on.slice(0, 7) && (
+                    <span className="block text-xs text-muted">
+                      {t.transactions.countedIn(monthLabel(tx.budget_month))}
+                    </span>
+                  )}
+                  {choosingMonth === tx.id && (
+                    <MonthSelect
+                      tx={tx}
+                      disabled={setMonth.isPending}
+                      onChange={(month) => setMonth.mutate({ id: tx.id, month })}
+                    />
+                  )}
+                </td>
                 <td className="px-3 py-2">{tx.label}</td>
                 <td className="px-3 py-2">
                   {tx.transfer_group_id ? (
@@ -486,6 +534,17 @@ function TransactionTable({
                 </td>
                 <td className="whitespace-nowrap px-3 py-2 text-right">
                   <span className="flex items-center justify-end gap-2">
+                    {!tx.transfer_group_id && (
+                      <Button
+                        variant="ghost"
+                        aria-label={t.transactions.budgetMonthOf(tx.label)}
+                        aria-expanded={choosingMonth === tx.id}
+                        title={t.transactions.monthHelp}
+                        onClick={() => setChoosingMonth(choosingMonth === tx.id ? null : tx.id)}
+                      >
+                        {t.transactions.monthShort}
+                      </Button>
+                    )}
                     <Button
                       variant="ghost"
                       aria-label={t.transactions.ruleFrom(tx.label)}
@@ -535,6 +594,42 @@ function TransactionTable({
         </table>
       </div>
     </div>
+  );
+}
+
+/** The month a transaction counts in: automatic (its category's rule), or set by hand to its
+ * date's month, the one before or the one after (F-TX-7). */
+function MonthSelect({
+  tx,
+  disabled,
+  onChange,
+}: {
+  tx: TransactionOut;
+  disabled: boolean;
+  onChange: (month: string | null) => void;
+}) {
+  const { t } = useI18n();
+  const own = tx.booked_on.slice(0, 7);
+  return (
+    <select
+      aria-label={t.transactions.countsIn(tx.label)}
+      className="mt-1 block rounded-md border border-border bg-surface px-1 py-0.5 text-xs"
+      disabled={disabled}
+      value={tx.budget_month_set ? tx.budget_month : ""}
+      onChange={(e) => onChange(e.target.value || null)}
+    >
+      <option value="">
+        {t.transactions.automatic(tx.budget_month_set ? null : monthLabel(tx.budget_month))}
+      </option>
+      {[-1, 0, 1].map((delta) => {
+        const month = shiftMonth(own, delta);
+        return (
+          <option key={month} value={month}>
+            {monthLabel(month)}
+          </option>
+        );
+      })}
+    </select>
   );
 }
 

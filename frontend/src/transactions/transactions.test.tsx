@@ -28,6 +28,8 @@ const imported = {
   amount: "-4.20",
   label: "CARTE X0000 13/03 BOULANGERIE DU PARC",
   source: "import",
+  budget_month: "2026-03",
+  budget_month_set: false,
 };
 const manual = {
   ...imported,
@@ -235,4 +237,70 @@ test("the header links to the transactions page", async () => {
   const user = userEvent.setup();
   await user.click(await screen.findByRole("link", { name: "Transactions" }));
   expect(await screen.findByRole("heading", { name: "Transactions" })).toBeInTheDocument();
+});
+
+const salary = {
+  ...manual,
+  id: "t3",
+  booked_on: "2026-03-20",
+  label: "VIR SALAIRE",
+  budget_month: "2026-04",
+};
+
+test("a transaction counted in another month says so next to its date", async () => {
+  api({}, { items: [imported, salary], total: 2 });
+  render(<TestApp path="/transactions" />);
+
+  const table = await screen.findByRole("table", { name: "Transactions" });
+  const row = within(table).getByRole("row", { name: /VIR SALAIRE/ });
+  expect(row).toHaveTextContent("20 Mar 2026");
+  expect(row).toHaveTextContent("counted in Apr 2026");
+  expect(within(table).getByRole("row", { name: /BOULANGERIE/ })).not.toHaveTextContent(
+    "counted in",
+  );
+});
+
+test("the budget month of a transaction is set by hand", async () => {
+  const calls = api(
+    {
+      "PATCH /api/transactions/t3": (body) =>
+        Response.json({ ...salary, ...(body as object), budget_month_set: true }),
+    },
+    { items: [salary], total: 1 },
+  );
+  render(<TestApp path="/transactions" />);
+
+  const user = userEvent.setup();
+  await user.click(await screen.findByRole("button", { name: "Budget month of VIR SALAIRE" }));
+  const select = screen.getByLabelText("Counts in, VIR SALAIRE");
+  expect(
+    within(select)
+      .getAllByRole("option")
+      .map((o) => o.textContent),
+  ).toEqual(["Automatic (Apr 2026)", "Feb 2026", "Mar 2026", "Apr 2026"]);
+  await user.selectOptions(select, "2026-03");
+
+  await vi.waitFor(() =>
+    expect(calls.find((c) => c.route === "PATCH /api/transactions/t3")?.body).toEqual({
+      budget_month: "2026-03",
+    }),
+  );
+});
+
+test("a transfer has no budget month to set", async () => {
+  const leg = { ...manual, transfer_group_id: "g1", transfer_account_name: "Livret A" };
+  api({}, { items: [leg], total: 1 });
+  render(<TestApp path="/transactions" />);
+
+  await screen.findByRole("table", { name: "Transactions" });
+  expect(screen.queryByRole("button", { name: /Budget month of/ })).toBeNull();
+});
+
+test("the list filters on the budget month", async () => {
+  api();
+  render(<TestApp path="/transactions?month=2026-04" />);
+
+  await screen.findByRole("table", { name: "Transactions" });
+  expect(listQueries().at(-1)?.get("budget_month")).toBe("2026-04");
+  expect(screen.getByLabelText("Budget month")).toHaveValue("2026-04");
 });

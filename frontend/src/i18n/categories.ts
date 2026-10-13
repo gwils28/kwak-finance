@@ -1,4 +1,9 @@
 const s = (n: number) => (n === 1 ? "" : "s");
+const ordinal = (n: number) => {
+  const tens = n % 100;
+  const suffix = tens >= 11 && tens <= 13 ? "th" : (["th", "st", "nd", "rd"][n % 10] ?? "th");
+  return `${n}${suffix}`;
+};
 
 export const categoriesEn = {
   title: "Categories",
@@ -24,6 +29,28 @@ export const categoriesEn = {
   confirmDeleteNamed: (name: string) => `Confirm: delete ${name}`,
   deleteIt: "Delete it",
   deleteNamed: (name: string) => `Delete ${name}`,
+  shift: {
+    from: (day: number) => `Next month from the ${ordinal(day)}`,
+    like: (parent: string, day: number) => `Like ${parent}: next month from the ${ordinal(day)}`,
+    never: "Never shifted",
+    open: (name: string) => `Budget month of ${name}`,
+    button: "Month",
+    help: "Transactions of this category booked on or after this day count for the next month in the budget and the overview, e.g. a salary paid on the 20th for the next month's spending. Their date does not change.",
+    mode: "Counts for the next month",
+    inherit: (parent: string) => `Like ${parent}`,
+    no: "No",
+    neverOption: "Never",
+    day: "From a day of the month",
+    dayLabel: "From day",
+    invalidDay: "Enter a day from 1 to 31.",
+    preview: "Preview",
+    moved: (n: number, months: string) =>
+      n === 0
+        ? "No transaction changes month."
+        : `${n} transaction${s(n)} change${n === 1 ? "s" : ""} month (${months}).`,
+    locked: (plans: string) => `Locked plans whose review changes: ${plans}.`,
+    save: "Save",
+  },
   labelContainsQuoted: (text: string) => `Label contains "${text}"`,
   between: (min: string, max: string) => `from ${min} to ${max}`,
   atLeast: (min: string) => `at least ${min}`,
@@ -106,6 +133,28 @@ export const categoriesFr: typeof categoriesEn = {
   confirmDeleteNamed: (name) => `Confirmer : supprimer ${name}`,
   deleteIt: "La supprimer",
   deleteNamed: (name) => `Supprimer ${name}`,
+  shift: {
+    from: (day) => `Mois suivant à partir du ${day === 1 ? "1er" : day}`,
+    like: (parent, day) => `Comme ${parent} : mois suivant à partir du ${day === 1 ? "1er" : day}`,
+    never: "Jamais décalée",
+    open: (name) => `Mois budgétaire de ${name}`,
+    button: "Mois",
+    help: "Les opérations de cette catégorie datées de ce jour ou après comptent pour le mois suivant dans le budget et la vue d'ensemble, par ex. un salaire versé le 20 pour les dépenses du mois suivant. Leur date ne change pas.",
+    mode: "Compte pour le mois suivant",
+    inherit: (parent) => `Comme ${parent}`,
+    no: "Non",
+    neverOption: "Jamais",
+    day: "À partir d'un jour du mois",
+    dayLabel: "À partir du jour",
+    invalidDay: "Saisissez un jour de 1 à 31.",
+    preview: "Aperçu",
+    moved: (n, months) =>
+      n === 0
+        ? "Aucune opération ne change de mois."
+        : `${n} opération${fs(n)} change${n > 1 ? "nt" : ""} de mois (${months}).`,
+    locked: (plans) => `Plans verrouillés dont le bilan change : ${plans}.`,
+    save: "Enregistrer",
+  },
   labelContainsQuoted: (text) => `Le libellé contient « ${text} »`,
   between: (min, max) => `de ${min} à ${max}`,
   atLeast: (min) => `au moins ${min}`,
