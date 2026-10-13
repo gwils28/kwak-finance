@@ -59,6 +59,8 @@ class DefaultCategory:
     names: Names
     kind: CategoryKind
     children: tuple[Names, ...] = field(default=())
+    one_off: bool = False
+    """Paid once in the month (F-CAT-6): not judged against the pace of the month."""
 
     def name(self, language: Language) -> str:
         return self.names.name(language)
@@ -77,6 +79,7 @@ DEFAULT_CATEGORIES: tuple[DefaultCategory, ...] = (
             N("Home insurance", "Assurance habitation"),
             N("Repairs", "Travaux et réparations"),
         ),
+        one_off=True,
     ),
     DefaultCategory(
         N("Food", "Alimentation"),
@@ -110,6 +113,7 @@ DEFAULT_CATEGORIES: tuple[DefaultCategory, ...] = (
             N("Streaming", "Streaming"),
             N("Other subscriptions", "Autres abonnements"),
         ),
+        one_off=True,
     ),
     DefaultCategory(
         N("Shopping", "Achats"),
