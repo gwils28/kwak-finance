@@ -25,7 +25,7 @@ import {
   formatPercentSigned,
   parseEurInput,
 } from "../lib/money";
-import { monthBounds, monthLabel, shiftMonth, thisMonth } from "../lib/months";
+import { monthLabel, shiftMonth, thisMonth } from "../lib/months";
 import { defaultPlan, type PlanTarget, planTargets, scopedPlan } from "../lib/plans";
 import { PLANS_KEY, PlanPanel, usePeriodLabel } from "./PlanPanel";
 
@@ -374,7 +374,7 @@ function MatrixCell({
       {categoryParam ? (
         <Link
           to="/transactions"
-          search={{ category: categoryParam, ...monthBounds(cell.month) }}
+          search={{ category: categoryParam, month: cell.month }}
           aria-label={`${row.name}, ${monthLabel(cell.month)}: ${spent}`}
           className="block hover:underline"
         >

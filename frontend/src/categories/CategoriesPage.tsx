@@ -9,16 +9,20 @@ import {
   deleteRule,
   listAccounts,
   listRules,
+  previewShift,
   type RuleOut,
+  type ShiftPreviewOut,
   updateCategory,
   updateRule,
 } from "../api/generated";
 import { apiErrorMessage, detailSentence } from "../auth/errors";
 import { meQuery } from "../auth/session";
+import { usePeriodLabel } from "../budget/PlanPanel";
 import { Button, ErrorAlert, TextField } from "../components/ui";
 import { useI18n } from "../i18n";
 import type { Messages } from "../i18n/en";
 import { amountInput, formatEur, parseEurInput } from "../lib/money";
+import { monthLabel } from "../lib/months";
 import { CategoryOptions, categoriesQuery } from "../transactions/categories";
 import { RestoreDefaults } from "./RestoreDefaults";
 
@@ -255,6 +259,7 @@ function CategoryLine({
   const refresh = useRefresh();
   const [renaming, setRenaming] = useState(false);
   const [confirming, setConfirming] = useState(false);
+  const [shifting, setShifting] = useState(false);
   const [name, setName] = useState(category.name);
   const patch = useMutation({
     mutationFn: async (body: { name?: string; parent_id?: string }) =>
@@ -278,85 +283,259 @@ function CategoryLine({
     },
   });
   const isChild = category.parent_id !== null;
+  const parent = parents.find((p) => p.id === category.parent_id);
+  const shift = shiftSummary(t, category, parent);
 
   return (
-    <div className="flex flex-wrap items-center justify-between gap-2">
-      {renaming ? (
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            if (name.trim() && name !== category.name) patch.mutate({ name });
-            else setRenaming(false);
-          }}
-        >
-          <input
-            aria-label={t.categories.newNameFor(category.name)}
-            className="rounded-md border border-border bg-surface px-2 py-1 text-sm"
-            maxLength={60}
-            // biome-ignore lint/a11y/noAutofocus: the field appears because the user asked for it.
-            autoFocus
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            onKeyDown={(e) => e.key === "Escape" && setRenaming(false)}
-          />
-        </form>
-      ) : (
-        <span className={isChild ? "" : "font-semibold"}>{category.name}</span>
-      )}
-      <span className="flex flex-wrap items-center gap-2">
-        {isChild && (
-          <select
-            aria-label={t.categories.moveTo(category.name)}
-            className="rounded-md border border-border bg-surface px-2 py-1 text-xs"
-            value={category.parent_id ?? ""}
-            onChange={(e) => patch.mutate({ parent_id: e.target.value })}
+    <div>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        {renaming ? (
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (name.trim() && name !== category.name) patch.mutate({ name });
+              else setRenaming(false);
+            }}
           >
-            {parents.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name}
-              </option>
-            ))}
-          </select>
-        )}
-        <Button
-          variant="ghost"
-          className="px-2 py-1 text-xs"
-          aria-label={t.categories.renameNamed(category.name)}
-          onClick={() => setRenaming(true)}
-        >
-          {t.categories.rename}
-        </Button>
-        {confirming ? (
-          <>
-            <Button
-              variant="ghost"
-              className="border-negative px-2 py-1 text-xs text-negative"
-              aria-label={t.categories.confirmDeleteNamed(category.name)}
-              disabled={remove.isPending}
-              onClick={() => remove.mutate()}
-            >
-              {t.categories.deleteIt}
-            </Button>
-            <Button
-              variant="ghost"
-              className="px-2 py-1 text-xs"
-              onClick={() => setConfirming(false)}
-            >
-              {t.common.cancel}
-            </Button>
-          </>
+            <input
+              aria-label={t.categories.newNameFor(category.name)}
+              className="rounded-md border border-border bg-surface px-2 py-1 text-sm"
+              maxLength={60}
+              // biome-ignore lint/a11y/noAutofocus: the field appears because the user asked for it.
+              autoFocus
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              onKeyDown={(e) => e.key === "Escape" && setRenaming(false)}
+            />
+          </form>
         ) : (
+          <span>
+            <span className={isChild ? "" : "font-semibold"}>{category.name}</span>
+            {shift && <span className="ml-2 text-xs text-muted">{shift}</span>}
+          </span>
+        )}
+        <span className="flex flex-wrap items-center gap-2">
+          {isChild && (
+            <select
+              aria-label={t.categories.moveTo(category.name)}
+              className="rounded-md border border-border bg-surface px-2 py-1 text-xs"
+              value={category.parent_id ?? ""}
+              onChange={(e) => patch.mutate({ parent_id: e.target.value })}
+            >
+              {parents.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
+            </select>
+          )}
           <Button
             variant="ghost"
             className="px-2 py-1 text-xs"
-            aria-label={t.categories.deleteNamed(category.name)}
-            onClick={() => setConfirming(true)}
+            aria-label={t.categories.shift.open(category.name)}
+            aria-expanded={shifting}
+            title={t.categories.shift.help}
+            onClick={() => setShifting(!shifting)}
           >
-            {t.common.delete}
+            {t.categories.shift.button}
           </Button>
-        )}
-      </span>
+          <Button
+            variant="ghost"
+            className="px-2 py-1 text-xs"
+            aria-label={t.categories.renameNamed(category.name)}
+            onClick={() => setRenaming(true)}
+          >
+            {t.categories.rename}
+          </Button>
+          {confirming ? (
+            <>
+              <Button
+                variant="ghost"
+                className="border-negative px-2 py-1 text-xs text-negative"
+                aria-label={t.categories.confirmDeleteNamed(category.name)}
+                disabled={remove.isPending}
+                onClick={() => remove.mutate()}
+              >
+                {t.categories.deleteIt}
+              </Button>
+              <Button
+                variant="ghost"
+                className="px-2 py-1 text-xs"
+                onClick={() => setConfirming(false)}
+              >
+                {t.common.cancel}
+              </Button>
+            </>
+          ) : (
+            <Button
+              variant="ghost"
+              className="px-2 py-1 text-xs"
+              aria-label={t.categories.deleteNamed(category.name)}
+              onClick={() => setConfirming(true)}
+            >
+              {t.common.delete}
+            </Button>
+          )}
+        </span>
+      </div>
+      {shifting && (
+        <ShiftForm
+          category={category}
+          parent={parent}
+          onError={onError}
+          onDone={() => setShifting(false)}
+        />
+      )}
     </div>
+  );
+}
+
+/** What the category's next-month shift says (F-CAT-5), or nothing when it has none. */
+function shiftSummary(t: Messages, category: CategoryOut, parent?: CategoryOut): string | null {
+  const own = category.shift_day ?? null;
+  if (own !== null && own > 0) return t.categories.shift.from(own);
+  if (own === 0) return parent ? t.categories.shift.never : null;
+  const inherited = parent?.shift_day ?? 0;
+  return parent && inherited > 0 ? t.categories.shift.like(parent.name, inherited) : null;
+}
+
+type ShiftMode = "inherit" | "never" | "day";
+
+function ShiftForm({
+  category,
+  parent,
+  onError,
+  onDone,
+}: {
+  category: CategoryOut;
+  parent?: CategoryOut;
+  onError: (message: string | null) => void;
+  onDone: () => void;
+}) {
+  const { t } = useI18n();
+  const refresh = useRefresh();
+  const periodLabel = usePeriodLabel();
+  const ids = { mode: useId(), day: useId() };
+  const own = category.shift_day ?? null;
+  const [mode, setMode] = useState<ShiftMode>(
+    own !== null && own > 0 ? "day" : own === 0 && parent ? "never" : "inherit",
+  );
+  const [day, setDay] = useState(String(own !== null && own > 0 ? own : 15));
+  const [invalid, setInvalid] = useState(false);
+  const [preview, setPreview] = useState<ShiftPreviewOut | null>(null);
+
+  // A top-level category has no parent to follow: "no" stores no setting at all.
+  const value = (): number | null | undefined => {
+    if (mode === "inherit") return null;
+    if (mode === "never") return 0;
+    const n = Number(day);
+    return Number.isInteger(n) && n >= 1 && n <= 31 ? n : undefined;
+  };
+  const check = () => {
+    const v = value();
+    setInvalid(v === undefined);
+    return v;
+  };
+
+  const ask = useMutation({
+    mutationFn: async (v: number | null) =>
+      unwrap(
+        t,
+        await previewShift({
+          path: { category_id: category.id },
+          query: v === null ? {} : { day: v },
+        }),
+      ),
+    onSuccess: setPreview,
+    onError: (exc) => onError(exc.message),
+  });
+  const save = useMutation({
+    mutationFn: async (v: number | null) =>
+      unwrap(
+        t,
+        await updateCategory({ path: { category_id: category.id }, body: { shift_day: v } }),
+      ),
+    onSuccess: async () => {
+      onError(null);
+      onDone();
+      await refresh();
+    },
+    onError: (exc) => onError(exc.message),
+  });
+
+  return (
+    <form
+      className="mt-2 flex flex-wrap items-end gap-3 rounded-md border border-border p-3 text-sm"
+      onSubmit={(e) => {
+        e.preventDefault();
+        const v = check();
+        if (v !== undefined) save.mutate(v);
+      }}
+    >
+      <p className="w-full text-xs text-muted">{t.categories.shift.help}</p>
+      <label htmlFor={ids.mode} className="flex flex-col gap-1 font-medium">
+        {t.categories.shift.mode}
+        <select
+          id={ids.mode}
+          className={fieldClass}
+          value={mode}
+          onChange={(e) => {
+            setMode(e.target.value as ShiftMode);
+            setPreview(null);
+          }}
+        >
+          <option value="inherit">
+            {parent ? t.categories.shift.inherit(parent.name) : t.categories.shift.no}
+          </option>
+          {parent && <option value="never">{t.categories.shift.neverOption}</option>}
+          <option value="day">{t.categories.shift.day}</option>
+        </select>
+      </label>
+      {mode === "day" && (
+        <label htmlFor={ids.day} className="flex flex-col gap-1 font-medium">
+          {t.categories.shift.dayLabel}
+          <input
+            id={ids.day}
+            inputMode="numeric"
+            className={`${fieldClass} w-20`}
+            value={day}
+            onChange={(e) => {
+              setDay(e.target.value);
+              setPreview(null);
+            }}
+          />
+        </label>
+      )}
+      <Button
+        variant="ghost"
+        disabled={ask.isPending}
+        onClick={() => {
+          const v = check();
+          if (v !== undefined) ask.mutate(v);
+        }}
+      >
+        {t.categories.shift.preview}
+      </Button>
+      <Button type="submit" disabled={save.isPending}>
+        {t.categories.shift.save}
+      </Button>
+      <Button variant="ghost" onClick={onDone}>
+        {t.common.cancel}
+      </Button>
+      {invalid && <p className="w-full text-negative">{t.categories.shift.invalidDay}</p>}
+      {preview && (
+        <div role="status" className="w-full rounded-md bg-bg px-3 py-2">
+          <p>
+            {t.categories.shift.moved(preview.moved, preview.months.map(monthLabel).join(", "))}
+          </p>
+          {preview.locked_plans.length > 0 && (
+            <p className="text-warning">
+              {t.categories.shift.locked(preview.locked_plans.map(periodLabel).join(", "))}
+            </p>
+          )}
+        </div>
+      )}
+    </form>
   );
 }
 

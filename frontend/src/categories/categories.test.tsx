@@ -11,8 +11,9 @@ const categories = [
   { id: "c-bakery", name: "Bakery and coffee", kind: "expense", parent_id: "c-food" },
   { id: "c-groceries", name: "Groceries", kind: "expense", parent_id: "c-food" },
   { id: "c-housing", name: "Housing", kind: "expense", parent_id: null },
-  { id: "c-income", name: "Income", kind: "income", parent_id: null },
+  { id: "c-income", name: "Income", kind: "income", parent_id: null, shift_day: 20 },
   { id: "c-salary", name: "Salary", kind: "income", parent_id: "c-income" },
+  { id: "c-bonus", name: "Bonus", kind: "income", parent_id: "c-income", shift_day: 0 },
   { id: "c-savings", name: "Savings & investments", kind: "savings", parent_id: null },
   { id: "c-pea", name: "Investments", kind: "savings", parent_id: "c-savings" },
 ];
@@ -244,4 +245,48 @@ test("the account menu links to the categories", async () => {
   await user.click(await screen.findByRole("button", { name: "Account menu: Wilson" }));
   await user.click(screen.getByRole("link", { name: "Categories" }));
   expect(await screen.findByRole("heading", { name: "Categories" })).toBeInTheDocument();
+});
+
+test("a category's next-month shift is previewed, then saved", async () => {
+  const calls = api({
+    "GET /api/categories/c-salary/shift-preview": () =>
+      Response.json({ moved: 3, months: ["2025-12", "2026-01"], locked_plans: ["2025-Q4"] }),
+    "PATCH /api/categories/c-salary": (body) =>
+      Response.json({ ...categories[5], ...(body as object) }),
+  });
+  render(<TestApp path="/categories" />);
+
+  const user = userEvent.setup();
+  const income = await screen.findByRole("listitem", { name: "Income" });
+  expect(income).toHaveTextContent("Next month from the 20th");
+  const salary = within(income).getByRole("listitem", { name: "Salary" });
+  expect(salary).toHaveTextContent("Like Income: next month from the 20th");
+  expect(within(income).getByRole("listitem", { name: "Bonus" })).toHaveTextContent(
+    "Never shifted",
+  );
+
+  await user.click(within(salary).getByRole("button", { name: "Budget month of Salary" }));
+  await user.selectOptions(within(salary).getByLabelText("Counts for the next month"), "day");
+  const day = within(salary).getByLabelText("From day");
+  await user.clear(day);
+  await user.type(day, "15");
+  await user.click(within(salary).getByRole("button", { name: "Preview" }));
+
+  const preview = await within(salary).findByRole("status");
+  expect(preview).toHaveTextContent("3 transactions change month (Dec 2025, Jan 2026)");
+  expect(preview).toHaveTextContent("Q4 2025");
+  expect(
+    vi
+      .mocked(fetch)
+      .mock.calls.map(([r]) => new URL((r as Request).url))
+      .find((u) => u.pathname.endsWith("/shift-preview"))
+      ?.searchParams.get("day"),
+  ).toBe("15");
+
+  await user.click(within(salary).getByRole("button", { name: "Save" }));
+  await vi.waitFor(() =>
+    expect(calls.find((c) => c.route === "PATCH /api/categories/c-salary")?.body).toEqual({
+      shift_day: 15,
+    }),
+  );
 });

@@ -63,12 +63,9 @@ test("a cell opens the month's transactions of its category", async () => {
   render(<TestApp path="/budget" />);
 
   const link = await screen.findByRole("link", { name: /^Bakery and coffee, Mar 2026: €72$/ });
-  expect(link).toHaveAttribute(
-    "href",
-    "/transactions?category=c-bakery&from=2026-03-01&to=2026-03-31",
-  );
+  expect(link).toHaveAttribute("href", "/transactions?category=c-bakery&month=2026-03");
   const todo = screen.getByRole("link", { name: /^To categorise, Feb 2026: €0$/ });
-  expect(todo).toHaveAttribute("href", "/transactions?category=none&from=2026-02-01&to=2026-02-28");
+  expect(todo).toHaveAttribute("href", "/transactions?category=none&month=2026-02");
 });
 
 test("scope and band are sent to the API", async () => {

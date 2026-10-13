@@ -91,7 +91,7 @@ test("the to-categorise tile links to those transactions", async () => {
   expect(tile).toHaveTextContent("10");
   expect(within(tile).getByRole("link", { name: /Categorise them/ })).toHaveAttribute(
     "href",
-    "/transactions?category=none&from=2026-03-01&to=2026-03-31",
+    "/transactions?category=none&month=2026-03",
   );
 });
 
