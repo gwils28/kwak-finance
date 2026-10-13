@@ -76,3 +76,21 @@ test("following a link from the account menu closes it", async () => {
   expect(await screen.findByRole("heading", { name: "Categories" })).toBeInTheDocument();
   expect(button).toHaveAttribute("aria-expanded", "false");
 });
+
+test("the logo stands next to the app's name in the header", async () => {
+  api();
+  render(<TestApp path="/accounts" />);
+
+  const home = await screen.findByRole("link", { name: "Kwak Finance" });
+  expect(home.querySelector("img")).toHaveAttribute("src", "/logo.png");
+});
+
+test("the sign-in page opens with the logo and the app's name", async () => {
+  fakeApi({ "GET /api/auth/me": () => Response.json({ detail: "x" }, { status: 401 }) });
+  render(<TestApp path="/login" />);
+
+  await screen.findByRole("heading", { name: "Sign in" });
+  expect(document.querySelector('img[src="/logo.png"]')?.parentElement).toHaveTextContent(
+    "Kwak Finance",
+  );
+});

@@ -12,6 +12,7 @@ import {
 } from "../api/generated";
 import { Footer } from "../components/Footer";
 import { LanguageSelect } from "../components/LanguageSelect";
+import { Brand } from "../components/Logo";
 import { Button, Card, ErrorAlert, TextField } from "../components/ui";
 import { useI18n } from "../i18n";
 import { apiErrorMessage } from "./errors";
@@ -41,6 +42,7 @@ export function LoginPage() {
   const [step, setStep] = useState<Step>({ kind: "password" });
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const { t } = useI18n();
 
   const finish = async (user: UserOut) => {
     queryClient.setQueryData(meQuery.queryKey, user);
@@ -50,6 +52,7 @@ export function LoginPage() {
   return (
     <div className="flex min-h-screen flex-col">
       <main className="flex flex-1 flex-col items-center justify-center gap-4 px-4 py-10">
+        <Brand name={t.common.appName} />
         <LanguageSelect />
         {step.kind === "password" && (
           <PasswordStep
