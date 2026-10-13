@@ -45,12 +45,14 @@ export function ImportPage() {
   const account = accounts.data?.find((a) => a.id === accountId);
   const [file, setFile] = useState<File | null>(null);
   const [result, setResult] = useState<ImportBatchOut | null>(null);
+  // Matches undone in the preview, as "<row line>:<entry id>" (F-TX-8).
+  const [refused, setRefused] = useState<string[]>([]);
 
   const preview = useMutation({
-    mutationFn: async (chosen: File) => {
+    mutationFn: async ({ chosen, undone }: { chosen: File; undone: string[] }) => {
       const { data, error, response } = await previewImport({
         path: { account_id: accountId },
-        body: { file: chosen },
+        body: { file: chosen, refused: undone },
       });
       return data ?? failure(t, error, response);
     },
@@ -60,7 +62,7 @@ export function ImportPage() {
     mutationFn: async (chosen: File) => {
       const { data, error, response } = await createImport({
         path: { account_id: accountId },
-        body: { file: chosen },
+        body: { file: chosen, refused },
       });
       return data ?? failure(t, error, response);
     },
@@ -69,6 +71,7 @@ export function ImportPage() {
       preview.reset();
       await queryClient.invalidateQueries({ queryKey: ["accounts"] });
       await queryClient.invalidateQueries({ queryKey: ["imports", accountId] });
+      await queryClient.invalidateQueries({ queryKey: ["transactions"] });
     },
   });
 
@@ -81,7 +84,7 @@ export function ImportPage() {
       }),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["accounts"] });
-      if (file) preview.mutate(file);
+      if (file) preview.mutate({ chosen: file, undone: refused });
     },
   });
 
@@ -89,8 +92,9 @@ export function ImportPage() {
     const chosen = event.target.files?.[0] ?? null;
     setFile(chosen);
     setResult(null);
+    setRefused([]);
     commit.reset();
-    if (chosen) preview.mutate(chosen);
+    if (chosen) preview.mutate({ chosen, undone: [] });
   };
 
   return (
@@ -129,6 +133,11 @@ export function ImportPage() {
           busy={commit.isPending || openOn.isPending}
           onImport={() => commit.mutate(file)}
           onOpenOn={(day) => openOn.mutate(day)}
+          onRefuse={(match) => {
+            const undone = [...refused, match];
+            setRefused(undone);
+            preview.mutate({ chosen: file, undone });
+          }}
         />
       )}
       <History accountId={accountId} />
@@ -142,12 +151,14 @@ function Preview({
   busy,
   onImport,
   onOpenOn,
+  onRefuse,
 }: {
   preview: ImportPreview;
   openingDate: string | undefined;
   busy: boolean;
   onImport: () => void;
   onOpenOn: (day: string) => void;
+  onRefuse: (match: string) => void;
 }) {
   const { t } = useI18n();
   const { counts } = preview;
@@ -157,6 +168,7 @@ function Preview({
     .sort()[0];
   const summary = [
     t.imports.countNew(counts.new),
+    counts.already_entered > 0 && t.imports.countEntered(counts.already_entered),
     counts.duplicate > 0 && t.imports.countDuplicate(counts.duplicate),
     counts.before_opening > 0 && t.imports.countBeforeOpening(counts.before_opening),
     counts.error > 0 && t.imports.countErrors(counts.error),
@@ -180,8 +192,12 @@ function Preview({
           )}
           <p className="mt-1 font-medium">{summary.join(" · ")}</p>
         </div>
-        <Button onClick={onImport} disabled={busy || counts.new === 0}>
-          {counts.new === 0 ? t.imports.nothingNew : t.imports.importNew(counts.new)}
+        <Button onClick={onImport} disabled={busy || counts.new + counts.already_entered === 0}>
+          {counts.new + counts.already_entered === 0
+            ? t.imports.nothingNew
+            : counts.already_entered > 0
+              ? t.imports.importAndMatch(counts.new, counts.already_entered)
+              : t.imports.importNew(counts.new)}
         </Button>
       </div>
       {counts.before_opening > 0 && earliest && (
@@ -215,6 +231,25 @@ function Preview({
           ))}
         </ul>
       )}
+      {counts.already_entered > 0 && <p className="text-sm text-muted">{t.imports.matchHelp}</p>}
+      {preview.unmatched_entries.length > 0 && (
+        <section
+          aria-label={t.imports.unmatched(preview.unmatched_entries.length)}
+          className="rounded-md border border-warning px-3 py-2 text-sm"
+        >
+          <p className="font-medium">{t.imports.unmatched(preview.unmatched_entries.length)}</p>
+          <p className="text-xs text-muted">{t.imports.unmatchedHelp}</p>
+          <ul className="mt-1">
+            {preview.unmatched_entries.map((e) => (
+              <li key={e.id} className="flex flex-wrap gap-x-3">
+                <span>{formatDate(e.booked_on)}</span>
+                <span>{e.label}</span>
+                <span className="tabular">{formatEur(e.amount)}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
       <div className="overflow-x-auto rounded-lg border border-border bg-surface">
         <table aria-label={t.imports.rowsTable} className="w-full text-sm">
           <thead className="text-left text-muted">
@@ -227,9 +262,19 @@ function Preview({
           </thead>
           <tbody className="divide-y divide-border">
             {preview.rows.map((r) => (
-              <tr key={r.line} className={r.status === "new" ? "" : "text-muted"}>
+              <tr
+                key={r.line}
+                className={r.status === "new" || r.status === "already_entered" ? "" : "text-muted"}
+              >
                 <td className="whitespace-nowrap px-3 py-2">{formatDate(r.booked_on)}</td>
-                <td className="px-3 py-2">{r.label}</td>
+                <td className="px-3 py-2">
+                  {r.label}
+                  {r.entry && (
+                    <span className="block text-xs text-muted">
+                      {t.imports.enteredAs(formatDate(r.entry.booked_on), r.entry.label)}
+                    </span>
+                  )}
+                </td>
                 <td
                   className={`tabular whitespace-nowrap px-3 py-2 text-right ${
                     Number(r.amount) < 0 ? "" : "text-positive"
@@ -237,7 +282,20 @@ function Preview({
                 >
                   {formatEur(r.amount)}
                 </td>
-                <td className="whitespace-nowrap px-3 py-2">{t.imports.statuses[r.status]}</td>
+                <td className="whitespace-nowrap px-3 py-2">
+                  {t.imports.statuses[r.status]}
+                  {r.entry && (
+                    <Button
+                      variant="ghost"
+                      className="ml-2 px-2 py-1 text-xs"
+                      aria-label={t.imports.notTheSameAs(r.label)}
+                      disabled={busy}
+                      onClick={() => r.entry && onRefuse(`${r.line}:${r.entry.id}`)}
+                    >
+                      {t.imports.notTheSame}
+                    </Button>
+                  )}
+                </td>
               </tr>
             ))}
           </tbody>
@@ -257,6 +315,9 @@ function ImportResult({ batch }: { batch: ImportBatchOut }) {
   return (
     <section className="flex flex-col gap-2 rounded-lg border border-accent bg-surface p-4">
       <p className="font-medium">{t.imports.imported(batch.imported_count)}</p>
+      {batch.reconciled_count > 0 && (
+        <p className="text-sm">{t.imports.reconciled(batch.reconciled_count)}</p>
+      )}
       {skipped.length > 0 && (
         <p className="text-sm text-muted">{t.imports.skipped(skipped.join(", "))}</p>
       )}
@@ -295,6 +356,7 @@ function History({ accountId }: { accountId: string }) {
       setConfirming(null);
       await queryClient.invalidateQueries({ queryKey: ["imports", accountId] });
       await queryClient.invalidateQueries({ queryKey: ["accounts"] });
+      await queryClient.invalidateQueries({ queryKey: ["transactions"] });
     },
   });
 
@@ -316,9 +378,14 @@ function History({ accountId }: { accountId: string }) {
               </p>
             </div>
             {!b.rolled_back_at &&
-              b.imported_count > 0 &&
+              b.imported_count + b.reconciled_count > 0 &&
               (confirming === b.id ? (
-                <div className="flex gap-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  {b.reconciled_count > 0 && (
+                    <span className="w-full text-xs text-muted">
+                      {t.imports.rollbackGivesBack(b.reconciled_count)}
+                    </span>
+                  )}
                   <Button
                     variant="ghost"
                     className="border-negative text-negative"

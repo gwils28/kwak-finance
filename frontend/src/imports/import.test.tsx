@@ -31,7 +31,7 @@ const preview = {
   format_label: "Société Générale — checking account (CSV)",
   period: { start: "2026-03-01", end: "2026-03-14" },
   bank_balance: { on: "2026-03-14", amount: "1234.56" },
-  counts: { new: 2, duplicate: 1, before_opening: 1, error: 1 },
+  counts: { new: 2, already_entered: 0, duplicate: 1, before_opening: 1, error: 1 },
   rows: [
     row(4, "CARTE BOULANGERIE", "-4.20", "new"),
     row(5, "VIR RECU SALAIRE", "2480.15", "new"),
@@ -40,6 +40,7 @@ const preview = {
   ],
   errors: [{ line: 8, message: "invalid date '32/03/2026', expected DD/MM/YYYY" }],
   already_imported_at: null,
+  unmatched_entries: [] as unknown[],
 };
 const batch = {
   id: "b1",
@@ -47,6 +48,7 @@ const batch = {
   file_name: "export.csv",
   created_at: "2026-03-15T10:00:00Z",
   imported_count: 2,
+  reconciled_count: 0,
   duplicate_count: 1,
   skipped_count: 1,
   error_count: 1,
@@ -153,7 +155,7 @@ test("a file already imported is announced and cannot add anything", async () =>
     "POST /api/accounts/a1/imports/preview": () =>
       Response.json({
         ...preview,
-        counts: { new: 0, duplicate: 3, before_opening: 0, error: 0 },
+        counts: { new: 0, already_entered: 0, duplicate: 3, before_opening: 0, error: 0 },
         rows: preview.rows.slice(0, 3).map((r) => ({ ...r, status: "duplicate" })),
         errors: [],
         already_imported_at: "2026-03-15T10:00:00Z",
@@ -232,4 +234,74 @@ test("rows before the opening date are explained and the account can be opened e
   expect(calls.find((c) => c.route === "PATCH /api/accounts/a1")?.body).toEqual({
     opening_date: "2026-02-27",
   });
+});
+
+const entered = {
+  ...preview,
+  counts: { new: 1, already_entered: 1, duplicate: 0, before_opening: 0, error: 0 },
+  rows: [
+    row(4, "CARTE BOULANGERIE", "-4.20", "new"),
+    {
+      ...row(11, "PRELEVEMENT ENERGIE", "-78.45", "already_entered"),
+      entry: { id: "t-edf", booked_on: "2026-03-03", label: "EDF", amount: "-78.45" },
+    },
+  ],
+  errors: [],
+  unmatched_entries: [
+    { id: "t-typo", booked_on: "2026-03-07", label: "PHARMACIE", amount: "-42.00" },
+  ],
+};
+
+test("rows already entered by hand show the entry and can be told apart", async () => {
+  let previews = 0;
+  const calls = api({
+    "POST /api/accounts/a1/imports/preview": () => {
+      previews += 1;
+      return Response.json(previews === 1 ? entered : preview);
+    },
+  });
+  render(<TestApp path="/accounts/a1/import" />);
+
+  const user = await choose();
+  expect(await screen.findByText("1 new · 1 already entered by hand")).toBeInTheDocument();
+  const table = screen.getByRole("table", { name: "Rows in the file" });
+  const edf = within(table).getByRole("row", { name: /PRELEVEMENT ENERGIE/ });
+  expect(edf).toHaveTextContent("Entered on 3 Mar 2026: EDF");
+  expect(edf).toHaveTextContent("Already entered");
+  const missing = screen.getByRole("region", {
+    name: "1 operation entered by hand in these dates is not in the file",
+  });
+  expect(missing).toHaveTextContent("PHARMACIE");
+  expect(
+    screen.getByRole("button", { name: "Import 1 new operation and match 1 entry" }),
+  ).toBeEnabled();
+
+  await user.click(
+    within(edf).getByRole("button", {
+      name: "PRELEVEMENT ENERGIE is not the operation entered by hand",
+    }),
+  );
+  await vi.waitFor(() => expect(previews).toBe(2));
+  const sent = calls.filter((c) => c.route === "POST /api/accounts/a1/imports/preview").at(-1);
+  expect(sent?.body).toContain('name="refused"');
+  expect(sent?.body).toContain("11:t-edf");
+});
+
+test("the result says how many entries were matched", async () => {
+  api({
+    "POST /api/accounts/a1/imports/preview": () => Response.json(entered),
+    "POST /api/accounts/a1/imports": () =>
+      Response.json({ ...batch, imported_count: 1, reconciled_count: 1 }, { status: 201 }),
+  });
+  render(<TestApp path="/accounts/a1/import" />);
+
+  const user = await choose();
+  await user.click(
+    await screen.findByRole("button", { name: "Import 1 new operation and match 1 entry" }),
+  );
+
+  expect(await screen.findByText("1 operation imported.")).toBeInTheDocument();
+  expect(
+    screen.getByText("1 operation entered by hand matched with the bank's line."),
+  ).toBeInTheDocument();
 });

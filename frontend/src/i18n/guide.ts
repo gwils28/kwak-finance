@@ -48,7 +48,7 @@ export const guideEn = {
       title: "Importing statements",
       paragraphs: [
         "From an account, “Import” takes the bank's CSV export (Société Générale or Helios for now). A preview shows the new operations, the ones already imported and the errors with their line numbers: nothing is saved until you confirm, and importing the same file twice adds nothing.",
-        "Operations you entered by hand during the month are not added twice: a statement line with the same amount, on the same account and at most 5 days from an entry is marked “Already entered” and takes that entry over. The entry keeps your label and category and takes the bank's date. Rolling the import back gives the entries back as you entered them.",
+        "Operations you entered by hand during the month are not added twice: a statement line with the same amount, on the same account and at most 5 days from an entry is marked “Already entered” and takes that entry over. The entry keeps your label and category and takes the bank's date (the bank's label shows when you point at it in Transactions). If a match is wrong, “Not the same” imports the line as a new operation. The preview also lists what you entered within the statement's dates that is not in it: a typo, or an operation the bank has not booked yet. Rolling the import back gives the entries back as you entered them.",
         "After the import, the computed balance is compared with the bank's. If they differ, check the account's opening balance and date, or import the missing period. An import can be rolled back from the list of previous imports.",
       ],
       link: { to: "/accounts", label: "Open the accounts" },
@@ -172,7 +172,7 @@ export const guideFr: typeof guideEn = {
       title: "Importer des relevés",
       paragraphs: [
         "Depuis un compte, « Importer » prend l'export CSV de la banque (Société Générale ou Helios pour l'instant). Un aperçu montre les nouvelles opérations, celles déjà importées et les erreurs avec leur numéro de ligne : rien n'est enregistré avant votre confirmation, et importer deux fois le même fichier n'ajoute rien.",
-        "Les opérations saisies à la main pendant le mois ne sont pas ajoutées deux fois : une ligne du relevé de même montant, sur le même compte et à 5 jours au plus d'une saisie est marquée « Déjà saisie » et reprend cette saisie. La saisie garde votre libellé et votre catégorie, et prend la date de la banque. Annuler l'import rend les saisies telles que vous les aviez entrées.",
+        "Les opérations saisies à la main pendant le mois ne sont pas ajoutées deux fois : une ligne du relevé de même montant, sur le même compte et à 5 jours au plus d'une saisie est marquée « Déjà saisie » et reprend cette saisie. La saisie garde votre libellé et votre catégorie, et prend la date de la banque (le libellé de la banque s'affiche au survol dans Opérations). Si un rapprochement est faux, « Pas la même » importe la ligne comme une nouvelle opération. L'aperçu liste aussi ce que vous avez saisi dans les dates du relevé et qui n'y figure pas : une faute de frappe, ou une opération que la banque n'a pas encore passée. Annuler l'import rend les saisies telles que vous les aviez entrées.",
         "Après l'import, le solde calculé est comparé à celui de la banque. S'ils diffèrent, vérifiez le solde et la date d'ouverture du compte, ou importez la période manquante. Un import peut être annulé depuis la liste des imports précédents.",
       ],
       link: { to: "/accounts", label: "Ouvrir les comptes" },
