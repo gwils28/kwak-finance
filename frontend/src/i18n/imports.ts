@@ -35,7 +35,12 @@ export const importsEn = {
   label: "Label",
   amount: "Amount",
   status: "Status",
-  statuses: { new: "New", duplicate: "Already imported", before_opening: "Before opening date" },
+  statuses: {
+    new: "New",
+    already_entered: "Already entered",
+    duplicate: "Already imported",
+    before_opening: "Before opening date",
+  },
   imported: (n: number) => `${n} operation${s(n)} imported.`,
   skipped: (parts: string) => `Skipped: ${parts}.`,
   balanceMatches: (amount: string, on: string) =>
@@ -87,7 +92,12 @@ export const importsFr: typeof importsEn = {
   label: "Libellé",
   amount: "Montant",
   status: "Statut",
-  statuses: { new: "Nouvelle", duplicate: "Déjà importée", before_opening: "Avant l'ouverture" },
+  statuses: {
+    new: "Nouvelle",
+    already_entered: "Déjà saisie",
+    duplicate: "Déjà importée",
+    before_opening: "Avant l'ouverture",
+  },
   imported: (n) => `${n} opération${fs(n)} importée${fs(n)}.`,
   skipped: (parts) => `Ignorées : ${parts}.`,
   balanceMatches: (amount, on) => `Le solde correspond à celui de la banque : ${amount} le ${on}.`,

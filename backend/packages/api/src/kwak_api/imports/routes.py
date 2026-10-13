@@ -3,17 +3,21 @@ from decimal import Decimal
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, File, HTTPException, UploadFile, status
+from fastapi import APIRouter, File, Form, HTTPException, UploadFile, status
 from pydantic import BaseModel
 
 from kwak_api.auth.routes import CurrentSession, Db, Now
-from kwak_api.models import Account, ImportBatch, User
+from kwak_api.models import Account, ImportBatch, Transaction, User
 from kwak_api.services import accounts as account_service
 from kwak_api.services import imports as service
 
 router = APIRouter(prefix="/api", tags=["imports"])
 
 Upload = Annotated[UploadFile, File(description="Bank export (CSV)")]
+Refused = Annotated[
+    list[str] | None,
+    Form(description="Matches undone in the preview, as '<row line>:<manual entry id>' (F-TX-8)"),
+]
 NOT_FOUND = HTTPException(status.HTTP_404_NOT_FOUND, "account not found")
 
 
@@ -27,12 +31,29 @@ class BankBalance(BaseModel):
     amount: Decimal
 
 
+class EnteredOut(BaseModel):
+    """A manual entry, as the user entered it."""
+
+    id: UUID
+    booked_on: date
+    label: str
+    amount: Decimal
+
+    @classmethod
+    def of(cls, entry: Transaction) -> "EnteredOut":
+        return cls(
+            id=entry.id, booked_on=entry.booked_on, label=entry.label_raw, amount=entry.amount
+        )
+
+
 class PreviewRow(BaseModel):
     line: int
     booked_on: date
     label: str
     amount: Decimal
     status: service.RowStatus
+    entry: EnteredOut | None = None
+    """The manual entry the row takes over, when already_entered (F-TX-8)."""
 
 
 class RowErrorOut(BaseModel):
@@ -43,6 +64,7 @@ class RowErrorOut(BaseModel):
 
 class PreviewCounts(BaseModel):
     new: int
+    already_entered: int
     duplicate: int
     before_opening: int
     error: int
@@ -58,6 +80,9 @@ class ImportPreview(BaseModel):
     errors: list[RowErrorOut]
     already_imported_at: datetime | None
     """When this exact file was already imported into this account, if it was."""
+    unmatched_entries: list[EnteredOut]
+    """Manual entries within the statement's dates that no row took: a typo, or not booked by
+    the bank yet."""
 
 
 class BalanceCheckOut(BaseModel):
@@ -74,6 +99,8 @@ class ImportBatchOut(BaseModel):
     file_name: str
     created_at: datetime
     imported_count: int
+    reconciled_count: int
+    """Manual entries the rows took over instead of adding them twice (F-TX-8)."""
     duplicate_count: int
     skipped_count: int
     """Rows dated before the account's opening date."""
@@ -95,6 +122,7 @@ class ImportBatchOut(BaseModel):
             file_name=batch.file_name,
             created_at=batch.created_at,
             imported_count=batch.imported_count,
+            reconciled_count=batch.reconciled_count,
             duplicate_count=batch.duplicate_count,
             skipped_count=batch.skipped_count,
             error_count=batch.error_count,
@@ -122,18 +150,32 @@ def _read(file: UploadFile) -> bytes:
     return data
 
 
+def _refused(values: list[str] | None) -> set[tuple[int, UUID]]:
+    pairs = set()
+    for value in values or []:
+        line, _, entry = value.partition(":")
+        try:
+            pairs.add((int(line), UUID(entry)))
+        except ValueError:
+            raise HTTPException(
+                status.HTTP_422_UNPROCESSABLE_CONTENT,
+                f"invalid refused match {value!r}, expected '<row line>:<entry id>'",
+            ) from None
+    return pairs
+
+
 def _rejected(exc: service.ImportRejectedError) -> HTTPException:
     return HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, str(exc))
 
 
 @router.post("/accounts/{account_id}/imports/preview")
 def preview_import(
-    account_id: UUID, file: Upload, user_session: CurrentSession, db: Db
+    account_id: UUID, file: Upload, user_session: CurrentSession, db: Db, refused: Refused = None
 ) -> ImportPreview:
     """Parse the file and classify every row; nothing is stored."""
     account = _account(db, user_session.user, account_id)
     try:
-        analysis = service.analyse(db, account, _read(file))
+        analysis = service.analyse(db, account, _read(file), refused=_refused(refused))
     except service.ImportRejectedError as exc:
         raise _rejected(exc) from None
     statement = analysis.statement
@@ -148,24 +190,39 @@ def preview_import(
         else None,
         counts=PreviewCounts(
             new=analysis.count(service.RowStatus.NEW),
+            already_entered=analysis.count(service.RowStatus.ALREADY_ENTERED),
             duplicate=analysis.count(service.RowStatus.DUPLICATE),
             before_opening=analysis.count(service.RowStatus.BEFORE_OPENING),
             error=len(statement.errors),
         ),
         rows=[
-            PreviewRow(line=r.line, booked_on=r.booked_on, label=r.label, amount=r.amount, status=s)
+            PreviewRow(
+                line=r.line,
+                booked_on=r.booked_on,
+                label=r.label,
+                amount=r.amount,
+                status=s,
+                entry=EnteredOut.of(e) if (e := analysis.entries.get(r.line)) else None,
+            )
             for r, s, _ in analysis.rows
         ],
         errors=[RowErrorOut(line=e.line, message=e.message) for e in statement.errors],
         already_imported_at=analysis.already_imported_at,
+        unmatched_entries=[EnteredOut.of(e) for e in analysis.unmatched],
     )
 
 
 @router.post("/accounts/{account_id}/imports", status_code=status.HTTP_201_CREATED)
 def create_import(
-    account_id: UUID, file: Upload, user_session: CurrentSession, db: Db, now: Now
+    account_id: UUID,
+    file: Upload,
+    user_session: CurrentSession,
+    db: Db,
+    now: Now,
+    refused: Refused = None,
 ) -> ImportBatchOut:
-    """Store the file's new rows. Rows already stored are skipped, so this is safe to repeat."""
+    """Store the file's new rows; a row matching a manual entry takes it over (F-TX-8). Rows
+    already stored are skipped, so this is safe to repeat."""
     account = _account(db, user_session.user, account_id)
     try:
         batch, check = service.commit(
@@ -175,6 +232,7 @@ def create_import(
             file_name=file.filename or "statement.csv",
             data=_read(file),
             now=now,
+            refused=_refused(refused),
         )
     except service.ImportRejectedError as exc:
         raise _rejected(exc) from None
@@ -189,7 +247,8 @@ def list_imports(account_id: UUID, user_session: CurrentSession, db: Db) -> list
 
 @router.delete("/imports/{batch_id}", status_code=status.HTTP_204_NO_CONTENT)
 def rollback_import(batch_id: UUID, user_session: CurrentSession, db: Db, now: Now) -> None:
-    """Delete the transactions this import added. The import stays listed as rolled back."""
+    """Delete the transactions this import added and give back the manual entries it took over.
+    The import stays listed as rolled back."""
     batch = db.get(ImportBatch, batch_id)
     visible = batch and account_service.find_visible_account(
         db, user_session.user, batch.account_id

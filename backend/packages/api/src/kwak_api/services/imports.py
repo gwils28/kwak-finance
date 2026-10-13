@@ -1,14 +1,17 @@
-"""Import bank files into an account: preview first, then commit (F-TX-1, 2, 3, 6)."""
+"""Import bank files into an account: preview first, then commit (F-TX-1, 2, 3, 6, 8)."""
 
 import enum
 import hashlib
-from dataclasses import dataclass
-from datetime import date, datetime
+from collections.abc import Collection
+from dataclasses import dataclass, field
+from datetime import date, datetime, timedelta
 from decimal import Decimal
 from uuid import UUID
 
 from kwak_core.accounts import CASH_TYPES
 from kwak_core.balances import balance_on
+from kwak_core.budget import Month
+from kwak_core.budget_month import check_manual_month
 from kwak_core.imports import (
     BankFormat,
     ParsedRow,
@@ -19,7 +22,8 @@ from kwak_core.imports import (
     plan_import,
 )
 from kwak_core.imports.dedup import fingerprint_rows
-from sqlalchemy import delete, func, select
+from kwak_core.imports.reconcile import MATCH_DAYS, Entry, reconcile
+from sqlalchemy import delete, func, select, update
 from sqlalchemy.orm import Session
 
 from kwak_api.models import Account, ImportBatch, Transaction, User
@@ -34,6 +38,8 @@ class ImportRejectedError(ValueError):
 
 class RowStatus(enum.StrEnum):
     NEW = "new"
+    ALREADY_ENTERED = "already_entered"
+    """The row takes over a manual entry (F-TX-8)."""
     DUPLICATE = "duplicate"
     BEFORE_OPENING = "before_opening"
 
@@ -46,6 +52,10 @@ class Analysis:
     """Every parsed row, with its status and fingerprint."""
     file_sha256: str
     already_imported_at: datetime | None
+    entries: dict[int, Transaction] = field(default_factory=dict)
+    """Row line -> the manual entry it takes over."""
+    unmatched: list[Transaction] = field(default_factory=list)
+    """Manual entries within the statement's dates that no row took."""
 
     def count(self, status: RowStatus) -> int:
         return sum(1 for _, s, _ in self.rows if s is status)
@@ -69,8 +79,27 @@ def _check_importable(account: Account) -> None:
         raise ImportRejectedError("this account is closed: reopen it to import")
 
 
-def analyse(db: Session, account: Account, data: bytes) -> Analysis:
-    """Parse the file and classify every row against what the account already holds."""
+def _manual_entries(db: Session, account: Account, start: date, end: date) -> list[Transaction]:
+    """The account's manual entries not yet reconciled, near the statement's dates."""
+    margin = timedelta(days=MATCH_DAYS)
+    return list(
+        db.scalars(
+            select(Transaction).where(
+                Transaction.account_id == account.id,
+                Transaction.fingerprint.is_(None),
+                Transaction.booked_on >= start - margin,
+                Transaction.booked_on <= end + margin,
+            )
+        )
+    )
+
+
+def analyse(
+    db: Session, account: Account, data: bytes, *, refused: Collection[tuple[int, UUID]] = ()
+) -> Analysis:
+    """Parse the file and classify every row against what the account already holds.
+
+    `refused` holds the (row line, manual entry) matches the user undid in the preview."""
     _check_importable(account)
     bank_format = detect_format(data)
     if bank_format is None:
@@ -100,6 +129,11 @@ def analyse(db: Session, account: Account, data: bytes) -> Analysis:
         else:
             status = RowStatus.NEW
         rows.append((row, status, fp))
+    entries, unmatched = _reconcile(db, account, statement, rows, refused)
+    rows = [
+        (row, RowStatus.ALREADY_ENTERED if row.line in entries else status, fp)
+        for row, status, fp in rows
+    ]
     file_sha256 = hashlib.sha256(data).hexdigest()
     already = db.scalar(
         select(func.min(ImportBatch.created_at)).where(
@@ -109,13 +143,48 @@ def analyse(db: Session, account: Account, data: bytes) -> Analysis:
             ImportBatch.imported_count > 0,
         )
     )
-    return Analysis(bank_format, statement, rows, file_sha256, already)
+    return Analysis(bank_format, statement, rows, file_sha256, already, entries, unmatched)
+
+
+def _reconcile(
+    db: Session,
+    account: Account,
+    statement: Statement,
+    rows: list[tuple[ParsedRow, RowStatus, str]],
+    refused: Collection[tuple[int, UUID]],
+) -> tuple[dict[int, Transaction], list[Transaction]]:
+    new = [row for row, status, _ in rows if status is RowStatus.NEW]
+    period = statement.period or (
+        (min(r.booked_on for r, _, _ in rows), max(r.booked_on for r, _, _ in rows))
+        if rows
+        else None
+    )
+    if period is None:
+        return {}, []
+    manual = {t.id: t for t in _manual_entries(db, account, *period)}
+    result = reconcile(
+        new,
+        [Entry(t.id, t.booked_on, t.amount, t.created_at) for t in manual.values()],
+        refused=refused,
+        period=period,
+    )
+    return (
+        {line: manual[entry_id] for line, entry_id in result.matches.items()},
+        [manual[e.id] for e in result.unmatched],
+    )
 
 
 def commit(
-    db: Session, account: Account, user: User, *, file_name: str, data: bytes, now: datetime
+    db: Session,
+    account: Account,
+    user: User,
+    *,
+    file_name: str,
+    data: bytes,
+    now: datetime,
+    refused: Collection[tuple[int, UUID]] = (),
 ) -> tuple[ImportBatch, BalanceCheck | None]:
-    analysis = analyse(db, account, data)
+    analysis = analyse(db, account, data, refused=refused)
     statement = analysis.statement
     batch = ImportBatch(
         account_id=account.id,
@@ -124,6 +193,7 @@ def commit(
         file_name=file_name[:255],
         file_sha256=analysis.file_sha256,
         imported_count=analysis.count(RowStatus.NEW),
+        reconciled_count=analysis.count(RowStatus.ALREADY_ENTERED),
         duplicate_count=analysis.count(RowStatus.DUPLICATE),
         skipped_count=analysis.count(RowStatus.BEFORE_OPENING),
         error_count=len(statement.errors),
@@ -148,10 +218,28 @@ def commit(
         for row, status, fp in analysis.rows
         if status is RowStatus.NEW
     ]
+    for row, status, fp in analysis.rows:
+        if status is RowStatus.ALREADY_ENTERED:
+            _take_over(analysis.entries[row.line], row, fp, batch)
     categorise_new(db, account.household_id, new)
     db.add_all(new)
     db.flush()
     return batch, balance_check(db, account, batch)
+
+
+def _take_over(entry: Transaction, row: ParsedRow, fp: str, batch: ImportBatch) -> None:
+    """The entry keeps its label, category, transfer link and budget month set by hand, and
+    takes the row's date; a hand-set month too far from that date goes back to automatic."""
+    entry.entered_on = entry.booked_on
+    entry.booked_on = row.booked_on
+    entry.bank_label = row.label
+    entry.fingerprint = fp
+    entry.import_batch_id = batch.id
+    if entry.budget_month is not None:
+        try:
+            check_manual_month(row.booked_on, Month.of(entry.budget_month))
+        except ValueError:
+            entry.budget_month = None
 
 
 def balance_check(db: Session, account: Account, batch: ImportBatch) -> BalanceCheck | None:
@@ -192,5 +280,17 @@ def batches(db: Session, account: Account) -> list[ImportBatch]:
 
 
 def rollback(db: Session, batch: ImportBatch, now: datetime) -> None:
+    """Delete the rows the import added and give back the manual entries it took over."""
+    db.execute(
+        update(Transaction)
+        .where(Transaction.import_batch_id == batch.id, Transaction.entered_on.is_not(None))
+        .values(
+            booked_on=Transaction.entered_on,
+            entered_on=None,
+            bank_label=None,
+            fingerprint=None,
+            import_batch_id=None,
+        )
+    )
     db.execute(delete(Transaction).where(Transaction.import_batch_id == batch.id))
     batch.rolled_back_at = now

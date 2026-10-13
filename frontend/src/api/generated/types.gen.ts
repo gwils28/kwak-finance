@@ -180,6 +180,12 @@ export type BodyCreateImport = {
      * Bank export (CSV)
      */
     file: Blob | File;
+    /**
+     * Refused
+     *
+     * Matches undone in the preview, as '<row line>:<manual entry id>' (F-TX-8)
+     */
+    refused?: Array<string> | null;
 };
 
 /**
@@ -192,6 +198,12 @@ export type BodyPreviewImport = {
      * Bank export (CSV)
      */
     file: Blob | File;
+    /**
+     * Refused
+     *
+     * Matches undone in the preview, as '<row line>:<manual entry id>' (F-TX-8)
+     */
+    refused?: Array<string> | null;
 };
 
 /**
@@ -519,6 +531,30 @@ export type DayPoint = {
 };
 
 /**
+ * EnteredOut
+ *
+ * A manual entry, as the user entered it.
+ */
+export type EnteredOut = {
+    /**
+     * Amount
+     */
+    amount: string;
+    /**
+     * Booked On
+     */
+    booked_on: string;
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Label
+     */
+    label: string;
+};
+
+/**
  * FlowKind
  */
 export type FlowKind = 'income' | 'spending' | 'uncategorised' | 'paid_in' | 'paid_out' | 'saved' | 'from_savings' | 'unallocated' | 'deficit';
@@ -620,6 +656,10 @@ export type ImportBatchOut = {
     imported_count: number;
     period: Period | null;
     /**
+     * Reconciled Count
+     */
+    reconciled_count: number;
+    /**
      * Rolled Back At
      */
     rolled_back_at: string | null;
@@ -656,6 +696,10 @@ export type ImportPreview = {
      * Rows
      */
     rows: Array<PreviewRow>;
+    /**
+     * Unmatched Entries
+     */
+    unmatched_entries: Array<EnteredOut>;
 };
 
 /**
@@ -1023,6 +1067,10 @@ export type Preferences = {
  */
 export type PreviewCounts = {
     /**
+     * Already Entered
+     */
+    already_entered: number;
+    /**
      * Before Opening
      */
     before_opening: number;
@@ -1074,6 +1122,7 @@ export type PreviewRow = {
      * Booked On
      */
     booked_on: string;
+    entry?: EnteredOut | null;
     /**
      * Label
      */
@@ -1434,7 +1483,7 @@ export type RowOut = {
 /**
  * RowStatus
  */
-export type RowStatus = 'new' | 'duplicate' | 'before_opening';
+export type RowStatus = 'new' | 'already_entered' | 'duplicate' | 'before_opening';
 
 /**
  * RuleIn
@@ -1689,6 +1738,10 @@ export type TransactionOut = {
      * Amount
      */
     amount: string;
+    /**
+     * Bank Label
+     */
+    bank_label?: string | null;
     /**
      * Booked On
      */
