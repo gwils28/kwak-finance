@@ -57,13 +57,20 @@ def test_preview_shows_every_row_and_stores_nothing(
     assert response.status_code == 200
     preview = response.json()
     assert preview["format"] == "societe_generale_checking"
-    assert preview["counts"] == {"new": 14, "duplicate": 0, "before_opening": 0, "error": 0}
+    assert preview["counts"] == {
+        "new": 14,
+        "already_entered": 0,
+        "duplicate": 0,
+        "before_opening": 0,
+        "error": 0,
+    }
     assert preview["rows"][0] == {
         "line": 4,
         "booked_on": "2026-03-14",
         "label": "CARTE X0000 13/03 BOULANGERIE DU PARC 100000000000001IOPD",
         "amount": "-4.20",
         "status": "new",
+        "entry": None,
     }
     assert preview["period"] == {"start": "2026-03-01", "end": "2026-03-14"}
     assert preview["already_imported_at"] is None

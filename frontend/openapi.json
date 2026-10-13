@@ -320,6 +320,21 @@
             "description": "Bank export (CSV)",
             "title": "File",
             "type": "string"
+          },
+          "refused": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Matches undone in the preview, as '<row line>:<manual entry id>' (F-TX-8)",
+            "title": "Refused"
           }
         },
         "required": [
@@ -335,6 +350,21 @@
             "description": "Bank export (CSV)",
             "title": "File",
             "type": "string"
+          },
+          "refused": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Matches undone in the preview, as '<row line>:<manual entry id>' (F-TX-8)",
+            "title": "Refused"
           }
         },
         "required": [
@@ -1008,6 +1038,38 @@
         "title": "DayPoint",
         "type": "object"
       },
+      "EnteredOut": {
+        "description": "A manual entry, as the user entered it.",
+        "properties": {
+          "amount": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Amount",
+            "type": "string"
+          },
+          "booked_on": {
+            "format": "date",
+            "title": "Booked On",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "booked_on",
+          "label",
+          "amount"
+        ],
+        "title": "EnteredOut",
+        "type": "object"
+      },
       "FlowKind": {
         "enum": [
           "income",
@@ -1194,6 +1256,10 @@
               }
             ]
           },
+          "reconciled_count": {
+            "title": "Reconciled Count",
+            "type": "integer"
+          },
           "rolled_back_at": {
             "anyOf": [
               {
@@ -1217,6 +1283,7 @@
           "file_name",
           "created_at",
           "imported_count",
+          "reconciled_count",
           "duplicate_count",
           "skipped_count",
           "error_count",
@@ -1284,6 +1351,13 @@
             },
             "title": "Rows",
             "type": "array"
+          },
+          "unmatched_entries": {
+            "items": {
+              "$ref": "#/components/schemas/EnteredOut"
+            },
+            "title": "Unmatched Entries",
+            "type": "array"
           }
         },
         "required": [
@@ -1294,7 +1368,8 @@
           "counts",
           "rows",
           "errors",
-          "already_imported_at"
+          "already_imported_at",
+          "unmatched_entries"
         ],
         "title": "ImportPreview",
         "type": "object"
@@ -1906,6 +1981,10 @@
       },
       "PreviewCounts": {
         "properties": {
+          "already_entered": {
+            "title": "Already Entered",
+            "type": "integer"
+          },
           "before_opening": {
             "title": "Before Opening",
             "type": "integer"
@@ -1925,6 +2004,7 @@
         },
         "required": [
           "new",
+          "already_entered",
           "duplicate",
           "before_opening",
           "error"
@@ -1974,6 +2054,16 @@
             "format": "date",
             "title": "Booked On",
             "type": "string"
+          },
+          "entry": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EnteredOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "label": {
             "title": "Label",
@@ -2662,6 +2752,7 @@
       "RowStatus": {
         "enum": [
           "new",
+          "already_entered",
           "duplicate",
           "before_opening"
         ],
@@ -3131,6 +3222,17 @@
             "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Amount",
             "type": "string"
+          },
+          "bank_label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bank Label"
           },
           "booked_on": {
             "format": "date",
@@ -3762,7 +3864,7 @@
         ]
       },
       "post": {
-        "description": "Store the file's new rows. Rows already stored are skipped, so this is safe to repeat.",
+        "description": "Store the file's new rows; a row matching a manual entry takes it over (F-TX-8). Rows\nalready stored are skipped, so this is safe to repeat.",
         "operationId": "createImport",
         "parameters": [
           {
@@ -6031,7 +6133,7 @@
     },
     "/api/imports/{batch_id}": {
       "delete": {
-        "description": "Delete the transactions this import added. The import stays listed as rolled back.",
+        "description": "Delete the transactions this import added and give back the manual entries it took over.\nThe import stays listed as rolled back.",
         "operationId": "rollbackImport",
         "parameters": [
           {

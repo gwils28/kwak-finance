@@ -21,7 +21,8 @@ from kwak_api.models.account import Account
 
 
 class ImportBatch(UUIDPrimaryKey, Base):
-    """One imported file (F-TX-6). Rolling it back deletes its transactions and keeps this row."""
+    """One imported file (F-TX-6). Rolling it back deletes its transactions (and gives back the
+    manual entries it reconciled, F-TX-8) and keeps this row."""
 
     __tablename__ = "import_batch"
     __table_args__ = (
@@ -42,6 +43,8 @@ class ImportBatch(UUIDPrimaryKey, Base):
     file_sha256: Mapped[str] = mapped_column(String(64))
     imported_count: Mapped[int] = mapped_column(Integer)
     duplicate_count: Mapped[int] = mapped_column(Integer)
+    reconciled_count: Mapped[int] = mapped_column(Integer, server_default=text("0"))
+    """Manual entries the file's rows took over (F-TX-8)."""
     skipped_count: Mapped[int] = mapped_column(Integer)
     """Rows dated before the account's opening date."""
     error_count: Mapped[int] = mapped_column(Integer)
@@ -84,3 +87,8 @@ class Transaction(UUIDPrimaryKey, Timestamps, Base):
     # F-TX-7: the budget month set by hand (its first day), at most one month from booked_on.
     # NULL: the booking month, or the next one by the category's shift (F-CAT-5).
     budget_month: Mapped[date | None] = mapped_column(Date)
+    # F-TX-8: a manual entry reconciled with a statement row keeps its label and category and
+    # takes the row's date, fingerprint and import; these keep the bank's label and the date it
+    # was entered with, restored if the import is rolled back. NULL unless reconciled.
+    bank_label: Mapped[str | None] = mapped_column(Text)
+    entered_on: Mapped[date | None] = mapped_column(Date)

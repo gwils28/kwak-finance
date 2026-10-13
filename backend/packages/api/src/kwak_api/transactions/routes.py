@@ -37,6 +37,8 @@ class TransactionOut(BaseModel):
     label: str
     source: Literal["import", "manual"]
     """Imported transactions mirror the bank: only their category can change."""
+    bank_label: str | None = None
+    """The bank's label of a manual entry reconciled with a statement row (F-TX-8)."""
     category_id: UUID | None
     category_name: str | None
     transfer_group_id: UUID | None
@@ -65,6 +67,7 @@ class TransactionOut(BaseModel):
             amount=transaction.amount,
             label=transaction.label_raw,
             source="import" if transaction.fingerprint else "manual",
+            bank_label=transaction.bank_label,
             category_id=category.id if category else None,
             category_name=category.name if category else None,
             transfer_group_id=transaction.transfer_group_id,

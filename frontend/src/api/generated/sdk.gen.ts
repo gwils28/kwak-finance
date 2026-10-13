@@ -55,7 +55,8 @@ export const listImports = <ThrowOnError extends boolean = false>(options: Optio
 /**
  * Create Import
  *
- * Store the file's new rows. Rows already stored are skipped, so this is safe to repeat.
+ * Store the file's new rows; a row matching a manual entry takes it over (F-TX-8). Rows
+ * already stored are skipped, so this is safe to repeat.
  */
 export const createImport = <ThrowOnError extends boolean = false>(options: Options<CreateImportData, ThrowOnError>): RequestResult<CreateImportResponses, CreateImportErrors, ThrowOnError> => (options.client ?? client).post<CreateImportResponses, CreateImportErrors, ThrowOnError>({
     ...formDataBodySerializer,
@@ -402,7 +403,8 @@ export const updateSettings = <ThrowOnError extends boolean = false>(options: Op
 /**
  * Rollback Import
  *
- * Delete the transactions this import added. The import stays listed as rolled back.
+ * Delete the transactions this import added and give back the manual entries it took over.
+ * The import stays listed as rolled back.
  */
 export const rollbackImport = <ThrowOnError extends boolean = false>(options: Options<RollbackImportData, ThrowOnError>): RequestResult<RollbackImportResponses, RollbackImportErrors, ThrowOnError> => (options.client ?? client).delete<RollbackImportResponses, RollbackImportErrors, ThrowOnError>({ url: '/api/imports/{batch_id}', ...options });
 
