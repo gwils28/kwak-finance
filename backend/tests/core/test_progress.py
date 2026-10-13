@@ -53,6 +53,18 @@ def test_the_warning_threshold_is_a_setting() -> None:
     assert progress_status(D("99"), D("100"), D("1")) is ProgressStatus.ON_TRACK
 
 
+@pytest.mark.parametrize(
+    ("spent", "status"),
+    [
+        ("0", ProgressStatus.ON_TRACK),
+        ("100", ProgressStatus.ON_TRACK),
+        ("100.01", ProgressStatus.OVER),
+    ],
+)
+def test_a_one_off_category_has_no_warning_threshold(spent: str, status: ProgressStatus) -> None:
+    assert progress_status(D(spent), D("100"), DEFAULT_WARN_AT, one_off=True) is status
+
+
 @pytest.mark.parametrize("value", ["0.49", "1.01", "0"])
 def test_the_warning_threshold_is_between_50_and_100_percent(value: str) -> None:
     with pytest.raises(ValueError, match="threshold"):
@@ -96,7 +108,7 @@ def test_the_month_so_far_lists_the_categories_with_a_target_by_share_used() -> 
     assert [line.name for line in lines] == ["Rent", "Food"]  # Leisure has no target
     rent, food = lines
     assert (rent.spent, rent.target, rent.remaining) == (D("900"), D("900"), D("0"))
-    assert rent.status is ProgressStatus.WATCH
+    assert rent.status is ProgressStatus.ON_TRACK  # one-off: paid as planned, nothing to watch
     assert rent.pace is None  # one-off, through its parent
     # A parent's target covers its children.
     assert (food.spent, food.remaining, food.share) == (D("340"), D("60"), D("0.85"))

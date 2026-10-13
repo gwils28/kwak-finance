@@ -1,5 +1,5 @@
 """The month so far (F-BUD-2): each category's spending against its monthly target, with a
-warning threshold and the pace of the month; one-off categories (F-CAT-6) skip the pace.
+warning threshold and the pace of the month; one-off categories (F-CAT-6) skip both.
 
 Lines are read from a one-month budget matrix, so they never disagree with it (§8.10).
 """
@@ -35,13 +35,16 @@ def one_off(*, own: bool | None, parent: bool | None) -> bool:
     return bool(own if own is not None else parent)
 
 
-def progress_status(spent: Decimal, target: Decimal, warn_at: Decimal) -> ProgressStatus:
+def progress_status(
+    spent: Decimal, target: Decimal, warn_at: Decimal, *, one_off: bool = False
+) -> ProgressStatus:
+    """A one-off category (F-CAT-6) has no threshold: paid as planned, it is on track."""
     if target == 0:
         return ProgressStatus.OVER if spent > 0 else ProgressStatus.ON_TRACK
     share = spent / target
     if share > 1:
         return ProgressStatus.OVER
-    return ProgressStatus.WATCH if share >= warn_at else ProgressStatus.ON_TRACK
+    return ProgressStatus.WATCH if share >= warn_at and not one_off else ProgressStatus.ON_TRACK
 
 
 def month_pace(month: Month, today: date) -> Decimal | None:
@@ -92,8 +95,10 @@ def month_progress(
         cell = row.cells[0]
         if row.category_id is None or cell.target is None or row.target_from_children:
             continue
-        own = settings.get(row.category_id)
-        parent = settings.get(row.parent_id) if row.parent_id else None
+        paid_once = one_off(
+            own=settings.get(row.category_id),
+            parent=settings.get(row.parent_id) if row.parent_id else None,
+        )
         lines.append(
             ProgressLine(
                 row.category_id,
@@ -103,8 +108,8 @@ def month_progress(
                 cell.target,
                 cell.target - cell.spent,
                 cell.spent / cell.target if cell.target else None,
-                progress_status(cell.spent, cell.target, warn_at),
-                None if one_off(own=own, parent=parent) else pace,
+                progress_status(cell.spent, cell.target, warn_at, one_off=paid_once),
+                None if paid_once else pace,
             )
         )
     return sorted(lines, key=lambda line: (-line.rank, line.name.lower()))

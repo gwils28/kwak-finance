@@ -65,7 +65,7 @@ def test_the_month_so_far_ranks_the_categories_with_a_target(owner_client: TestC
         "target": "900.00",
         "remaining": "0.00",
         "share": "1.0000",
-        "status": "watch",
+        "status": "on_track",  # one-off: paid as planned, nothing to watch
         "pace": None,  # Housing is one-off by default, and Rent follows it
     }
     assert (food["spent"], food["remaining"], food["share"]) == ("340.00", "60.00", "0.8500")
