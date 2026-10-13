@@ -6,6 +6,7 @@ import { meQuery } from "./auth/session";
 import { AccountMenu } from "./components/AccountMenu";
 import { Footer } from "./components/Footer";
 import { Icon } from "./components/icons";
+import { Logo } from "./components/Logo";
 import { useI18n } from "./i18n";
 
 /** The everyday pages. A new functional page (net worth…) adds its tab here. */
@@ -50,8 +51,9 @@ export function AppLayout() {
         <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-8 px-4 md:h-14 md:flex-nowrap">
           <Link
             to="/"
-            className="flex h-14 items-center font-display text-xl font-black tracking-tight"
+            className="flex h-14 items-center gap-2 font-display text-xl font-black tracking-tight"
           >
+            <Logo />
             {t.common.appName}
           </Link>
           <nav

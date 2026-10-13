@@ -4,6 +4,7 @@ import { type FormEvent, useState } from "react";
 import { acceptInvite, logout, previewInvite } from "../api/generated";
 import { apiErrorMessage, detailSentence } from "../auth/errors";
 import { LanguageSelect } from "../components/LanguageSelect";
+import { Brand } from "../components/Logo";
 import { Button, Card, ErrorAlert, TextField } from "../components/ui";
 import { useI18n } from "../i18n";
 
@@ -59,6 +60,7 @@ export function AcceptInvitePage() {
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center gap-4 px-4">
+      <Brand name={t.common.appName} />
       <LanguageSelect />
       {invite.isPending && <p className="text-muted">{t.household.checking}</p>}
       {invite.isError && (
