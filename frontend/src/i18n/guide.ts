@@ -66,6 +66,7 @@ export const guideEn = {
       title: "Categories and rules",
       paragraphs: [
         "Categories have two levels: a category and its subcategories, for spending or for income. Rename, move or delete them as you like: deleting one sends its transactions back to “to categorise”.",
+        "A third kind, “Savings & investments”, holds the money you move to savings or investments the app does not track as an account (a PEA, a life insurance, a PER, a savings account you do not import). It is never spending nor income: it stays in the net and the savings rate, as a transfer to one of your savings accounts does. A transfer between two accounts of the app stays a transfer, whatever its category. A savings rule catches both outflows and money brought back.",
         "Rules run in order, and the first one that matches sets the category of each import and manual entry. A rule looks at the label (case, spacing and accents ignored), and can also check the amount and the account. They can be applied again to past transactions.",
         "The household owner can restore the default categories, named in their language: defaults still there keep their transactions, rules and plan targets, copies merge into them, missing ones come back, and every other category is deleted. A preview lists what goes and what it implies before anything changes.",
       ],
@@ -76,6 +77,7 @@ export const guideEn = {
       title: "Budget plans",
       paragraphs: [
         "A budget plan holds a monthly target per spending category for a calendar period: a year, a semester or a quarter. A category's envelope is its monthly target times the plan's months, so a cheaper month offsets a dearer one. A parent category without a target of its own takes the sum of its subcategories'. With a joint account, say under each target who pays it, the joint account or personal ones (even once the plan is locked): the “Joint accounts” and “Only mine” views then judge only their own targets, while “Household” keeps them all.",
+        "A savings category can have a monthly objective in the plan, set like a target. An objective is a minimum: saving more is good.",
         "A new plan starts with the targets of the latest one. You can change its targets and its expected income until the end of its first month; the note can change at any time.",
         "When life changes (a new job, a raise, a new recurring expense), close the plan early: it keeps its targets and is reviewed over its months, and a replacement plan, pre-filled with the same targets, covers the rest of the period. Change the targets there.",
       ],
@@ -87,6 +89,7 @@ export const guideEn = {
       paragraphs: [
         "The budget page shows your spending per category and month next to the monthly target of the plan covering each month. A cell is green when spending is more than the margin (5 % by default) below the target, grey within it, burnt orange above it; without a target it has no colour.",
         "Click a cell to see its transactions. The “to categorise” row is always shown, so totals are never silently wrong.",
+        "Savings categories have their own section below the spending, with their objective and their own total, never counted in the spending total. There the colours turn round: green when you saved more than the margin above the objective, burnt orange when you saved more than the margin below it.",
       ],
       link: { to: "/budget", label: "Open the budget" },
     },
@@ -95,8 +98,8 @@ export const guideEn = {
       title: "Plan review",
       paragraphs: [
         "“See the review” on the budget page tells where a plan stands. While it runs: the share of time elapsed, what was expected by now, and the spending projected at the end of the plan. Completed months count as spent, the others at least at their target, or at your actual pace if it is higher: rent paid on the 1st is not a drift, while spending above the target shows at once.",
-        "Categories projected above their envelope are listed as drifting, largest overrun first. Once the plan is over, the review gives the final result with income, savings and the planned savings when the plan has an expected income.",
-        "Below: the money flows (where the income went: spending, savings, what is left unallocated; tick the box to detail the subcategories), the projected gap per category, the cumulative spending day by day against the envelope line, and a comparison with the previous plan (or any other) on monthly figures. While transactions are left to categorise, the review is marked provisional.",
+        "Categories projected above their envelope, or savings categories projected below their objective, are listed as drifting, largest gap first. Once the plan is over, the review gives the final result with income, savings and the planned savings when the plan has an expected income, next to the sum of your savings objectives. The table by category and the comparison show the savings categories in a section of their own.",
+        "Below: the money flows (where the income went: spending, savings, what is left unallocated; tick the box to detail the subcategories; money in is blue, spending ochre within its target and burnt orange over it, savings green when they meet their objectives and pale green below them, the rest grey), the projected gap per category, the cumulative spending day by day against the envelope line, and a comparison with the previous plan (or any other) on monthly figures. While transactions are left to categorise, the review is marked provisional.",
       ],
       link: { to: "/budget/review", label: "Open the review" },
     },
@@ -104,7 +107,7 @@ export const guideEn = {
       id: "overview",
       title: "Overview",
       paragraphs: [
-        "The overview sums up a month: spending, income, net and savings rate, compared with the previous month and the 12-month average, then the spending by category, the last 12 months and this month's spending against your budget.",
+        "The overview sums up a month: spending, income, net (with the part put in savings categories) and savings rate, compared with the previous month and the 12-month average, then the spending by category, the last 12 months and this month's spending against your budget.",
         "“Household” counts every account you can see, “Joint accounts” only the household's joint accounts (offered once there is one), “Only mine” your own accounts without the joint ones. In those two, a transfer with an account left out shows in the net: what you pay into the joint account is paid out of yours and paid into it, so each view's savings stay right.",
       ],
       link: { to: "/", label: "Open the overview" },
@@ -182,6 +185,7 @@ export const guideFr: typeof guideEn = {
       title: "Catégories et règles",
       paragraphs: [
         "Les catégories ont deux niveaux : une catégorie et ses sous-catégories, de dépense ou de revenu. Renommez-les, déplacez-les ou supprimez-les à votre guise : en supprimer une renvoie ses opérations « à catégoriser ».",
+        "Un troisième type, « Épargne et placements », reçoit l'argent mis de côté ou placé sur des supports que l'app ne suit pas comme un compte (un PEA, une assurance-vie, un PER, un livret que vous n'importez pas). Ce n'est jamais une dépense ni un revenu : il reste dans le solde net et le taux d'épargne, comme un virement vers un de vos livrets. Un virement entre deux comptes de l'app reste un virement, quelle que soit sa catégorie. Une règle d'épargne prend à la fois les sorties et l'argent rapatrié.",
         "Les règles s'appliquent dans l'ordre, et la première qui correspond fixe la catégorie de chaque import et de chaque saisie. Une règle regarde le libellé (sans tenir compte de la casse, des espaces ni des accents), et peut aussi vérifier le montant et le compte. Elles peuvent être réappliquées aux opérations passées.",
         "Le propriétaire du foyer peut rétablir les catégories par défaut, nommées dans sa langue : celles encore présentes gardent leurs opérations, règles et objectifs de plans, les doublons sont fusionnés avec elles, celles qui manquent reviennent, et toutes les autres sont supprimées. Un aperçu liste ce qui part et ce que cela implique avant tout changement.",
       ],
@@ -192,6 +196,7 @@ export const guideFr: typeof guideEn = {
       title: "Plans budgétaires",
       paragraphs: [
         "Un plan budgétaire contient un objectif mensuel par catégorie de dépense pour une période du calendrier : une année, un semestre ou un trimestre. L'enveloppe d'une catégorie est son objectif mensuel multiplié par le nombre de mois du plan : un mois moins cher compense un mois plus cher. Une catégorie parente sans objectif propre prend la somme de ses sous-catégories. Avec un compte commun, indiquez sous chaque objectif qui le paie, le compte commun ou les comptes perso (même une fois le plan verrouillé) : les vues « Comptes communs » et « Seulement les miens » ne jugent alors que leurs propres objectifs, « Foyer » les garde tous.",
+        "Une catégorie d'épargne peut avoir un objectif mensuel dans le plan, saisi comme un objectif de dépense. C'est un minimum : épargner davantage est une bonne chose.",
         "Un nouveau plan reprend les objectifs du plan le plus récent. Ses objectifs et son revenu attendu se modifient jusqu'à la fin de son premier mois ; la note se modifie à tout moment.",
         "Quand la vie change (nouvel emploi, augmentation, nouvelle dépense récurrente), clôturez le plan par anticipation : il garde ses objectifs et sera évalué sur ses mois, et un plan de remplacement, pré-rempli avec les mêmes objectifs, couvre le reste de la période. Modifiez les objectifs là.",
       ],
@@ -203,6 +208,7 @@ export const guideFr: typeof guideEn = {
       paragraphs: [
         "La page Budget montre vos dépenses par catégorie et par mois à côté de l'objectif mensuel du plan qui couvre chaque mois. Une case est verte quand la dépense est sous l'objectif de plus que la marge (5 % par défaut), grise dans la marge, terre brûlée au-dessus ; sans objectif, elle n'a pas de couleur.",
         "Cliquez sur une case pour voir ses opérations. La ligne « à catégoriser » est toujours affichée, pour que les totaux ne soient jamais faux en silence.",
+        "Les catégories d'épargne ont leur propre section sous les dépenses, avec leur objectif et leur propre total, jamais compté dans le total des dépenses. Les couleurs s'y inversent : vert quand vous avez épargné plus que la marge au-dessus de l'objectif, terre brûlée quand vous êtes en dessous de plus que la marge.",
       ],
       link: { to: "/budget", label: "Ouvrir le budget" },
     },
@@ -211,8 +217,8 @@ export const guideFr: typeof guideEn = {
       title: "Bilan du plan",
       paragraphs: [
         "« Voir le bilan » sur la page Budget indique où en est un plan. Pendant le plan : la part du temps écoulé, ce qui était prévu à ce jour, et la dépense projetée en fin de plan. Les mois terminés comptent tels quels, les autres au moins pour leur objectif, ou à votre rythme réel s'il est plus élevé : un loyer payé le 1er n'est pas une dérive, alors qu'une dépense au-dessus de l'objectif apparaît tout de suite.",
-        "Les catégories projetées au-dessus de leur enveloppe sont listées comme dérapant, du plus gros dépassement au plus petit. Une fois le plan terminé, le bilan donne le résultat final avec les revenus, l'épargne et l'épargne prévue quand le plan a un revenu attendu.",
-        "Plus bas : les flux du plan (où sont allés les revenus : dépenses, épargne, restant non alloué ; cochez la case pour détailler les sous-catégories), l'écart projeté par catégorie, les dépenses cumulées jour après jour face à la ligne d'enveloppe, et une comparaison avec le plan précédent (ou un autre) en chiffres mensuels. Tant que des opérations restent à catégoriser, le bilan est marqué provisoire.",
+        "Les catégories projetées au-dessus de leur enveloppe, ou les catégories d'épargne projetées sous leur objectif, sont listées comme dérapant, du plus gros écart au plus petit. Une fois le plan terminé, le bilan donne le résultat final avec les revenus, l'épargne et l'épargne prévue quand le plan a un revenu attendu, à côté de la somme de vos objectifs d'épargne. Le tableau par catégorie et la comparaison montrent les catégories d'épargne dans une section à part.",
+        "Plus bas : les flux du plan (où sont allés les revenus : dépenses, épargne, restant non alloué ; cochez la case pour détailler les sous-catégories ; les entrées sont en bleu, les dépenses en ocre dans l'objectif et en terre brûlée au-dessus, l'épargne en vert quand elle atteint ses objectifs et en vert pâle en dessous, le reste en gris), l'écart projeté par catégorie, les dépenses cumulées jour après jour face à la ligne d'enveloppe, et une comparaison avec le plan précédent (ou un autre) en chiffres mensuels. Tant que des opérations restent à catégoriser, le bilan est marqué provisoire.",
       ],
       link: { to: "/budget/review", label: "Ouvrir le bilan" },
     },
@@ -220,7 +226,7 @@ export const guideFr: typeof guideEn = {
       id: "overview",
       title: "Vue d'ensemble",
       paragraphs: [
-        "La vue d'ensemble résume un mois : dépenses, revenus, solde et taux d'épargne, comparés au mois précédent et à la moyenne sur 12 mois, puis les dépenses par catégorie, les 12 derniers mois et les dépenses du mois face à votre budget.",
+        "La vue d'ensemble résume un mois : dépenses, revenus, solde (avec la part mise en épargne et placements) et taux d'épargne, comparés au mois précédent et à la moyenne sur 12 mois, puis les dépenses par catégorie, les 12 derniers mois et les dépenses du mois face à votre budget.",
         "« Foyer » compte tous les comptes que vous voyez, « Comptes communs » seulement les comptes communs du foyer (proposé dès qu'il y en a un), « Seulement les miens » vos propres comptes, sans les comptes communs. Dans ces deux vues, un virement avec un compte laissé de côté compte dans le solde net : ce que vous versez au compte commun sort de vos comptes et y entre, donc l'épargne de chaque vue reste juste.",
       ],
       link: { to: "/", label: "Ouvrir la vue d'ensemble" },

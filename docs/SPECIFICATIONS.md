@@ -179,6 +179,8 @@ Light and dark themes (the dark theme uses `neutral-900` / `neutral-800` surface
 
 Budget status colours (F-BUD-6) are semantic tokens built from the palette, defined for both themes: `budget-under` (from `primary`), `budget-on` (from `neutral`) and `budget-over` (from `secondary-700/800`, a burnt orange that reads as "over" without the alarm of the danger red).
 
+Money flows colours (the Sankey of the plan review, F-DSH-6) are semantic tokens too, `flow-*`, for both themes: money in is **blue** (`flow-in`, a steel blue, the one hue outside the blog palette, chosen to sit with its muted greens); spending within its target, or without one, is **ochre** (`secondary-500`), over its target **burnt orange** (`secondary-800`, `secondary-700` in dark); savings meeting their objectives are **green** (`primary`), below them **pale green** (`primary-300`, `primary-200` in dark); the unallocated rest and transfers paid out are **grey** (`neutral-400`), a deficit burnt orange. The status follows the review's (projected while the plan runs). The palette passes the CVD checks of the data-viz validator in both themes; every flow keeps its label, its table row with the status in words, and a legend.
+
 ## 8. Domain invariants (to be enforced by tests)
 
 1. An account balance equals its opening balance plus the sum of its transactions at any date.

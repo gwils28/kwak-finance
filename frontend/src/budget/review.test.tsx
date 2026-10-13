@@ -13,6 +13,7 @@ import {
   planFlows,
   previous,
   runningReview,
+  savingsReview,
 } from "./fixtures";
 
 beforeAll(() => {
@@ -200,15 +201,42 @@ test("the flows show where the plan's money came from and went, in a table too",
     .getAllByRole("row")
     .slice(1)
     .map((r) => r.textContent);
+  // Spending is judged on its category's status: Housing on target, Food over.
   expect(rows).toEqual([
     "InSalary€7,80096%",
     "InPaid in from other accounts€3004%",
-    "OutHousing€3,72046%",
-    "OutFood€6007%",
+    "OutHousing€3,72046%within the target",
+    "OutFood€6007%over the target",
     "OutTo categorise€801%",
     "OutSaved€1,50019%",
     "OutUnallocated€2,20027%",
   ]);
+  const legend = within(section).getByRole("list", { name: "Colours" });
+  expect(
+    within(legend)
+      .getAllByRole("listitem")
+      .map((i) => i.textContent),
+  ).toEqual([
+    "Money in",
+    "Spending within the target",
+    "Spending over the target",
+    "Savings",
+    "Unallocated and transfers",
+  ]);
+});
+
+test("savings below their objective are flagged in the flows", async () => {
+  api(savingsReview());
+  render(<TestApp path="/budget/review?plan=p-current" />);
+
+  const section = await screen.findByRole("region", { name: "Money flows" });
+  const table = await within(section).findByRole("table", { name: "Money flows" });
+  expect(within(table).getByRole("row", { name: /Saved/ })).toHaveTextContent(
+    "below the objective",
+  );
+  expect(within(section).getByRole("list", { name: "Colours" })).toHaveTextContent(
+    "Savings below the objective",
+  );
 });
 
 test("the flows can detail the spending by subcategory", async () => {
@@ -229,4 +257,78 @@ test("the flows follow the accounts chosen", async () => {
   render(<TestApp path="/budget/review?plan=p-current" />);
   await screen.findByRole("region", { name: "Money flows" });
   expect(queries("/api/budget/plans/p-current/flows").at(-1)?.get("scope")).toBe("household");
+});
+
+test("savings objectives have their own section, and one falling behind drifts", async () => {
+  api(savingsReview());
+  render(<TestApp path="/budget/review?plan=p-current" />);
+
+  const summary = await screen.findByRole("region", { name: "Summary" });
+  expect(summary).toHaveTextContent("Savings objectives€900");
+
+  const table = screen.getByRole("table", { name: "Review by category" });
+  const section = within(table).getByRole("rowgroup", { name: "Savings & investments" });
+  const investments = within(section).getByRole("row", { name: /Investments/ });
+  expect(within(investments).getByText("behind")).toBeInTheDocument();
+  expect(within(section).getByRole("row", { name: /Total saved/ })).toHaveTextContent("€250");
+  // The section names its own columns: saved, not spent; months ahead, not over.
+  expect(
+    within(section)
+      .getAllByRole("columnheader")
+      .map((h) => h.textContent),
+  ).toEqual([
+    "Category",
+    "Monthly objective",
+    "Objective over the plan",
+    "Saved",
+    "Gap",
+    "Expected",
+    "Status",
+    "Months ahead · on · behind",
+  ]);
+  // Savings never enter the spending total.
+  expect(within(table).getByRole("rowheader", { name: "Total" }).closest("tr")).toHaveTextContent(
+    "€2,057",
+  );
+
+  const drift = screen.getByRole("region", { name: "Drifting categories" });
+  expect(within(drift).getAllByRole("listitem").at(-1)).toHaveTextContent(
+    "Investments: €150 behind, €750 projected for an objective of €900",
+  );
+});
+
+test("the comparison lists the savings objectives apart, with their own total", async () => {
+  const saving = {
+    ...comparison(previous()).rows[0],
+    category_id: "c-pea",
+    name: "Investments",
+    target_a: "200.00",
+    target_b: "300.00",
+    average_a: "180.00",
+    average_b: "250.00",
+    change: "70.00",
+    change_ratio: "0.3889",
+    savings: true,
+  };
+  fakeApi({
+    "GET /api/auth/me": () => Response.json(owner),
+    "GET /api/budget/plans": () => Response.json([previous(), current()]),
+    "GET /api/budget/plans/p-current/review": () => Response.json(savingsReview()),
+    "GET /api/budget/plans/p-current/cumulative": () => Response.json(cumulativeChart()),
+    "GET /api/budget/plans/p-current/flows": () => Response.json(planFlows()),
+    "GET /api/budget/plans/p-current/comparison": () => {
+      const data = comparison(previous());
+      const total = { ...saving, category_id: null, name: "Total saved" };
+      return Response.json({ ...data, rows: [...data.rows, saving, total] });
+    },
+  });
+  render(<TestApp path="/budget/review?plan=p-current" />);
+
+  const section = await screen.findByRole("region", { name: "Comparison" });
+  const rows = (await within(section).findAllByRole("row")).map((r) => r.textContent);
+  expect(rows.slice(-3)).toEqual([
+    "Savings & investments",
+    expect.stringMatching(/^Investments€200€300€180€250\+€70/),
+    expect.stringMatching(/^Total saved/),
+  ]);
 });

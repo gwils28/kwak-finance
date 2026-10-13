@@ -79,6 +79,8 @@ export function BudgetPage() {
   const plan = plans.data?.find((p) => p.id === planId) ?? defaultPlan(plans.data ?? [], end);
   const targets =
     plan && matrix.data ? planTargets(scopedPlan(plan, scope), matrix.data.rows) : null;
+  const objectives =
+    plan && matrix.data ? planTargets(scopedPlan(plan, scope), matrix.data.savings) : null;
   const askPaidFrom = useHasJointAccount();
 
   const bandPercent = formatPercent(band);
@@ -177,9 +179,13 @@ export function BudgetPage() {
                   categoryParam={row.category_id ?? "none"}
                 />
               ))}
-              <MatrixRow row={matrix.data.uncategorised} onError={setError} categoryParam="none" />
               <MatrixRow
-                row={matrix.data.total}
+                row={{ ...matrix.data.uncategorised, name: t.budget.uncategorised }}
+                onError={setError}
+                categoryParam="none"
+              />
+              <MatrixRow
+                row={{ ...matrix.data.total, name: t.budget.total }}
                 target={
                   targets?.total
                     ? { amount: targets.total, fromChildren: true, paidFrom: null }
@@ -189,6 +195,48 @@ export function BudgetPage() {
                 isTotal
               />
             </tbody>
+            {matrix.data.savings.length > 0 && (
+              <tbody aria-label={t.budget.savings} className="divide-y divide-border">
+                <tr className="border-t-4 border-border">
+                  <th
+                    colSpan={2 + matrix.data.months.length}
+                    scope="rowgroup"
+                    className="px-3 pt-4 pb-2 text-left"
+                  >
+                    <span className="sticky left-3 block w-fit text-base font-bold">
+                      {t.budget.savings}
+                    </span>
+                    <span className="block text-xs font-normal text-muted">
+                      {t.budget.savingsLegend(bandPercent)}
+                    </span>
+                  </th>
+                </tr>
+                {visibleRows(matrix.data.savings, showEmpty).map((row) => (
+                  <MatrixRow
+                    key={row.category_id}
+                    row={row}
+                    plan={plan}
+                    target={
+                      row.category_id ? objectives?.byCategory.get(row.category_id) : undefined
+                    }
+                    askPaidFrom={askPaidFrom}
+                    onError={setError}
+                    categoryParam={row.category_id ?? "none"}
+                    savings
+                  />
+                ))}
+                <MatrixRow
+                  row={{ ...matrix.data.savings_total, name: t.budget.savingsTotal }}
+                  target={
+                    objectives?.total
+                      ? { amount: objectives.total, fromChildren: true, paidFrom: null }
+                      : undefined
+                  }
+                  onError={setError}
+                  isTotal
+                />
+              </tbody>
+            )}
           </table>
         </div>
       )}
@@ -235,6 +283,7 @@ function MatrixRow({
   onError,
   isTotal = false,
   categoryParam,
+  savings = false,
 }: {
   row: RowOut;
   /** The plan whose targets the row edits; none for the "to categorise" and total rows. */
@@ -245,6 +294,8 @@ function MatrixRow({
   onError: (message: string | null) => void;
   isTotal?: boolean;
   categoryParam?: string;
+  /** A savings category: its target is an objective, a minimum (F-BUD-9). */
+  savings?: boolean;
 }) {
   const { t } = useI18n();
   const weight = row.level === 0 ? "font-semibold" : "";
@@ -268,6 +319,7 @@ function MatrixRow({
             target={target}
             categoryId={row.category_id}
             onError={onError}
+            label={savings ? t.budget.objectiveFor(row.name) : t.budget.targetFor(row.name)}
           />
         ) : (
           <span
@@ -385,12 +437,14 @@ function TargetInput({
   target,
   categoryId,
   onError,
+  label,
 }: {
   row: RowOut;
   plan: PlanOut;
   target: PlanTarget | undefined;
   categoryId: string;
   onError: (message: string | null) => void;
+  label: string;
 }) {
   const { t } = useI18n();
   const queryClient = useQueryClient();
@@ -427,7 +481,7 @@ function TargetInput({
 
   return (
     <input
-      aria-label={t.budget.targetFor(row.name)}
+      aria-label={label}
       inputMode="decimal"
       placeholder={target?.fromChildren ? t.budget.sum(formatEurWhole(target.amount)) : "—"}
       title={target?.fromChildren ? t.budget.sumHelp : undefined}

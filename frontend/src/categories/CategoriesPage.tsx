@@ -74,7 +74,16 @@ export function CategoriesPage() {
       {categories.data && (
         <div className="grid gap-6 lg:grid-cols-2">
           <CategoryTree title={t.categories.spending} kind="expense" categories={all} {...report} />
-          <CategoryTree title={t.categories.income} kind="income" categories={all} {...report} />
+          <div className="flex flex-col gap-6">
+            <CategoryTree title={t.categories.income} kind="income" categories={all} {...report} />
+            <CategoryTree
+              title={t.categories.savings}
+              help={t.categories.savingsHelp}
+              kind="savings"
+              categories={all}
+              {...report}
+            />
+          </div>
         </div>
       )}
       <RulesSection categories={all} {...report} />
@@ -130,6 +139,7 @@ function NewCategoryForm({ onError }: Report) {
         >
           <option value="expense">{t.categories.spending}</option>
           <option value="income">{t.categories.income}</option>
+          <option value="savings">{t.categories.savings}</option>
         </select>
       </div>
       <Button type="submit" disabled={create.isPending}>
@@ -141,15 +151,17 @@ function NewCategoryForm({ onError }: Report) {
 
 function CategoryTree({
   title,
+  help,
   kind,
   categories,
   ...report
-}: { title: string; kind: CategoryKind; categories: CategoryOut[] } & Report) {
+}: { title: string; help?: string; kind: CategoryKind; categories: CategoryOut[] } & Report) {
   const { t } = useI18n();
   const parents = categories.filter((c) => c.kind === kind && c.parent_id === null);
   return (
     <section className="flex flex-col gap-2">
       <h2 className="text-xl font-bold">{title}</h2>
+      {help && <p className="text-sm text-muted">{help}</p>}
       <ul
         aria-label={t.categories.treeLabel(title)}
         className="divide-y divide-border rounded-lg border border-border bg-surface"

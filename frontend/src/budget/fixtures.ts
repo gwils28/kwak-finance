@@ -345,3 +345,70 @@ export const planFlows = (): FlowsOut => ({
     flow({ kind: "unallocated", amount: "2200.00" }),
   ],
 });
+
+/** The matrix with a savings category and its objective (F-BUD-9). */
+export const savingsMatrix = {
+  ...matrix,
+  savings: [
+    {
+      category_id: "c-savings",
+      name: "Savings & investments",
+      parent_id: null,
+      level: 0,
+      target: "300.00",
+      target_from_children: true,
+      cells: [
+        cell("2026-02", "400.00", "300.00", "ahead", "100.00", "0.3333"),
+        cell("2026-03", "150.00", "300.00", "behind", "-150.00", "-0.5000"),
+      ],
+    },
+    {
+      category_id: "c-pea",
+      name: "Investments",
+      parent_id: "c-savings",
+      level: 1,
+      target: "300.00",
+      cells: [
+        cell("2026-02", "400.00", "300.00", "ahead", "100.00", "0.3333"),
+        cell("2026-03", "150.00", "300.00", "behind", "-150.00", "-0.5000"),
+      ],
+    },
+  ],
+  savings_total: {
+    category_id: null,
+    name: "Total saved",
+    parent_id: null,
+    level: 0,
+    target: "300.00",
+    cells: [
+      cell("2026-02", "400.00", "300.00", "ahead", "100.00", "0.3333"),
+      cell("2026-03", "150.00", "300.00", "behind", "-150.00", "-0.5000"),
+    ],
+  },
+};
+
+/** A running review with a savings objective projected behind (F-BUD-9). */
+export const savingsReview = (): ReviewOut => {
+  const investments = reviewRow({
+    name: "Investments",
+    category_id: "c-pea",
+    monthly_target: "300.00",
+    envelope: "900.00",
+    spent: "250.00",
+    gap: "-650.00",
+    gap_ratio: "-0.7222",
+    pace: "460.71",
+    status: "behind",
+    projection: "750.00",
+    drift: "-150.00",
+    projected_gap_ratio: "-0.1667",
+    drifting: true,
+    months_under: 1,
+    savings: true,
+  });
+  return runningReview({
+    savings_rows: [investments],
+    savings_total: { ...investments, name: "Total saved", category_id: null },
+    drifting: ["c-restaurants", "c-food", "c-pea"],
+  });
+};

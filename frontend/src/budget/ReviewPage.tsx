@@ -1,6 +1,6 @@
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router";
-import { type ReactNode, useId, useState } from "react";
+import { Fragment, type ReactNode, useId, useState } from "react";
 import {
   type BudgetStatus,
   listPlans,
@@ -178,7 +178,7 @@ function Review({
       <Summary review={review} />
       {!review.finished && <DriftList review={review} />}
       <CategoryTable review={review} />
-      <Flows plan={plan} scope={scope} />
+      <Flows plan={plan} scope={scope} review={review} />
       <div className="grid gap-6 lg:grid-cols-2">
         <GapChart rows={review.rows} />
         <Cumulative plan={plan} rows={review.rows} scope={scope} />
@@ -252,6 +252,11 @@ function Summary({ review }: { review: ReviewOut }) {
         {review.planned_savings !== null && (
           <Figure label={t.review.plannedSavings}>{formatEurWhole(review.planned_savings)}</Figure>
         )}
+        {review.savings_total.envelope !== null && (
+          <Figure label={t.review.savingsObjectives}>
+            {formatEurWhole(review.savings_total.envelope)}
+          </Figure>
+        )}
       </dl>
     </section>
   );
@@ -259,8 +264,9 @@ function Summary({ review }: { review: ReviewOut }) {
 
 function DriftList({ review }: { review: ReviewOut }) {
   const { t } = useI18n();
+  const all = [...review.rows, ...review.savings_rows];
   const rows = review.drifting
-    .map((id) => review.rows.find((r) => r.category_id === id))
+    .map((id) => all.find((r) => r.category_id === id))
     .filter((r): r is ReviewRowOut => r !== undefined);
   return (
     <Card title={t.review.drifting} subtitle={t.review.driftingHelp}>
@@ -273,12 +279,19 @@ function DriftList({ review }: { review: ReviewOut }) {
               key={r.category_id}
               className="rounded-md bg-budget-over-bg px-3 py-2 text-budget-over-fg"
             >
-              {t.review.driftItem(
-                r.name,
-                formatEurSigned(r.drift as string),
-                formatEurWhole(r.projection as string),
-                formatEurWhole(r.envelope as string),
-              )}
+              {r.savings
+                ? t.review.driftBehind(
+                    r.name,
+                    formatEurWhole((r.drift as string).replace("-", "")),
+                    formatEurWhole(r.projection as string),
+                    formatEurWhole(r.envelope as string),
+                  )
+                : t.review.driftItem(
+                    r.name,
+                    formatEurSigned(r.drift as string),
+                    formatEurWhole(r.projection as string),
+                    formatEurWhole(r.envelope as string),
+                  )}
             </li>
           ))}
         </ol>
@@ -291,6 +304,30 @@ function CategoryTable({ review }: { review: ReviewOut }) {
   const { t } = useI18n();
   const running = !review.finished;
   const cell = "whitespace-nowrap px-3 py-2 text-right tabular";
+  const shown = (rows: ReviewRowOut[]) =>
+    rows.filter((r) => r.envelope !== null || Number(r.spent) !== 0);
+  const savings = shown(review.savings_rows);
+  const headers = (savings: boolean) => [
+    t.review.category,
+    savings ? t.review.monthlyObjective : t.review.monthlyTarget,
+    savings ? t.review.objectiveOverPlan : t.review.envelope,
+    savings ? t.review.saved : t.review.spent,
+    t.review.gap,
+    ...(running ? [t.review.pace] : []),
+    t.review.status,
+    savings ? t.review.monthsSavings : t.review.months,
+  ];
+  const headerCells = (savings: boolean) =>
+    headers(savings).map((h, i) => (
+      <th
+        key={h}
+        scope="col"
+        className={`whitespace-nowrap px-3 py-2 font-medium ${i > 0 ? "text-right" : ""}`}
+      >
+        {h}
+      </th>
+    ));
+  const columns = headers(false).length;
   const line = (r: ReviewRowOut, total = false) => (
     <tr key={r.category_id ?? r.name} className={total ? "border-t-2 border-border font-bold" : ""}>
       <th
@@ -325,32 +362,27 @@ function CategoryTable({ review }: { review: ReviewOut }) {
     <div className="overflow-x-auto rounded-lg border border-border bg-surface">
       <table aria-label={t.review.byCategory} className="w-full text-sm">
         <thead className="text-left text-muted">
-          <tr>
-            {[
-              t.review.category,
-              t.review.monthlyTarget,
-              t.review.envelope,
-              t.review.spent,
-              t.review.gap,
-              ...(running ? [t.review.pace] : []),
-              t.review.status,
-              t.review.months,
-            ].map((h, i) => (
-              <th
-                key={h}
-                className={`whitespace-nowrap px-3 py-2 font-medium ${i > 0 ? "text-right" : ""}`}
-              >
-                {h}
-              </th>
-            ))}
-          </tr>
+          <tr>{headerCells(false)}</tr>
         </thead>
         <tbody className="divide-y divide-border">
-          {review.rows
-            .filter((r) => r.envelope !== null || Number(r.spent) !== 0)
-            .map((r) => line(r))}
-          {line(review.total, true)}
+          {shown(review.rows).map((r) => line(r))}
+          {line({ ...review.total, name: t.budget.total }, true)}
         </tbody>
+        {savings.length > 0 && (
+          <tbody aria-label={t.review.savingsSection} className="divide-y divide-border">
+            <tr className="border-t-4 border-border">
+              <th colSpan={columns} scope="rowgroup" className="px-3 pt-4 pb-2 text-left">
+                <span className="block text-base font-bold">{t.review.savingsSection}</span>
+                <span className="block text-xs font-normal text-muted">
+                  {t.review.savingsSectionHelp}
+                </span>
+              </th>
+            </tr>
+            <tr className="text-left text-muted">{headerCells(true)}</tr>
+            {savings.map((r) => line(r))}
+            {line({ ...review.savings_total, name: t.review.savingsTotal }, true)}
+          </tbody>
+        )}
       </table>
     </div>
   );
@@ -396,7 +428,7 @@ function Cumulative({ plan, rows, scope }: { plan: PlanOut; rows: ReviewRowOut[]
   return <CumulativeChart chart={chart.data} aside={select} />;
 }
 
-function Flows({ plan, scope }: { plan: PlanOut; scope: Scope }) {
+function Flows({ plan, scope, review }: { plan: PlanOut; scope: Scope; review: ReviewOut }) {
   const flows = useQuery({
     queryKey: ["budget", "flows", plan.id, scope],
     queryFn: async () =>
@@ -409,7 +441,7 @@ function Flows({ plan, scope }: { plan: PlanOut; scope: Scope }) {
       ).data,
   });
   if (!flows.data) return null;
-  return <FlowsChart flows={flows.data.flows} />;
+  return <FlowsChart flows={flows.data.flows} review={review} />;
 }
 
 function Comparison({ plan, plans, scope }: { plan: PlanOut; plans: PlanOut[]; scope: Scope }) {
@@ -505,31 +537,41 @@ function Comparison({ plan, plans, scope }: { plan: PlanOut; plans: PlanOut[]; s
                       Number(r.average_a ?? 0) !== 0 ||
                       Number(r.average_b ?? 0) !== 0,
                   )
-                  .map((r) => (
-                    <tr
-                      key={r.category_id ?? r.name}
-                      className={r.category_id === null ? "border-t-2 border-border font-bold" : ""}
-                    >
-                      <th
-                        scope="row"
-                        className={`whitespace-nowrap px-3 py-2 text-left ${
-                          r.level === 1 ? "pl-8 font-normal" : "font-semibold"
-                        }`}
+                  .map((r, i, rows) => (
+                    <Fragment key={`${r.savings}:${r.category_id ?? r.name}`}>
+                      {r.savings && !rows[i - 1]?.savings && (
+                        <tr className="border-t-4 border-border">
+                          <th colSpan={6} scope="rowgroup" className="px-3 pt-4 pb-2 text-left">
+                            {t.review.savingsSection}
+                          </th>
+                        </tr>
+                      )}
+                      <tr
+                        className={
+                          r.category_id === null ? "border-t-2 border-border font-bold" : ""
+                        }
                       >
-                        {r.name}
-                      </th>
-                      <td className={cell}>{eur(r.target_a)}</td>
-                      <td className={cell}>{eur(r.target_b)}</td>
-                      <td className={cell}>{eur(r.average_a)}</td>
-                      <td className={cell}>{eur(r.average_b)}</td>
-                      <td className={cell}>
-                        {r.change === null
-                          ? ""
-                          : r.change_ratio === null
-                            ? formatEurSigned(r.change)
-                            : `${formatEurSigned(r.change)} · ${formatPercentSigned(r.change_ratio)}`}
-                      </td>
-                    </tr>
+                        <th
+                          scope="row"
+                          className={`whitespace-nowrap px-3 py-2 text-left ${
+                            r.level === 1 ? "pl-8 font-normal" : "font-semibold"
+                          }`}
+                        >
+                          {r.savings && r.category_id === null ? t.review.savingsTotal : r.name}
+                        </th>
+                        <td className={cell}>{eur(r.target_a)}</td>
+                        <td className={cell}>{eur(r.target_b)}</td>
+                        <td className={cell}>{eur(r.average_a)}</td>
+                        <td className={cell}>{eur(r.average_b)}</td>
+                        <td className={cell}>
+                          {r.change === null
+                            ? ""
+                            : r.change_ratio === null
+                              ? formatEurSigned(r.change)
+                              : `${formatEurSigned(r.change)} · ${formatPercentSigned(r.change_ratio)}`}
+                        </td>
+                      </tr>
+                    </Fragment>
                   ))}
               </tbody>
             </table>

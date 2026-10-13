@@ -34,6 +34,7 @@ const dashboard = {
     paid_in: "0.00",
     paid_out: "0.00",
     net: "897.61",
+    saved: "0.00",
     savings_rate: "0.3564",
     previous_spent: "1400.00",
     average_spent: "1500.00",
@@ -169,6 +170,14 @@ test("the net tile shows what was paid in or out by transfers crossing the scope
   expect(plain(tile.textContent)).toContain("-€1,100 paid out to other accounts");
   expect(tile).not.toHaveTextContent("paid in");
   expect(tile).not.toHaveTextContent("transfers excluded");
+});
+
+test("the net tile shows the part put in savings categories", async () => {
+  api({ ...dashboard, kpis: { ...dashboard.kpis, saved: "300.00" } });
+  render(<TestApp path="/" />);
+
+  const tile = await screen.findByRole("region", { name: "Net" });
+  expect(plain(tile.textContent)).toContain("of which €300 put in savings & investments");
 });
 
 test("a household without transactions is pointed to the first import", async () => {
