@@ -52,7 +52,7 @@ export const categoriesEn = {
   },
   oneOff: {
     label: "Paid once in the month",
-    help: "Rent, a subscription, an insurance premium: on the overview, its target is not compared with the pace of the month.",
+    help: "Rent, a subscription, an insurance premium: on the overview, its target is not compared with the pace of the month, and paying it in full is not a warning.",
     inherit: (parent: string, yes: boolean) => `Like ${parent} (${yes ? "yes" : "no"})`,
     yes: "Yes",
     no: "No",
@@ -164,7 +164,7 @@ export const categoriesFr: typeof categoriesEn = {
   },
   oneOff: {
     label: "Payée une fois dans le mois",
-    help: "Loyer, abonnement, prime d'assurance : sur la vue d'ensemble, son objectif n'est pas comparé au rythme du mois.",
+    help: "Loyer, abonnement, prime d'assurance : sur la vue d'ensemble, son objectif n'est pas comparé au rythme du mois, et la payer en entier ne déclenche pas d'alerte.",
     inherit: (parent, yes) => `Comme ${parent} (${yes ? "oui" : "non"})`,
     yes: "Oui",
     no: "Non",
