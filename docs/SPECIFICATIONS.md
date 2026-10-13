@@ -1,6 +1,6 @@
 # Functional Specifications
 
-Status: draft v0.7.1 — 2026-10-13. Owner: sole maintainer.
+Status: draft v0.8 — 2026-10-13. Owner: sole maintainer.
 
 ## 1. Purpose
 
@@ -97,9 +97,12 @@ Goal of the budget module: **follow spending simply**, whether entered by hand o
 
 ### 4.6 Recurring transactions (M)
 
-- F-REC-1: Automatic detection of recurring series (same merchant, near-constant amount, regular period), confirmed by the user.
-- F-REC-2: Manual definition of recurring items (salary, rent, subscriptions).
-- F-REC-3: Upcoming-items calendar and a simple deterministic cash-flow projection to month end (statistical forecasting is phase 3).
+Most transactions are entered by hand, once a week or a fortnight, because the banks only export a statement once a month: recurring items mainly save that typing and say what is still to come.
+
+- F-REC-1: A **recurring item** describes an expected transaction: a label (matched as a rule's, F-CAT-2), an account, a category, an amount (fixed, or **estimated** as the average of its last 3 occurrences, e.g. electricity, shown "≈ €85"), a frequency (weekly, monthly, quarterly or yearly) and an expected day (a weekday, or a day of the month, the last day standing in for a missing one), from a first date and optionally until an end date. Items are defined by hand (salary, rent, subscriptions) or confirmed from a suggestion (F-REC-2), and can be paused or ended.
+- F-REC-2: **Detection**, as suggestions to confirm, edit or dismiss (a dismissed series is not suggested again): over the last 6 months, at least 3 transactions of one account with the same normalised label, at a regular interval (weekly, monthly, quarterly or yearly, ± 5 days) and an amount varying by less than 10 % (fixed below 1 %, estimated otherwise). Transfers between own accounts (F-TX-5) are not suggested.
+- F-REC-3: **Occurrences**. An item has one occurrence per period, on its expected date. A transaction **fulfils** an occurrence when it is on the item's account, its label matches, its amount is within 10 % of the expected one (same sign) and its date within 5 days of the expected date; each transaction fulfils one occurrence at most and each occurrence takes the closest one. An occurrence is **upcoming** before its date plus 5 days, then **late** while unfulfilled; the user can **skip** one (a subscription paused for a month). Nothing is ever created by itself: an upcoming or late occurrence offers **"Enter it"**, which opens the manual entry (F-TX-4) pre-filled with the item's account, label, category, amount and expected date (today if later), to confirm or adjust.
+- F-REC-4: **Upcoming items**, on the overview (F-DSH-1) for the scope shown: the occurrences from today to the end of the month, late ones first, with "Enter it", and the **projected balance** at the end of the month: the current balance of the scope's cash accounts plus the upcoming and late occurrences of their items. The projection uses real booking dates (not the budget month, F-TX-7): a salary expected on the 28th counts in this month's projected balance. A **Recurring** page, opened from Transactions, lists the items with their next occurrence and status, the suggestions, and each item's past occurrences (fulfilled, late, skipped). Statistical forecasting is phase 4.
 
 ### 4.7 Household sharing (S)
 
@@ -207,6 +210,7 @@ Money flows colours (the Sankey of the plan review, F-DSH-6) are semantic tokens
 13. A plan's money flows balance: what comes in (income, paid in, taken from savings, deficit) equals what goes out (spending, paid out, saved, unallocated).
 14. Savings categories are never spending nor income: the net cash flow of a period (income − spending, before transfers crossing the scope) equals the sum of its transactions, transfers excluded, plus what its savings categories received (net of withdrawals).
 15. Every transaction counts in exactly one budget month, at most one month away from its booking month, and a transfer in its booking month: summed over all months, income, spending and savings are the same by budget month as by booking month. Shifting a transaction's month never changes an account balance.
+16. A transaction fulfils at most one occurrence and an occurrence at most one transaction; the projected end-of-month balance equals the current balance plus the expected amounts of the unfulfilled, unskipped occurrences up to the end of the month.
 
 ## 9. Open questions
 
