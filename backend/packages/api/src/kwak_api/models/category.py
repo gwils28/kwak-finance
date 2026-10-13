@@ -1,7 +1,7 @@
 from uuid import UUID
 
 from kwak_core.categories import CategoryKind
-from sqlalchemy import Enum, ForeignKey, Index, String, text
+from sqlalchemy import CheckConstraint, Enum, ForeignKey, Index, SmallInteger, String, text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from kwak_api.db import Base, Timestamps, UUIDPrimaryKey
@@ -20,6 +20,7 @@ class Category(UUIDPrimaryKey, Timestamps, Base):
             text("lower(name)"),
             unique=True,
         ),
+        CheckConstraint("shift_day BETWEEN 0 AND 31", name="shift_day_range"),
     )
 
     household_id: Mapped[UUID] = mapped_column(ForeignKey("household.id"), index=True)
@@ -35,3 +36,6 @@ class Category(UUIDPrimaryKey, Timestamps, Base):
             values_callable=lambda kinds: [k.value for k in kinds],
         )
     )
+    # F-CAT-5: transactions booked on or after this day count for the next month. NULL: no
+    # setting of its own (a subcategory follows its parent's); 0: never shifted.
+    shift_day: Mapped[int | None] = mapped_column(SmallInteger)

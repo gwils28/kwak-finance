@@ -6,12 +6,15 @@ from decimal import Decimal
 from uuid import UUID
 
 from kwak_core.accounts import CASH_TYPES
+from kwak_core.budget import Month
+from kwak_core.budget_month import check_manual_month
 from kwak_core.imports import normalize_label
 from sqlalchemy import func, select
 from sqlalchemy import update as sql_update
 from sqlalchemy.orm import Session
 
 from kwak_api.models import Account, Category, Transaction, User
+from kwak_api.services import budget_month
 from kwak_api.services.accounts import find_visible_account, visible_accounts
 from kwak_api.services.rules import categorise_new
 
@@ -32,6 +35,7 @@ class TransactionFilter:
     q: str | None = None
     category_id: UUID | None = None
     uncategorised: bool = False
+    budget_month: Month | None = None
 
 
 def _check_entry(account: Account, booked_on: date, amount: Decimal, label: str) -> str:
@@ -69,6 +73,8 @@ def search(
         query = query.where(
             func.unaccent(Transaction.label_norm).like(func.unaccent(f"%{needle}%"))
         )
+    if filters.budget_month:
+        query = query.where(budget_month.in_months(filters.budget_month, filters.budget_month))
     if filters.category_id:
         query = query.where(Transaction.category_id == filters.category_id)
     if filters.uncategorised:
@@ -138,10 +144,32 @@ def update(
         transaction.amount if amount is None else amount,
         label or transaction.label_raw,
     )
+    if booked_on and transaction.budget_month:
+        try:
+            check_manual_month(booked_on, Month.of(transaction.budget_month))
+        except ValueError:
+            raise ValueError(
+                "the budget month set by hand would be more than one month from this date"
+            ) from None
     transaction.booked_on = booked_on or transaction.booked_on
     transaction.amount = transaction.amount if amount is None else amount
     transaction.label_raw = label
     transaction.label_norm = normalize_label(label)
+    db.flush()
+
+
+class TransferMonthError(Exception):
+    """A transfer counts in its booking month, as both its legs must (F-TX-7)."""
+
+
+def set_budget_month(db: Session, transaction: Transaction, month: Month | None) -> None:
+    """Set by hand the month the transaction counts in, or go back to the category's rule
+    (None). Imported transactions too: it changes no amount."""
+    if transaction.transfer_group_id is not None:
+        raise TransferMonthError
+    if month is not None:
+        check_manual_month(transaction.booked_on, month)
+    transaction.budget_month = month.first_day() if month else None
     db.flush()
 
 

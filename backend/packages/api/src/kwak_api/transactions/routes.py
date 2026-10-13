@@ -4,12 +4,14 @@ from typing import Annotated, Literal
 from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Query, status
+from kwak_core.budget import Month
 from kwak_core.money import require_cents
 from pydantic import AfterValidator, BaseModel
 
 from kwak_api.auth.routes import CurrentSession, Db
 from kwak_api.models import Account, Category, Transaction
 from kwak_api.services import accounts as account_service
+from kwak_api.services import budget_month as budget_month_service
 from kwak_api.services import categories as category_service
 from kwak_api.services import transactions as service
 from kwak_api.services import transfers as transfer_service
@@ -18,6 +20,12 @@ router = APIRouter(prefix="/api", tags=["transactions"])
 
 Cents = Annotated[Decimal, AfterValidator(require_cents)]
 NOT_FOUND = HTTPException(status.HTTP_404_NOT_FOUND, "transaction not found")
+
+
+def _month(text: str | None) -> str | None:
+    if text is not None:
+        Month.parse(text)  # ValueError: a validation error
+    return text
 
 
 class TransactionOut(BaseModel):
@@ -35,6 +43,10 @@ class TransactionOut(BaseModel):
     """Set when this is one side of a transfer between own accounts."""
     transfer_account_name: str | None
     """The account on the other side of the transfer."""
+    budget_month: str
+    """YYYY-MM: the month it counts in for the budget (F-TX-7), by default its booking month."""
+    budget_month_set: bool
+    """The budget month was set by hand on this transaction."""
 
     @classmethod
     def of(
@@ -57,6 +69,8 @@ class TransactionOut(BaseModel):
             category_name=category.name if category else None,
             transfer_group_id=transaction.transfer_group_id,
             transfer_account_name=(counterparts or {}).get(transaction.id),
+            budget_month=str(budget_month_service.month_of(transaction, categories)),
+            budget_month_set=transaction.budget_month is not None,
         )
 
 
@@ -80,6 +94,9 @@ class TransactionPatch(BaseModel):
     amount: Cents | None = None
     label: str | None = None
     category_id: UUID | None = None
+    budget_month: Annotated[str | None, AfterValidator(_month)] = None
+    """YYYY-MM, at most one month from the date: the month it counts in for the budget.
+    null: back to its booking month, or the next one by its category (F-CAT-5)."""
 
 
 class Categorise(BaseModel):
@@ -124,11 +141,21 @@ def list_transactions(
     q: Annotated[str | None, Query(max_length=100, description="Words in the label")] = None,
     category_id: UUID | None = None,
     uncategorised: Annotated[bool, Query(description="Only transactions to categorise")] = False,
+    budget_month: Annotated[
+        str | None,
+        Query(pattern=r"^\d{4}-(0[1-9]|1[0-2])$", description="YYYY-MM: counted in this month"),
+    ] = None,
     limit: Annotated[int, Query(ge=1, le=200)] = 50,
     offset: Annotated[int, Query(ge=0)] = 0,
 ) -> TransactionPage:
     filters = service.TransactionFilter(
-        account_id, date_from, date_to, q, category_id, uncategorised
+        account_id,
+        date_from,
+        date_to,
+        q,
+        category_id,
+        uncategorised,
+        Month.parse(budget_month) if budget_month else None,
     )
     rows, total = service.search(db, user_session.user, filters, limit=limit, offset=offset)
     categories = _categories(db, user_session.user.household_id)
@@ -176,6 +203,16 @@ def update_transaction(
             raise HTTPException(
                 status.HTTP_409_CONFLICT, "a transfer has no category: unlink it first"
             ) from None
+    if "budget_month" in body.model_fields_set:
+        month = Month.parse(body.budget_month) if body.budget_month else None
+        try:
+            service.set_budget_month(db, transaction, month)
+        except service.TransferMonthError:
+            raise HTTPException(
+                status.HTTP_409_CONFLICT, "a transfer counts in its booking month"
+            ) from None
+        except ValueError as exc:
+            raise _unprocessable(exc) from None
     return TransactionOut.of(transaction, account, _categories(db, household_id))
 
 
