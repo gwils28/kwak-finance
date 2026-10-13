@@ -47,7 +47,6 @@ export const transactionsEn = {
   budgetMonth: "Budget month",
   countedIn: (month: string) => `counted in ${month}`,
   budgetMonthOf: (label: string) => `Budget month of ${label}`,
-  monthShort: "Month",
   countsIn: (label: string) => `Counts in, ${label}`,
   automatic: (month: string | null) => (month ? `Automatic (${month})` : "Automatic"),
   monthHelp:
@@ -126,7 +125,6 @@ export const transactionsFr: typeof transactionsEn = {
   budgetMonth: "Mois budgétaire",
   countedIn: (month) => `compté en ${month}`,
   budgetMonthOf: (label) => `Mois budgétaire de ${label}`,
-  monthShort: "Mois",
   countsIn: (label) => `Compte en, ${label}`,
   automatic: (month) => (month ? `Automatique (${month})` : "Automatique"),
   monthHelp:

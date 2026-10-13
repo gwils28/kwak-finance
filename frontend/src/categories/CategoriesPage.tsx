@@ -18,6 +18,7 @@ import {
 import { apiErrorMessage, detailSentence } from "../auth/errors";
 import { meQuery } from "../auth/session";
 import { usePeriodLabel } from "../budget/PlanPanel";
+import { Icon } from "../components/icons";
 import { Button, ErrorAlert, TextField } from "../components/ui";
 import { useI18n } from "../i18n";
 import type { Messages } from "../i18n/en";
@@ -288,7 +289,7 @@ function CategoryLine({
 
   return (
     <div>
-      <div className="flex flex-wrap items-center justify-between gap-2">
+      <div className="group flex flex-wrap items-center justify-between gap-2">
         {renaming ? (
           <form
             onSubmit={(e) => {
@@ -311,7 +312,20 @@ function CategoryLine({
         ) : (
           <span>
             <span className={isChild ? "" : "font-semibold"}>{category.name}</span>
-            {shift && <span className="ml-2 text-xs text-muted">{shift}</span>}
+            <button
+              type="button"
+              aria-label={t.categories.shift.open(category.name)}
+              aria-expanded={shifting}
+              title={t.categories.shift.help}
+              onClick={() => setShifting(!shifting)}
+              className={`ml-2 rounded align-middle text-xs text-muted hover:text-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
+                shift
+                  ? "underline-offset-2 hover:underline"
+                  : `opacity-0 focus-visible:opacity-100 group-hover:opacity-100 pointer-coarse:opacity-100 ${shifting ? "opacity-100" : ""}`
+              }`}
+            >
+              {shift ?? <Icon name="calendar" className="inline size-3.5" />}
+            </button>
           </span>
         )}
         <span className="flex flex-wrap items-center gap-2">
@@ -329,16 +343,6 @@ function CategoryLine({
               ))}
             </select>
           )}
-          <Button
-            variant="ghost"
-            className="px-2 py-1 text-xs"
-            aria-label={t.categories.shift.open(category.name)}
-            aria-expanded={shifting}
-            title={t.categories.shift.help}
-            onClick={() => setShifting(!shifting)}
-          >
-            {t.categories.shift.button}
-          </Button>
           <Button
             variant="ghost"
             className="px-2 py-1 text-xs"
