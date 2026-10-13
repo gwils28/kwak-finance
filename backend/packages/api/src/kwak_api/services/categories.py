@@ -4,6 +4,8 @@ from dataclasses import dataclass, field
 from datetime import date
 from uuid import UUID
 
+from kwak_core.budget import Month
+from kwak_core.budget_month import Booked, check_shift_day, months_moved, shift_day
 from kwak_core.categories import (
     DEFAULT_CATEGORIES,
     CategoryKind,
@@ -24,8 +26,10 @@ from kwak_api.models import (
     CategorizationRule,
     Category,
     Transaction,
+    User,
 )
-from kwak_api.services.budget import is_editable
+from kwak_api.services.accounts import visible_accounts
+from kwak_api.services.budget import core_plan, is_editable, list_plans
 
 
 class DuplicateCategoryError(Exception):
@@ -108,9 +112,20 @@ def create(
 
 
 def update_category(
-    db: Session, category: Category, *, name: str | None, parent: Category | None, move: bool
+    db: Session,
+    category: Category,
+    *,
+    name: str | None,
+    parent: Category | None,
+    move: bool,
+    shift: tuple[int | None] | None = None,
 ) -> None:
-    """Rename and/or move (`move` with `parent` None puts it at the top level)."""
+    """Rename and/or move (`move` with `parent` None puts it at the top level), and/or set the
+    day from which its transactions count for the next month (`shift`: (day,), F-CAT-5)."""
+    if shift is not None:
+        if shift[0] is not None:
+            check_shift_day(shift[0])
+        category.shift_day = shift[0]
     if name is not None:
         category.name = _clean(name)
     if move:
@@ -280,3 +295,55 @@ def _delete(db: Session, ids: list[UUID]) -> None:
         )
         db.execute(delete_rows(Category).where(Category.id == cid))
     db.flush()
+
+
+@dataclass
+class ShiftPreview:
+    moved: int
+    """Transactions that change budget month."""
+    months: list[Month]
+    """Every month that gains or loses one."""
+    locked_plans: list[BudgetPlan]
+    """Plans past their first month covering one of those months: their review changes."""
+
+
+def shift_preview(
+    db: Session, viewer: User, category: Category, day: int | None, today: date
+) -> ShiftPreview:
+    """What setting `category.shift_day` to `day` would change, without changing it: its
+    transactions and those of its subcategories that follow it, set-by-hand months aside."""
+    if day is not None:
+        check_shift_day(day)
+    parent = db.get(Category, category.parent_id) if category.parent_id else None
+    above = parent.shift_day if parent else None
+    rules = {category.id: (shift_day(category.shift_day, above), shift_day(day, above))}
+    for child in db.scalars(select(Category).where(Category.parent_id == category.id)):
+        rules[child.id] = (
+            shift_day(child.shift_day, category.shift_day),
+            shift_day(child.shift_day, day),
+        )
+    accounts = [a.id for a in visible_accounts(db, viewer, include_closed=True)]
+    rows = db.execute(
+        select(Transaction.category_id, Transaction.booked_on, Transaction.budget_month).where(
+            Transaction.account_id.in_(accounts),
+            Transaction.category_id.in_(list(rules)),
+            Transaction.transfer_group_id.is_(None),
+        )
+    ).all()
+    moved = 0
+    months: set[Month] = set()
+    for category_id, (before, after) in rules.items():
+        items = [
+            Booked(booked_on, manual=Month.of(manual) if manual else None)
+            for cid, booked_on, manual in rows
+            if cid == category_id
+        ]
+        count, touched = months_moved(items, before=before, after=after)
+        moved += count
+        months |= touched
+    locked = [
+        p
+        for p in list_plans(db, category.household_id)
+        if not is_editable(p, today) and months & set(core_plan(p).months)
+    ]
+    return ShiftPreview(moved, sorted(months), locked)

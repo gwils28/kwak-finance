@@ -27,6 +27,7 @@ from sqlalchemy import case, func, select
 from sqlalchemy.orm import Session
 
 from kwak_api.models import BudgetPlan, BudgetPlanTarget, Category, Transaction, User
+from kwak_api.services import budget_month
 from kwak_api.services.accounts import visible_accounts
 
 
@@ -260,7 +261,7 @@ def spending(db: Session, viewer: User, months: list[Month], scope: Scope) -> Sp
     expense = [c for c in categories if c.kind is CategoryKind.EXPENSE]
     savings = [c for c in categories if c.kind is CategoryKind.SAVINGS]
     counted = {c.id for c in categories}
-    month_start = func.date_trunc("month", Transaction.booked_on)
+    month = budget_month.month_start().label("month")
     # Categorised: outflows minus refunds (or withdrawals, for savings). Uncategorised: outflows
     # only (an inflow may be income).
     spent = func.sum(
@@ -273,14 +274,13 @@ def spending(db: Session, viewer: User, months: list[Month], scope: Scope) -> Sp
         )
     )
     rows = db.execute(
-        select(Transaction.category_id, month_start, spent)
+        select(Transaction.category_id, month, spent)
         .where(
             Transaction.account_id.in_(accounts),
             Transaction.transfer_group_id.is_(None),  # transfers are not spending (§8.3)
-            Transaction.booked_on >= months[0].first_day(),
-            Transaction.booked_on < months[-1].next().first_day(),
+            budget_month.in_months(months[0], months[-1]),
         )
-        .group_by(Transaction.category_id, month_start)
+        .group_by(Transaction.category_id, month)
     )
     result: dict[tuple[UUID | None, Month], Decimal] = {}
     for category_id, start, total in rows:

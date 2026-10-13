@@ -511,13 +511,25 @@
               }
             ],
             "title": "Parent Id"
+          },
+          "shift_day": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Shift Day"
           }
         },
         "required": [
           "id",
           "name",
           "kind",
-          "parent_id"
+          "parent_id",
+          "shift_day"
         ],
         "title": "CategoryOut",
         "type": "object"
@@ -547,6 +559,17 @@
               }
             ],
             "title": "Parent Id"
+          },
+          "shift_day": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Shift Day"
           }
         },
         "title": "CategoryPatch",
@@ -2761,6 +2784,36 @@
         "title": "Scope",
         "type": "string"
       },
+      "ShiftPreviewOut": {
+        "description": "What setting a category's shift day would change (F-CAT-5).",
+        "properties": {
+          "locked_plans": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Locked Plans",
+            "type": "array"
+          },
+          "months": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Months",
+            "type": "array"
+          },
+          "moved": {
+            "title": "Moved",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "moved",
+          "months",
+          "locked_plans"
+        ],
+        "title": "ShiftPreviewOut",
+        "type": "object"
+      },
       "Side": {
         "enum": [
           "in",
@@ -2898,6 +2951,14 @@
             "title": "Booked On",
             "type": "string"
           },
+          "budget_month": {
+            "title": "Budget Month",
+            "type": "string"
+          },
+          "budget_month_set": {
+            "title": "Budget Month Set",
+            "type": "boolean"
+          },
           "category_id": {
             "anyOf": [
               {
@@ -2973,7 +3034,9 @@
           "category_id",
           "category_name",
           "transfer_group_id",
-          "transfer_account_name"
+          "transfer_account_name",
+          "budget_month",
+          "budget_month_set"
         ],
         "title": "TransactionOut",
         "type": "object"
@@ -3028,6 +3091,17 @@
               }
             ],
             "title": "Booked On"
+          },
+          "budget_month": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Budget Month"
           },
           "category_id": {
             "anyOf": [
@@ -5358,6 +5432,86 @@
         ]
       }
     },
+    "/api/categories/{category_id}/shift-preview": {
+      "get": {
+        "description": "What setting the category's shift day to `day` would change, without changing it.",
+        "operationId": "previewShift",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "category_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Category Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Leave out to remove it",
+            "in": "query",
+            "name": "day",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maximum": 31,
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Leave out to remove it",
+              "title": "Day"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "kwak_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Kwak Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShiftPreviewOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Preview Shift",
+        "tags": [
+          "categories"
+        ]
+      }
+    },
     "/api/dashboard": {
       "get": {
         "description": "Spending KPIs and chart series (F-DSH-4, 5).",
@@ -6321,6 +6475,25 @@
               "description": "Only transactions to categorise",
               "title": "Uncategorised",
               "type": "boolean"
+            }
+          },
+          {
+            "description": "YYYY-MM: counted in this month",
+            "in": "query",
+            "name": "budget_month",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "pattern": "^\\d{4}-(0[1-9]|1[0-2])$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "YYYY-MM: counted in this month",
+              "title": "Budget Month"
             }
           },
           {

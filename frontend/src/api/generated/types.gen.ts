@@ -285,6 +285,10 @@ export type CategoryOut = {
      * Parent Id
      */
     parent_id: string | null;
+    /**
+     * Shift Day
+     */
+    shift_day: number | null;
 };
 
 /**
@@ -301,6 +305,10 @@ export type CategoryPatch = {
      * Parent Id
      */
     parent_id?: string | null;
+    /**
+     * Shift Day
+     */
+    shift_day?: number | null;
 };
 
 /**
@@ -1476,6 +1484,26 @@ export type RulePreview = {
 export type Scope = 'household' | 'mine' | 'joint';
 
 /**
+ * ShiftPreviewOut
+ *
+ * What setting a category's shift day would change (F-CAT-5).
+ */
+export type ShiftPreviewOut = {
+    /**
+     * Locked Plans
+     */
+    locked_plans: Array<string>;
+    /**
+     * Months
+     */
+    months: Array<string>;
+    /**
+     * Moved
+     */
+    moved: number;
+};
+
+/**
  * Side
  */
 export type Side = 'in' | 'out';
@@ -1572,6 +1600,14 @@ export type TransactionOut = {
      */
     booked_on: string;
     /**
+     * Budget Month
+     */
+    budget_month: string;
+    /**
+     * Budget Month Set
+     */
+    budget_month_set: boolean;
+    /**
      * Category Id
      */
     category_id: string | null;
@@ -1629,6 +1665,10 @@ export type TransactionPatch = {
      * Booked On
      */
     booked_on?: string | null;
+    /**
+     * Budget Month
+     */
+    budget_month?: string | null;
     /**
      * Category Id
      */
@@ -2721,6 +2761,43 @@ export type UpdateCategoryResponses = {
 
 export type UpdateCategoryResponse = UpdateCategoryResponses[keyof UpdateCategoryResponses];
 
+export type PreviewShiftData = {
+    body?: never;
+    path: {
+        /**
+         * Category Id
+         */
+        category_id: string;
+    };
+    query?: {
+        /**
+         * Day
+         *
+         * Leave out to remove it
+         */
+        day?: number | null;
+    };
+    url: '/api/categories/{category_id}/shift-preview';
+};
+
+export type PreviewShiftErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type PreviewShiftError = PreviewShiftErrors[keyof PreviewShiftErrors];
+
+export type PreviewShiftResponses = {
+    /**
+     * Successful Response
+     */
+    200: ShiftPreviewOut;
+};
+
+export type PreviewShiftResponse = PreviewShiftResponses[keyof PreviewShiftResponses];
+
 export type DashboardData = {
     body?: never;
     path?: never;
@@ -3190,6 +3267,12 @@ export type ListTransactionsData = {
          * Only transactions to categorise
          */
         uncategorised?: boolean;
+        /**
+         * Budget Month
+         *
+         * YYYY-MM: counted in this month
+         */
+        budget_month?: string | null;
         /**
          * Limit
          */

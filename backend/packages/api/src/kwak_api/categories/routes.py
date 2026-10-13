@@ -1,6 +1,7 @@
+from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, Query, status
 from kwak_core.categories import CategoryKind, HierarchyError
 from kwak_core.users import Language
 from pydantic import BaseModel, Field
@@ -9,6 +10,7 @@ from kwak_api.auth.routes import CurrentSession, Db, Now
 from kwak_api.household.routes import OwnerSession
 from kwak_api.models import Category
 from kwak_api.services import categories as service
+from kwak_api.services.budget import core_plan
 
 router = APIRouter(prefix="/api", tags=["categories"])
 
@@ -21,11 +23,18 @@ class CategoryOut(BaseModel):
     name: str
     kind: CategoryKind
     parent_id: UUID | None
+    shift_day: int | None
+    """From this day of the month, its transactions count for the next month (F-CAT-5). null:
+    no setting of its own (a subcategory follows its parent's); 0: never shifted."""
 
     @classmethod
     def of(cls, category: Category) -> "CategoryOut":
         return cls(
-            id=category.id, name=category.name, kind=category.kind, parent_id=category.parent_id
+            id=category.id,
+            name=category.name,
+            kind=category.kind,
+            parent_id=category.parent_id,
+            shift_day=category.shift_day,
         )
 
 
@@ -41,6 +50,19 @@ class CategoryPatch(BaseModel):
 
     name: str | None = None
     parent_id: UUID | None = None
+    shift_day: int | None = None
+    """0-31; null removes the category's own setting. Leave it out to keep it."""
+
+
+class ShiftPreviewOut(BaseModel):
+    """What setting a category's shift day would change (F-CAT-5)."""
+
+    moved: int
+    """Transactions that would change budget month."""
+    months: list[str]
+    """YYYY-MM: every month that gains or loses one."""
+    locked_plans: list[str]
+    """Periods of the plans past their first month whose review would change."""
 
 
 def _parent(db: Db, household_id: UUID, parent_id: UUID | None) -> Category | None:
@@ -92,12 +114,33 @@ def update_category(
             name=body.name,
             parent=_parent(db, household_id, body.parent_id) if move else None,
             move=move,
+            shift=(body.shift_day,) if "shift_day" in body.model_fields_set else None,
         )
     except (ValueError, HierarchyError) as exc:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, str(exc)) from None
     except service.DuplicateCategoryError:
         raise DUPLICATE from None
     return CategoryOut.of(category)
+
+
+@router.get("/categories/{category_id}/shift-preview")
+def preview_shift(
+    category_id: UUID,
+    user_session: CurrentSession,
+    db: Db,
+    now: Now,
+    day: Annotated[int | None, Query(ge=0, le=31, description="Leave out to remove it")] = None,
+) -> ShiftPreviewOut:
+    """What setting the category's shift day to `day` would change, without changing it."""
+    category = service.find(db, user_session.user.household_id, category_id)
+    if category is None:
+        raise NOT_FOUND
+    preview = service.shift_preview(db, user_session.user, category, day, now.date())
+    return ShiftPreviewOut(
+        moved=preview.moved,
+        months=[str(m) for m in preview.months],
+        locked_plans=[str(core_plan(p).period) for p in preview.locked_plans],
+    )
 
 
 @router.delete("/categories/{category_id}", status_code=status.HTTP_204_NO_CONTENT)

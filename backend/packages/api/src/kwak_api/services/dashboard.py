@@ -8,6 +8,7 @@ from uuid import UUID
 
 from kwak_core.accounts import Scope
 from kwak_core.budget import Month, month_range
+from kwak_core.budget_month import budget_day
 from kwak_core.categories import CategoryKind
 from kwak_core.kpis import (
     Flow,
@@ -21,6 +22,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from kwak_api.models import Category, Transaction, User
+from kwak_api.services import budget_month
 from kwak_api.services.budget import crossing_by_month, matrix, scoped_accounts
 
 HISTORY_MONTHS = 12
@@ -75,7 +77,7 @@ def dashboard(db: Session, viewer: User, month: Month, scope: Scope) -> Dashboar
 
     first = _back(month, HISTORY_MONTHS)  # one more month for the 12-month average
     months = month_range(first, month)
-    start_of = func.date_trunc("month", Transaction.booked_on)
+    start_of = budget_month.month_start().label("month")
     # One labelled expression in SELECT and GROUP BY: written twice, each copy gets its own
     # bound parameter and Postgres sees two different expressions.
     outflow = (Transaction.amount < 0).label("outflow")
@@ -84,8 +86,7 @@ def dashboard(db: Session, viewer: User, month: Month, scope: Scope) -> Dashboar
         .where(
             Transaction.account_id.in_(accounts),
             Transaction.transfer_group_id.is_(None),
-            Transaction.booked_on >= first.first_day(),
-            Transaction.booked_on < month.next().first_day(),
+            budget_month.in_months(first, month),
         )
         .group_by(start_of, Transaction.category_id, outflow)
     )
@@ -116,11 +117,11 @@ def dashboard(db: Session, viewer: User, month: Month, scope: Scope) -> Dashboar
         select(Transaction.booked_on, Transaction.category_id, Transaction.amount).where(
             Transaction.account_id.in_(accounts),
             Transaction.transfer_group_id.is_(None),
-            Transaction.booked_on >= month.first_day(),
-            Transaction.booked_on < month.next().first_day(),
+            budget_month.in_months(month, month),
         )
     ):
-        daily[booked_on] += _spent(category_id, amount, kinds)
+        # A transaction counted in this month from another one sits at its edge (F-TX-7).
+        daily[budget_day(booked_on, month)] += _spent(category_id, amount, kinds)
         if category_id is None:
             uncategorised_count += 1
             uncategorised_spent += -amount if amount < 0 else Decimal(0)

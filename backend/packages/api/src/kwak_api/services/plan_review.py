@@ -8,6 +8,7 @@ from uuid import UUID
 
 from kwak_core.accounts import AccountType, Scope
 from kwak_core.budget import DEFAULT_BAND, Month
+from kwak_core.budget_month import budget_day
 from kwak_core.categories import CategoryKind
 from kwak_core.flows import Flow as MoneyFlow
 from kwak_core.flows import money_flows, saved
@@ -25,6 +26,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from kwak_api.models import BudgetPlan, Category, Transaction, User
+from kwak_api.services import budget_month
 from kwak_api.services.accounts import visible_accounts
 from kwak_api.services.budget import (
     core_plan,
@@ -45,7 +47,7 @@ def _categories(db: Session, household_id: UUID) -> dict[UUID, Category]:
 def _income(db: Session, viewer: User, months: list[Month], scope: Scope) -> dict[Month, Decimal]:
     """Income per month, by the home page's rules (F-DSH-4)."""
     kinds = {cid: c.kind for cid, c in _categories(db, viewer.household_id).items()}
-    start_of = func.date_trunc("month", Transaction.booked_on)
+    start_of = budget_month.month_start().label("month")
     # One labelled expression in SELECT and GROUP BY (see services.dashboard).
     outflow = (Transaction.amount < 0).label("outflow")
     rows = db.execute(
@@ -53,8 +55,7 @@ def _income(db: Session, viewer: User, months: list[Month], scope: Scope) -> dic
         .where(
             Transaction.account_id.in_(scoped_accounts(db, viewer, scope)),
             Transaction.transfer_group_id.is_(None),
-            Transaction.booked_on >= months[0].first_day(),
-            Transaction.booked_on < months[-1].next().first_day(),
+            budget_month.in_months(months[0], months[-1]),
         )
         .group_by(start_of, Transaction.category_id, outflow)
     )
@@ -115,14 +116,20 @@ def cumulative_chart(
     )
     core = result.plan
     daily: dict[date, Decimal] = defaultdict(Decimal)
-    for booked_on, category_id, amount in db.execute(
-        select(Transaction.booked_on, Transaction.category_id, Transaction.amount).where(
+    for booked_on, start, category_id, amount in db.execute(
+        select(
+            Transaction.booked_on,
+            budget_month.month_start(),
+            Transaction.category_id,
+            Transaction.amount,
+        ).where(
             Transaction.account_id.in_(scoped_accounts(db, viewer, scope)),
             Transaction.transfer_group_id.is_(None),
-            Transaction.booked_on >= core.start.first_day(),
-            Transaction.booked_on < core.end.next().first_day(),
+            budget_month.in_months(core.start, core.end),
         )
     ):
+        # A transaction counted in another month sits at that month's edge (F-TX-7).
+        booked_on = budget_day(booked_on, Month.of(start))
         kind = categories[category_id].kind if category_id else None
         if counted is not None:
             if category_id in counted:
@@ -178,8 +185,7 @@ def flows(db: Session, viewer: User, plan: BudgetPlan, *, scope: Scope) -> PlanF
         .where(
             Transaction.account_id.in_(accounts),
             Transaction.transfer_group_id.is_(None),
-            Transaction.booked_on >= months[0].first_day(),
-            Transaction.booked_on < months[-1].next().first_day(),
+            budget_month.in_months(months[0], months[-1]),
         )
         .group_by(Transaction.category_id, outflow)
     )

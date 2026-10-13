@@ -2,7 +2,18 @@ from datetime import date, datetime
 from decimal import Decimal
 from uuid import UUID
 
-from sqlalchemy import Date, DateTime, ForeignKey, Index, Integer, Numeric, String, Text, text
+from sqlalchemy import (
+    CheckConstraint,
+    Date,
+    DateTime,
+    ForeignKey,
+    Index,
+    Integer,
+    Numeric,
+    String,
+    Text,
+    text,
+)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from kwak_api.db import Base, Timestamps, UUIDPrimaryKey
@@ -50,6 +61,7 @@ class Transaction(UUIDPrimaryKey, Timestamps, Base):
         # An imported row is stored once per account (invariant §8.4). Manual entries have none.
         Index("uq_transaction_account_fingerprint", "account_id", "fingerprint", unique=True),
         Index("ix_transaction_account_booked_on", "account_id", "booked_on"),
+        CheckConstraint("extract(day FROM budget_month) = 1", name="budget_month_first_day"),
     )
 
     account_id: Mapped[UUID] = mapped_column(ForeignKey("account.id"))
@@ -69,3 +81,6 @@ class Transaction(UUIDPrimaryKey, Timestamps, Base):
     # Both sides of a transfer between own accounts share this id (F-TX-5): they are neither
     # spending nor income, and carry no category.
     transfer_group_id: Mapped[UUID | None] = mapped_column(index=True)
+    # F-TX-7: the budget month set by hand (its first day), at most one month from booked_on.
+    # NULL: the booking month, or the next one by the category's shift (F-CAT-5).
+    budget_month: Mapped[date | None] = mapped_column(Date)
