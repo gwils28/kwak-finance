@@ -285,7 +285,10 @@ function CategoryLine({
   });
   const isChild = category.parent_id !== null;
   const parent = parents.find((p) => p.id === category.parent_id);
-  const shift = shiftSummary(t, category, parent);
+  const shift =
+    [shiftSummary(t, category, parent), oneOffSummary(t, category, parent)]
+      .filter(Boolean)
+      .join(" · ") || null;
 
   return (
     <div>
@@ -316,7 +319,6 @@ function CategoryLine({
               type="button"
               aria-label={t.categories.shift.open(category.name)}
               aria-expanded={shifting}
-              title={t.categories.shift.help}
               onClick={() => setShifting(!shifting)}
               className={`ml-2 rounded align-middle text-xs text-muted hover:text-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
                 shift
@@ -382,6 +384,9 @@ function CategoryLine({
           )}
         </span>
       </div>
+      {shifting && category.kind === "expense" && (
+        <OneOffField category={category} parent={parent} onError={onError} />
+      )}
       {shifting && (
         <ShiftForm
           category={category}
@@ -401,6 +406,70 @@ function shiftSummary(t: Messages, category: CategoryOut, parent?: CategoryOut):
   if (own === 0) return parent ? t.categories.shift.never : null;
   const inherited = parent?.shift_day ?? 0;
   return parent && inherited > 0 ? t.categories.shift.like(parent.name, inherited) : null;
+}
+
+/** The category's own one-off setting (F-CAT-6), when worth saying: a subcategory following
+ * its parent says nothing, so the rows stay on one line. */
+function oneOffSummary(t: Messages, category: CategoryOut, parent?: CategoryOut): string | null {
+  const own = category.one_off ?? null;
+  if (own === true) return parent?.one_off ? null : t.categories.oneOff.summary;
+  if (own === false) return parent?.one_off ? t.categories.oneOff.not : null;
+  return null;
+}
+
+/** Saved as soon as it changes: a subcategory may follow its parent. */
+function OneOffField({
+  category,
+  parent,
+  onError,
+}: {
+  category: CategoryOut;
+  parent?: CategoryOut;
+  onError: (message: string | null) => void;
+}) {
+  const { t } = useI18n();
+  const refresh = useRefresh();
+  const id = useId();
+  const own = category.one_off ?? null;
+  const save = useMutation({
+    mutationFn: async (value: boolean | null) =>
+      unwrap(
+        t,
+        await updateCategory({ path: { category_id: category.id }, body: { one_off: value } }),
+      ),
+    onSuccess: async () => {
+      onError(null);
+      await refresh();
+    },
+    onError: (exc) => onError(exc.message),
+  });
+  const current = own === null ? "inherit" : own ? "yes" : "no";
+  return (
+    <div className="mt-2 flex flex-wrap items-end gap-3 rounded-md border border-border p-3 text-sm">
+      <p className="w-full text-xs text-muted">{t.categories.oneOff.help}</p>
+      <label htmlFor={id} className="flex flex-col gap-1 font-medium">
+        {t.categories.oneOff.label}
+        <select
+          id={id}
+          className={fieldClass}
+          disabled={save.isPending}
+          value={parent ? current : own ? "yes" : "no"}
+          onChange={(e) => {
+            const v = e.target.value;
+            save.mutate(v === "inherit" ? null : v === "yes" ? true : parent ? false : null);
+          }}
+        >
+          {parent && (
+            <option value="inherit">
+              {t.categories.oneOff.inherit(parent.name, parent.one_off === true)}
+            </option>
+          )}
+          <option value="yes">{t.categories.oneOff.yes}</option>
+          <option value="no">{t.categories.oneOff.no}</option>
+        </select>
+      </label>
+    </div>
+  );
 }
 
 type ShiftMode = "inherit" | "never" | "day";

@@ -87,6 +87,11 @@
   --color-flow-saved: var(--color-primary-600);
   --color-flow-saved-behind: var(--color-primary-300);
   --color-flow-other: var(--color-neutral-400);
+  /* Month progress (F-BUD-2): green on track, ochre to watch, burnt orange over; the steps of
+     the validated money-flows palette. Each status also has its icon and word. */
+  --color-progress-ok: var(--color-primary-600);
+  --color-progress-watch: var(--color-secondary-500);
+  --color-progress-over: var(--color-secondary-800);
 }
 
 @layer base {
@@ -123,6 +128,9 @@
     --color-flow-saved: var(--color-primary-500);
     --color-flow-saved-behind: var(--color-primary-200);
     --color-flow-other: var(--color-neutral-400);
+    --color-progress-ok: var(--color-primary-500);
+    --color-progress-watch: var(--color-secondary-400);
+    --color-progress-over: var(--color-secondary-700);
   }
 
   body {

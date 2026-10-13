@@ -1,10 +1,12 @@
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { type ReactNode, useId, useState } from "react";
 import { dashboard as fetchDashboard, type Kpis, type Scope } from "./api/generated";
+import { meQuery } from "./auth/session";
 import { ScopeSelect } from "./components/ScopeSelect";
 import { ErrorAlert } from "./components/ui";
 import { SpendingByCategory, SpendingOverMonths, SpendingPace } from "./dashboard/charts";
+import { MonthProgress } from "./dashboard/MonthProgress";
 import { GettingStarted } from "./guide/GettingStarted";
 import { useI18n } from "./i18n";
 import { formatEurSigned, formatEurWhole, formatPercent, formatPercentSigned } from "./lib/money";
@@ -17,6 +19,7 @@ export function HomePage() {
   const ids = { month: useId() };
   const [month, setMonth] = useState(thisMonth());
   const [scope, setScope] = useState<Scope>("household");
+  const { data: user } = useSuspenseQuery(meQuery);
   const query = useQuery({
     queryKey: ["dashboard", { month, scope }],
     queryFn: async () =>
@@ -64,6 +67,7 @@ export function HomePage() {
       {data && !empty && (
         <div className={`flex flex-col gap-6 ${query.isFetching ? "opacity-60" : ""}`}>
           <KpiRow kpis={data.kpis} month={data.month} toCategorise={data.to_categorise} />
+          <MonthProgress month={data.month} scope={scope} isOwner={user.role === "owner"} />
           <div className="grid gap-6 lg:grid-cols-2">
             <SpendingByCategory
               month={data.month}
