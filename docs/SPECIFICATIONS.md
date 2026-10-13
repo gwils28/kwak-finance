@@ -1,6 +1,6 @@
 # Functional Specifications
 
-Status: draft v0.6 — 2026-10-13. Owner: sole maintainer.
+Status: draft v0.7 — 2026-10-13. Owner: sole maintainer.
 
 ## 1. Purpose
 
@@ -57,6 +57,7 @@ Priority: **M** = MVP, **S** = should (later in MVP), **L** = later phase.
 - F-CAT-1: Two-level category tree (e.g. *Housing > Rent*), with a default seed set that can be edited.
 - F-CAT-4: Each category has a **kind**, shared by its subcategories: **expense**, **income** or **savings** (*Savings & investments*). A savings category holds the money moved to savings or investments that are not tracked as an account of the app (a PEA, a life insurance or a PER until phase 3, a savings account that is not imported): its net outflows are **saved**, a withdrawal brought back counts against it. It is never spending nor income: the money stays in the net cash flow and the savings rate, as money moved to a savings account of the app does. A transfer to an account of the app stays a transfer (F-TX-5), whatever its category. The default seed has one: *Savings & investments* (*Savings accounts*, *Investments*, *Retirement*). An expense rule catches outflows, an income rule inflows, a savings rule both.
 - F-CAT-5: **Next-month shift**. A category may say that a transaction booked **on or after a given day** (default: the 15th) counts for the **next month** (F-TX-7), e.g. a salary paid on the 20th or the 28th that pays for the next month's spending, or a rent taken on the 28th for the next month. Off by default, for any kind of category; a subcategory without a setting of its own follows its parent's. The setting applies to every transaction of the category, past ones included, except those whose budget month was set by hand: before saving, the page says how many transactions change month and which locked plans' reviews change with them. With a shifted salary, the first month of the household's history has no salary unless the previous month's statement is imported too.
+- F-CAT-6: **One-off** expense categories, paid once in the month (rent, a subscription, an insurance premium), so their spending is complete from the day they are paid and is never judged against the pace of the month (F-BUD-2). Off by default; a subcategory follows its parent unless it says otherwise. The default seed marks *Housing* and *Subscriptions* as one-off; an existing household gets the same on its categories still carrying those default names.
 - F-CAT-2: Ordered rules (label contains/regex, amount range, account) that assign a category automatically on import. Rules can be re-applied to past transactions.
 - F-CAT-3: Bulk recategorisation, plus a "create rule from this transaction" action.
 - L: ML-assisted categorisation suggestions (phase 4, local LLM or classifier).
@@ -66,7 +67,11 @@ Priority: **M** = MVP, **S** = should (later in MVP), **L** = later phase.
 Goal of the budget module: **follow spending simply**, whether entered by hand or imported from the bank's export of recent operations; **turn it into KPIs and charts**; and **compare spending per category with a target** set beforehand.
 
 - F-BUD-1: A monthly target per expense category (or per parent category, covering its children), set within a budget plan (F-BUD-7). Within a plan, a cheaper month offsets a dearer one (the period envelope): this replaces a month-to-month rollover.
-- F-BUD-2: Target vs actual for the current month, per category: spent, remaining, share used, with a progress bar, a warning at a configurable threshold (default 80 %) and an alert when exceeded. A "pace" marker shows where spending should be at today's date.
+- F-BUD-2: **The month so far**, a section of the overview (F-DSH-1) for the month it shows (default: the current one), counted by budget month (F-TX-7). One line per expense category with a monthly target in the plan covering the month (F-BUD-7: a parent's target covers its children, and the scope rules of the plan apply), ranked by share used, highest first: spent (net of refunds, as in the matrix), target, remaining (or the overrun), **share used** (spent ÷ target) and a progress bar. Categories without a target and savings categories are not listed (savings objectives are followed in the review, F-BUD-9); a month outside any plan shows a link to create one instead. Each line has a status, shown with an icon and a word as well as a colour:
+  - **on track**: share used below the warning threshold;
+  - **watch**: from the threshold up to 100 %;
+  - **over**: above 100 %.
+  The **warning threshold** is a household setting (default 80 %, from 50 % to 100 %), changed by the owner. For the current month, a **pace** marker on each bar shows the share of the month elapsed (today's day ÷ the month's number of days), so spending ahead of the calendar shows before it reaches the threshold; it is not shown on a **one-off** category (F-CAT-6), paid once early in the month, nor for a past month. A line opens the month's transactions of the category, as a matrix cell does.
 - F-BUD-3: Household, joint or personal scope (§3).
 - F-BUD-4: Target vs actual over past months and year to date, to see which categories are regularly over or under target.
 - F-BUD-5: Transactions without a category are listed as "to categorise" and counted apart, so totals are never silently wrong.
@@ -114,7 +119,7 @@ Goal of the budget module: **follow spending simply**, whether entered by hand o
 
 ### 4.9 Dashboard and reporting (M)
 
-- F-DSH-1: Home page showing net worth with its change, the month's cash flow, budget status, upcoming recurring items and recent transactions.
+- F-DSH-1: Home page showing net worth with its change, the month's cash flow, budget status (the month so far, F-BUD-2), upcoming recurring items and recent transactions.
 - F-DSH-4: Spending KPIs for any month (default: current): total spent, total income, net cash flow and savings rate ((income − spending) / income), with the part of the net cash flow put in savings categories (F-CAT-4); change vs the previous month and vs the 12-month average; top 5 categories; number of transactions left to categorise.
 - F-DSH-5: Spending charts: by category (bar chart, one level, drill-down to subcategories); monthly evolution over 12 months (stacked bars by category, income line); cumulative spending within the month against the budget line. Transfers between own accounts are excluded everywhere (F-TX-5).
 - F-DSH-6: **Plan steering dashboards**, on the plan review (F-BUD-8):
@@ -181,6 +186,8 @@ Light and dark themes (the dark theme uses `neutral-900` / `neutral-800` surface
 
 Budget status colours (F-BUD-6) are semantic tokens built from the palette, defined for both themes: `budget-under` (from `primary`), `budget-on` (from `neutral`) and `budget-over` (from `secondary-700/800`, a burnt orange that reads as "over" without the alarm of the danger red).
 
+Month progress colours (F-BUD-2): the bar of a category on track is **green** (`primary`), watched **ochre** (`secondary-500`), over **burnt orange** (`budget-over`); the pace marker is a thin line in the text colour. Each status has its icon and word, so colour is never the only cue.
+
 Money flows colours (the Sankey of the plan review, F-DSH-6) are semantic tokens too, `flow-*`, for both themes: money in is **blue** (`flow-in`, a steel blue, the one hue outside the blog palette, chosen to sit with its muted greens); spending within its target, or without one, is **ochre** (`secondary-500`), over its target **burnt orange** (`secondary-800`, `secondary-700` in dark); savings meeting their objectives are **green** (`primary`), below them **pale green** (`primary-300`, `primary-200` in dark); the unallocated rest and transfers paid out are **grey** (`neutral-400`), a deficit burnt orange. The status follows the review's (projected while the plan runs). The palette passes the CVD checks of the data-viz validator in both themes; every flow keeps its label, its table row with the status in words, and a legend.
 
 ## 8. Domain invariants (to be enforced by tests)
@@ -194,7 +201,7 @@ Money flows colours (the Sankey of the plan review, F-DSH-6) are semantic tokens
 7. Forecasts and back-tests (phase 4) never read data after their origin date.
 8. Budget plans never overlap, and each lies within one calendar period (year, semester or quarter).
 9. A category's envelope equals its monthly target times the plan's number of months; a parent without a target of its own takes the sum of its children's.
-10. A plan review and the budget matrix never disagree: the spending of a plan equals the sum of the matrix cells of its months, category by category.
+10. A plan review, the budget matrix and the month so far never disagree: the spending of a plan equals the sum of the matrix cells of its months, and a category's spending in the month so far equals its matrix cell for that month, category by category.
 11. The *mine* and *joint* scopes never share an account, and the *household* scope is exactly *mine*, plus *joint*, plus the accounts other members share.
 12. For any split of the accounts into two groups, what one group pays out by transfer is exactly what the other pays in; within the household scope nothing is paid in or out.
 13. A plan's money flows balance: what comes in (income, paid in, taken from savings, deficit) equals what goes out (spending, paid out, saved, unallocated).
