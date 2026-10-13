@@ -1,6 +1,6 @@
 # Functional Specifications
 
-Status: draft v0.8 — 2026-10-13. Owner: sole maintainer.
+Status: draft v0.9 — 2026-10-13. Owner: sole maintainer.
 
 ## 1. Purpose
 
@@ -51,6 +51,7 @@ Priority: **M** = MVP, **S** = should (later in MVP), **L** = later phase.
 - F-TX-5: Transfers between two own accounts are linked and excluded from income/expense totals. In a scope narrower than the household (§3: *mine*, *joint*), a transfer with an account outside the scope is shown apart as *paid in* or *paid out*, and counts in the net cash flow and savings (savings rate = net / (income + paid in)); transfers within the scope still net to zero.
 - F-TX-6: Every import is recorded (file hash, profile, row count, user, timestamp) and can be rolled back.
 - F-TX-7: **Budget month**. Each transaction keeps its real booking date and also counts in a **budget month**: by default the month of its date, shifted to the next month by its category's setting (F-CAT-5), or set by hand on the transaction to its booking month, the month before or the month after (e.g. a salary paid early, a bonus meant for another month). A hand-set month wins over the category's setting and is kept when the transaction is recategorised. Every figure by month uses the budget month: the budget matrix, plans and their review (projection, drift, money flows), the overview's KPIs and charts; in a day-by-day chart, a transaction counted in a later month is placed on that month's first day, in an earlier month on its last day. Account balances, imports, deduplication and the transaction list keep the real date; the list shows the budget month next to a shifted transaction and can be filtered by budget month, which is what a matrix cell opens. A transfer between two own accounts (F-TX-5) always counts in its booking month, as both its legs must; the parts of a split transaction (F-TX-4) share their parent's budget month.
+- F-TX-8: **Reconciling manual entries with a statement**. Most transactions are entered by hand during the month and the bank's statement is imported later (F-REC), so an import must not add them twice. In the import preview (F-TX-2), a statement row **matches** a manual entry not yet reconciled when it is on the same account, with exactly the same amount, and dated within 5 days of it; each entry matches one row at most and each row the closest entry (then the earliest entered). Matched rows are shown as "already entered", next to the entry, and the user can undo a wrong match, which imports the row as new. On commit, a matched entry is **reconciled**: it keeps its category, its label, its budget month set by hand (F-TX-7) and its transfer link (F-TX-5), takes the bank's date, and records the bank's label and the import; it is then deduplicated like an imported row (F-TX-3). The preview also lists the manual entries within the statement's dates that matched no row (a typo, or an operation not yet booked by the bank). Rolling back the import (F-TX-6) turns reconciled entries back into manual entries with their own date.
 
 ### 4.4 Categorisation (M)
 
@@ -211,6 +212,7 @@ Money flows colours (the Sankey of the plan review, F-DSH-6) are semantic tokens
 14. Savings categories are never spending nor income: the net cash flow of a period (income − spending, before transfers crossing the scope) equals the sum of its transactions, transfers excluded, plus what its savings categories received (net of withdrawals).
 15. Every transaction counts in exactly one budget month, at most one month away from its booking month, and a transfer in its booking month: summed over all months, income, spending and savings are the same by budget month as by booking month. Shifting a transaction's month never changes an account balance.
 16. A transaction fulfils at most one occurrence and an occurrence at most one transaction; the projected end-of-month balance equals the current balance plus the expected amounts of the unfulfilled, unskipped occurrences up to the end of the month.
+17. Importing a statement whose operations were already entered by hand adds only the rows that match no entry: every bank row ends up as exactly one transaction, the account balance is the same as if only the statement had been imported, plus the entries that matched no row, and rolling the import back restores the manual entries as they were.
 
 ## 9. Open questions
 
