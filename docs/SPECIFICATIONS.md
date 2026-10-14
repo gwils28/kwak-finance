@@ -1,6 +1,6 @@
 # Functional Specifications
 
-Status: draft v0.13 — 2026-10-14. Owner: sole maintainer.
+Status: draft v0.14 — 2026-10-14. Owner: sole maintainer.
 
 ## 1. Purpose
 
@@ -161,6 +161,7 @@ Most transactions are entered by hand, once a week or a fortnight, because the b
   - **rules**: created, changed, deleted or applied to existing transactions (without the count, which would reveal matches on private accounts), and the default categories restored.
 
   Each entry records who, when and what, with a short description frozen at the time (label, amount, file name, count), so it still reads after the object is gone. The **owner** sees the whole household's log, a **member** only their own entries; an entry about a private account is shown only to that account's owner. The log is read-only in the app and can be filtered by kind and, for the owner, by member. An entry keeps the visibility it had when written: making an account private later does not hide its past entries. Attempts refused by the sign-in limit (F-AUTH-4) are not logged, the failures that reached it are.
+- F-ADM-4: **Analyses start**: the owner may set the first month analyses count (none by default: every month; never a month to come, which would empty every analysis). History before it is often incomplete (accounts added later, statements without the everyday entries), so the overview (previous month, 12-month average), the reports (F-DSH-2: a period starts no earlier, and a comparison with earlier months finds nothing) and the detection of recurring items (F-REC-2) treat earlier months as empty. Transactions, balances and budget plans are untouched.
 
 ## 5. Later phases (roadmap)
 

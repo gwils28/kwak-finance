@@ -1601,6 +1601,10 @@ export type RenameOut = {
  * ReportOut
  */
 export type ReportOut = {
+    /**
+     * Analysis Start
+     */
+    analysis_start: string | null;
     changes: TotalsChange;
     /**
      * End
@@ -2090,6 +2094,10 @@ export type SectionTotalOut = {
  */
 export type SettingsOut = {
     /**
+     * Analysis Start
+     */
+    analysis_start: string | null;
+    /**
      * Warn At
      */
     warn_at: string;
@@ -2099,6 +2107,10 @@ export type SettingsOut = {
  * SettingsPatch
  */
 export type SettingsPatch = {
+    /**
+     * Analysis Start
+     */
+    analysis_start?: string | null;
     /**
      * Warn At
      */

@@ -18,6 +18,7 @@ export const reportsEn = {
   loadFailed: "Could not load the report.",
   range: (start: string, end: string) => (start === end ? start : `${start} – ${end}`),
   soFar: (range: string) => `${range} so far`,
+  analysesStart: (month: string) => `Analyses start in ${month}: earlier months are left out.`,
   comparedWith: (range: string) => `Compared with ${range}`,
   summary: "Totals",
   income: "Income",
@@ -71,6 +72,8 @@ export const reportsFr: typeof reportsEn = {
   loadFailed: "Impossible de charger le rapport.",
   range: (start, end) => (start === end ? start : `${start} – ${end}`),
   soFar: (range) => `${range} à ce jour`,
+  analysesStart: (month) =>
+    `Les analyses commencent en ${month} : les mois précédents sont laissés de côté.`,
   comparedWith: (range) => `Comparé à ${range}`,
   summary: "Totaux",
   income: "Revenus",

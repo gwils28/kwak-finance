@@ -1,3 +1,6 @@
+from uuid import UUID
+
+from kwak_core.budget import Month
 from kwak_core.users import Language, check_password_policy, normalize_email
 from sqlalchemy import exists, select
 from sqlalchemy.orm import Session
@@ -9,6 +12,12 @@ from kwak_api.services.categories import seed_defaults
 
 class HouseholdAlreadyExistsError(Exception):
     """The app hosts a single household (see docs/SPECIFICATIONS.md §2)."""
+
+
+def analysis_start(db: Session, household_id: UUID) -> Month | None:
+    """The first month analyses count (F-ADM-4); None: every month."""
+    start = db.get_one(Household, household_id).analysis_start
+    return Month.of(start) if start else None
 
 
 def create_household(

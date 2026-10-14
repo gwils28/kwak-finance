@@ -7,6 +7,7 @@ import { Button, ErrorAlert } from "../components/ui";
 import { useI18n } from "../i18n";
 import { formatDate, formatDateTime } from "../lib/dates";
 import { formatEur, formatPercent } from "../lib/money";
+import { monthLabel } from "../lib/months";
 
 const fieldClass = "rounded-md border border-border bg-surface px-3 py-2";
 const labelClass = "flex flex-col gap-1 text-sm font-medium";
@@ -25,6 +26,7 @@ function formatted(
     else if (key === "date") out[key] = formatDate(text);
     else if (key === "warn_at") out[key] = formatPercent(text);
     else if (key === "period") out[key] = period(text);
+    else if (key === "analysis_start") out[key] = text && monthLabel(text);
     else out[key] = text;
   }
   return out;

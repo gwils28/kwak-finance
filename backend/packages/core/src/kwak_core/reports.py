@@ -12,6 +12,7 @@ from dataclasses import dataclass, field
 from decimal import Decimal
 from uuid import UUID
 
+from kwak_core.analysis import first_counted
 from kwak_core.budget import Month, month_range
 from kwak_core.categories import CategoryKind
 from kwak_core.kpis import Flow, MonthFigures
@@ -129,13 +130,18 @@ class ReportPeriod:
     previous_end: Month
     to_date: bool
     """The period runs past the current month: it is shown so far."""
+    compared: bool = True
+    """False when the previous period reaches before the analyses start: part of it would
+    count as empty, so it is not compared at all."""
 
     @property
     def months(self) -> int:
         return len(month_range(self.start, self.end))
 
 
-def report_period(start: Month, end: Month, *, current: Month) -> ReportPeriod:
+def report_period(
+    start: Month, end: Month, *, current: Month, since: Month | None = None
+) -> ReportPeriod:
     """The months a report covers and the ones it compares them with.
 
     A running period stops at the current month and is compared with the same months of the
@@ -144,6 +150,10 @@ def report_period(start: Month, end: Month, *, current: Month) -> ReportPeriod:
     """
     if end < start:
         raise ValueError("the period ends before it starts")
+    if since is not None and end < since:
+        raise ValueError("the period is over before the analyses start")
+    # Months before the analyses start count as empty (kwak_core.analysis): skip them.
+    start = first_counted(start, since)
     if current < start:
         raise ValueError("the period has not started yet")
     covered_end = min(end, current)
@@ -151,7 +161,8 @@ def report_period(start: Month, end: Month, *, current: Month) -> ReportPeriod:
     previous_end = previous_start
     for _ in range(len(month_range(start, covered_end)) - 1):
         previous_end = previous_end.next()
-    return ReportPeriod(start, covered_end, previous_start, previous_end, end > current)
+    compared = since is None or previous_start >= since
+    return ReportPeriod(start, covered_end, previous_start, previous_end, end > current, compared)
 
 
 def relative_change(current: Decimal, reference: Decimal) -> Decimal | None:

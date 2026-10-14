@@ -32,6 +32,8 @@ const entries = [
   entry("rule_created", "rules", { category: "Groceries", label: "CARREFOUR" }),
   entry("settings_changed", "household", { warn_at: "0.90" }),
   entry("plan_deleted", "deletion", { period: "2026-Q2" }),
+  entry("settings_changed", "household", { analysis_start: "2026-10" }, { id: "e-start" }),
+  entry("settings_changed", "household", { analysis_start: "" }, { id: "e-every" }),
   entry(
     "invite_revoked",
     "household",
@@ -76,7 +78,9 @@ test("the account menu leads to the activity log, each entry in words", async ()
   expect(rows[4]).toContain("Created a rule: “CARREFOUR” → Groceries");
   expect(rows[5]).toContain("Set the budget warning threshold to 90%");
   expect(rows[6]).toContain("Deleted the budget plan Q2 2026");
-  expect(rows[7]).toContain("A former memberRevoked the invitation of a@example.com");
+  expect(rows[7]).toContain("Set the analyses to start in Oct 2026");
+  expect(rows[8]).toContain("Set the analyses to count every month");
+  expect(rows[9]).toContain("A former memberRevoked the invitation of a@example.com");
 });
 
 test("the owner filters by kind and by member", async () => {

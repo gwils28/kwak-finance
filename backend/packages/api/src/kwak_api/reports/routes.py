@@ -14,6 +14,7 @@ from kwak_api.auth.routes import CurrentSession, Db, Now
 from kwak_api.budget.routes import FlowOut, flows_out
 from kwak_api.models import Category
 from kwak_api.services import reports as service
+from kwak_api.services.households import analysis_start
 
 router = APIRouter(prefix="/api", tags=["reports"])
 
@@ -141,6 +142,8 @@ class ReportOut(BaseModel):
     """The last month covered: a running period stops at the current month."""
     to_date: bool
     """The period asked for runs past the current month: shown so far."""
+    analysis_start: str | None
+    """The household's first analysed month (F-ADM-4): a period starts no earlier."""
     months: int
     previous_start: str
     previous_end: str
@@ -170,11 +173,12 @@ def period_report(
     A period running past the current month stops there and is compared with the same months
     of the period before."""
     first, last = _month(start), _month(end)
+    since = analysis_start(db, user_session.user.household_id)
     count = (last.year - first.year) * 12 + last.month - first.month + 1
     if not 1 <= count <= MAX_MONTHS:
         raise _unprocessable(f"a report covers 1 to {MAX_MONTHS} months, from start to end")
     try:
-        period: ReportPeriod = report_period(first, last, current=Month.of(now.date()))
+        period: ReportPeriod = report_period(first, last, current=Month.of(now.date()), since=since)
     except ValueError as exc:
         raise _unprocessable(str(exc)) from None
     r = service.report(db, user_session.user, period, scope)
@@ -189,6 +193,7 @@ def period_report(
         start=str(period.start),
         end=str(period.end),
         to_date=period.to_date,
+        analysis_start=str(since) if since else None,
         months=months,
         previous_start=str(period.previous_start),
         previous_end=str(period.previous_end),

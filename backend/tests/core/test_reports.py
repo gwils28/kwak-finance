@@ -190,3 +190,29 @@ def test_a_change_keeps_its_direction_from_a_negative_reference(
     current: str, reference: str, expected: Decimal | None
 ) -> None:
     assert relative_change(D(current), D(reference)) == expected
+
+
+def test_a_period_starts_no_earlier_than_the_analyses() -> None:
+    p = report_period(
+        Month(2026, 1), Month(2026, 12), current=Month(2026, 11), since=Month(2026, 10)
+    )
+    assert (str(p.start), str(p.end), p.to_date) == ("2026-10", "2026-11", True)
+    # Before the start, so counted as empty: the report says there is nothing to compare.
+    assert p.previous_end < Month(2026, 10)
+
+
+def test_a_period_over_before_the_analyses_start_is_refused() -> None:
+    with pytest.raises(ValueError, match="before the analyses start"):
+        report_period(
+            Month(2025, 1), Month(2025, 12), current=Month(2026, 11), since=Month(2026, 10)
+        )
+
+
+def test_a_previous_period_reaching_before_the_analyses_is_not_compared() -> None:
+    p = report_period(Month(2026, 5), Month(2026, 7), current=Month(2026, 10), since=Month(2026, 4))
+    assert (str(p.previous_start), str(p.previous_end)) == ("2026-02", "2026-04")
+    assert p.compared is False  # only April counts: no fair comparison
+    full = report_period(
+        Month(2026, 7), Month(2026, 9), current=Month(2026, 10), since=Month(2026, 4)
+    )
+    assert full.compared is True

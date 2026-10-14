@@ -35,6 +35,15 @@ export const householdEn = {
   passwordHelp: "At least 12 characters. A passphrase is easiest.",
   mismatch: "The passwords do not match.",
   createAccount: "Create my account",
+  analysisStart: "Analyses start",
+  analysisStartHelp:
+    "Before this month, your history may be incomplete. The overview, the reports and the detection of recurring items leave earlier months out; transactions, balances and budget plans stay as they are.",
+  analysisStartMonth: "First month analysed",
+  startsIn: (month: string) => `Analyses start in ${month}.`,
+  everyMonth: "Every month counts.",
+  countEveryMonth: "Count every month",
+  analysisStartFailed: "Could not save the analyses start.",
+  analysisStartLoadFailed: "Could not load the analyses start.",
 };
 
 export const householdFr: typeof householdEn = {
@@ -75,4 +84,13 @@ export const householdFr: typeof householdEn = {
   passwordHelp: "Au moins 12 caractères. Une phrase de passe est le plus simple.",
   mismatch: "Les mots de passe ne correspondent pas.",
   createAccount: "Créer mon compte",
+  analysisStart: "Début des analyses",
+  analysisStartHelp:
+    "Avant ce mois, votre historique peut être incomplet. La vue d'ensemble, les rapports et la détection des récurrences laissent de côté les mois précédents ; les opérations, les soldes et les plans de budget restent tels quels.",
+  analysisStartMonth: "Premier mois analysé",
+  startsIn: (month) => `Les analyses commencent en ${month}.`,
+  everyMonth: "Tous les mois comptent.",
+  countEveryMonth: "Compter tous les mois",
+  analysisStartFailed: "Impossible d'enregistrer le début des analyses.",
+  analysisStartLoadFailed: "Impossible de charger le début des analyses.",
 };

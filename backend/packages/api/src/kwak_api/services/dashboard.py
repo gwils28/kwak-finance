@@ -7,6 +7,7 @@ from decimal import Decimal
 from uuid import UUID
 
 from kwak_core.accounts import Scope
+from kwak_core.analysis import counted_months
 from kwak_core.budget import Month, month_range
 from kwak_core.budget_month import budget_day
 from kwak_core.categories import CategoryKind
@@ -24,6 +25,7 @@ from sqlalchemy.orm import Session
 from kwak_api.models import Category, Transaction, User
 from kwak_api.services import budget_month, lines
 from kwak_api.services.budget import crossing_by_month, matrix, scoped_accounts
+from kwak_api.services.households import analysis_start
 
 HISTORY_MONTHS = 12
 
@@ -102,9 +104,14 @@ def dashboard(db: Session, viewer: User, month: Month, scope: Scope) -> Dashboar
 
     first = _back(month, HISTORY_MONTHS)  # one more month for the 12-month average
     months = month_range(first, month)
-    flows = flows_by_month(db, accounts, first, month)
+    # Months before the analyses start count as empty in the comparisons (F-ADM-4); the month
+    # looked at stays whole, as its month-progress card next to it.
+    since = analysis_start(db, viewer.household_id)
+    analysed = counted_months(months, since)
+    counted = [m for m in months if m == month or m in analysed]
+    flows = flows_by_month(db, accounts, counted[0], month)
 
-    crossed = crossing_by_month(db, accounts, months) if accounts else {}
+    crossed = crossing_by_month(db, accounts, counted) if accounts and counted else {}
 
     def summary(m: Month) -> MonthSummary:
         paid_in, paid_out = crossed.get(m, (Decimal(0), Decimal(0)))
