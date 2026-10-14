@@ -6,7 +6,7 @@ from uuid import UUID
 from fastapi import APIRouter, HTTPException, Query, status
 from kwak_core.budget import Month
 from kwak_core.money import require_cents
-from pydantic import AfterValidator, BaseModel
+from pydantic import AfterValidator, BaseModel, Field
 
 from kwak_api.auth.routes import CurrentSession, Db
 from kwak_api.models import Account, Category, Transaction
@@ -26,6 +26,13 @@ def _month(text: str | None) -> str | None:
     if text is not None:
         Month.parse(text)  # ValueError: a validation error
     return text
+
+
+class PartOut(BaseModel):
+    category_id: UUID | None
+    """null: to categorise (its category was deleted)."""
+    category_name: str | None
+    amount: Decimal
 
 
 class TransactionOut(BaseModel):
@@ -49,6 +56,10 @@ class TransactionOut(BaseModel):
     """YYYY-MM: the month it counts in for the budget (F-TX-7), by default its booking month."""
     budget_month_set: bool
     """The budget month was set by hand on this transaction."""
+    parts: list[PartOut]
+    """Set when the transaction is split (F-TX-4): its categories, adding up to its amount.
+    `category_id` is then null."""
+    note: str | None
 
     @classmethod
     def of(
@@ -74,6 +85,17 @@ class TransactionOut(BaseModel):
             transfer_account_name=(counterparts or {}).get(transaction.id),
             budget_month=str(budget_month_service.month_of(transaction, categories)),
             budget_month_set=transaction.budget_month is not None,
+            parts=[
+                PartOut(
+                    category_id=p.category_id,
+                    category_name=categories[p.category_id].name
+                    if p.category_id in categories
+                    else None,
+                    amount=p.amount,
+                )
+                for p in transaction.parts
+            ],
+            note=transaction.note,
         )
 
 
@@ -102,6 +124,24 @@ class TransactionPatch(BaseModel):
     budget_month: Annotated[str | None, AfterValidator(_month)] = None
     """YYYY-MM, at most one month from the date: the month it counts in for the budget.
     null: back to its booking month, or the next one by its category (F-CAT-5)."""
+    note: str | None = Field(default=None, max_length=500)
+    """Free text, searched with the label; null or empty removes it. Imported rows too."""
+
+
+class PartIn(BaseModel):
+    category_id: UUID | None
+    amount: Cents
+    """Of the transaction's sign: "-60.00" for an outflow."""
+
+
+MAX_PARTS = 20
+
+
+class SplitIn(BaseModel):
+    parts: list[PartIn] = Field(min_length=1, max_length=MAX_PARTS - 1)
+    """Every part but the last: 20 parts at most, the rest included."""
+    rest_category_id: UUID | None
+    """The last part's category: it takes what the others leave."""
 
 
 class Categorise(BaseModel):
@@ -217,12 +257,18 @@ def update_transaction(
         raise HIDDEN_SIDE from None
     except ValueError as exc:
         raise _unprocessable(exc) from None
+    if "note" in body.model_fields_set:
+        service.set_note(db, transaction, body.note)
     if "category_id" in body.model_fields_set:
         try:
             service.set_category(db, transaction, _category(db, household_id, body.category_id))
         except service.TransferCategoryError:
             raise HTTPException(
                 status.HTTP_409_CONFLICT, "a transfer has no category: unlink it first"
+            ) from None
+        except service.SplitCategoryError:
+            raise HTTPException(
+                status.HTTP_409_CONFLICT, "a split transaction's categories are its parts'"
             ) from None
     if "budget_month" in body.model_fields_set:
         month = Month.parse(body.budget_month) if body.budget_month else None
@@ -235,6 +281,41 @@ def update_transaction(
         except ValueError as exc:
             raise _unprocessable(exc) from None
     return TransactionOut.of(transaction, account, _categories(db, household_id))
+
+
+@router.put("/transactions/{transaction_id}/split")
+def split_transaction(
+    transaction_id: UUID, body: SplitIn, user_session: CurrentSession, db: Db
+) -> TransactionOut:
+    """Spread a transaction over categories (F-TX-4): the parts given, then the rest."""
+    found = service.find_visible(db, user_session.user, transaction_id)
+    if found is None:
+        raise NOT_FOUND
+    transaction, account = found
+    household_id = user_session.user.household_id
+    given = [(_category(db, household_id, p.category_id), p.amount) for p in body.parts]
+    try:
+        service.split(db, transaction, given, _category(db, household_id, body.rest_category_id))
+    except service.TransferSplitError:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT, "a transfer cannot be split: unlink it first"
+        ) from None
+    except ValueError as exc:
+        raise _unprocessable(exc) from None
+    return TransactionOut.of(transaction, account, _categories(db, household_id))
+
+
+@router.delete("/transactions/{transaction_id}/split")
+def unsplit_transaction(
+    transaction_id: UUID, user_session: CurrentSession, db: Db
+) -> TransactionOut:
+    """Back to a single category, to categorise until one is chosen."""
+    found = service.find_visible(db, user_session.user, transaction_id)
+    if found is None:
+        raise NOT_FOUND
+    transaction, account = found
+    service.unsplit(db, transaction)
+    return TransactionOut.of(transaction, account, _categories(db, user_session.user.household_id))
 
 
 @router.post("/transactions/categorise")

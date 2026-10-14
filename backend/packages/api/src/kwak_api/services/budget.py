@@ -35,7 +35,7 @@ from kwak_api.models import (
     Transaction,
     User,
 )
-from kwak_api.services import budget_month
+from kwak_api.services import budget_month, lines
 from kwak_api.services.accounts import visible_accounts
 
 
@@ -272,23 +272,22 @@ def spending(db: Session, viewer: User, months: list[Month], scope: Scope) -> Sp
     month = budget_month.month_start().label("month")
     # Categorised: outflows minus refunds (or withdrawals, for savings). Uncategorised: outflows
     # only (an inflow may be income).
+    category = lines.category().label("category_id")
+    amount = lines.amount()
     spent = func.sum(
         case(
-            (
-                Transaction.category_id.is_(None),
-                case((Transaction.amount < 0, -Transaction.amount), else_=0),
-            ),
-            else_=-Transaction.amount,
+            (lines.category().is_(None), case((amount < 0, -amount), else_=0)),
+            else_=-amount,
         )
     )
     rows = db.execute(
-        select(Transaction.category_id, month, spent)
+        lines.with_parts(select(category, month, spent))
         .where(
             Transaction.account_id.in_(accounts),
             Transaction.transfer_group_id.is_(None),  # transfers are not spending (§8.3)
             budget_month.in_months(months[0], months[-1]),
         )
-        .group_by(Transaction.category_id, month)
+        .group_by(category, month)
     )
     result: dict[tuple[UUID | None, Month], Decimal] = {}
     for category_id, start, total in rows:

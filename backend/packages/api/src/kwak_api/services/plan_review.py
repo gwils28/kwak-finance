@@ -26,7 +26,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from kwak_api.models import BudgetPlan, Category, Transaction, User
-from kwak_api.services import budget_month
+from kwak_api.services import budget_month, lines
 from kwak_api.services.accounts import visible_accounts
 from kwak_api.services.budget import (
     core_plan,
@@ -50,14 +50,15 @@ def _income(db: Session, viewer: User, months: list[Month], scope: Scope) -> dic
     start_of = budget_month.month_start().label("month")
     # One labelled expression in SELECT and GROUP BY (see services.dashboard).
     outflow = (Transaction.amount < 0).label("outflow")
+    category = lines.category().label("category_id")
     rows = db.execute(
-        select(start_of, Transaction.category_id, outflow, func.sum(Transaction.amount))
+        lines.with_parts(select(start_of, category, outflow, func.sum(lines.amount())))
         .where(
             Transaction.account_id.in_(scoped_accounts(db, viewer, scope)),
             Transaction.transfer_group_id.is_(None),
             budget_month.in_months(months[0], months[-1]),
         )
-        .group_by(start_of, Transaction.category_id, outflow)
+        .group_by(start_of, category, outflow)
     )
     flows: dict[Month, list[Flow]] = defaultdict(list)
     for start, category_id, _outflow, total in rows:
@@ -117,11 +118,13 @@ def cumulative_chart(
     core = result.plan
     daily: dict[date, Decimal] = defaultdict(Decimal)
     for booked_on, start, category_id, amount in db.execute(
-        select(
-            Transaction.booked_on,
-            budget_month.month_start(),
-            Transaction.category_id,
-            Transaction.amount,
+        lines.with_parts(
+            select(
+                Transaction.booked_on,
+                budget_month.month_start(),
+                lines.category(),
+                lines.amount(),
+            )
         ).where(
             Transaction.account_id.in_(scoped_accounts(db, viewer, scope)),
             Transaction.transfer_group_id.is_(None),
@@ -180,14 +183,15 @@ def flows(db: Session, viewer: User, plan: BudgetPlan, *, scope: Scope) -> PlanF
     spent: dict[UUID, Decimal] = defaultdict(Decimal)
     uncategorised_in = uncategorised_out = in_categories = Decimal(0)
     outflow = (Transaction.amount < 0).label("outflow")
+    category = lines.category().label("category_id")
     rows = db.execute(
-        select(Transaction.category_id, outflow, func.sum(Transaction.amount))
+        lines.with_parts(select(category, outflow, func.sum(lines.amount())))
         .where(
             Transaction.account_id.in_(accounts),
             Transaction.transfer_group_id.is_(None),
             budget_month.in_months(months[0], months[-1]),
         )
-        .group_by(Transaction.category_id, outflow)
+        .group_by(category, outflow)
     )
     for category_id, is_outflow, total in rows:
         amount = Decimal(total)

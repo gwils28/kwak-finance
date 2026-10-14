@@ -126,7 +126,10 @@ def apply(db: Session, viewer: User, *, only_uncategorised: bool) -> int:
     rules = rule_set(db, viewer.household_id)
     changed = 0
     for t in _visible_transactions(db, viewer):
-        if t.transfer_group_id is not None or (only_uncategorised and t.category_id is not None):
+        # Transfers carry no category, and a split transaction keeps its parts (F-TX-4).
+        if t.transfer_group_id is not None or t.parts:
+            continue
+        if only_uncategorised and t.category_id is not None:
             continue
         category = rules.category_for(label=t.label_raw, amount=t.amount, account_id=t.account_id)
         if category is not None and category != t.category_id:
@@ -144,10 +147,13 @@ class Preview:
 
 def preview(db: Session, viewer: User, category: Category, conditions: Conditions) -> Preview:
     rules = RuleSet([_draft(category, conditions)])
+    # What `apply` would change: transfers and split transactions stay as they are.
     hits = [
         t
         for t in _visible_transactions(db, viewer)
-        if rules.category_for(label=t.label_raw, amount=t.amount, account_id=t.account_id)
+        if t.transfer_group_id is None
+        and not t.parts
+        and rules.category_for(label=t.label_raw, amount=t.amount, account_id=t.account_id)
     ]
     hits.sort(key=lambda t: (t.booked_on, t.id), reverse=True)
     return Preview(matching=hits, uncategorised=sum(1 for t in hits if t.category_id is None))

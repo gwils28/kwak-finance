@@ -36,7 +36,9 @@ def suggestions(db: Session, viewer: User) -> list[tuple[Transaction, Transactio
         t.id: t
         for t in db.scalars(
             select(Transaction).where(
-                Transaction.account_id.in_(accounts), Transaction.transfer_group_id.is_(None)
+                Transaction.account_id.in_(accounts),
+                Transaction.transfer_group_id.is_(None),
+                ~Transaction.parts.any(),
             )
         )
     }
@@ -58,6 +60,8 @@ def link(db: Session, outflow: Transaction, inflow: Transaction) -> UUID:
         raise AlreadyLinkedError
     if outflow.account_id == inflow.account_id:
         raise TransferError("a transfer moves money between two different accounts")
+    if outflow.parts or inflow.parts:
+        raise TransferError("a split transaction cannot be a side of a transfer")
     if not (outflow.amount < 0 < inflow.amount) or outflow.amount + inflow.amount != 0:
         raise TransferError("a transfer is an outflow and an inflow of the same amount")
     group = uuid7()
@@ -105,6 +109,7 @@ def candidates(db: Session, viewer: User, transaction: Transaction) -> list[Tran
             select(Transaction).where(
                 Transaction.account_id.in_(accounts),
                 Transaction.transfer_group_id.is_(None),
+                ~Transaction.parts.any(),
                 Transaction.amount == -transaction.amount,
                 Transaction.booked_on.between(
                     transaction.booked_on - window, transaction.booked_on + window

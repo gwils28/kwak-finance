@@ -10,7 +10,7 @@ from kwak_api.models.recovery_code import RecoveryCode
 from kwak_api.models.recurring import DismissedSuggestion, RecurringItem, RecurringSkip
 from kwak_api.models.rule import CategorizationRule
 from kwak_api.models.session import UserSession
-from kwak_api.models.transaction import ImportBatch, Transaction
+from kwak_api.models.transaction import ImportBatch, Transaction, TransactionPart
 
 __all__ = [
     "Account",
@@ -29,6 +29,7 @@ __all__ = [
     "RecurringSkip",
     "Role",
     "Transaction",
+    "TransactionPart",
     "User",
     "UserSession",
 ]
