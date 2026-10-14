@@ -137,7 +137,7 @@ export type ApplyRules = {
 /**
  * AuditAction
  */
-export type AuditAction = 'signed_in' | 'sign_in_failed' | 'signed_out' | 'recovery_codes_renewed' | 'invite_created' | 'invite_revoked' | 'member_joined' | 'settings_changed' | 'imported' | 'import_rolled_back' | 'transaction_deleted' | 'category_deleted' | 'plan_deleted' | 'recurring_deleted' | 'rule_created' | 'rule_updated' | 'rule_deleted' | 'rules_applied' | 'categories_restored';
+export type AuditAction = 'signed_in' | 'sign_in_failed' | 'signed_out' | 'recovery_codes_renewed' | 'invite_created' | 'invite_revoked' | 'member_joined' | 'settings_changed' | 'imported' | 'import_rolled_back' | 'transaction_deleted' | 'category_deleted' | 'plan_deleted' | 'recurring_deleted' | 'wealth_line_deleted' | 'wealth_category_deleted' | 'rule_created' | 'rule_updated' | 'rule_deleted' | 'rules_applied' | 'categories_restored';
 
 /**
  * AuditEntryOut
@@ -2656,6 +2656,313 @@ export type ValidationError = {
  */
 export type Visibility = 'private' | 'shared' | 'joint';
 
+/**
+ * WealthCategoryIn
+ */
+export type WealthCategoryIn = {
+    /**
+     * Colour
+     */
+    colour: string;
+    kind?: WealthKind;
+    /**
+     * Name
+     */
+    name: string;
+};
+
+/**
+ * WealthCategoryOut
+ */
+export type WealthCategoryOut = {
+    /**
+     * Colour
+     */
+    colour: string;
+    holds: AccountType | null;
+    /**
+     * Id
+     */
+    id: string;
+    kind: WealthKind;
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Position
+     */
+    position: number;
+};
+
+/**
+ * WealthCategoryPatch
+ */
+export type WealthCategoryPatch = {
+    /**
+     * Colour
+     */
+    colour?: string | null;
+    /**
+     * Name
+     */
+    name?: string | null;
+    /**
+     * Position
+     */
+    position?: number | null;
+};
+
+/**
+ * WealthCellOut
+ */
+export type WealthCellOut = {
+    /**
+     * Amount
+     */
+    amount: string;
+    /**
+     * Carried
+     */
+    carried: boolean;
+};
+
+/**
+ * WealthKind
+ */
+export type WealthKind = 'asset' | 'debt';
+
+/**
+ * WealthLineIn
+ */
+export type WealthLineIn = {
+    /**
+     * Category Id
+     */
+    category_id: string;
+    /**
+     * Name
+     */
+    name: string;
+    visibility?: Visibility;
+};
+
+/**
+ * WealthLineOut
+ */
+export type WealthLineOut = {
+    /**
+     * Category Id
+     */
+    category_id: string;
+    /**
+     * Closed From
+     */
+    closed_from: string | null;
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Owner Id
+     */
+    owner_id: string;
+    /**
+     * Owner Name
+     */
+    owner_name: string;
+    visibility: Visibility;
+};
+
+/**
+ * WealthLinePatch
+ *
+ * Only the fields present change.
+ */
+export type WealthLinePatch = {
+    /**
+     * Category Id
+     */
+    category_id?: string | null;
+    /**
+     * Closed From
+     */
+    closed_from?: string | null;
+    /**
+     * Name
+     */
+    name?: string | null;
+    visibility?: Visibility | null;
+};
+
+/**
+ * WealthMatrixCategoryOut
+ */
+export type WealthMatrixCategoryOut = {
+    /**
+     * Colour
+     */
+    colour: string;
+    /**
+     * Id
+     */
+    id: string;
+    kind: WealthKind;
+    /**
+     * Lines
+     */
+    lines: Array<WealthMatrixLineOut>;
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Share
+     */
+    share: string | null;
+    /**
+     * Subtotals
+     */
+    subtotals: Array<string>;
+};
+
+/**
+ * WealthMatrixLineOut
+ */
+export type WealthMatrixLineOut = {
+    /**
+     * Account Id
+     */
+    account_id: string | null;
+    /**
+     * Automatic
+     */
+    automatic: boolean;
+    /**
+     * Cells
+     */
+    cells: Array<WealthCellOut | null>;
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Owner Name
+     */
+    owner_name: string;
+    /**
+     * Share
+     */
+    share: string | null;
+    visibility: Visibility;
+};
+
+/**
+ * WealthMatrixOut
+ */
+export type WealthMatrixOut = {
+    /**
+     * Categories
+     */
+    categories: Array<WealthMatrixCategoryOut>;
+    /**
+     * Change
+     */
+    change: Array<string | null>;
+    /**
+     * Change Ratio
+     */
+    change_ratio: Array<string | null>;
+    /**
+     * Debts
+     */
+    debts: Array<string>;
+    /**
+     * Gross
+     */
+    gross: Array<string>;
+    /**
+     * Months
+     */
+    months: Array<string>;
+    /**
+     * Net
+     */
+    net: Array<string>;
+};
+
+/**
+ * WealthUpdateIn
+ */
+export type WealthUpdateIn = {
+    /**
+     * Month
+     */
+    month: string;
+    /**
+     * Values
+     */
+    values: Array<WealthUpdateValue>;
+};
+
+/**
+ * WealthUpdateLineOut
+ */
+export type WealthUpdateLineOut = {
+    /**
+     * Category Id
+     */
+    category_id: string;
+    /**
+     * Category Name
+     */
+    category_name: string;
+    /**
+     * Last Value
+     */
+    last_value: string | null;
+    /**
+     * Line Id
+     */
+    line_id: string;
+    /**
+     * Name
+     */
+    name: string;
+};
+
+/**
+ * WealthUpdateValue
+ */
+export type WealthUpdateValue = {
+    /**
+     * Amount
+     */
+    amount: number | string;
+    /**
+     * Line Id
+     */
+    line_id: string;
+};
+
+/**
+ * WealthValueIn
+ */
+export type WealthValueIn = {
+    /**
+     * Amount
+     */
+    amount: number | string;
+};
+
 export type ListAccountsData = {
     body?: never;
     path?: never;
@@ -4919,3 +5226,393 @@ export type UnlinkTransferResponses = {
 };
 
 export type UnlinkTransferResponse = UnlinkTransferResponses[keyof UnlinkTransferResponses];
+
+export type ListWealthCategoriesData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/wealth/categories';
+};
+
+export type ListWealthCategoriesErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ListWealthCategoriesError = ListWealthCategoriesErrors[keyof ListWealthCategoriesErrors];
+
+export type ListWealthCategoriesResponses = {
+    /**
+     * Response Listwealthcategories
+     *
+     * Successful Response
+     */
+    200: Array<WealthCategoryOut>;
+};
+
+export type ListWealthCategoriesResponse = ListWealthCategoriesResponses[keyof ListWealthCategoriesResponses];
+
+export type CreateWealthCategoryData = {
+    body: WealthCategoryIn;
+    path?: never;
+    query?: never;
+    url: '/api/wealth/categories';
+};
+
+export type CreateWealthCategoryErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type CreateWealthCategoryError = CreateWealthCategoryErrors[keyof CreateWealthCategoryErrors];
+
+export type CreateWealthCategoryResponses = {
+    /**
+     * Successful Response
+     */
+    201: WealthCategoryOut;
+};
+
+export type CreateWealthCategoryResponse = CreateWealthCategoryResponses[keyof CreateWealthCategoryResponses];
+
+export type DeleteWealthCategoryData = {
+    body?: never;
+    path: {
+        /**
+         * Category Id
+         */
+        category_id: string;
+    };
+    query?: never;
+    url: '/api/wealth/categories/{category_id}';
+};
+
+export type DeleteWealthCategoryErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type DeleteWealthCategoryError = DeleteWealthCategoryErrors[keyof DeleteWealthCategoryErrors];
+
+export type DeleteWealthCategoryResponses = {
+    /**
+     * Successful Response
+     */
+    204: void;
+};
+
+export type DeleteWealthCategoryResponse = DeleteWealthCategoryResponses[keyof DeleteWealthCategoryResponses];
+
+export type UpdateWealthCategoryData = {
+    body: WealthCategoryPatch;
+    path: {
+        /**
+         * Category Id
+         */
+        category_id: string;
+    };
+    query?: never;
+    url: '/api/wealth/categories/{category_id}';
+};
+
+export type UpdateWealthCategoryErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type UpdateWealthCategoryError = UpdateWealthCategoryErrors[keyof UpdateWealthCategoryErrors];
+
+export type UpdateWealthCategoryResponses = {
+    /**
+     * Successful Response
+     */
+    200: WealthCategoryOut;
+};
+
+export type UpdateWealthCategoryResponse = UpdateWealthCategoryResponses[keyof UpdateWealthCategoryResponses];
+
+export type ListWealthLinesData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/wealth/lines';
+};
+
+export type ListWealthLinesErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ListWealthLinesError = ListWealthLinesErrors[keyof ListWealthLinesErrors];
+
+export type ListWealthLinesResponses = {
+    /**
+     * Response Listwealthlines
+     *
+     * Successful Response
+     */
+    200: Array<WealthLineOut>;
+};
+
+export type ListWealthLinesResponse = ListWealthLinesResponses[keyof ListWealthLinesResponses];
+
+export type CreateWealthLineData = {
+    body: WealthLineIn;
+    path?: never;
+    query?: never;
+    url: '/api/wealth/lines';
+};
+
+export type CreateWealthLineErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type CreateWealthLineError = CreateWealthLineErrors[keyof CreateWealthLineErrors];
+
+export type CreateWealthLineResponses = {
+    /**
+     * Successful Response
+     */
+    201: WealthLineOut;
+};
+
+export type CreateWealthLineResponse = CreateWealthLineResponses[keyof CreateWealthLineResponses];
+
+export type DeleteWealthLineData = {
+    body?: never;
+    path: {
+        /**
+         * Line Id
+         */
+        line_id: string;
+    };
+    query?: never;
+    url: '/api/wealth/lines/{line_id}';
+};
+
+export type DeleteWealthLineErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type DeleteWealthLineError = DeleteWealthLineErrors[keyof DeleteWealthLineErrors];
+
+export type DeleteWealthLineResponses = {
+    /**
+     * Successful Response
+     */
+    204: void;
+};
+
+export type DeleteWealthLineResponse = DeleteWealthLineResponses[keyof DeleteWealthLineResponses];
+
+export type UpdateWealthLineData = {
+    body: WealthLinePatch;
+    path: {
+        /**
+         * Line Id
+         */
+        line_id: string;
+    };
+    query?: never;
+    url: '/api/wealth/lines/{line_id}';
+};
+
+export type UpdateWealthLineErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type UpdateWealthLineError = UpdateWealthLineErrors[keyof UpdateWealthLineErrors];
+
+export type UpdateWealthLineResponses = {
+    /**
+     * Successful Response
+     */
+    200: WealthLineOut;
+};
+
+export type UpdateWealthLineResponse = UpdateWealthLineResponses[keyof UpdateWealthLineResponses];
+
+export type RemoveWealthValueData = {
+    body?: never;
+    path: {
+        /**
+         * Line Id
+         */
+        line_id: string;
+        /**
+         * Month
+         */
+        month: string;
+    };
+    query?: never;
+    url: '/api/wealth/lines/{line_id}/values/{month}';
+};
+
+export type RemoveWealthValueErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type RemoveWealthValueError = RemoveWealthValueErrors[keyof RemoveWealthValueErrors];
+
+export type RemoveWealthValueResponses = {
+    /**
+     * Successful Response
+     */
+    204: void;
+};
+
+export type RemoveWealthValueResponse = RemoveWealthValueResponses[keyof RemoveWealthValueResponses];
+
+export type SetWealthValueData = {
+    body: WealthValueIn;
+    path: {
+        /**
+         * Line Id
+         */
+        line_id: string;
+        /**
+         * Month
+         */
+        month: string;
+    };
+    query?: never;
+    url: '/api/wealth/lines/{line_id}/values/{month}';
+};
+
+export type SetWealthValueErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type SetWealthValueError = SetWealthValueErrors[keyof SetWealthValueErrors];
+
+export type SetWealthValueResponses = {
+    /**
+     * Successful Response
+     */
+    204: void;
+};
+
+export type SetWealthValueResponse = SetWealthValueResponses[keyof SetWealthValueResponses];
+
+export type WealthMatrixData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Start
+         *
+         * First month, YYYY-MM
+         */
+        start?: string | null;
+        /**
+         * End
+         *
+         * Last month, YYYY-MM
+         */
+        end?: string | null;
+        scope?: Scope;
+    };
+    url: '/api/wealth/matrix';
+};
+
+export type WealthMatrixErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type WealthMatrixError = WealthMatrixErrors[keyof WealthMatrixErrors];
+
+export type WealthMatrixResponses = {
+    /**
+     * Successful Response
+     */
+    200: WealthMatrixOut;
+};
+
+export type WealthMatrixResponse = WealthMatrixResponses[keyof WealthMatrixResponses];
+
+export type WealthLinesToUpdateData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Month
+         *
+         * YYYY-MM; default: this month
+         */
+        month?: string | null;
+    };
+    url: '/api/wealth/update';
+};
+
+export type WealthLinesToUpdateErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type WealthLinesToUpdateError = WealthLinesToUpdateErrors[keyof WealthLinesToUpdateErrors];
+
+export type WealthLinesToUpdateResponses = {
+    /**
+     * Response Wealthlinestoupdate
+     *
+     * Successful Response
+     */
+    200: Array<WealthUpdateLineOut>;
+};
+
+export type WealthLinesToUpdateResponse = WealthLinesToUpdateResponses[keyof WealthLinesToUpdateResponses];
+
+export type UpdateWealthMonthData = {
+    body: WealthUpdateIn;
+    path?: never;
+    query?: never;
+    url: '/api/wealth/update';
+};
+
+export type UpdateWealthMonthErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type UpdateWealthMonthError = UpdateWealthMonthErrors[keyof UpdateWealthMonthErrors];
+
+export type UpdateWealthMonthResponses = {
+    /**
+     * Successful Response
+     */
+    204: void;
+};
+
+export type UpdateWealthMonthResponse = UpdateWealthMonthResponses[keyof UpdateWealthMonthResponses];

@@ -11,10 +11,11 @@ Ratios and shares are exact: the API rounds them for display.
 import enum
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
+from datetime import date
 from decimal import Decimal
 from uuid import UUID
 
-from kwak_core.accounts import Scope, Visibility
+from kwak_core.accounts import AccountType, Scope, Visibility
 from kwak_core.accounts import in_scope as account_in_scope
 from kwak_core.budget import Month
 from kwak_core.categories import Names
@@ -38,15 +39,19 @@ class DefaultWealthCategory:
     kind: WealthKind
     colour: str
     """The key of the category's `wealth-<key>` colour token (§7)."""
+    holds: AccountType | None = None
+    """The app's cash accounts of this type are its lines, valued automatically (F-WLT-4)."""
 
 
-def _asset(en: str, fr: str, colour: str) -> DefaultWealthCategory:
-    return DefaultWealthCategory(Names(en, fr), WealthKind.ASSET, colour)
+def _asset(
+    en: str, fr: str, colour: str, holds: AccountType | None = None
+) -> DefaultWealthCategory:
+    return DefaultWealthCategory(Names(en, fr), WealthKind.ASSET, colour, holds)
 
 
 DEFAULT_WEALTH_CATEGORIES: tuple[DefaultWealthCategory, ...] = (
-    _asset("Savings accounts", "Livrets", "savings"),
-    _asset("Current accounts", "Comptes courants", "current"),
+    _asset("Savings accounts", "Livrets", "savings", AccountType.SAVINGS),
+    _asset("Current accounts", "Comptes courants", "current", AccountType.CHECKING),
     _asset("Stocks", "Actions", "stocks"),
     _asset("Crypto", "Cryptos", "crypto"),
     _asset("Bonds", "Obligations", "bonds"),
@@ -57,6 +62,10 @@ DEFAULT_WEALTH_CATEGORIES: tuple[DefaultWealthCategory, ...] = (
     _asset("Exotic", "Exotiques", "exotic"),
     DefaultWealthCategory(Names("Debts", "Dettes"), WealthKind.DEBT, "debts"),
 )
+
+
+WEALTH_COLOURS = frozenset(c.colour for c in DEFAULT_WEALTH_CATEGORIES)
+"""The colour keys a category can take (§7)."""
 
 
 def check_value(amount: Decimal, *, cash: bool) -> None:
@@ -224,3 +233,24 @@ def _net(
         if cell is not None:
             total += -cell.amount if kinds[ln.category_id] is WealthKind.DEBT else cell.amount
     return total
+
+
+def month_end_balances(
+    opening_balance: Decimal,
+    opening_date: date,
+    movements: Mapping[Month, Decimal],
+    *,
+    last: Month,
+) -> dict[Month, Decimal]:
+    """A cash account's balance at the end of each month from its opening one to `last`
+    (F-WLT-4): the opening balance plus every movement booked up to then, as
+    kwak_core.balances.balance_on. Movements booked before the opening month count in it."""
+    first = Month.of(opening_date)
+    running = opening_balance + sum((a for m, a in movements.items() if m < first), ZERO)
+    balances: dict[Month, Decimal] = {}
+    month = first
+    while month <= last:
+        running += movements.get(month, ZERO)
+        balances[month] = running
+        month = month.next()
+    return balances

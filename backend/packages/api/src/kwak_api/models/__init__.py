@@ -12,6 +12,7 @@ from kwak_api.models.recurring import DismissedSuggestion, RecurringItem, Recurr
 from kwak_api.models.rule import CategorizationRule
 from kwak_api.models.session import UserSession
 from kwak_api.models.transaction import ImportBatch, Transaction, TransactionPart
+from kwak_api.models.wealth import WealthCategory, WealthLine, WealthValue
 
 __all__ = [
     "Account",
@@ -34,4 +35,7 @@ __all__ = [
     "TransactionPart",
     "User",
     "UserSession",
+    "WealthCategory",
+    "WealthLine",
+    "WealthValue",
 ]

@@ -2,7 +2,7 @@
 
 import { type Client, type ClientMeta, formDataBodySerializer, type Options as Options2, type RequestResult, type TDataShape } from './client';
 import { client } from './client.gen';
-import type { AcceptInviteData, AcceptInviteErrors, AcceptInviteResponses, AcceptTransferSuggestionsData, AcceptTransferSuggestionsErrors, AcceptTransferSuggestionsResponses, ActivityLogData, ActivityLogErrors, ActivityLogResponses, ApplyRulesData, ApplyRulesErrors, ApplyRulesResponses, BudgetMatrixData, BudgetMatrixErrors, BudgetMatrixResponses, CategoriseTransactionsData, CategoriseTransactionsErrors, CategoriseTransactionsResponses, ClosePlanData, ClosePlanErrors, ClosePlanResponses, CreateAccountData, CreateAccountErrors, CreateAccountResponses, CreateCategoryData, CreateCategoryErrors, CreateCategoryResponses, CreateImportData, CreateImportErrors, CreateImportResponses, CreateInviteData, CreateInviteErrors, CreateInviteResponses, CreatePlanData, CreatePlanErrors, CreatePlanResponses, CreateRecurringData, CreateRecurringErrors, CreateRecurringResponses, CreateRuleData, CreateRuleErrors, CreateRuleResponses, CreateTransactionData, CreateTransactionErrors, CreateTransactionResponses, DashboardData, DashboardErrors, DashboardResponses, DeleteCategoryData, DeleteCategoryErrors, DeleteCategoryResponses, DeletePlanData, DeletePlanErrors, DeletePlanResponses, DeleteRecurringData, DeleteRecurringErrors, DeleteRecurringResponses, DeleteRuleData, DeleteRuleErrors, DeleteRuleResponses, DeleteTransactionData, DeleteTransactionErrors, DeleteTransactionResponses, DismissSuggestionData, DismissSuggestionErrors, DismissSuggestionResponses, EnterTransferData, EnterTransferErrors, EnterTransferResponses, GetSettingsData, GetSettingsErrors, GetSettingsResponses, HealthData, HealthResponses, LinkTransferData, LinkTransferErrors, LinkTransferResponses, ListAccountsData, ListAccountsErrors, ListAccountsResponses, ListCategoriesData, ListCategoriesErrors, ListCategoriesResponses, ListImportsData, ListImportsErrors, ListImportsResponses, ListInstitutionsData, ListInstitutionsErrors, ListInstitutionsResponses, ListInvitesData, ListInvitesErrors, ListInvitesResponses, ListMembersData, ListMembersErrors, ListMembersResponses, ListPlansData, ListPlansErrors, ListPlansResponses, ListRecurringData, ListRecurringErrors, ListRecurringResponses, ListRulesData, ListRulesErrors, ListRulesResponses, ListTransactionsData, ListTransactionsErrors, ListTransactionsResponses, LoginData, LoginErrors, LoginResponses, LogoutData, LogoutErrors, LogoutResponses, MeData, MeErrors, MeResponses, MonthSoFarData, MonthSoFarErrors, MonthSoFarResponses, PeriodReportData, PeriodReportErrors, PeriodReportResponses, PlanComparisonData, PlanComparisonErrors, PlanComparisonResponses, PlanCumulativeData, PlanCumulativeErrors, PlanCumulativeResponses, PlanFlowsData, PlanFlowsErrors, PlanFlowsResponses, PreviewImportData, PreviewImportErrors, PreviewImportResponses, PreviewInviteData, PreviewInviteErrors, PreviewInviteResponses, PreviewRestoreData, PreviewRestoreErrors, PreviewRestoreResponses, PreviewRuleData, PreviewRuleErrors, PreviewRuleResponses, PreviewShiftData, PreviewShiftErrors, PreviewShiftResponses, RecoveryData, RecoveryErrors, RecoveryResponses, RecurringSuggestionsData, RecurringSuggestionsErrors, RecurringSuggestionsResponses, RegenerateRecoveryCodesData, RegenerateRecoveryCodesErrors, RegenerateRecoveryCodesResponses, RestoreDefaultsData, RestoreDefaultsErrors, RestoreDefaultsResponses, ReviewPlanData, ReviewPlanErrors, ReviewPlanResponses, RevokeInviteData, RevokeInviteErrors, RevokeInviteResponses, RollbackImportData, RollbackImportErrors, RollbackImportResponses, SetPlanTargetData, SetPlanTargetErrors, SetPlanTargetResponses, SetTargetPaidFromData, SetTargetPaidFromErrors, SetTargetPaidFromResponses, SkipOccurrenceData, SkipOccurrenceErrors, SkipOccurrenceResponses, SplitTransactionData, SplitTransactionErrors, SplitTransactionResponses, TotpConfirmData, TotpConfirmErrors, TotpConfirmResponses, TotpSetupData, TotpSetupErrors, TotpSetupResponses, TotpVerifyData, TotpVerifyErrors, TotpVerifyResponses, TransferCandidatesData, TransferCandidatesErrors, TransferCandidatesResponses, TransferSuggestionsData, TransferSuggestionsErrors, TransferSuggestionsResponses, UnlinkTransferData, UnlinkTransferErrors, UnlinkTransferResponses, UnskipOccurrenceData, UnskipOccurrenceErrors, UnskipOccurrenceResponses, UnsplitTransactionData, UnsplitTransactionErrors, UnsplitTransactionResponses, UpcomingRecurringData, UpcomingRecurringErrors, UpcomingRecurringResponses, UpdateAccountData, UpdateAccountErrors, UpdateAccountResponses, UpdateCategoryData, UpdateCategoryErrors, UpdateCategoryResponses, UpdateMeData, UpdateMeErrors, UpdateMeResponses, UpdatePlanData, UpdatePlanErrors, UpdatePlanResponses, UpdateRecurringData, UpdateRecurringErrors, UpdateRecurringResponses, UpdateRuleData, UpdateRuleErrors, UpdateRuleResponses, UpdateSettingsData, UpdateSettingsErrors, UpdateSettingsResponses, UpdateTransactionData, UpdateTransactionErrors, UpdateTransactionResponses } from './types.gen';
+import type { AcceptInviteData, AcceptInviteErrors, AcceptInviteResponses, AcceptTransferSuggestionsData, AcceptTransferSuggestionsErrors, AcceptTransferSuggestionsResponses, ActivityLogData, ActivityLogErrors, ActivityLogResponses, ApplyRulesData, ApplyRulesErrors, ApplyRulesResponses, BudgetMatrixData, BudgetMatrixErrors, BudgetMatrixResponses, CategoriseTransactionsData, CategoriseTransactionsErrors, CategoriseTransactionsResponses, ClosePlanData, ClosePlanErrors, ClosePlanResponses, CreateAccountData, CreateAccountErrors, CreateAccountResponses, CreateCategoryData, CreateCategoryErrors, CreateCategoryResponses, CreateImportData, CreateImportErrors, CreateImportResponses, CreateInviteData, CreateInviteErrors, CreateInviteResponses, CreatePlanData, CreatePlanErrors, CreatePlanResponses, CreateRecurringData, CreateRecurringErrors, CreateRecurringResponses, CreateRuleData, CreateRuleErrors, CreateRuleResponses, CreateTransactionData, CreateTransactionErrors, CreateTransactionResponses, CreateWealthCategoryData, CreateWealthCategoryErrors, CreateWealthCategoryResponses, CreateWealthLineData, CreateWealthLineErrors, CreateWealthLineResponses, DashboardData, DashboardErrors, DashboardResponses, DeleteCategoryData, DeleteCategoryErrors, DeleteCategoryResponses, DeletePlanData, DeletePlanErrors, DeletePlanResponses, DeleteRecurringData, DeleteRecurringErrors, DeleteRecurringResponses, DeleteRuleData, DeleteRuleErrors, DeleteRuleResponses, DeleteTransactionData, DeleteTransactionErrors, DeleteTransactionResponses, DeleteWealthCategoryData, DeleteWealthCategoryErrors, DeleteWealthCategoryResponses, DeleteWealthLineData, DeleteWealthLineErrors, DeleteWealthLineResponses, DismissSuggestionData, DismissSuggestionErrors, DismissSuggestionResponses, EnterTransferData, EnterTransferErrors, EnterTransferResponses, GetSettingsData, GetSettingsErrors, GetSettingsResponses, HealthData, HealthResponses, LinkTransferData, LinkTransferErrors, LinkTransferResponses, ListAccountsData, ListAccountsErrors, ListAccountsResponses, ListCategoriesData, ListCategoriesErrors, ListCategoriesResponses, ListImportsData, ListImportsErrors, ListImportsResponses, ListInstitutionsData, ListInstitutionsErrors, ListInstitutionsResponses, ListInvitesData, ListInvitesErrors, ListInvitesResponses, ListMembersData, ListMembersErrors, ListMembersResponses, ListPlansData, ListPlansErrors, ListPlansResponses, ListRecurringData, ListRecurringErrors, ListRecurringResponses, ListRulesData, ListRulesErrors, ListRulesResponses, ListTransactionsData, ListTransactionsErrors, ListTransactionsResponses, ListWealthCategoriesData, ListWealthCategoriesErrors, ListWealthCategoriesResponses, ListWealthLinesData, ListWealthLinesErrors, ListWealthLinesResponses, LoginData, LoginErrors, LoginResponses, LogoutData, LogoutErrors, LogoutResponses, MeData, MeErrors, MeResponses, MonthSoFarData, MonthSoFarErrors, MonthSoFarResponses, PeriodReportData, PeriodReportErrors, PeriodReportResponses, PlanComparisonData, PlanComparisonErrors, PlanComparisonResponses, PlanCumulativeData, PlanCumulativeErrors, PlanCumulativeResponses, PlanFlowsData, PlanFlowsErrors, PlanFlowsResponses, PreviewImportData, PreviewImportErrors, PreviewImportResponses, PreviewInviteData, PreviewInviteErrors, PreviewInviteResponses, PreviewRestoreData, PreviewRestoreErrors, PreviewRestoreResponses, PreviewRuleData, PreviewRuleErrors, PreviewRuleResponses, PreviewShiftData, PreviewShiftErrors, PreviewShiftResponses, RecoveryData, RecoveryErrors, RecoveryResponses, RecurringSuggestionsData, RecurringSuggestionsErrors, RecurringSuggestionsResponses, RegenerateRecoveryCodesData, RegenerateRecoveryCodesErrors, RegenerateRecoveryCodesResponses, RemoveWealthValueData, RemoveWealthValueErrors, RemoveWealthValueResponses, RestoreDefaultsData, RestoreDefaultsErrors, RestoreDefaultsResponses, ReviewPlanData, ReviewPlanErrors, ReviewPlanResponses, RevokeInviteData, RevokeInviteErrors, RevokeInviteResponses, RollbackImportData, RollbackImportErrors, RollbackImportResponses, SetPlanTargetData, SetPlanTargetErrors, SetPlanTargetResponses, SetTargetPaidFromData, SetTargetPaidFromErrors, SetTargetPaidFromResponses, SetWealthValueData, SetWealthValueErrors, SetWealthValueResponses, SkipOccurrenceData, SkipOccurrenceErrors, SkipOccurrenceResponses, SplitTransactionData, SplitTransactionErrors, SplitTransactionResponses, TotpConfirmData, TotpConfirmErrors, TotpConfirmResponses, TotpSetupData, TotpSetupErrors, TotpSetupResponses, TotpVerifyData, TotpVerifyErrors, TotpVerifyResponses, TransferCandidatesData, TransferCandidatesErrors, TransferCandidatesResponses, TransferSuggestionsData, TransferSuggestionsErrors, TransferSuggestionsResponses, UnlinkTransferData, UnlinkTransferErrors, UnlinkTransferResponses, UnskipOccurrenceData, UnskipOccurrenceErrors, UnskipOccurrenceResponses, UnsplitTransactionData, UnsplitTransactionErrors, UnsplitTransactionResponses, UpcomingRecurringData, UpcomingRecurringErrors, UpcomingRecurringResponses, UpdateAccountData, UpdateAccountErrors, UpdateAccountResponses, UpdateCategoryData, UpdateCategoryErrors, UpdateCategoryResponses, UpdateMeData, UpdateMeErrors, UpdateMeResponses, UpdatePlanData, UpdatePlanErrors, UpdatePlanResponses, UpdateRecurringData, UpdateRecurringErrors, UpdateRecurringResponses, UpdateRuleData, UpdateRuleErrors, UpdateRuleResponses, UpdateSettingsData, UpdateSettingsErrors, UpdateSettingsResponses, UpdateTransactionData, UpdateTransactionErrors, UpdateTransactionResponses, UpdateWealthCategoryData, UpdateWealthCategoryErrors, UpdateWealthCategoryResponses, UpdateWealthLineData, UpdateWealthLineErrors, UpdateWealthLineResponses, UpdateWealthMonthData, UpdateWealthMonthErrors, UpdateWealthMonthResponses, WealthLinesToUpdateData, WealthLinesToUpdateErrors, WealthLinesToUpdateResponses, WealthMatrixData, WealthMatrixErrors, WealthMatrixResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -750,3 +750,135 @@ export const transferSuggestions = <ThrowOnError extends boolean = false>(option
  * Unlink Transfer
  */
 export const unlinkTransfer = <ThrowOnError extends boolean = false>(options: Options<UnlinkTransferData, ThrowOnError>): RequestResult<UnlinkTransferResponses, UnlinkTransferErrors, ThrowOnError> => (options.client ?? client).delete<UnlinkTransferResponses, UnlinkTransferErrors, ThrowOnError>({ url: '/api/transfers/{group_id}', ...options });
+
+/**
+ * List Wealth Categories
+ *
+ * In the matrix's order.
+ */
+export const listWealthCategories = <ThrowOnError extends boolean = false>(options?: Options<ListWealthCategoriesData, ThrowOnError>): RequestResult<ListWealthCategoriesResponses, ListWealthCategoriesErrors, ThrowOnError> => (options?.client ?? client).get<ListWealthCategoriesResponses, ListWealthCategoriesErrors, ThrowOnError>({ url: '/api/wealth/categories', ...options });
+
+/**
+ * Create Wealth Category
+ *
+ * New categories go last.
+ */
+export const createWealthCategory = <ThrowOnError extends boolean = false>(options: Options<CreateWealthCategoryData, ThrowOnError>): RequestResult<CreateWealthCategoryResponses, CreateWealthCategoryErrors, ThrowOnError> => (options.client ?? client).post<CreateWealthCategoryResponses, CreateWealthCategoryErrors, ThrowOnError>({
+    url: '/api/wealth/categories',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Delete Wealth Category
+ *
+ * Only once it holds no line; a category holding cash accounts loses them.
+ */
+export const deleteWealthCategory = <ThrowOnError extends boolean = false>(options: Options<DeleteWealthCategoryData, ThrowOnError>): RequestResult<DeleteWealthCategoryResponses, DeleteWealthCategoryErrors, ThrowOnError> => (options.client ?? client).delete<DeleteWealthCategoryResponses, DeleteWealthCategoryErrors, ThrowOnError>({ url: '/api/wealth/categories/{category_id}', ...options });
+
+/**
+ * Update Wealth Category
+ */
+export const updateWealthCategory = <ThrowOnError extends boolean = false>(options: Options<UpdateWealthCategoryData, ThrowOnError>): RequestResult<UpdateWealthCategoryResponses, UpdateWealthCategoryErrors, ThrowOnError> => (options.client ?? client).patch<UpdateWealthCategoryResponses, UpdateWealthCategoryErrors, ThrowOnError>({
+    url: '/api/wealth/categories/{category_id}',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * List Wealth Lines
+ *
+ * The manual lines the user can see, closed ones included.
+ */
+export const listWealthLines = <ThrowOnError extends boolean = false>(options?: Options<ListWealthLinesData, ThrowOnError>): RequestResult<ListWealthLinesResponses, ListWealthLinesErrors, ThrowOnError> => (options?.client ?? client).get<ListWealthLinesResponses, ListWealthLinesErrors, ThrowOnError>({ url: '/api/wealth/lines', ...options });
+
+/**
+ * Create Wealth Line
+ *
+ * The user owns the lines they create.
+ */
+export const createWealthLine = <ThrowOnError extends boolean = false>(options: Options<CreateWealthLineData, ThrowOnError>): RequestResult<CreateWealthLineResponses, CreateWealthLineErrors, ThrowOnError> => (options.client ?? client).post<CreateWealthLineResponses, CreateWealthLineErrors, ThrowOnError>({
+    url: '/api/wealth/lines',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Delete Wealth Line
+ *
+ * With its values. Only its owner can; closing it keeps its history instead.
+ */
+export const deleteWealthLine = <ThrowOnError extends boolean = false>(options: Options<DeleteWealthLineData, ThrowOnError>): RequestResult<DeleteWealthLineResponses, DeleteWealthLineErrors, ThrowOnError> => (options.client ?? client).delete<DeleteWealthLineResponses, DeleteWealthLineErrors, ThrowOnError>({ url: '/api/wealth/lines/{line_id}', ...options });
+
+/**
+ * Update Wealth Line
+ *
+ * Anyone who sees a line edits it; only its owner changes who sees it.
+ */
+export const updateWealthLine = <ThrowOnError extends boolean = false>(options: Options<UpdateWealthLineData, ThrowOnError>): RequestResult<UpdateWealthLineResponses, UpdateWealthLineErrors, ThrowOnError> => (options.client ?? client).patch<UpdateWealthLineResponses, UpdateWealthLineErrors, ThrowOnError>({
+    url: '/api/wealth/lines/{line_id}',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Remove Wealth Value
+ *
+ * The month carries the previous value forward again.
+ */
+export const removeWealthValue = <ThrowOnError extends boolean = false>(options: Options<RemoveWealthValueData, ThrowOnError>): RequestResult<RemoveWealthValueResponses, RemoveWealthValueErrors, ThrowOnError> => (options.client ?? client).delete<RemoveWealthValueResponses, RemoveWealthValueErrors, ThrowOnError>({ url: '/api/wealth/lines/{line_id}/values/{month}', ...options });
+
+/**
+ * Set Wealth Value
+ *
+ * The line's value for this calendar month (F-WLT-3).
+ */
+export const setWealthValue = <ThrowOnError extends boolean = false>(options: Options<SetWealthValueData, ThrowOnError>): RequestResult<SetWealthValueResponses, SetWealthValueErrors, ThrowOnError> => (options.client ?? client).put<SetWealthValueResponses, SetWealthValueErrors, ThrowOnError>({
+    url: '/api/wealth/lines/{line_id}/values/{month}',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Wealth Matrix
+ *
+ * The wealth matrix (F-WLT-5). Without a window: the last 12 months, from the analyses
+ * start at the earliest (F-ADM-4).
+ */
+export const wealthMatrix = <ThrowOnError extends boolean = false>(options?: Options<WealthMatrixData, ThrowOnError>): RequestResult<WealthMatrixResponses, WealthMatrixErrors, ThrowOnError> => (options?.client ?? client).get<WealthMatrixResponses, WealthMatrixErrors, ThrowOnError>({ url: '/api/wealth/matrix', ...options });
+
+/**
+ * Wealth Lines To Update
+ *
+ * "Update this month": the open manual lines, with their last value pre-filled.
+ */
+export const wealthLinesToUpdate = <ThrowOnError extends boolean = false>(options?: Options<WealthLinesToUpdateData, ThrowOnError>): RequestResult<WealthLinesToUpdateResponses, WealthLinesToUpdateErrors, ThrowOnError> => (options?.client ?? client).get<WealthLinesToUpdateResponses, WealthLinesToUpdateErrors, ThrowOnError>({ url: '/api/wealth/update', ...options });
+
+/**
+ * Update Wealth Month
+ *
+ * Save several lines' values for one month at once: all or nothing.
+ */
+export const updateWealthMonth = <ThrowOnError extends boolean = false>(options: Options<UpdateWealthMonthData, ThrowOnError>): RequestResult<UpdateWealthMonthResponses, UpdateWealthMonthErrors, ThrowOnError> => (options.client ?? client).post<UpdateWealthMonthResponses, UpdateWealthMonthErrors, ThrowOnError>({
+    url: '/api/wealth/update',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
