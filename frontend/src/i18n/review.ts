@@ -40,6 +40,7 @@ export const reviewEn = {
     roles: {
       income: "Money in",
       spent: "Spending within the target",
+      spending: "Spending",
       overspent: "Spending over the target",
       saved: "Savings",
       savedBehind: "Savings below the objective",
@@ -157,6 +158,7 @@ export const reviewFr: typeof reviewEn = {
     roles: {
       income: "Entrées d'argent",
       spent: "Dépenses dans l'objectif",
+      spending: "Dépenses",
       overspent: "Dépenses au-dessus de l'objectif",
       saved: "Épargne",
       savedBehind: "Épargne sous l'objectif",

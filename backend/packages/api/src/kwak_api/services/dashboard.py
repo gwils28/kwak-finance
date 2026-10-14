@@ -66,6 +66,31 @@ def _spent(category_id: UUID | None, amount: Decimal, kinds: dict[UUID, Category
     return Decimal(0)
 
 
+def flows_by_month(
+    db: Session, accounts: list[UUID], first: Month, last: Month
+) -> defaultdict[Month, list[Flow]]:
+    """Per budget month, the transactions of `accounts` (transfers excluded) summed by
+    category and sign: what the KPIs are computed from."""
+    start_of = budget_month.month_start().label("month")
+    # One labelled expression in SELECT and GROUP BY: written twice, each copy gets its own
+    # bound parameter and Postgres sees two different expressions.
+    outflow = (Transaction.amount < 0).label("outflow")
+    category = lines.category().label("category_id")
+    rows = db.execute(
+        lines.with_parts(select(start_of, category, outflow, func.sum(lines.amount())))
+        .where(
+            Transaction.account_id.in_(accounts),
+            Transaction.transfer_group_id.is_(None),
+            budget_month.in_months(first, last),
+        )
+        .group_by(start_of, category, outflow)
+    )
+    flows: defaultdict[Month, list[Flow]] = defaultdict(list)
+    for start, category_id, _outflow, total in rows:
+        flows[Month.of(start)].append(Flow(category_id, Decimal(total)))
+    return flows
+
+
 def dashboard(db: Session, viewer: User, month: Month, scope: Scope) -> Dashboard:
     accounts = scoped_accounts(db, viewer, scope)
     categories = list(
@@ -77,23 +102,7 @@ def dashboard(db: Session, viewer: User, month: Month, scope: Scope) -> Dashboar
 
     first = _back(month, HISTORY_MONTHS)  # one more month for the 12-month average
     months = month_range(first, month)
-    start_of = budget_month.month_start().label("month")
-    # One labelled expression in SELECT and GROUP BY: written twice, each copy gets its own
-    # bound parameter and Postgres sees two different expressions.
-    outflow = (Transaction.amount < 0).label("outflow")
-    category = lines.category().label("category_id")
-    rows = db.execute(
-        lines.with_parts(select(start_of, category, outflow, func.sum(lines.amount())))
-        .where(
-            Transaction.account_id.in_(accounts),
-            Transaction.transfer_group_id.is_(None),
-            budget_month.in_months(first, month),
-        )
-        .group_by(start_of, category, outflow)
-    )
-    flows: dict[Month, list[Flow]] = defaultdict(list)
-    for start, category_id, _outflow, total in rows:
-        flows[Month.of(start)].append(Flow(category_id, Decimal(total)))
+    flows = flows_by_month(db, accounts, first, month)
 
     crossed = crossing_by_month(db, accounts, months) if accounts else {}
 

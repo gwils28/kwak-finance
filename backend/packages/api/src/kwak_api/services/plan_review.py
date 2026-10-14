@@ -174,7 +174,11 @@ class PlanFlows:
 
 def flows(db: Session, viewer: User, plan: BudgetPlan, *, scope: Scope) -> PlanFlows:
     """Where the plan's money came from and went (F-DSH-2), by the review's rules."""
-    months = core_plan(plan).months
+    return period_flows(db, viewer, core_plan(plan).months, scope=scope)
+
+
+def period_flows(db: Session, viewer: User, months: list[Month], *, scope: Scope) -> PlanFlows:
+    """Where the money of these budget months came from and went: a plan's, or a report's."""
     categories = _categories(db, viewer.household_id)
     in_scope = set(scoped_accounts(db, viewer, scope))
     visible = [a for a in visible_accounts(db, viewer, include_closed=True) if a.id in in_scope]

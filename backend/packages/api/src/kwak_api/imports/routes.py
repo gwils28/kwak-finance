@@ -4,11 +4,13 @@ from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile, status
+from kwak_core.audit import AuditAction
 from pydantic import BaseModel
 
 from kwak_api.auth.routes import CurrentSession, Db, Now
 from kwak_api.models import Account, ImportBatch, Transaction, User
 from kwak_api.services import accounts as account_service
+from kwak_api.services import audit
 from kwak_api.services import imports as service
 
 router = APIRouter(prefix="/api", tags=["imports"])
@@ -236,6 +238,15 @@ def create_import(
         )
     except service.ImportRejectedError as exc:
         raise _rejected(exc) from None
+    audit.record(
+        db,
+        user_session.user,
+        AuditAction.IMPORTED,
+        now,
+        accounts=[account],
+        file=batch.file_name,
+        added=batch.imported_count,
+    )
     return ImportBatchOut.of(batch, check)
 
 
@@ -256,3 +267,11 @@ def rollback_import(batch_id: UUID, user_session: CurrentSession, db: Db, now: N
     if batch is None or not visible or batch.rolled_back_at is not None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "no import to roll back with this id")
     service.rollback(db, batch, now)
+    audit.record(
+        db,
+        user_session.user,
+        AuditAction.IMPORT_ROLLED_BACK,
+        now,
+        accounts=[visible],
+        file=batch.file_name,
+    )

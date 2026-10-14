@@ -2,6 +2,7 @@ from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Query, status
+from kwak_core.audit import AuditAction
 from kwak_core.categories import CategoryKind, HierarchyError
 from kwak_core.users import Language
 from pydantic import BaseModel, Field
@@ -9,6 +10,7 @@ from pydantic import BaseModel, Field
 from kwak_api.auth.routes import CurrentSession, Db, Now
 from kwak_api.household.routes import OwnerSession
 from kwak_api.models import Category
+from kwak_api.services import audit
 from kwak_api.services import categories as service
 from kwak_api.services.budget import core_plan
 
@@ -152,17 +154,19 @@ def preview_shift(
 
 
 @router.delete("/categories/{category_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_category(category_id: UUID, user_session: CurrentSession, db: Db) -> None:
+def delete_category(category_id: UUID, user_session: CurrentSession, db: Db, now: Now) -> None:
     """Its transactions go back to "to categorise"."""
     category = service.find(db, user_session.user.household_id, category_id)
     if category is None:
         raise NOT_FOUND
+    name = category.name
     try:
         service.delete(db, category)
     except service.CategoryInUseError:
         raise HTTPException(
             status.HTTP_409_CONFLICT, "move or delete its subcategories first"
         ) from None
+    audit.record(db, user_session.user, AuditAction.CATEGORY_DELETED, now, name=name)
 
 
 class RenameOut(BaseModel):
@@ -210,6 +214,16 @@ def _restore(user_session: OwnerSession, db: Db, now: Now, *, apply: bool) -> Re
     summary = service.restore_defaults(
         db, user.household_id, user.language or Language.EN, now.date(), apply=apply
     )
+    if apply:
+        audit.record(
+            db,
+            user,
+            AuditAction.CATEGORIES_RESTORED,
+            now,
+            created=len(summary.created),
+            merged=len(summary.merged),
+            deleted=len(summary.deleted),
+        )
     return RestoreOut.of(summary)
 
 

@@ -5,6 +5,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, status
 from kwak_core.accounts import Scope
+from kwak_core.audit import AuditAction
 from kwak_core.money import require_cents
 from kwak_core.recurring import Frequency, Occurrence, OccurrenceStatus, RecurringError, entry_date
 from pydantic import AfterValidator, BaseModel, Field
@@ -12,6 +13,7 @@ from pydantic import AfterValidator, BaseModel, Field
 from kwak_api.auth.routes import CurrentSession, Db, Now
 from kwak_api.models import Category, RecurringItem, User
 from kwak_api.services import accounts as account_service
+from kwak_api.services import audit
 from kwak_api.services import categories as category_service
 from kwak_api.services import recurring as service
 
@@ -276,9 +278,19 @@ def update_recurring(
 
 
 @router.delete("/{item_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_recurring(item_id: UUID, user_session: CurrentSession, db: Db) -> None:
+def delete_recurring(item_id: UUID, user_session: CurrentSession, db: Db, now: Now) -> None:
     """Past transactions stay; only the expectation goes."""
-    db.delete(_find(db, user_session.user, item_id))
+    item = _find(db, user_session.user, item_id)
+    audit.record(
+        db,
+        user_session.user,
+        AuditAction.RECURRING_DELETED,
+        now,
+        accounts=[item.account, item.destination],
+        label=item.label or None,
+        amount=item.amount,
+    )
+    db.delete(item)
 
 
 @router.put("/{item_id}/skips/{due}", status_code=status.HTTP_204_NO_CONTENT)

@@ -114,8 +114,9 @@ def pending_invites(db: Session, household_id: UUID, now: datetime) -> list[Invi
     return [i for i in invites if state_of(i, now) is InviteState.PENDING]
 
 
-def revoke_invite(db: Session, household_id: UUID, invite_id: UUID, now: datetime) -> bool:
-    revoked = db.execute(
+def revoke_invite(db: Session, household_id: UUID, invite_id: UUID, now: datetime) -> str | None:
+    """The revoked invitation's email; None when there was no pending one."""
+    return db.execute(
         update(Invite)
         .where(
             Invite.id == invite_id,
@@ -124,6 +125,5 @@ def revoke_invite(db: Session, household_id: UUID, invite_id: UUID, now: datetim
             Invite.revoked_at.is_(None),
         )
         .values(revoked_at=now)
-        .returning(Invite.id)
-    ).first()
-    return revoked is not None
+        .returning(Invite.email)
+    ).scalar()

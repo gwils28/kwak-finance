@@ -189,12 +189,21 @@ export function CumulativeChart({ chart, aside }: { chart: CumulativeOut; aside:
   );
 }
 
-type FlowRole = "income" | "spent" | "overspent" | "saved" | "savedBehind" | "deficit" | "other";
+type FlowRole =
+  | "income"
+  | "spent"
+  | "spending"
+  | "overspent"
+  | "saved"
+  | "savedBehind"
+  | "deficit"
+  | "other";
 type FlowStatus = "withinTarget" | "overTarget" | "objectiveMet" | "belowObjective";
 
 const ROLE_FILL: Record<FlowRole, string> = {
   income: "var(--color-flow-in)",
   spent: "var(--color-flow-spent)",
+  spending: "var(--color-flow-spent)",
   overspent: "var(--color-flow-overspent)",
   saved: "var(--color-flow-saved)",
   savedBehind: "var(--color-flow-saved-behind)",
@@ -204,6 +213,7 @@ const ROLE_FILL: Record<FlowRole, string> = {
 const ROLE_ORDER: FlowRole[] = [
   "income",
   "spent",
+  "spending",
   "overspent",
   "saved",
   "savedBehind",
@@ -212,13 +222,18 @@ const ROLE_ORDER: FlowRole[] = [
 ];
 
 /** What the review says of a flow's category: spending against its target, savings
- * against the objectives. Without a target, nothing. */
+ * against the objectives. Without a target, or without a review (a report), nothing. */
 type Judged = { role: FlowRole; status: FlowStatus | null };
 
-function judge(f: FlowOut, categoryId: string | null, review: ReviewOut): Judged {
+function judge(f: FlowOut, categoryId: string | null, review?: ReviewOut): Judged {
   if (f.kind === "deficit") return { role: "deficit", status: null };
   // Everything coming in is money in: income, transfers paid in, savings taken back.
   if (f.side === "in") return { role: "income", status: null };
+  if (!review) {
+    if (f.kind === "saved") return { role: "saved", status: null };
+    const spending = f.kind === "spending" || f.kind === "income" || f.kind === "uncategorised";
+    return { role: spending ? "spending" : "other", status: null };
+  }
   if (f.kind === "saved") {
     const status = review.savings_total.status;
     if (status === "behind") return { role: "savedBehind", status: "belowObjective" };
@@ -251,7 +266,7 @@ function flowEntries(
   flows: FlowOut[],
   detail: boolean,
   name: (f: FlowOut) => string,
-  review: ReviewOut,
+  review?: ReviewOut,
 ) {
   const entries = new Map<string, FlowEntry>();
   for (const f of flows) {
@@ -282,8 +297,21 @@ function flowEntries(
 
 const NODE_WIDTH = 12;
 
-/** Where the plan's money came from and went (F-DSH-2), every node labelled, with its table. */
-export function FlowsChart({ flows, review }: { flows: FlowOut[]; review: ReviewOut }) {
+/**
+ * Where the money of a plan, or of a report's period, came from and went (F-DSH-2), every node
+ * labelled, with its table. Without a review, flows have no status.
+ */
+export function FlowsChart({
+  flows,
+  review,
+  help,
+  none,
+}: {
+  flows: FlowOut[];
+  review?: ReviewOut;
+  help?: string;
+  none?: string;
+}) {
   const { t } = useI18n();
   const detailId = useId();
   const [detail, setDetail] = useState(false);
@@ -381,9 +409,9 @@ export function FlowsChart({ flows, review }: { flows: FlowOut[]; review: Review
   );
 
   return (
-    <Card title={t.review.flows.title} subtitle={t.review.flows.help} aside={toggle}>
+    <Card title={t.review.flows.title} subtitle={help ?? t.review.flows.help} aside={toggle}>
       {total === 0 ? (
-        <p className="text-sm text-muted">{t.review.flows.none}</p>
+        <p className="text-sm text-muted">{none ?? t.review.flows.none}</p>
       ) : (
         <div className="overflow-x-auto">
           <div style={{ height, minWidth: 640 }}>
@@ -427,14 +455,14 @@ export function FlowsChart({ flows, review }: { flows: FlowOut[]; review: Review
           t.review.flows.flow,
           t.review.flows.amount,
           t.review.flows.share,
-          t.review.flows.status,
+          ...(review ? [t.review.flows.status] : []),
         ]}
         rows={entries.map((e) => [
           e.side === "in" ? t.review.flows.in : t.review.flows.out,
           e.label,
           formatEurWhole(e.amount),
           formatPercent(total ? e.amount / total : 0),
-          e.status ? t.review.flows[e.status] : "",
+          ...(review ? [e.status ? t.review.flows[e.status] : ""] : []),
         ])}
       />
     </Card>

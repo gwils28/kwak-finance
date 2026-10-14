@@ -135,6 +135,64 @@ export type ApplyRules = {
 };
 
 /**
+ * AuditAction
+ */
+export type AuditAction = 'signed_in' | 'sign_in_failed' | 'signed_out' | 'recovery_codes_renewed' | 'invite_created' | 'invite_revoked' | 'member_joined' | 'settings_changed' | 'imported' | 'import_rolled_back' | 'transaction_deleted' | 'category_deleted' | 'plan_deleted' | 'recurring_deleted' | 'rule_created' | 'rule_updated' | 'rule_deleted' | 'rules_applied' | 'categories_restored';
+
+/**
+ * AuditEntryOut
+ */
+export type AuditEntryOut = {
+    action: AuditAction;
+    /**
+     * At
+     */
+    at: string;
+    /**
+     * Details
+     */
+    details: {
+        [key: string]: string | number;
+    };
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Ip
+     */
+    ip: string | null;
+    kind: AuditKind;
+    /**
+     * User Id
+     */
+    user_id: string | null;
+    /**
+     * User Name
+     */
+    user_name: string | null;
+};
+
+/**
+ * AuditKind
+ */
+export type AuditKind = 'sign_in' | 'household' | 'import' | 'deletion' | 'rules';
+
+/**
+ * AuditPage
+ */
+export type AuditPage = {
+    /**
+     * Items
+     */
+    items: Array<AuditEntryOut>;
+    /**
+     * Total
+     */
+    total: number;
+};
+
+/**
  * BalanceCheckOut
  */
 export type BalanceCheckOut = {
@@ -936,6 +994,28 @@ export type MonthPoint = {
 };
 
 /**
+ * MonthTotals
+ */
+export type MonthTotals = {
+    /**
+     * Income
+     */
+    income: string;
+    /**
+     * Month
+     */
+    month: string;
+    /**
+     * Net
+     */
+    net: string;
+    /**
+     * Spent
+     */
+    spent: string;
+};
+
+/**
  * OccurrenceOut
  */
 export type OccurrenceOut = {
@@ -1041,6 +1121,42 @@ export type Period = {
  * PeriodKind
  */
 export type PeriodKind = 'year' | 'semester' | 'quarter';
+
+/**
+ * PeriodTotals
+ *
+ * As the home page's KPIs (F-DSH-4), over the whole period.
+ */
+export type PeriodTotals = {
+    /**
+     * Income
+     */
+    income: string;
+    /**
+     * Net
+     */
+    net: string;
+    /**
+     * Paid In
+     */
+    paid_in: string;
+    /**
+     * Paid Out
+     */
+    paid_out: string;
+    /**
+     * Saved
+     */
+    saved: string;
+    /**
+     * Savings Rate
+     */
+    savings_rate: string | null;
+    /**
+     * Spent
+     */
+    spent: string;
+};
 
 /**
  * PlanIn
@@ -1482,6 +1598,94 @@ export type RenameOut = {
 };
 
 /**
+ * ReportOut
+ */
+export type ReportOut = {
+    changes: TotalsChange;
+    /**
+     * End
+     */
+    end: string;
+    /**
+     * Flows
+     */
+    flows: Array<FlowOut>;
+    /**
+     * Monthly
+     */
+    monthly: Array<MonthTotals>;
+    /**
+     * Months
+     */
+    months: number;
+    previous: PeriodTotals;
+    /**
+     * Previous End
+     */
+    previous_end: string;
+    /**
+     * Previous Start
+     */
+    previous_start: string;
+    /**
+     * Rows
+     */
+    rows: Array<ReportRowOut>;
+    /**
+     * Sections
+     */
+    sections: Array<SectionTotalOut>;
+    /**
+     * Start
+     */
+    start: string;
+    /**
+     * To Date
+     */
+    to_date: boolean;
+    totals: PeriodTotals;
+};
+
+/**
+ * ReportRowOut
+ */
+export type ReportRowOut = {
+    /**
+     * Amount
+     */
+    amount: string;
+    /**
+     * Category Id
+     */
+    category_id: string | null;
+    /**
+     * Change
+     */
+    change: string | null;
+    /**
+     * Children
+     */
+    children: Array<ReportRowOut>;
+    /**
+     * Monthly Average
+     */
+    monthly_average: string;
+    /**
+     * Name
+     */
+    name: string | null;
+    /**
+     * Previous
+     */
+    previous: string;
+    section: Section;
+    /**
+     * Share
+     */
+    share: string | null;
+};
+
+/**
  * RestoreOut
  *
  * What restoring the default categories does (GET) or did (POST).
@@ -1854,6 +2058,34 @@ export type RulePreview = {
 export type Scope = 'household' | 'mine' | 'joint';
 
 /**
+ * Section
+ */
+export type Section = 'income' | 'spending' | 'savings';
+
+/**
+ * SectionTotalOut
+ */
+export type SectionTotalOut = {
+    /**
+     * Amount
+     */
+    amount: string;
+    /**
+     * Change
+     */
+    change: string | null;
+    /**
+     * Monthly Average
+     */
+    monthly_average: string;
+    /**
+     * Previous
+     */
+    previous: string;
+    section: Section;
+};
+
+/**
  * SettingsOut
  */
 export type SettingsOut = {
@@ -1967,6 +2199,30 @@ export type ToCategorise = {
      * Spent
      */
     spent: string;
+};
+
+/**
+ * TotalsChange
+ *
+ * Against the previous period, by the size of its figure: from -500 to +200 is +1.4.
+ */
+export type TotalsChange = {
+    /**
+     * Income
+     */
+    income: string | null;
+    /**
+     * Net
+     */
+    net: string | null;
+    /**
+     * Saved
+     */
+    saved: string | null;
+    /**
+     * Spent
+     */
+    spent: string | null;
 };
 
 /**
@@ -2566,6 +2822,50 @@ export type PreviewImportResponses = {
 };
 
 export type PreviewImportResponse = PreviewImportResponses[keyof PreviewImportResponses];
+
+export type ActivityLogData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Kind
+         */
+        kind?: AuditKind | null;
+        /**
+         * User Id
+         *
+         * Only this member's entries
+         */
+        user_id?: string | null;
+        /**
+         * Limit
+         */
+        limit?: number;
+        /**
+         * Offset
+         */
+        offset?: number;
+    };
+    url: '/api/audit';
+};
+
+export type ActivityLogErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ActivityLogError = ActivityLogErrors[keyof ActivityLogErrors];
+
+export type ActivityLogResponses = {
+    /**
+     * Successful Response
+     */
+    200: AuditPage;
+};
+
+export type ActivityLogResponse = ActivityLogResponses[keyof ActivityLogResponses];
 
 export type LoginData = {
     body: LoginRequest;
@@ -4004,6 +4304,45 @@ export type SkipOccurrenceResponses = {
 };
 
 export type SkipOccurrenceResponse = SkipOccurrenceResponses[keyof SkipOccurrenceResponses];
+
+export type PeriodReportData = {
+    body?: never;
+    path?: never;
+    query: {
+        /**
+         * Start
+         *
+         * First budget month, YYYY-MM
+         */
+        start: string;
+        /**
+         * End
+         *
+         * Last budget month, YYYY-MM, included
+         */
+        end: string;
+        scope?: Scope;
+    };
+    url: '/api/reports';
+};
+
+export type PeriodReportErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type PeriodReportError = PeriodReportErrors[keyof PeriodReportErrors];
+
+export type PeriodReportResponses = {
+    /**
+     * Successful Response
+     */
+    200: ReportOut;
+};
+
+export type PeriodReportResponse = PeriodReportResponses[keyof PeriodReportResponses];
 
 export type ListRulesData = {
     body?: never;

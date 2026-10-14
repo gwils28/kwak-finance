@@ -11,8 +11,10 @@ export type GuidePage =
   | "/recurring"
   | "/budget"
   | "/budget/review"
+  | "/reports"
   | "/categories"
-  | "/members";
+  | "/members"
+  | "/activity";
 export type GuideSection = {
   id: string;
   title: string;
@@ -23,7 +25,7 @@ export type GuideSection = {
 export const guideEn = {
   title: "Using Kwak Finance",
   intro:
-    "Kwak Finance keeps your household's accounts, spending and budget in one place, on your own computer. This guide walks through each page. The tabs at the top lead to the everyday pages; categories, members, language and theme are in the menu under your name, next to this guide. To install, start or update the app, see “How to run the app” at the bottom of every page.",
+    "Kwak Finance keeps your household's accounts, spending and budget in one place, on your own computer. This guide walks through each page. The tabs at the top lead to the everyday pages; categories, members, the activity log, language and theme are in the menu under your name, next to this guide. To install, start or update the app, see “How to run the app” at the bottom of every page.",
   contents: "Contents",
   sections: [
     {
@@ -133,11 +135,21 @@ export const guideEn = {
       link: { to: "/", label: "Open the overview" },
     },
     {
+      id: "reports",
+      title: "Reports",
+      paragraphs: [
+        "Reports look back over any period of budget months: this month, last month, this quarter, this year, last year, the last 12 months, or a custom period with a first and a last month (10 years at most). They follow the overview's rules: budget months, split transactions by part, transfers between your accounts left out.",
+        "Each report compares the period with the one just before, of the same length: a year with the year before, a quarter with the quarter before. It gives the totals (income, spending, net, the part saved and the savings rate), a table by category in three sections (income, spending, savings) with the subcategories, the monthly average, each category's share of its section and the change, a month-by-month chart, and the money flows of the period, drawn as on the plan review but without targets.",
+      ],
+      link: { to: "/reports", label: "Open the reports" },
+    },
+    {
       id: "members",
       title: "Members and security",
       paragraphs: [
         "The household owner invites members with a link that works once and expires after 7 days; Kwak Finance sends no email, so send it yourself.",
         "Everyone signs in with a password and a code from an authenticator app. Keep the recovery codes shown at set-up: each lets you sign in once if you lose your phone.",
+        "The activity log, in the menu under your name, keeps the sensitive actions: sign-ins (with the address they came from, and failed attempts), invitations, imports and their rollback, deletions, and changes to rules and categories. The owner sees the whole household's, a member only their own; what happens on a private account is only shown to its owner. Nothing in it can be changed or deleted.",
       ],
       link: { to: "/members", label: "Open the members" },
     },
@@ -161,7 +173,7 @@ export const guideEn = {
 export const guideFr: typeof guideEn = {
   title: "Utiliser Kwak Finance",
   intro:
-    "Kwak Finance réunit les comptes, les dépenses et le budget de votre foyer, sur votre propre ordinateur. Ce guide parcourt chaque page. Les onglets du haut mènent aux pages du quotidien ; les catégories, les membres, la langue et le thème sont dans le menu à votre nom, à côté de ce guide. Pour installer, lancer ou mettre à jour l'application, voyez « Lancer et arrêter l'application » en bas de chaque page.",
+    "Kwak Finance réunit les comptes, les dépenses et le budget de votre foyer, sur votre propre ordinateur. Ce guide parcourt chaque page. Les onglets du haut mènent aux pages du quotidien ; les catégories, les membres, le journal d'activité, la langue et le thème sont dans le menu à votre nom, à côté de ce guide. Pour installer, lancer ou mettre à jour l'application, voyez « Lancer et arrêter l'application » en bas de chaque page.",
   contents: "Sommaire",
   sections: [
     {
@@ -271,11 +283,21 @@ export const guideFr: typeof guideEn = {
       link: { to: "/", label: "Ouvrir la vue d'ensemble" },
     },
     {
+      id: "reports",
+      title: "Rapports",
+      paragraphs: [
+        "Les rapports reviennent sur n'importe quelle période de mois budgétaires : ce mois-ci, le mois dernier, ce trimestre, cette année, l'année dernière, les 12 derniers mois, ou une période libre avec un premier et un dernier mois (10 ans au plus). Ils suivent les règles de la vue d'ensemble : mois budgétaires, opérations ventilées comptées par partie, virements entre vos comptes laissés de côté.",
+        "Chaque rapport compare la période à celle juste avant, de même durée : une année à l'année d'avant, un trimestre au trimestre d'avant. Il donne les totaux (revenus, dépenses, solde, la part épargnée et le taux d'épargne), un tableau par catégorie en trois sections (revenus, dépenses, épargne) avec les sous-catégories, la moyenne par mois, la part de chaque catégorie dans sa section et l'évolution, un graphique mois par mois, et les flux de la période, dessinés comme dans le bilan du plan mais sans objectifs.",
+      ],
+      link: { to: "/reports", label: "Ouvrir les rapports" },
+    },
+    {
       id: "members",
       title: "Membres et sécurité",
       paragraphs: [
         "Le propriétaire du foyer invite des membres avec un lien valable une fois et pendant 7 jours ; Kwak Finance n'envoie pas d'e-mail, transmettez-le vous-même.",
         "Chacun se connecte avec un mot de passe et un code d'application d'authentification. Gardez les codes de secours affichés à la configuration : chacun permet de se connecter une fois si vous perdez votre téléphone.",
+        "Le journal d'activité, dans le menu à votre nom, garde les actions sensibles : connexions (avec l'adresse d'où elles viennent, et les tentatives refusées), invitations, imports et leur annulation, suppressions, et changements de règles et de catégories. Le propriétaire voit celui de tout le foyer, un membre seulement le sien ; ce qui se passe sur un compte privé n'est montré qu'à son titulaire. Rien ne peut y être modifié ni supprimé.",
       ],
       link: { to: "/members", label: "Ouvrir les membres" },
     },

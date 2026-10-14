@@ -1,6 +1,6 @@
 # Functional Specifications
 
-Status: draft v0.12 — 2026-10-14. Owner: sole maintainer.
+Status: draft v0.13 — 2026-10-14. Owner: sole maintainer.
 
 ## 1. Purpose
 
@@ -137,7 +137,11 @@ Most transactions are entered by hand, once a week or a fortnight, because the b
   - **money flows** (Sankey, a first piece of F-DSH-2): income by category and transfers paid in on the left, a central "available" node, then spending by top-level category (or subcategory, on demand), transfers paid out, **savings** (net transfers from the scope's other accounts into its savings accounts, plus the savings categories, F-CAT-4) and the **unallocated** rest on the right; a shortfall comes in on the left as a deficit, money taken back from savings as such. Both sides add up to the same total;
   - **drift list** (during a plan): categories ranked by projected overrun in €;
   - **plan comparison**: two plans side by side (by default the current one and the previous one, or the same period a year before), per category: monthly target and monthly average spent (for a running plan, its projection ÷ its number of months), with the change in € and in %. Monthly averages make plans of different lengths comparable.
-- F-DSH-2: Income/expense reports by category and period, with a cash-flow chart (Sankey).
+- F-DSH-2: **Reports**: income and spending by category over any period of whole budget months (presets: this month, last month, this quarter, this year, last year, the last 12 months; or any first and last month, 10 years at most), in the *household*, *joint* or *mine* scope. Figures follow the home page's rules (F-DSH-4): budget months (F-TX-7), split parts (F-TX-4), transfers excluded except those crossing the scope. A period running past the current month stops there ("this year" means this year so far) and is compared with the same months of the period before, so monthly averages and changes compare like with like. A change is measured against the size of the previous figure: a net cash flow going from −500 € to +200 € is +140 %. A report shows:
+  - the period's **totals**: income, spending, net cash flow, the part saved and the savings rate, each against the **previous period of the same length** (a year against the year before, a quarter against the quarter before);
+  - a **table by category** in three sections (income, spending, savings), each top-level category with its subcategories: the total, the monthly average, the share of its section and the change against the previous period. Uncategorised outflows count as spending and inflows as income, as "to categorise";
+  - a **monthly chart**: income and spending per month, with the net;
+  - the **money flows** (Sankey) of the period, built as on the plan review (F-DSH-6) but without statuses: a report has no targets.
 
 ### 4.9 Market data (M)
 
@@ -149,7 +153,14 @@ Most transactions are entered by hand, once a week or a fortnight, because the b
 
 - F-ADM-1: Automatic daily backup (`pg_dump`) with a retention policy (e.g. 7 daily, 4 weekly, 12 monthly) to a configurable directory.
 - F-ADM-2: A documented restore procedure, plus a restore test script run regularly.
-- F-ADM-3: Audit log of sensitive actions (login, import, deletion, rule changes).
+- F-ADM-3: **Activity log** of sensitive actions, written in the same database transaction as the action itself:
+  - **sign-ins**: completed (with the second factor used: authenticator code or recovery code), failed on a known account (wrong password or wrong code), sign-outs, recovery codes renewed. They keep the client's address;
+  - **household**: invites created, revoked or accepted, settings changed;
+  - **imports**: a statement imported (file name, rows added) and an import rolled back;
+  - **deletions**: transactions, categories, budget plans and recurring items;
+  - **rules**: created, changed, deleted or applied to existing transactions (without the count, which would reveal matches on private accounts), and the default categories restored.
+
+  Each entry records who, when and what, with a short description frozen at the time (label, amount, file name, count), so it still reads after the object is gone. The **owner** sees the whole household's log, a **member** only their own entries; an entry about a private account is shown only to that account's owner. The log is read-only in the app and can be filtered by kind and, for the owner, by member. An entry keeps the visibility it had when written: making an account private later does not hide its past entries. Attempts refused by the sign-in limit (F-AUTH-4) are not logged, the failures that reached it are.
 
 ## 5. Later phases (roadmap)
 
@@ -157,7 +168,7 @@ Most transactions are entered by hand, once a week or a fortnight, because the b
 |---|---|
 | 0 — Foundations | Repo, tooling, CI, Claude Code config, design tokens, Docker Compose skeleton |
 | 1 — Budget MVP | Auth + household, accounts, import, manual entry, categorisation, transactions, budget targets vs actual (F-BUD-1, 2, 4, 5) with the budget matrix (F-BUD-6), spending KPIs and charts (F-DSH-4, 5) |
-| 2 — Budget complete | Budget plans by period and their review, with steering dashboards (F-BUD-7, 8, F-DSH-6), then recurrences, reports |
+| 2 — Budget complete | Budget plans by period and their review, with steering dashboards (F-BUD-7, 8, F-DSH-6), then recurrences, reports and the activity log |
 | 3 — Wealth | Securities, crypto, real estate, loans, use assets, market data, net-worth history |
 | 4 — Analytics & DS | Cash-flow **forecasting** (time-series, temporal back-testing, naive baseline first), **wealth simulation** (Monte Carlo, FIRE / retirement projection, allocation scenarios). Interactive Dash pages for exploration |
 | 5 — Local GenAI | Ollama-based assistant: natural-language questions over your own data (text-to-SQL on a read-only analytics view), categorisation suggestions, monthly narrative summary. No data leaves the host |
@@ -217,6 +228,7 @@ Money flows colours (the Sankey of the plan review, F-DSH-6) are semantic tokens
 15. Every transaction counts in exactly one budget month, at most one month away from its booking month, and a transfer in its booking month: summed over all months, income, spending and savings are the same by budget month as by booking month. Shifting a transaction's month never changes an account balance.
 16. A transaction fulfils at most one occurrence and an occurrence at most one transaction; the projected end-of-month balance equals the current balance plus the expected amounts of the unfulfilled, unskipped occurrences up to the end of the month, a transfer item counting only its sides on the scope's accounts.
 17. Importing a statement whose operations were already entered by hand adds only the rows that match no entry: every bank row ends up as exactly one transaction, the account balance is the same as if only the statement had been imported, plus the entries that matched no row, and rolling the import back restores the manual entries as they were.
+18. A report never disagrees with the home page: its income, spending and savings over a period equal the sums of the KPIs of its months (F-DSH-4), and in each section the category lines add up to the section's total.
 
 ## 9. Open questions
 

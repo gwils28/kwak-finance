@@ -6,6 +6,7 @@ from pydantic import BaseModel
 from sqlalchemy.orm import sessionmaker
 
 from kwak_api.accounts.routes import router as accounts_router
+from kwak_api.audit.routes import router as audit_router
 from kwak_api.auth.routes import router as auth_router
 from kwak_api.budget.routes import router as budget_router
 from kwak_api.categories.routes import router as categories_router
@@ -14,6 +15,7 @@ from kwak_api.db import make_engine
 from kwak_api.household.routes import router as household_router
 from kwak_api.imports.routes import router as imports_router
 from kwak_api.recurring.routes import router as recurring_router
+from kwak_api.reports.routes import router as reports_router
 from kwak_api.rules.routes import router as rules_router
 from kwak_api.settings import Settings
 from kwak_api.transactions.routes import router as transactions_router
@@ -61,6 +63,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(transfers_router)
     app.include_router(dashboard_router)
     app.include_router(recurring_router)
+    app.include_router(reports_router)
+    app.include_router(audit_router)
     return app
 
 
