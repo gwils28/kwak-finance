@@ -384,10 +384,13 @@ class WealthMatrixLineOut(BaseModel):
     id: UUID
     """The line's, or the cash account's for an automatic line."""
     name: str
+    owner_id: UUID
     owner_name: str
     visibility: Visibility
     automatic: bool
     account_id: UUID | None
+    closed_from: str | None
+    """YYYY-MM: from this month on the line holds nothing and takes no value."""
     cells: list[WealthCellOut | None]
     share: Decimal | None
     """Of gross assets in the last month."""
@@ -467,10 +470,12 @@ def wealth_matrix(
                     WealthMatrixLineOut(
                         id=v.input.id,
                         name=v.name,
+                        owner_id=v.input.owner_id,
                         owner_name=v.owner_name,
                         visibility=v.input.visibility,
                         automatic=v.automatic,
                         account_id=v.input.id if v.automatic else None,
+                        closed_from=str(v.input.closed_from) if v.input.closed_from else None,
                         cells=[_cell(cell) for cell in r.lines[v.input.id]],
                         share=_ratio(r.line_shares.get(v.input.id)),
                     )

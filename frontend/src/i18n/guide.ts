@@ -11,6 +11,7 @@ export type GuidePage =
   | "/recurring"
   | "/budget"
   | "/budget/review"
+  | "/wealth"
   | "/reports"
   | "/categories"
   | "/members"
@@ -25,7 +26,7 @@ export type GuideSection = {
 export const guideEn = {
   title: "Using Kwak Finance",
   intro:
-    "Kwak Finance keeps your household's accounts, spending and budget in one place, on your own computer. This guide walks through each page. The tabs at the top lead to the everyday pages; categories, members, the activity log, language and theme are in the menu under your name, next to this guide. To install, start or update the app, see “How to run the app” at the bottom of every page.",
+    "Kwak Finance keeps your household's accounts, spending, budget and wealth in one place, on your own computer. This guide walks through each page. The tabs at the top lead to the everyday pages; categories, members, the activity log, language and theme are in the menu under your name, next to this guide. To install, start or update the app, see “How to run the app” at the bottom of every page.",
   contents: "Contents",
   sections: [
     {
@@ -135,6 +136,16 @@ export const guideEn = {
       link: { to: "/", label: "Open the overview" },
     },
     {
+      id: "wealth",
+      title: "Wealth",
+      paragraphs: [
+        "The wealth tab follows what you own and owe at the end of each month, like a spreadsheet: categories (savings accounts, current accounts, stocks, crypto, bonds, private equity, gold, real estate, equipment, exotic, debts), each with its colour, and in each the lines you add: one per holding, such as “PEA Fortuneo” or “Crédit immobilier”. A line is yours; choose whether the household sees it, only you, or whether it is the household's joint holding.",
+        "Your current accounts and savings accounts are lines of their own, filled automatically with their balance at the end of each month. Enter the other lines once a month with “Update this month”, which shows each line's last value: change what moved and save. You can also click any value in the table to change that month. A month without a value carries the previous one, shown in grey italics. A debt is entered as what is still owed and counts against your net worth.",
+        "The table shows each category's total, gross assets, debts, net worth and its change month by month, and each category's share of what you own. Click a line's name to rename it, move it, or close it from a month once sold or repaid: it keeps its history. The view covers the household, the joint lines or only yours, and starts no earlier than the analyses (on the members page).",
+      ],
+      link: { to: "/wealth", label: "Open your wealth" },
+    },
+    {
       id: "reports",
       title: "Reports",
       paragraphs: [
@@ -174,7 +185,7 @@ export const guideEn = {
 export const guideFr: typeof guideEn = {
   title: "Utiliser Kwak Finance",
   intro:
-    "Kwak Finance réunit les comptes, les dépenses et le budget de votre foyer, sur votre propre ordinateur. Ce guide parcourt chaque page. Les onglets du haut mènent aux pages du quotidien ; les catégories, les membres, le journal d'activité, la langue et le thème sont dans le menu à votre nom, à côté de ce guide. Pour installer, lancer ou mettre à jour l'application, voyez « Lancer et arrêter l'application » en bas de chaque page.",
+    "Kwak Finance réunit les comptes, les dépenses, le budget et le patrimoine de votre foyer, sur votre propre ordinateur. Ce guide parcourt chaque page. Les onglets du haut mènent aux pages du quotidien ; les catégories, les membres, le journal d'activité, la langue et le thème sont dans le menu à votre nom, à côté de ce guide. Pour installer, lancer ou mettre à jour l'application, voyez « Lancer et arrêter l'application » en bas de chaque page.",
   contents: "Sommaire",
   sections: [
     {
@@ -282,6 +293,16 @@ export const guideFr: typeof guideEn = {
         "« Foyer » compte tous les comptes que vous voyez, « Comptes communs » seulement les comptes communs du foyer (proposé dès qu'il y en a un), « Seulement les miens » vos propres comptes, sans les comptes communs. Dans ces deux vues, un virement avec un compte laissé de côté compte dans le solde net : ce que vous versez au compte commun sort de vos comptes et y entre, donc l'épargne de chaque vue reste juste.",
       ],
       link: { to: "/", label: "Ouvrir la vue d'ensemble" },
+    },
+    {
+      id: "wealth",
+      title: "Patrimoine",
+      paragraphs: [
+        "L'onglet Patrimoine suit ce que vous possédez et devez à la fin de chaque mois, comme un tableur : des catégories (livrets, comptes courants, actions, cryptos, obligations, private equity, or, immobilier, matériels, exotiques, dettes), chacune avec sa couleur, et dans chacune les lignes que vous ajoutez : une par avoir, comme « PEA Fortuneo » ou « Crédit immobilier ». Une ligne est à vous ; choisissez si le foyer la voit, vous seul, ou si c'est un avoir commun du foyer.",
+        "Vos comptes courants et livrets sont des lignes à part entière, remplies automatiquement avec leur solde de fin de mois. Saisissez les autres lignes une fois par mois avec « Mettre à jour ce mois-ci », qui affiche la dernière valeur de chaque ligne : changez ce qui a bougé et enregistrez. Vous pouvez aussi cliquer sur une valeur du tableau pour changer ce mois-là. Un mois sans valeur reprend la précédente, affichée en gris italique. Une dette se saisit pour ce qui reste dû et compte en moins dans votre patrimoine net.",
+        "Le tableau montre le total de chaque catégorie, l'actif brut, les dettes, le patrimoine net et sa variation d'un mois à l'autre, et la part de chaque catégorie dans ce que vous possédez. Cliquez sur le nom d'une ligne pour la renommer, la déplacer ou la clôturer à partir d'un mois une fois vendue ou remboursée : elle garde son historique. La vue couvre le foyer, les lignes communes ou seulement les vôtres, et ne commence pas avant le début des analyses (page Membres).",
+      ],
+      link: { to: "/wealth", label: "Ouvrir votre patrimoine" },
     },
     {
       id: "reports",

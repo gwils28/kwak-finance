@@ -5412,6 +5412,17 @@
             "title": "Cells",
             "type": "array"
           },
+          "closed_from": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Closed From"
+          },
           "id": {
             "format": "uuid",
             "title": "Id",
@@ -5419,6 +5430,11 @@
           },
           "name": {
             "title": "Name",
+            "type": "string"
+          },
+          "owner_id": {
+            "format": "uuid",
+            "title": "Owner Id",
             "type": "string"
           },
           "owner_name": {
@@ -5444,10 +5460,12 @@
         "required": [
           "id",
           "name",
+          "owner_id",
           "owner_name",
           "visibility",
           "automatic",
           "account_id",
+          "closed_from",
           "cells",
           "share"
         ],
