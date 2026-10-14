@@ -13,6 +13,7 @@ import { reportsEn } from "./reports";
 import { reviewEn } from "./review";
 import { runGuideEn } from "./runGuide";
 import { transactionsEn } from "./transactions";
+import { wealthEn } from "./wealth";
 
 /** The reference dictionary: every other language must have exactly this shape. */
 export const en = {
@@ -30,6 +31,7 @@ export const en = {
   review: reviewEn,
   reports: reportsEn,
   activity: activityEn,
+  wealth: wealthEn,
   categories: categoriesEn,
   runGuide: runGuideEn,
   guide: guideEn,

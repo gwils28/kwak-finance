@@ -92,6 +92,21 @@
   --color-progress-ok: var(--color-primary-600);
   --color-progress-watch: var(--color-secondary-500);
   --color-progress-over: var(--color-secondary-800);
+  /* Wealth categories (F-WLT-1, spec §7): one muted hue per default category, around the blog
+     palette (its greens, ochre, browns and greys, plus the steel blue of flow-in). Ten hues
+     cannot all stay apart for every colour-vision deficiency: each category also keeps its
+     name in the matrix, its legend and its table, so colour is never the only cue. */
+  --color-wealth-savings: var(--color-primary-600);
+  --color-wealth-current: var(--color-primary-300);
+  --color-wealth-stocks: var(--color-flow-in);
+  --color-wealth-crypto: rgb(122 92 168);
+  --color-wealth-bonds: rgb(120 168 204);
+  --color-wealth-private-equity: rgb(150 70 110);
+  --color-wealth-gold: var(--color-secondary-500);
+  --color-wealth-real-estate: var(--color-secondary-700);
+  --color-wealth-equipment: var(--color-neutral-500);
+  --color-wealth-exotic: rgb(45 150 140);
+  --color-wealth-debts: rgb(196 80 50);
 }
 
 @layer base {
@@ -131,6 +146,17 @@
     --color-progress-ok: var(--color-primary-500);
     --color-progress-watch: var(--color-secondary-400);
     --color-progress-over: var(--color-secondary-700);
+    /* One step lighter where the light hue would sink into the dark surface. */
+    --color-wealth-savings: var(--color-primary-500);
+    --color-wealth-current: var(--color-primary-200);
+    --color-wealth-crypto: rgb(160 132 210);
+    --color-wealth-bonds: rgb(150 196 230);
+    --color-wealth-private-equity: rgb(200 110 155);
+    --color-wealth-gold: var(--color-secondary-400);
+    --color-wealth-real-estate: var(--color-secondary-600);
+    --color-wealth-equipment: var(--color-neutral-400);
+    --color-wealth-exotic: rgb(80 190 178);
+    --color-wealth-debts: rgb(232 120 90);
   }
 
   body {

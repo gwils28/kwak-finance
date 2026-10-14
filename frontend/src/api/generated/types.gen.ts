@@ -2847,6 +2847,10 @@ export type WealthMatrixLineOut = {
      */
     cells: Array<WealthCellOut | null>;
     /**
+     * Closed From
+     */
+    closed_from: string | null;
+    /**
      * Id
      */
     id: string;
@@ -2854,6 +2858,10 @@ export type WealthMatrixLineOut = {
      * Name
      */
     name: string;
+    /**
+     * Owner Id
+     */
+    owner_id: string;
     /**
      * Owner Name
      */

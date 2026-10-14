@@ -155,11 +155,10 @@ def test_a_closed_line_leaves_the_later_months(owner_client: TestClient) -> None
         f"/api/wealth/lines/{gold}", json={"closed_from": "2026-12"}, headers=csrf(owner_client)
     )
     assert response.status_code == 200, response.text
-    assert _matrix(owner_client, start="2026-10", end="2026-12")["gross"] == [
-        "800.00",
-        "800.00",
-        "0.00",
-    ]
+    m = _matrix(owner_client, start="2026-10", end="2026-12")
+    assert m["gross"] == ["800.00", "800.00", "0.00"]
+    gold_row = next(c for c in m["categories"] if c["name"] == "Gold")["lines"][0]
+    assert gold_row["closed_from"] == "2026-12"
 
 
 def test_update_this_month_lists_the_open_lines_and_saves_them_at_once(

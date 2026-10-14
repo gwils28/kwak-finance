@@ -14,6 +14,7 @@ import { reportsFr } from "./reports";
 import { reviewFr } from "./review";
 import { runGuideFr } from "./runGuide";
 import { transactionsFr } from "./transactions";
+import { wealthFr } from "./wealth";
 
 export const fr: Messages = {
   common: commonFr,
@@ -30,6 +31,7 @@ export const fr: Messages = {
   review: reviewFr,
   reports: reportsFr,
   activity: activityFr,
+  wealth: wealthFr,
   categories: categoriesFr,
   runGuide: runGuideFr,
   guide: guideFr,

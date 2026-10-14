@@ -25,6 +25,7 @@ test("the main tabs lead to the everyday pages, the current one marked", async (
     "Accounts",
     "Transactions",
     "Budget",
+    "Wealth",
     "Reports",
   ]);
   expect(within(main).getByRole("link", { name: "Accounts" })).toHaveAttribute(
