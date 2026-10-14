@@ -1,6 +1,6 @@
 # Functional Specifications
 
-Status: draft v0.14 — 2026-10-14. Owner: sole maintainer.
+Status: draft v0.15 — 2026-10-15. Owner: sole maintainer.
 
 ## 1. Purpose
 
@@ -14,8 +14,8 @@ The project doubles as a reference implementation of the maintainer's Claude Cod
 |---|---|
 | Users | One household: a few user accounts sharing some accounts, each with private ones |
 | Hosting | Self-hosted only (Docker Compose on a local machine / home server). No cloud dependency |
-| Currency | **EUR only** for accounts, transactions and budgets (see open question Q3 for foreign-quoted securities) |
-| Data sources | File import (CSV, OFX, QIF), manual entry, market-data APIs for prices |
+| Currency | **EUR only** for accounts, transactions, budgets and wealth values |
+| Data sources | File import (CSV, OFX, QIF), manual entry; wealth values entered monthly (no market-data API) |
 | Out of scope | Bank aggregation APIs (DSP2), payments, tax filing, multi-household SaaS, native mobile app |
 | Language | Code, docs, UI and commits in English |
 
@@ -38,7 +38,7 @@ Priority: **M** = MVP, **S** = should (later in MVP), **L** = later phase.
 
 ### 4.2 Accounts (M)
 
-- F-ACC-1: Account types: checking, savings (livret A, LDDS, PEL…), brokerage (PEA, CTO), life insurance (assurance-vie), employee savings and retirement (PEE/PEG, PERCOL, PER), crypto wallet/exchange, loan, real estate, use asset (vehicle, instrument…), other.
+- F-ACC-1: Account types: checking, savings (livret A, LDDS, PEL…), brokerage (PEA, CTO), life insurance (assurance-vie), employee savings and retirement (PEE/PEG, PERCOL, PER), crypto wallet/exchange, loan, real estate, use asset (vehicle, instrument…), other. Since v0.15 only cash accounts (checking, savings) hold transactions that matter: holdings that are only valued (brokerage, life insurance, crypto, real estate, loans…) are wealth lines (F-WLT-2) instead.
 - F-ACC-2: Each account has an institution, an owner, a visibility and an opening balance/date.
 - F-ACC-3: Accounts can be closed (kept in history, hidden from current views).
 
@@ -117,14 +117,15 @@ Most transactions are entered by hand, once a week or a fortnight, because the b
 
 ### 4.7 Wealth / net worth (M)
 
-- F-WLT-1: **Cash accounts**: the balance is derived from transactions, with optional balance checkpoints for reconciliation.
-- F-WLT-2: **Securities (PEA, CTO, AV)**: positions (ISIN/ticker, quantity, PRU / average cost), buy/sell/dividend operations, and daily valuation from market prices. For life insurance, euro funds are valued manually and units of account (UC) are valued from prices.
-- F-WLT-3: **Crypto**: positions per wallet/exchange, valued from a market API.
-- F-WLT-4: **Real estate**: property with purchase price, fees, and a manual valuation history (optional €/m² estimate).
-- F-WLT-5: **Loans**: principal, rate, duration, insurance, with a generated amortisation schedule. Outstanding capital is shown as a liability. A loan can be linked to a property.
-- F-WLT-6: **Use assets** (vehicle, instrument, equipment): purchase value plus a depreciation model (linear, declining, or manual valuation).
-- F-WLT-7: **Net-worth history**: daily snapshot of every account value. Charts show the breakdown by asset class, by liquidity and by owner.
-- F-WLT-8: Asset allocation view (asset class, geography/sector when known for securities).
+Net worth is followed as a **monthly wealth matrix**, like the maintainer's own spreadsheet: what each holding is worth at the end of each month, by category. There are no securities positions, no market prices and no loan schedules: values are entered once a month (or read from the app's cash accounts), which is what the maintainer already does.
+
+- F-WLT-1: **Wealth categories**, two levels like the budget's (F-CAT-1). Defaults, in the owner's language: Savings accounts (Livrets), Current accounts (Comptes courants), Stocks (Actions), Crypto (Cryptos), Bonds (Obligations), Private equity, Gold (Or), Real estate (Immobilier), Equipment (Matériels), Exotic (Exotiques) and **Debts** (Dettes), the one liability category. Categories can be renamed, added or deleted (a category holding lines cannot); each top-level category has its own colour (§7), its subcategories share it.
+- F-WLT-2: **Wealth lines** are the subcategories: one holding each (e.g. "PEA Fortuneo" and "CTO Trade Republic" under Stocks, "Lynxéa Spirit 2" where the owner files it, "Crédit immobilier" under Debts). Like an account, a line has an **owner** and a **visibility** (`private`, `shared` or `joint`, §3); a private line is shown to its owner only. A line can be closed from a month on (sold, repaid): it keeps its history and leaves later months.
+- F-WLT-3: **Monthly values**: each line has at most one value per calendar month, in EUR, positive (a debt is entered as what is still owed and counts negatively). A month without a value carries the previous one forward, shown as carried, until a new value is entered; before its first value a line is empty. Values are entered in the matrix or with **"Update this month"**, which lists the open manual lines with their last value pre-filled.
+- F-WLT-4: **Cash lines are automatic**: each checking or joint checking account appears under Current accounts and each savings account under Savings accounts, valued at its balance at the end of the month (invariant §8.1), read-only, with the account's owner and visibility. Closed accounts leave the months after their closing.
+- F-WLT-5: **The wealth matrix**: lines grouped by category in rows, months in columns (the last 12 by default, from the analyses start, F-ADM-4), with category subtotals in the category's colour, **gross assets**, **debts** and **net worth**, and for each month the change against the previous one (€ and %). A column gives each category's **share** of gross assets for the last month shown. Scope: *household*, *joint* or *mine*, as for the budget (§3).
+- F-WLT-6: **Wealth charts**: net worth over time, stacked by category in their colours (debts below zero); the allocation of the last month (share per category, then per line on demand); every chart has its table (no value reachable only by hovering).
+- F-WLT-7: The overview (F-DSH-1) shows net worth and its change over the month.
 
 ### 4.8 Dashboard and reporting (M)
 
@@ -143,13 +144,7 @@ Most transactions are entered by hand, once a week or a fortnight, because the b
   - a **monthly chart**: income and spending per month, with the net;
   - the **money flows** (Sankey) of the period, built as on the plan review (F-DSH-6) but without statuses: a report has no targets.
 
-### 4.9 Market data (M)
-
-- F-MKT-1: A scheduled daily job fetches closing prices for held securities and crypto. Providers sit behind an adapter interface (initial candidates: Yahoo Finance via `yfinance`, CoinGecko).
-- F-MKT-2: Prices are stored historically. Manual override and manual price entry are available for illiquid assets.
-- F-MKT-3: A provider failure never blocks the app: the last known price is shown with a staleness indicator.
-
-### 4.10 Administration (M)
+### 4.9 Administration (M)
 
 - F-ADM-1: Automatic daily backup (`pg_dump`) with a retention policy (e.g. 7 daily, 4 weekly, 12 monthly) to a configurable directory.
 - F-ADM-2: A documented restore procedure, plus a restore test script run regularly.
@@ -170,7 +165,7 @@ Most transactions are entered by hand, once a week or a fortnight, because the b
 | 0 — Foundations | Repo, tooling, CI, Claude Code config, design tokens, Docker Compose skeleton |
 | 1 — Budget MVP | Auth + household, accounts, import, manual entry, categorisation, transactions, budget targets vs actual (F-BUD-1, 2, 4, 5) with the budget matrix (F-BUD-6), spending KPIs and charts (F-DSH-4, 5) |
 | 2 — Budget complete | Budget plans by period and their review, with steering dashboards (F-BUD-7, 8, F-DSH-6), then recurrences, reports and the activity log |
-| 3 — Wealth | Securities, crypto, real estate, loans, use assets, market data, net-worth history |
+| 3 — Wealth | The monthly wealth matrix: categories and lines, cash lines from the accounts, debts and net worth, evolution and allocation charts |
 | 4 — Analytics & DS | Cash-flow **forecasting** (time-series, temporal back-testing, naive baseline first), **wealth simulation** (Monte Carlo, FIRE / retirement projection, allocation scenarios). Interactive Dash pages for exploration |
 | 5 — Local GenAI | Ollama-based assistant: natural-language questions over your own data (text-to-SQL on a read-only analytics view), categorisation suggestions, monthly narrative summary. No data leaves the host |
 
@@ -210,14 +205,16 @@ Month progress colours (F-BUD-2): the bar of a category on track is **green** (`
 
 Money flows colours (the Sankey of the plan review, F-DSH-6) are semantic tokens too, `flow-*`, for both themes: money in is **blue** (`flow-in`, a steel blue, the one hue outside the blog palette, chosen to sit with its muted greens); spending within its target, or without one, is **ochre** (`secondary-500`), over its target **burnt orange** (`secondary-800`, `secondary-700` in dark); savings meeting their objectives are **green** (`primary`), below them **pale green** (`primary-300`, `primary-200` in dark); the unallocated rest and transfers paid out are **grey** (`neutral-400`), a deficit burnt orange. The status follows the review's (projected while the plan runs). The palette passes the CVD checks of the data-viz validator in both themes; every flow keeps its label, its table row with the status in words, and a legend.
 
+Wealth category colours (F-WLT-1) are a categorical set of semantic tokens, `wealth-*`, one per default top-level category, for both themes: muted hues drawn around the blog palette (its greens, ochre and greys, plus the steel blue of `flow-in`), with Debts in burnt orange. Ten hues cannot all stay apart for every colour-vision deficiency, so colour is never the only cue: every category keeps its label in the matrix and the charts, a legend in the same order as the stack, and its table. A category added later takes a hue from the same set, chosen by the owner.
+
 ## 8. Domain invariants (to be enforced by tests)
 
 1. An account balance equals its opening balance plus the sum of its transactions at any date.
 2. The parts of a split transaction sum exactly to the parent amount, each of its sign; summed over categories, a split transaction counts its amount exactly once.
 3. A linked transfer nets to zero across the two accounts and never counts as income or expense; its two sides keep opposite amounts through every edit (F-TX-9).
 4. Importing the same file twice leaves the database unchanged.
-5. A loan's amortisation schedule: principal repayments sum to the borrowed amount, and outstanding capital decreases monotonically.
-6. Net worth on date D equals assets minus liabilities, using only prices known on or before D (no look-ahead).
+5. A line's value in a month is the last value entered in that month or before (carried forward), and nothing before its first value or after its closing; a cash line's value is its account's balance at the end of the month (invariant 1).
+6. A month's net worth equals the sum of its asset lines minus the sum of its debt lines; each category's subtotal is the sum of its lines, and the scopes add up as in invariant 11 (*household* = *mine* + *joint* + the lines other members share).
 7. Forecasts and back-tests (phase 4) never read data after their origin date.
 8. Budget plans never overlap, and each lies within one calendar period (year, semester or quarter).
 9. A category's envelope equals its monthly target times the plan's number of months; a parent without a target of its own takes the sum of its children's.
@@ -235,8 +232,8 @@ Money flows colours (the Sankey of the plan review, F-DSH-6) are semantic tokens
 
 - **Q1** — ✅ Name: **Kwak Finance**; Python packages `kwak_core`, `kwak_api`, `kwak_analytics`.
 - **Q2** — ✅ First import profiles: **Société Générale** (checking, Livret A, LDDS), the cash accounts of phase 1. SG exports two CSV layouts: checking (summary line with the balance, 5 columns) and savings (newer snake_case header, trailing `;`). **Helios** (the household's joint checking account, §3) exports one CSV layout: 8 columns separated by `; `, UTF-8 with a BOM, `.` decimals, the counterparty and the wording in separate columns, Helios' own categories (ignored) and only executed operations imported. The Fortuneo checking account is unused and out of scope. Investment accounts (Fortuneo PEA/CTO, Lynxéa Spirit 2 life insurance, Amundi PERCOL/PEG, Trade Republic CTO, Kraken) come with phase 3. Fixtures are synthetic files that copy each bank's exact layout.
-- **Q3** — ✅ Securities quoted in USD/GBP: store an FX rate (ECB reference rate) per price point, used only for market valuation; everything else stays EUR.
-- **Q4** — Life insurance: track UC positions line by line, or only the contract's total value?
+- **Q3** — ✅ Moot since v0.15: wealth values are entered in EUR (no market prices, so no foreign quotes).
+- **Q4** — ✅ Neither: wealth is a monthly matrix of categories and lines (F-WLT), each line valued once a month, as in the maintainer's spreadsheet. Life insurance is one line, filed under the category the maintainer chooses.
 - **Q5** — ✅ Runs on the development machine (RTX 5070 Laptop, 8 GB VRAM, 30 GB RAM): Ollama limited to ~7–8B models (quantised).
 - **Q6** — Remote access: LAN only, or VPN later (not in MVP)?
 - **Q7** — Backup destination: local disk only, or an extra copy (external drive, NAS)? Local daily backups exist (docs/OPERATIONS.md); an off-machine copy is still manual.
