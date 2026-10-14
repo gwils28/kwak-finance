@@ -36,6 +36,8 @@ const tx = (id: string, label: string, amount: string, category: string | null =
   source: "import",
   category_id: category,
   category_name: categories.find((c) => c.id === category)?.name ?? null,
+  parts: [],
+  note: null,
 });
 const bakery = tx("t1", "CARTE X0000 13/03 BOULANGERIE DU PARC 100000000000001IOPD", "-4.20");
 const cafe = tx("t2", "CARTE X0000 13/03 CAFE DE LA GARE 100000000000002IOPD", "-1.10", "c-bakery");

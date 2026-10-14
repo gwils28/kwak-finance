@@ -333,3 +333,17 @@ def test_the_shift_preview_counts_a_split_transaction_by_its_first_part(
 
     assert preview.status_code == 200, preview.text
     assert preview.json()["moved"] == 1
+
+
+def test_a_manual_entry_takes_its_note_when_created(owner_client: TestClient) -> None:
+    account = _account(owner_client)
+    body = {
+        "account_id": account,
+        "booked_on": "2026-03-14",
+        "amount": "-12.00",
+        "label": "MARCHE",
+        "note": "  Légumes  ",
+    }
+    response = owner_client.post("/api/transactions", json=body, headers=csrf(owner_client))
+    assert response.status_code == 201
+    assert response.json()["note"] == "Légumes"

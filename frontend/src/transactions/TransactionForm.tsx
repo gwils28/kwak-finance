@@ -63,8 +63,15 @@ export function TransactionForm({
   const [amount, setAmount] = useState(source ? amountInput(source.amount.replace("-", "")) : "");
   const [label, setLabel] = useState(source?.label ?? "");
   const [categoryId, setCategoryId] = useState(draft?.category_id ?? "");
+  const [note, setNote] = useState(transaction?.note ?? "");
   const [invalid, setInvalid] = useState<string | null>(null);
-  const ids = { account: useId(), destination: useId(), kind: useId(), category: useId() };
+  const ids = {
+    account: useId(),
+    destination: useId(),
+    kind: useId(),
+    category: useId(),
+    note: useId(),
+  };
   const transfer = kind === "transfer";
   // A side of a transfer keeps its direction: the other side mirrors it (F-TX-9).
   const kinds: Kind[] = transaction?.transfer_group_id
@@ -77,6 +84,9 @@ export function TransactionForm({
   const save = useMutation({
     mutationFn: async (parsed: string) => {
       const fields = { booked_on: bookedOn, label };
+      // Only sent when it changes, so an edit stays a plain edit.
+      const noteChange =
+        note.trim() !== (transaction?.note ?? "") ? { note: note.trim() || null } : {};
       const { data, error, response } = transfer
         ? await enterTransfer({
             body: {
@@ -91,7 +101,11 @@ export function TransactionForm({
         : transaction
           ? await updateTransaction({
               path: { transaction_id: transaction.id },
-              body: { ...fields, amount: kind === "income" ? parsed : `-${parsed}` },
+              body: {
+                ...fields,
+                ...noteChange,
+                amount: kind === "income" ? parsed : `-${parsed}`,
+              },
             })
           : await createTransaction({
               body: {
@@ -99,6 +113,7 @@ export function TransactionForm({
                 category_id: categoryId || null,
                 amount: kind === "income" ? parsed : `-${parsed}`,
                 ...fields,
+                ...noteChange,
               },
             });
       if (!data) {
@@ -223,6 +238,21 @@ export function TransactionForm({
         />
         {transfer && <p className="text-xs text-muted">{t.transactions.transferLabelHelp}</p>}
       </div>
+      {!transfer && (
+        <div className="flex flex-col gap-1 sm:col-span-2">
+          <label htmlFor={ids.note} className="text-sm font-medium">
+            {t.transactions.note}
+          </label>
+          <textarea
+            id={ids.note}
+            className={fieldClass}
+            rows={2}
+            maxLength={500}
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+          />
+        </div>
+      )}
       {!transaction && !transfer && (
         <div className="flex flex-col gap-1 sm:col-span-2">
           <label htmlFor={ids.category} className="text-sm font-medium">

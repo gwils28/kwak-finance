@@ -20,6 +20,7 @@ import { formatDate } from "../lib/dates";
 import { formatEur } from "../lib/money";
 import { monthLabel, shiftMonth } from "../lib/months";
 import { CategoryOptions, categoriesQuery } from "./categories";
+import { DetailsPanel } from "./DetailsPanel";
 import { LinkPanel } from "./LinkPanel";
 import { RuleForm } from "./RuleForm";
 import { TransactionForm } from "./TransactionForm";
@@ -71,6 +72,7 @@ export function TransactionsPage() {
   const [editing, setEditing] = useState<TransactionOut | null>(null);
   const [ruleFrom, setRuleFrom] = useState<TransactionOut | null>(null);
   const [linkFrom, setLinkFrom] = useState<TransactionOut | null>(null);
+  const [detailsOf, setDetailsOf] = useState<TransactionOut | null>(null);
   const [notice, setNotice] = useState("");
   const categories = useQuery(categoriesQuery);
   const accounts = useQuery({
@@ -167,6 +169,15 @@ export function TransactionsPage() {
           />
         </InView>
       )}
+      {detailsOf && categories.data && (
+        <InView key={detailsOf.id}>
+          <DetailsPanel
+            transaction={detailsOf}
+            categories={categories.data}
+            onDone={() => setDetailsOf(null)}
+          />
+        </InView>
+      )}
       {linkFrom && (
         <InView key={linkFrom.id}>
           <LinkPanel
@@ -206,6 +217,7 @@ export function TransactionsPage() {
             onNotice={setNotice}
             onRule={setRuleFrom}
             onLink={setLinkFrom}
+            onDetails={setDetailsOf}
             cashAccounts={
               new Set(accounts.data?.filter((a) => CASH.has(a.type)).map((a) => a.id) ?? [])
             }
@@ -361,6 +373,7 @@ function TransactionTable({
   onEdit,
   onRule,
   onLink,
+  onDetails,
   cashAccounts,
   onNotice,
 }: {
@@ -369,6 +382,7 @@ function TransactionTable({
   onEdit: (tx: TransactionOut) => void;
   onRule: (tx: TransactionOut) => void;
   onLink: (tx: TransactionOut) => void;
+  onDetails: (tx: TransactionOut) => void;
   /** Transfers only link checking and savings accounts. */
   cashAccounts: Set<string>;
   onNotice: (message: string) => void;
@@ -527,6 +541,7 @@ function TransactionTable({
                 </td>
                 <td className="px-3 py-2" title={tx.bank_label ?? undefined}>
                   {tx.label}
+                  {tx.note && <span className="block text-xs text-muted">{tx.note}</span>}
                 </td>
                 <td className="px-3 py-2">
                   {tx.transfer_group_id ? (
@@ -544,6 +559,22 @@ function TransactionTable({
                       >
                         {t.transactions.unlink}
                       </Button>
+                    </span>
+                  ) : tx.parts.length > 0 ? (
+                    <span className="flex flex-col items-start gap-1">
+                      <span className="rounded-md bg-bg px-2 py-1 text-xs">
+                        {t.transactions.split}
+                      </span>
+                      {tx.parts.map((part, i) => (
+                        <span
+                          // biome-ignore lint/suspicious/noArrayIndexKey: parts are ordered
+                          key={i}
+                          className={`text-xs ${part.category_id ? "text-muted" : "text-warning"}`}
+                        >
+                          {part.category_name ?? t.transactions.toCategorise}{" "}
+                          {formatEur(part.amount)}
+                        </span>
+                      ))}
                     </span>
                   ) : (
                     <select
@@ -577,6 +608,13 @@ function TransactionTable({
                       onClick={() => onRule(tx)}
                     >
                       {t.transactions.rule}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      aria-label={t.transactions.detailsNamed(tx.label)}
+                      onClick={() => onDetails(tx)}
+                    >
+                      {t.transactions.details}
                     </Button>
                     {!tx.transfer_group_id && cashAccounts.has(tx.account_id) && (
                       <Button
