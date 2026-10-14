@@ -273,3 +273,30 @@ test("a running period says it is shown so far", async () => {
     await screen.findByText(/Jan 2026 – Oct 2026 so far · Compared with Jan 2025 – Oct 2025/),
   ).toBeInTheDocument();
 });
+
+test("a link can open the report of given months", async () => {
+  const asked = api();
+  render(<TestApp path="/reports?start=2026-03&end=2026-03" />);
+  await screen.findByRole("region", { name: "Totals" });
+  expect(asked[0]?.searchParams.get("start")).toBe("2026-03");
+  expect(asked[0]?.searchParams.get("end")).toBe("2026-03");
+  expect(screen.getByLabelText("Period")).toHaveValue("custom");
+});
+
+test("the reports tab goes back to this year after a link to one month", async () => {
+  const asked = api();
+  render(<TestApp path="/reports?start=2026-03&end=2026-03" />);
+  await screen.findByRole("region", { name: "Totals" });
+  await userEvent.setup().click(screen.getByRole("link", { name: "Reports" }));
+
+  await vi.waitFor(() => expect(screen.getByLabelText("Period")).toHaveValue("thisYear"));
+  expect(asked.at(-1)?.searchParams.get("start")).toBe("2026-01");
+});
+
+test("a link with an impossible month opens this year instead", async () => {
+  const asked = api();
+  render(<TestApp path="/reports?start=2026-13&end=2026-13" />);
+  await screen.findByRole("region", { name: "Totals" });
+  expect(screen.getByLabelText("Period")).toHaveValue("thisYear");
+  expect(asked[0]?.searchParams.get("start")).toBe("2026-01");
+});

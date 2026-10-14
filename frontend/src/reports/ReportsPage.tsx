@@ -35,7 +35,7 @@ import {
 } from "../dashboard/charts";
 import { useI18n } from "../i18n";
 import { formatEurWhole, formatPercent, formatPercentSigned } from "../lib/money";
-import { monthLabel, shiftMonth, thisMonth } from "../lib/months";
+import { isMonth, monthLabel, shiftMonth, thisMonth } from "../lib/months";
 
 const fieldClass = "rounded-md border border-border bg-surface px-3 py-2";
 const labelClass = "flex flex-col gap-1 text-sm font-medium";
@@ -79,16 +79,19 @@ function monthCount({ start, end }: Period): number {
   return index(end) - index(start) + 1;
 }
 
-export function ReportsPage() {
+/** `initial`: the months to open on (a link from the overview), else this year. */
+export function ReportsPage({ initial }: { initial?: Period }) {
   const { t } = useI18n();
   const ids = { preset: useId(), from: useId(), to: useId() };
-  const [preset, setPreset] = useState<Preset>("thisYear");
-  const [custom, setCustom] = useState<Period>(() => presetPeriod("thisYear", thisMonth()));
+  const [preset, setPreset] = useState<Preset>(initial ? "custom" : "thisYear");
+  const [custom, setCustom] = useState<Period>(
+    () => initial ?? presetPeriod("thisYear", thisMonth()),
+  );
   const [scope, setScope] = useState<Scope>("household");
   const period = preset === "custom" ? custom : presetPeriod(preset, thisMonth());
   const valid =
-    /^\d{4}-\d{2}$/.test(period.start) &&
-    /^\d{4}-\d{2}$/.test(period.end) &&
+    isMonth(period.start) &&
+    isMonth(period.end) &&
     monthCount(period) >= 1 &&
     monthCount(period) <= MAX_MONTHS;
 
