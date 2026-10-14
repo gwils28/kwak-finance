@@ -132,6 +132,11 @@ def _unprocessable(exc: ValueError) -> HTTPException:
     return HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, str(exc))
 
 
+HIDDEN_SIDE = HTTPException(
+    status.HTTP_409_CONFLICT, "the other side of this transfer is on an account you cannot see"
+)
+
+
 def _conflict(exc: service.ImportedTransactionError) -> HTTPException:
     return HTTPException(status.HTTP_409_CONFLICT, str(exc))
 
@@ -198,10 +203,18 @@ def update_transaction(
     household_id = user_session.user.household_id
     try:
         service.update(
-            db, transaction, account, booked_on=body.booked_on, amount=body.amount, label=body.label
+            db,
+            user_session.user,
+            transaction,
+            account,
+            booked_on=body.booked_on,
+            amount=body.amount,
+            label=body.label,
         )
     except service.ImportedTransactionError as exc:
         raise _conflict(exc) from None
+    except service.HiddenSideError:
+        raise HIDDEN_SIDE from None
     except ValueError as exc:
         raise _unprocessable(exc) from None
     if "category_id" in body.model_fields_set:
@@ -238,6 +251,8 @@ def delete_transaction(transaction_id: UUID, user_session: CurrentSession, db: D
     if found is None:
         raise NOT_FOUND
     try:
-        service.delete(db, found[0])
+        service.delete(db, user_session.user, found[0])
     except service.ImportedTransactionError as exc:
         raise _conflict(exc) from None
+    except service.HiddenSideError:
+        raise HIDDEN_SIDE from None

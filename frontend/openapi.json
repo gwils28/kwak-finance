@@ -3911,6 +3911,77 @@
         "title": "TransactionPatch",
         "type": "object"
       },
+      "TransferEntryIn": {
+        "properties": {
+          "amount": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              }
+            ],
+            "title": "Amount"
+          },
+          "booked_on": {
+            "format": "date",
+            "title": "Booked On",
+            "type": "string"
+          },
+          "destination_account_id": {
+            "format": "uuid",
+            "title": "Destination Account Id",
+            "type": "string"
+          },
+          "inflow_label": {
+            "title": "Inflow Label",
+            "type": "string"
+          },
+          "outflow_label": {
+            "title": "Outflow Label",
+            "type": "string"
+          },
+          "source_account_id": {
+            "format": "uuid",
+            "title": "Source Account Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "source_account_id",
+          "destination_account_id",
+          "booked_on",
+          "amount",
+          "outflow_label",
+          "inflow_label"
+        ],
+        "title": "TransferEntryIn",
+        "type": "object"
+      },
+      "TransferEntryOut": {
+        "properties": {
+          "group_id": {
+            "format": "uuid",
+            "title": "Group Id",
+            "type": "string"
+          },
+          "inflow": {
+            "$ref": "#/components/schemas/TransferSide"
+          },
+          "outflow": {
+            "$ref": "#/components/schemas/TransferSide"
+          }
+        },
+        "required": [
+          "group_id",
+          "outflow",
+          "inflow"
+        ],
+        "title": "TransferEntryOut",
+        "type": "object"
+      },
       "TransferIn": {
         "properties": {
           "inflow_id": {
@@ -8510,6 +8581,130 @@
           }
         },
         "summary": "Accept Transfer Suggestions",
+        "tags": [
+          "transfers"
+        ]
+      }
+    },
+    "/api/transfers/candidates/{transaction_id}": {
+      "get": {
+        "description": "What this transaction could be linked to: the opposite amount on another of your\naccounts, within 31 days, closest first (\"Link to\u2026\").",
+        "operationId": "transferCandidates",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "transaction_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Transaction Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "kwak_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Kwak Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/TransferSide"
+                  },
+                  "title": "Response Transfercandidates",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Transfer Candidates",
+        "tags": [
+          "transfers"
+        ]
+      }
+    },
+    "/api/transfers/entries": {
+      "post": {
+        "description": "Enter a transfer by hand: both sides, already linked (F-TX-9).",
+        "operationId": "enterTransfer",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "kwak_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Kwak Session"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TransferEntryIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransferEntryOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Enter Transfer",
         "tags": [
           "transfers"
         ]

@@ -1,14 +1,17 @@
 """Transfers between own accounts: suggested from matching pairs, confirmed by the user."""
 
+from datetime import date, timedelta
+from decimal import Decimal
 from uuid import UUID
 
 from kwak_core.accounts import CASH_TYPES
 from kwak_core.ids import uuid7
-from kwak_core.transfers import Movement, find_transfer_pairs
+from kwak_core.transfers import LINK_DAYS, Movement, find_transfer_pairs, link_candidates
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from kwak_api.models import Account, Transaction, User
+from kwak_api.services import transactions
 from kwak_api.services.accounts import visible_accounts
 
 
@@ -61,8 +64,63 @@ def link(db: Session, outflow: Transaction, inflow: Transaction) -> UUID:
     for t in (outflow, inflow):
         t.transfer_group_id = group
         t.category_id = None
+        t.budget_month = None  # a transfer counts in its booking month (F-TX-7)
     db.flush()
     return group
+
+
+def enter(
+    db: Session,
+    source: Account,
+    destination: Account,
+    *,
+    booked_on: date,
+    amount: Decimal,
+    outflow_label: str,
+    inflow_label: str,
+) -> tuple[UUID, Transaction, Transaction]:
+    """Enter both sides of a transfer by hand, already linked (F-TX-9)."""
+    if source.id == destination.id:
+        raise TransferError("a transfer moves money between two different accounts")
+    if amount <= 0:
+        raise TransferError("the amount of a transfer is positive")
+    outflow = transactions.create(
+        db, source, booked_on=booked_on, amount=-amount, label=outflow_label
+    )
+    inflow = transactions.create(
+        db, destination, booked_on=booked_on, amount=amount, label=inflow_label
+    )
+    return link(db, outflow, inflow), outflow, inflow
+
+
+def candidates(db: Session, viewer: User, transaction: Transaction) -> list[Transaction]:
+    """Unlinked transactions that could form a transfer with this one ("Link to…")."""
+    if transaction.transfer_group_id is not None:
+        raise AlreadyLinkedError
+    accounts = _cash_accounts(db, viewer)
+    window = timedelta(days=LINK_DAYS)
+    others = {
+        t.id: t
+        for t in db.scalars(
+            select(Transaction).where(
+                Transaction.account_id.in_(accounts),
+                Transaction.transfer_group_id.is_(None),
+                Transaction.amount == -transaction.amount,
+                Transaction.booked_on.between(
+                    transaction.booked_on - window, transaction.booked_on + window
+                ),
+            )
+        )
+    }
+    side = Movement(
+        transaction.id, transaction.account_id, transaction.booked_on, transaction.amount
+    )
+    return [
+        others[i]
+        for i in link_candidates(
+            side, (Movement(t.id, t.account_id, t.booked_on, t.amount) for t in others.values())
+        )
+    ]
 
 
 def unlink(db: Session, viewer: User, group_id: UUID) -> bool:
