@@ -18,6 +18,8 @@ const tx = (id: string, account: string, amount: string, label: string, extra: o
   category_name: null,
   transfer_group_id: null,
   transfer_account_name: null,
+  parts: [],
+  note: null,
   ...extra,
 });
 const outflow = tx("t1", "Compte courant", "-150.00", "000001 VIR PERM POUR: JEAN DUPONT");

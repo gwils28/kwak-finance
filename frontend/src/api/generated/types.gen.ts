@@ -2028,6 +2028,10 @@ export type TransactionIn = {
      * Label
      */
     label: string;
+    /**
+     * Note
+     */
+    note?: string | null;
 };
 
 /**

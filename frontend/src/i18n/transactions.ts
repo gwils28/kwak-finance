@@ -97,6 +97,23 @@ export const transactionsEn = {
   linkWith: (label: string, date: string) => `Link with ${label} of ${date}`,
   linkFailed:
     "Could not link them: one of the two is already part of a transfer, or has just changed.",
+  details: "Details",
+  detailsNamed: (label: string) => `Details of ${label}`,
+  note: "Note",
+  noteHelp: "Free text, searched with the label.",
+  split: "Split",
+  splitIt: "Split it",
+  splitHelp:
+    "Spread it over several categories: enter every part but the last, which takes the rest.",
+  partCategory: (n: number) => `Category of part ${n}`,
+  partAmount: (n: number) => `Amount of part ${n} (€)`,
+  restCategory: "Category of the rest",
+  rest: (amount: string) => `Rest: ${amount}`,
+  addPart: "Add a part",
+  removePart: (n: number) => `Remove part ${n}`,
+  removeSplit: "Remove the split",
+  splitInvalid: "Enter positive amounts in euros that leave a rest for the last part.",
+  splitTransfer: "A transfer cannot be split: unlink it first.",
 };
 
 export const transactionsFr: typeof transactionsEn = {
@@ -197,4 +214,22 @@ export const transactionsFr: typeof transactionsEn = {
   linkWith: (label, date) => `Lier avec ${label} du ${date}`,
   linkFailed:
     "Impossible de les lier : l'une des deux fait déjà partie d'un virement, ou vient de changer.",
+  details: "Détails",
+  detailsNamed: (label) => `Détails de ${label}`,
+  note: "Note",
+  noteHelp: "Texte libre, cherché avec le libellé.",
+  split: "Ventilée",
+  splitIt: "Ventiler",
+  splitHelp:
+    "Répartissez-la sur plusieurs catégories : saisissez chaque partie sauf la dernière, qui prend le reste.",
+  partCategory: (n) => `Catégorie de la partie ${n}`,
+  partAmount: (n) => `Montant de la partie ${n} (€)`,
+  restCategory: "Catégorie du reste",
+  rest: (amount) => `Reste : ${amount}`,
+  addPart: "Ajouter une partie",
+  removePart: (n) => `Retirer la partie ${n}`,
+  removeSplit: "Annuler la ventilation",
+  splitInvalid:
+    "Saisissez des montants positifs en euros qui laissent un reste pour la dernière partie.",
+  splitTransfer: "Un virement ne se ventile pas : déliez-le d'abord.",
 };

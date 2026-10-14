@@ -19,6 +19,20 @@ export function parseEurInput(text: string): string | null {
   return `${sign === "-" ? "-" : ""}${units}.${cents.padEnd(2, "0")}`;
 }
 
+/** "-84.30" -> -8430: whole cents, so sums of amounts stay exact. */
+export function toCents(amount: string): number {
+  const [units, cents = ""] = amount.replace("-", "").split(".");
+  const value = Number(units) * 100 + Number(cents.padEnd(2, "0").slice(0, 2));
+  return amount.startsWith("-") ? -value : value;
+}
+
+/** -880 -> "-8.80": back to the API's decimal string. */
+export function fromCents(cents: number): string {
+  const size = Math.abs(cents);
+  const text = `${Math.trunc(size / 100)}.${String(size % 100).padStart(2, "0")}`;
+  return cents < 0 ? `-${text}` : text;
+}
+
 /** "0.00", "-0.00", "0": the API's decimal string is zero, read without a float. */
 export function isZero(amount: string): boolean {
   return /^[+-]?0*(\.0*)?$/.test(amount) && /\d/.test(amount);

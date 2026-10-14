@@ -31,6 +31,8 @@ const row = {
   transfer_account_name: null,
   budget_month: "2026-03",
   budget_month_set: false,
+  parts: [],
+  note: null,
 };
 const share = { ...row, id: "t1", amount: "-500.00", label: "VIR QUOTE-PART" };
 const side = (id: string, account: typeof mine, amount: string, label: string) => ({

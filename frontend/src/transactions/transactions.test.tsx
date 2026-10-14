@@ -30,6 +30,8 @@ const imported = {
   source: "import",
   budget_month: "2026-03",
   budget_month_set: false,
+  parts: [],
+  note: null as string | null,
 };
 const manual = {
   ...imported,
@@ -325,4 +327,24 @@ test("the edit form opened from a row further down is brought into view and focu
   const form = screen.getByRole("form", { name: "Edit transaction" });
   expect(scrollIntoView).toHaveBeenCalled();
   expect(form).toContainElement(document.activeElement as HTMLElement);
+});
+
+test("the note of a manual transaction can be cleared", async () => {
+  const calls = api(
+    {
+      "PATCH /api/transactions/t2": (body) => Response.json({ ...manual, ...(body as object) }),
+    },
+    { items: [imported, { ...manual, note: "Prime" }], total: 2 },
+  );
+  render(<TestApp path="/transactions" />);
+
+  const user = userEvent.setup();
+  await user.click(await screen.findByRole("button", { name: "Edit Salary" }));
+  const form = screen.getByRole("form", { name: "Edit transaction" });
+  await user.clear(within(form).getByLabelText("Note"));
+  await user.click(within(form).getByRole("button", { name: "Save" }));
+
+  expect(calls.find((c) => c.route === "PATCH /api/transactions/t2")?.body).toMatchObject({
+    note: null,
+  });
 });

@@ -7,8 +7,10 @@ import {
   formatEurSigned,
   formatEurWhole,
   formatPercent,
+  fromCents,
   isZero,
   parseEurInput,
+  toCents,
 } from "./money";
 
 // Intl separates French groups and the euro sign with (narrow) no-break spaces.
@@ -70,4 +72,11 @@ test("an input shows whole euros without empty cents", () => {
 test("isZero reads an API amount without a float", () => {
   for (const zero of ["0.00", "-0.00", "0"]) expect(isZero(zero)).toBe(true);
   for (const other of ["0.01", "-500.00", "10", ""]) expect(isZero(other)).toBe(false);
+});
+
+test("cents keep sums of amounts exact", () => {
+  expect(toCents("-84.30")).toBe(-8430);
+  expect(toCents("0.1")).toBe(10);
+  expect(fromCents(toCents("-84.30") - toCents("-60.00") - toCents("-15.50"))).toBe("-8.80");
+  expect(fromCents(5)).toBe("0.05");
 });

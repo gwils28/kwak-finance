@@ -112,6 +112,8 @@ class TransactionIn(BaseModel):
     label: str
     category_id: UUID | None = None
     """Its category; by default the rules choose (F-CAT-2)."""
+    note: str | None = Field(default=None, max_length=500)
+    """Free text, searched with the label (F-TX-4)."""
 
 
 class TransactionPatch(BaseModel):
@@ -229,6 +231,8 @@ def create_transaction(body: TransactionIn, user_session: CurrentSession, db: Db
     if body.category_id is not None:
         category = _category(db, user_session.user.household_id, body.category_id)
         service.set_category(db, transaction, category)
+    if body.note:
+        service.set_note(db, transaction, body.note)
     return TransactionOut.of(transaction, account, _categories(db, user_session.user.household_id))
 
 
