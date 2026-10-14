@@ -1,6 +1,6 @@
 # Functional Specifications
 
-Status: draft v0.11.1 — 2026-10-14. Owner: sole maintainer.
+Status: draft v0.12 — 2026-10-14. Owner: sole maintainer.
 
 ## 1. Purpose
 
@@ -115,12 +115,7 @@ Most transactions are entered by hand, once a week or a fortnight, because the b
 - F-REC-3: **Occurrences**. An item has one occurrence per period, on its expected date. A transaction **fulfils** an occurrence when it is on the item's account, its label matches, its amount is within 10 % of the expected one (same sign; for an estimated item, which varies with the seasons, the sign is enough) and its date within 5 days of the expected date; each transaction fulfils one occurrence at most and each occurrence takes the closest one. A transfer item's occurrence is fulfilled by a linked transfer (F-TX-5) from its source to its destination account, with the same amount and date tolerances, the date being the outflow's. An occurrence is **upcoming** before its date plus 5 days, then **late** while unfulfilled; the user can **skip** one (a subscription paused for a month). Nothing is ever created by itself: an upcoming or late occurrence offers **"Enter it"**, which opens the manual entry (F-TX-4) pre-filled with the item's account, label, category, amount and expected date (today if later), to confirm or adjust; for a transfer item, the transfer entry (F-TX-9) pre-filled with its two accounts.
 - F-REC-4: **Upcoming items**, on the overview (F-DSH-1) for the scope shown: the occurrences from today to the end of the month, late ones first, with "Enter it", and the **projected balance** at the end of the month: the current balance of the scope's cash accounts plus the upcoming and late occurrences of their items. A transfer item counts as an outflow of its source account and an inflow of its destination, each in the scopes that hold that account: it is listed in a scope holding either account and adds nothing to the household's projection. The projection uses real booking dates (not the budget month, F-TX-7): a salary expected on the 28th counts in this month's projected balance. A **Recurring** page, opened from Transactions, lists the items with their next occurrence and status, the suggestions, and each item's past occurrences (fulfilled, late, skipped). Statistical forecasting is phase 4.
 
-### 4.7 Household sharing (S)
-
-- F-SHR-1: Shared expenses tagged with a split rule (50/50, pro-rata income, custom).
-- F-SHR-2: "Who owes whom" balance and settlement records.
-
-### 4.8 Wealth / net worth (M)
+### 4.7 Wealth / net worth (M)
 
 - F-WLT-1: **Cash accounts**: the balance is derived from transactions, with optional balance checkpoints for reconciliation.
 - F-WLT-2: **Securities (PEA, CTO, AV)**: positions (ISIN/ticker, quantity, PRU / average cost), buy/sell/dividend operations, and daily valuation from market prices. For life insurance, euro funds are valued manually and units of account (UC) are valued from prices.
@@ -131,7 +126,7 @@ Most transactions are entered by hand, once a week or a fortnight, because the b
 - F-WLT-7: **Net-worth history**: daily snapshot of every account value. Charts show the breakdown by asset class, by liquidity and by owner.
 - F-WLT-8: Asset allocation view (asset class, geography/sector when known for securities).
 
-### 4.9 Dashboard and reporting (M)
+### 4.8 Dashboard and reporting (M)
 
 - F-DSH-1: Home page showing net worth with its change, the month's cash flow, budget status (the month so far, F-BUD-2), upcoming recurring items and recent transactions.
 - F-DSH-4: Spending KPIs for any month (default: current): total spent, total income, net cash flow and savings rate ((income − spending) / income), with the part of the net cash flow put in savings categories (F-CAT-4); change vs the previous month and vs the 12-month average; top 5 categories; number of transactions left to categorise.
@@ -143,15 +138,14 @@ Most transactions are entered by hand, once a week or a fortnight, because the b
   - **drift list** (during a plan): categories ranked by projected overrun in €;
   - **plan comparison**: two plans side by side (by default the current one and the previous one, or the same period a year before), per category: monthly target and monthly average spent (for a running plan, its projection ÷ its number of months), with the change in € and in %. Monthly averages make plans of different lengths comparable.
 - F-DSH-2: Income/expense reports by category and period, with a cash-flow chart (Sankey).
-- F-DSH-3: CSV export of any table, plus a full JSON export of the household's data (portability).
 
-### 4.10 Market data (M)
+### 4.9 Market data (M)
 
 - F-MKT-1: A scheduled daily job fetches closing prices for held securities and crypto. Providers sit behind an adapter interface (initial candidates: Yahoo Finance via `yfinance`, CoinGecko).
 - F-MKT-2: Prices are stored historically. Manual override and manual price entry are available for illiquid assets.
 - F-MKT-3: A provider failure never blocks the app: the last known price is shown with a staleness indicator.
 
-### 4.11 Administration (M)
+### 4.10 Administration (M)
 
 - F-ADM-1: Automatic daily backup (`pg_dump`) with a retention policy (e.g. 7 daily, 4 weekly, 12 monthly) to a configurable directory.
 - F-ADM-2: A documented restore procedure, plus a restore test script run regularly.
@@ -163,7 +157,7 @@ Most transactions are entered by hand, once a week or a fortnight, because the b
 |---|---|
 | 0 — Foundations | Repo, tooling, CI, Claude Code config, design tokens, Docker Compose skeleton |
 | 1 — Budget MVP | Auth + household, accounts, import, manual entry, categorisation, transactions, budget targets vs actual (F-BUD-1, 2, 4, 5) with the budget matrix (F-BUD-6), spending KPIs and charts (F-DSH-4, 5) |
-| 2 — Budget complete | Budget plans by period and their review, with steering dashboards (F-BUD-7, 8, F-DSH-6), then recurrences, household sharing, reports |
+| 2 — Budget complete | Budget plans by period and their review, with steering dashboards (F-BUD-7, 8, F-DSH-6), then recurrences, reports |
 | 3 — Wealth | Securities, crypto, real estate, loans, use assets, market data, net-worth history |
 | 4 — Analytics & DS | Cash-flow **forecasting** (time-series, temporal back-testing, naive baseline first), **wealth simulation** (Monte Carlo, FIRE / retirement projection, allocation scenarios). Interactive Dash pages for exploration |
 | 5 — Local GenAI | Ollama-based assistant: natural-language questions over your own data (text-to-SQL on a read-only analytics view), categorisation suggestions, monthly narrative summary. No data leaves the host |
