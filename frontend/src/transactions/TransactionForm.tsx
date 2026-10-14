@@ -3,6 +3,7 @@ import { type FormEvent, useId, useState } from "react";
 import {
   type AccountOut,
   createTransaction,
+  enterTransfer,
   type TransactionOut,
   updateTransaction,
 } from "../api/generated";
@@ -12,6 +13,7 @@ import { useI18n } from "../i18n";
 import { todayIso } from "../lib/dates";
 import { amountInput, parseEurInput } from "../lib/money";
 import { CategoryOptions, categoriesQuery } from "./categories";
+import { afterTransferChange } from "./TransferBanner";
 
 const fieldClass = "rounded-md border border-border bg-surface px-3 py-2";
 
@@ -23,9 +25,14 @@ export type EntryDraft = {
   amount: string;
   label: string;
   category_id: string | null;
+  /** Set for a transfer item: the entry is then a transfer to this account (F-TX-9). */
+  destination_account_id?: string | null;
 };
 
-/** Enters a transaction by hand (or edits one): from scratch, or from a draft to confirm. */
+type Kind = "expense" | "income" | "transfer";
+
+/** Enters a transaction or a transfer by hand (or edits one): from scratch, or from a draft
+ * to confirm. */
 export function TransactionForm({
   transaction = null,
   draft = null,
@@ -43,22 +50,57 @@ export function TransactionForm({
   const source = transaction ?? draft;
   const isIncome = source ? !source.amount.startsWith("-") : false;
   const [accountId, setAccountId] = useState(source?.account_id ?? accounts[0]?.id ?? "");
+  // A recurring transfer may point to an account closed since: offer an open one instead.
+  const [destinationId, setDestinationId] = useState(
+    accounts.find((a) => a.id === draft?.destination_account_id)?.id ??
+      accounts.find((a) => a.id !== accountId)?.id ??
+      "",
+  );
   const [bookedOn, setBookedOn] = useState(source?.booked_on ?? todayIso());
-  const [kind, setKind] = useState<"expense" | "income">(isIncome ? "income" : "expense");
+  const [kind, setKind] = useState<Kind>(
+    draft?.destination_account_id ? "transfer" : isIncome ? "income" : "expense",
+  );
   const [amount, setAmount] = useState(source ? amountInput(source.amount.replace("-", "")) : "");
   const [label, setLabel] = useState(source?.label ?? "");
   const [categoryId, setCategoryId] = useState(draft?.category_id ?? "");
-  const [invalid, setInvalid] = useState(false);
-  const ids = { account: useId(), kind: useId(), category: useId() };
+  const [invalid, setInvalid] = useState<string | null>(null);
+  const ids = { account: useId(), destination: useId(), kind: useId(), category: useId() };
+  const transfer = kind === "transfer";
+  // A side of a transfer keeps its direction: the other side mirrors it (F-TX-9).
+  const kinds: Kind[] = transaction?.transfer_group_id
+    ? []
+    : transaction || accounts.length < 2
+      ? ["expense", "income"]
+      : ["expense", "income", "transfer"];
+  const name = (id: string) => accounts.find((a) => a.id === id)?.name ?? "";
 
   const save = useMutation({
-    mutationFn: async (signed: string) => {
-      const fields = { booked_on: bookedOn, amount: signed, label };
-      const { data, error, response } = transaction
-        ? await updateTransaction({ path: { transaction_id: transaction.id }, body: fields })
-        : await createTransaction({
-            body: { account_id: accountId, category_id: categoryId || null, ...fields },
-          });
+    mutationFn: async (parsed: string) => {
+      const fields = { booked_on: bookedOn, label };
+      const { data, error, response } = transfer
+        ? await enterTransfer({
+            body: {
+              source_account_id: accountId,
+              destination_account_id: destinationId,
+              booked_on: bookedOn,
+              amount: parsed,
+              outflow_label: label.trim() || t.transactions.transferTo(name(destinationId)),
+              inflow_label: label.trim() || t.transactions.transferFrom(name(accountId)),
+            },
+          })
+        : transaction
+          ? await updateTransaction({
+              path: { transaction_id: transaction.id },
+              body: { ...fields, amount: kind === "income" ? parsed : `-${parsed}` },
+            })
+          : await createTransaction({
+              body: {
+                account_id: accountId,
+                category_id: categoryId || null,
+                amount: kind === "income" ? parsed : `-${parsed}`,
+                ...fields,
+              },
+            });
       if (!data) {
         throw new Error(
           response?.status === 422 || response?.status === 409
@@ -69,7 +111,7 @@ export function TransactionForm({
       return data;
     },
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["transactions"] });
+      await afterTransferChange(queryClient);
       await queryClient.invalidateQueries({ queryKey: ["accounts"] });
       await queryClient.invalidateQueries({ queryKey: ["recurring"] });
       await queryClient.invalidateQueries({ queryKey: ["dashboard"] });
@@ -80,10 +122,25 @@ export function TransactionForm({
   const submit = (event: FormEvent) => {
     event.preventDefault();
     const parsed = parseEurInput(amount);
-    const ok = parsed !== null && !parsed.startsWith("-") && parsed !== "0.00";
-    setInvalid(!ok);
-    if (ok) save.mutate(kind === "expense" ? `-${parsed}` : parsed);
+    const problem =
+      parsed === null || parsed.startsWith("-") || parsed === "0.00"
+        ? t.transactions.invalidAmount
+        : transfer && accountId === destinationId
+          ? t.transactions.sameAccounts
+          : null;
+    setInvalid(problem);
+    if (!problem && parsed) save.mutate(parsed);
   };
+
+  const accountSelect = (id: string, value: string, onChange: (value: string) => void) => (
+    <select id={id} className={fieldClass} value={value} onChange={(e) => onChange(e.target.value)}>
+      {accounts.map((a) => (
+        <option key={a.id} value={a.id}>
+          {a.name} ({a.institution})
+        </option>
+      ))}
+    </select>
+  );
 
   const title = transaction ? t.transactions.editTitle : t.transactions.newTitle;
   return (
@@ -93,28 +150,53 @@ export function TransactionForm({
       className="grid gap-4 rounded-lg border border-accent bg-surface p-4 sm:grid-cols-2"
     >
       <h2 className="text-lg font-bold sm:col-span-2">{title}</h2>
+      {kinds.length > 0 && (
+        <fieldset className="flex items-center gap-4 sm:col-span-2">
+          <legend className="sr-only">{t.transactions.direction}</legend>
+          {kinds.map((value) => (
+            <label key={value} className="flex items-center gap-2 text-sm">
+              <input
+                type="radio"
+                name={ids.kind}
+                value={value}
+                checked={kind === value}
+                onChange={() => setKind(value)}
+              />
+              {t.transactions[value]}
+            </label>
+          ))}
+        </fieldset>
+      )}
       {transaction ? (
         <p className="text-sm sm:col-span-2">
           {t.transactions.accountLine(transaction.account_name)}
+          {transaction.transfer_group_id && (
+            <span className="block text-muted">
+              {t.transactions.transferSide(
+                (isIncome ? t.transactions.transferFrom : t.transactions.transferTo)(
+                  transaction.transfer_account_name ?? "",
+                ),
+              )}
+            </span>
+          )}
         </p>
       ) : (
-        <div className="flex flex-col gap-1">
-          <label htmlFor={ids.account} className="text-sm font-medium">
-            {t.transactions.account}
-          </label>
-          <select
-            id={ids.account}
-            className={fieldClass}
-            value={accountId}
-            onChange={(e) => setAccountId(e.target.value)}
-          >
-            {accounts.map((a) => (
-              <option key={a.id} value={a.id}>
-                {a.name} ({a.institution})
-              </option>
-            ))}
-          </select>
-        </div>
+        <>
+          <div className="flex flex-col gap-1">
+            <label htmlFor={ids.account} className="text-sm font-medium">
+              {transfer ? t.transactions.fromAccount : t.transactions.account}
+            </label>
+            {accountSelect(ids.account, accountId, setAccountId)}
+          </div>
+          {transfer && (
+            <div className="flex flex-col gap-1">
+              <label htmlFor={ids.destination} className="text-sm font-medium">
+                {t.transactions.toAccount}
+              </label>
+              {accountSelect(ids.destination, destinationId, setDestinationId)}
+            </div>
+          )}
+        </>
       )}
       <TextField
         label={t.transactions.date}
@@ -123,21 +205,6 @@ export function TransactionForm({
         value={bookedOn}
         onChange={(e) => setBookedOn(e.target.value)}
       />
-      <fieldset className="flex items-center gap-4">
-        <legend className="sr-only">{t.transactions.direction}</legend>
-        {(["expense", "income"] as const).map((value) => (
-          <label key={value} className="flex items-center gap-2 text-sm">
-            <input
-              type="radio"
-              name={ids.kind}
-              value={value}
-              checked={kind === value}
-              onChange={() => setKind(value)}
-            />
-            {value === "expense" ? t.transactions.expense : t.transactions.income}
-          </label>
-        ))}
-      </fieldset>
       <TextField
         label={t.transactions.amountEur}
         inputMode="decimal"
@@ -146,16 +213,17 @@ export function TransactionForm({
         value={amount}
         onChange={(e) => setAmount(e.target.value)}
       />
-      <div className="sm:col-span-2">
+      <div className="flex flex-col gap-1 sm:col-span-2">
         <TextField
-          label={t.transactions.label}
-          required
+          label={transfer ? t.transactions.labelOptional : t.transactions.label}
+          required={!transfer}
           maxLength={200}
           value={label}
           onChange={(e) => setLabel(e.target.value)}
         />
+        {transfer && <p className="text-xs text-muted">{t.transactions.transferLabelHelp}</p>}
       </div>
-      {!transaction && (
+      {!transaction && !transfer && (
         <div className="flex flex-col gap-1 sm:col-span-2">
           <label htmlFor={ids.category} className="text-sm font-medium">
             {t.transactions.category}
@@ -172,9 +240,7 @@ export function TransactionForm({
         </div>
       )}
       <div className="sm:col-span-2">
-        <ErrorAlert
-          message={invalid ? t.transactions.invalidAmount : (save.error?.message ?? null)}
-        />
+        <ErrorAlert message={invalid ?? save.error?.message ?? null} />
       </div>
       <div className="flex gap-3 sm:col-span-2">
         <Button type="submit" disabled={save.isPending}>

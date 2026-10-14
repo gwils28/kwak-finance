@@ -7,6 +7,7 @@ import {
   formatEurSigned,
   formatEurWhole,
   formatPercent,
+  isZero,
   parseEurInput,
 } from "./money";
 
@@ -64,4 +65,9 @@ test("an input shows whole euros without empty cents", () => {
   setCurrentLanguage("fr");
   expect(amountInputShort("2400.00")).toBe("2400");
   expect(amountInputShort("12.50")).toBe("12,50");
+});
+
+test("isZero reads an API amount without a float", () => {
+  for (const zero of ["0.00", "-0.00", "0"]) expect(isZero(zero)).toBe(true);
+  for (const other of ["0.01", "-500.00", "10", ""]) expect(isZero(other)).toBe(false);
 });

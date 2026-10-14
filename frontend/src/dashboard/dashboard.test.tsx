@@ -378,3 +378,48 @@ test("the overview shows nothing expected without recurring items", async () => 
   await screen.findByRole("region", { name: "Spent" });
   expect(screen.queryByRole("region", { name: "Still expected this month" })).toBeNull();
 });
+
+test("a recurring transfer shows what it brings to the scope", async () => {
+  const checking = { id: "a1", name: "Compte courant", institution: "SG", type: "checking" };
+  const share = {
+    ...upcoming.occurrences[1],
+    item_id: "r3",
+    due: "2026-03-20",
+    expected: "-500.00",
+    label: "",
+    destination_account_id: "a2",
+    destination_account_name: "Compte commun",
+    amount_in_scope: "500.00",
+  };
+  api(dashboard, [checking], {
+    "GET /api/recurring/upcoming": () => Response.json({ ...upcoming, occurrences: [share] }),
+  });
+  render(<TestApp path="/" />);
+
+  const block = await screen.findByRole("region", { name: "Still expected this month" });
+  const [item] = within(block).getAllByRole("listitem");
+  expect(item).toHaveTextContent("Transfer to Compte commun");
+  expect(item).toHaveTextContent("Compte courant → Compte commun");
+  expect(item).toHaveTextContent("€500.00");
+});
+
+test("a recurring transfer within the scope shows its amount without a sign", async () => {
+  const checking = { id: "a1", name: "Compte courant", institution: "SG", type: "checking" };
+  const share = {
+    ...upcoming.occurrences[1],
+    item_id: "r3",
+    expected: "-500.00",
+    label: "",
+    destination_account_id: "a2",
+    destination_account_name: "Compte commun",
+    amount_in_scope: "0.00",
+  };
+  api(dashboard, [checking], {
+    "GET /api/recurring/upcoming": () => Response.json({ ...upcoming, occurrences: [share] }),
+  });
+  render(<TestApp path="/" />);
+
+  const block = await screen.findByRole("region", { name: "Still expected this month" });
+  const amount = within(block).getByText("€500.00");
+  expect(amount).not.toHaveClass("text-positive");
+});

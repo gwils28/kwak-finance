@@ -2367,6 +2367,18 @@
             "title": "Day",
             "type": "integer"
           },
+          "destination_account_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Destination Account Id"
+          },
           "end_on": {
             "anyOf": [
               {
@@ -2457,6 +2469,29 @@
             "title": "Day",
             "type": "integer"
           },
+          "destination_account_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Destination Account Id"
+          },
+          "destination_account_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Destination Account Name"
+          },
           "end_on": {
             "anyOf": [
               {
@@ -2516,6 +2551,8 @@
           "id",
           "account_id",
           "account_name",
+          "destination_account_id",
+          "destination_account_name",
           "category_id",
           "category_name",
           "label",
@@ -2584,6 +2621,18 @@
               }
             ],
             "title": "Day"
+          },
+          "destination_account_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Destination Account Id"
           },
           "end_on": {
             "anyOf": [
@@ -4085,6 +4134,11 @@
             "title": "Account Name",
             "type": "string"
           },
+          "amount_in_scope": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Amount In Scope",
+            "type": "string"
+          },
           "category_id": {
             "anyOf": [
               {
@@ -4096,6 +4150,29 @@
               }
             ],
             "title": "Category Id"
+          },
+          "destination_account_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Destination Account Id"
+          },
+          "destination_account_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Destination Account Name"
           },
           "due": {
             "format": "date",
@@ -4151,8 +4228,11 @@
           "label",
           "account_id",
           "account_name",
+          "destination_account_id",
+          "destination_account_name",
           "category_id",
-          "estimated"
+          "estimated",
+          "amount_in_scope"
         ],
         "title": "UpcomingOccurrence",
         "type": "object"

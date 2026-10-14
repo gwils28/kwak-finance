@@ -316,3 +316,42 @@ def test_linking_drops_a_budget_month_set_by_hand(owner_client: TestClient) -> N
     out = _items(owner_client)[outflow]
     assert out["budget_month"] == "2026-03"
     assert out["budget_month_set"] is False
+
+
+def test_rolling_back_an_import_unlinks_the_other_side(owner_client: TestClient) -> None:
+    imported, manual = _half_imported(owner_client)
+    checking = _items(owner_client)[imported]["account_id"]
+    [batch] = owner_client.get(f"/api/accounts/{checking}/imports").json()
+
+    owner_client.delete(f"/api/imports/{batch['id']}", headers=csrf(owner_client))
+
+    items = _items(owner_client)
+    assert imported not in items
+    assert items[manual]["transfer_group_id"] is None
+    assert items[manual]["transfer_account_name"] is None
+
+
+@pytest.mark.usefixtures("member")
+def test_a_member_rolling_back_an_import_only_unlinks_a_private_side(
+    client: TestClient, clock: Clock
+) -> None:
+    log_in(client, clock)
+    imported, manual = _half_imported(client)
+    items = _items(client)
+    client.patch(
+        f"/api/accounts/{items[manual]['account_id']}",
+        json={"visibility": "private"},
+        headers=csrf(client),
+    )
+    checking = items[imported]["account_id"]
+    [batch] = client.get(f"/api/accounts/{checking}/imports").json()
+
+    log_in(client, clock, "member@example.com")
+    assert manual not in _items(client)
+    response = client.delete(f"/api/imports/{batch['id']}", headers=csrf(client))
+
+    assert response.status_code == 204
+    log_in(client, clock)
+    private_side = _items(client)[manual]
+    assert private_side["amount"] == "150.00"
+    assert private_side["transfer_group_id"] is None

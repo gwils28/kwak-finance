@@ -84,6 +84,9 @@ export const recurringEn = {
   currentBalance: (amount: string) => `Balance today: ${amount}`,
   projectedBalance: "Projected at month end",
   manage: "Recurring items",
+  transferHelp:
+    "Any transfer from the first account to the second counts, whatever its label: the label is only for you.",
+  between: (from: string, to: string) => `${from} → ${to}`,
 };
 
 function ordinal(day: number): string {
@@ -174,4 +177,7 @@ export const recurringFr: typeof recurringEn = {
   currentBalance: (amount: string) => `Solde aujourd'hui : ${amount}`,
   projectedBalance: "Prévu en fin de mois",
   manage: "Récurrences",
+  transferHelp:
+    "Tout virement du premier compte vers le second compte, quel que soit son libellé : le libellé n'est que pour vous.",
+  between: (from: string, to: string) => `${from} → ${to}`,
 };

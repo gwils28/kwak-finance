@@ -26,6 +26,7 @@ import {
   entryDraft,
   StatusBadge,
   useCashAccounts,
+  useItemLabel,
   useSchedule,
   useSkip,
   weekdayName,
@@ -177,6 +178,7 @@ function ItemTable({
 }) {
   const { t } = useI18n();
   const schedule = useSchedule();
+  const itemLabel = useItemLabel();
   const queryClient = useQueryClient();
   const [open, setOpen] = useState<string | null>(null);
   const [confirming, setConfirming] = useState<string | null>(null);
@@ -213,18 +215,21 @@ function ItemTable({
           {items.map((item) => {
             const late = item.recent.find((o) => o.status === "late");
             const amount = item.next?.expected ?? item.amount;
+            const label = itemLabel(item);
             return (
               <Fragment key={item.id}>
                 <tr>
                   <td className="px-3 py-2">
-                    <span className="font-medium">{item.label}</span>
+                    <span className="font-medium">{label}</span>
                     {item.paused && (
                       <span className="ml-2 rounded-md border border-border px-2 py-0.5 text-xs text-muted">
                         {t.recurring.paused}
                       </span>
                     )}
                     <span className="block text-xs text-muted">
-                      {item.account_name}
+                      {item.destination_account_name
+                        ? t.recurring.between(item.account_name, item.destination_account_name)
+                        : item.account_name}
                       {item.category_name && ` · ${item.category_name}`}
                     </span>
                   </td>
@@ -241,7 +246,10 @@ function ItemTable({
                       amount.startsWith("-") ? "" : "text-positive"
                     }`}
                   >
-                    {item.estimated ? t.recurring.approx(formatEur(amount)) : formatEur(amount)}
+                    {/* A transfer moves money: no sign, it is neither spent nor earned. */}
+                    {(item.estimated ? t.recurring.approx : (a: string) => a)(
+                      formatEur(item.destination_account_id ? amount.replace("-", "") : amount),
+                    )}
                   </td>
                   <td className="px-3 py-2">
                     <span className="flex flex-col items-start gap-1">
@@ -250,7 +258,7 @@ function ItemTable({
                           {formatDate(late.due)} <StatusBadge status="late" />
                           <Button
                             variant="ghost"
-                            aria-label={t.recurring.enterNamed(item.label, formatDate(late.due))}
+                            aria-label={t.recurring.enterNamed(label, formatDate(late.due))}
                             onClick={() => onEnter(item, late)}
                           >
                             {t.recurring.enterIt}
@@ -270,7 +278,7 @@ function ItemTable({
                     <span className="flex items-center justify-end gap-2">
                       <Button
                         variant="ghost"
-                        aria-label={t.recurring.historyOf(item.label)}
+                        aria-label={t.recurring.historyOf(label)}
                         aria-expanded={open === item.id}
                         onClick={() => setOpen(open === item.id ? null : item.id)}
                       >
@@ -280,7 +288,7 @@ function ItemTable({
                         variant="ghost"
                         aria-label={(item.paused
                           ? t.recurring.resumeNamed
-                          : t.recurring.pauseNamed)(item.label)}
+                          : t.recurring.pauseNamed)(label)}
                         disabled={pause.isPending}
                         onClick={() => pause.mutate({ id: item.id, paused: !item.paused })}
                       >
@@ -288,7 +296,7 @@ function ItemTable({
                       </Button>
                       <Button
                         variant="ghost"
-                        aria-label={t.recurring.editNamed(item.label)}
+                        aria-label={t.recurring.editNamed(label)}
                         onClick={() => onEdit(item)}
                       >
                         {t.common.edit}
@@ -311,7 +319,7 @@ function ItemTable({
                       ) : (
                         <Button
                           variant="ghost"
-                          aria-label={t.recurring.deleteNamed(item.label)}
+                          aria-label={t.recurring.deleteNamed(label)}
                           onClick={() => setConfirming(item.id)}
                         >
                           {t.common.delete}
@@ -346,6 +354,7 @@ function History({
 }) {
   const { t } = useI18n();
   const skip = useSkip();
+  const label = useItemLabel()(item);
   if (item.recent.length === 0) return <p className="text-muted">{t.recurring.noHistory}</p>;
   const row = (o: OccurrenceOut) => {
     const date = formatDate(o.due);
@@ -358,14 +367,14 @@ function History({
           <>
             <Button
               variant="ghost"
-              aria-label={t.recurring.enterNamed(item.label, date)}
+              aria-label={t.recurring.enterNamed(label, date)}
               onClick={() => onEnter(o)}
             >
               {t.recurring.enterIt}
             </Button>
             <Button
               variant="ghost"
-              aria-label={t.recurring.skipNamed(item.label, date)}
+              aria-label={t.recurring.skipNamed(label, date)}
               disabled={skip.isPending}
               onClick={() => skip.mutate({ itemId: item.id, due: o.due, skip: true })}
             >
@@ -376,7 +385,7 @@ function History({
         {o.status === "skipped" && (
           <Button
             variant="ghost"
-            aria-label={t.recurring.unskipNamed(item.label, date)}
+            aria-label={t.recurring.unskipNamed(label, date)}
             disabled={skip.isPending}
             onClick={() => skip.mutate({ itemId: item.id, due: o.due, skip: false })}
           >
@@ -387,7 +396,7 @@ function History({
     );
   };
   return (
-    <ul aria-label={t.recurring.historyOf(item.label)} className="text-sm">
+    <ul aria-label={t.recurring.historyOf(label)} className="text-sm">
       {item.recent.map(row)}
     </ul>
   );
@@ -431,10 +440,18 @@ function ItemForm({
   const editing = "item" in draft ? draft.item : null;
   const start = initial(draft, accounts);
   const [accountId, setAccountId] = useState(start.account_id);
-  const [label, setLabel] = useState(start.label);
-  const [kind, setKind] = useState<"expense" | "income">(
-    start.amount && !start.amount.startsWith("-") ? "income" : "expense",
+  const [destinationId, setDestinationId] = useState(
+    start.destination_account_id ?? accounts.find((a) => a.id !== start.account_id)?.id ?? "",
   );
+  const [label, setLabel] = useState(start.label);
+  const [kind, setKind] = useState<"expense" | "income" | "transfer">(
+    start.destination_account_id
+      ? "transfer"
+      : start.amount && !start.amount.startsWith("-")
+        ? "income"
+        : "expense",
+  );
+  const transfer = kind === "transfer";
   const [amount, setAmount] = useState(
     start.amount ? amountInput(start.amount.replace("-", "")) : "",
   );
@@ -444,9 +461,10 @@ function ItemForm({
   const [startOn, setStartOn] = useState(start.start_on);
   const [endOn, setEndOn] = useState(start.end_on ?? "");
   const [categoryId, setCategoryId] = useState(start.category_id ?? "");
-  const [invalid, setInvalid] = useState(false);
+  const [invalid, setInvalid] = useState<string | null>(null);
   const ids = {
     account: useId(),
+    destination: useId(),
     kind: useId(),
     frequency: useId(),
     day: useId(),
@@ -457,7 +475,8 @@ function ItemForm({
     mutationFn: async (signed: string) => {
       const body = {
         account_id: accountId,
-        category_id: categoryId || null,
+        destination_account_id: transfer ? destinationId : null,
+        category_id: transfer ? null : categoryId || null,
         label,
         amount: signed,
         frequency,
@@ -488,8 +507,13 @@ function ItemForm({
     event.preventDefault();
     const parsed = parseEurInput(amount);
     const ok = parsed !== null && !parsed.startsWith("-") && parsed !== "0.00";
-    setInvalid(!ok);
-    if (ok) save.mutate(kind === "expense" ? `-${parsed}` : parsed);
+    const problem = !ok
+      ? t.recurring.invalidAmount
+      : transfer && accountId === destinationId
+        ? t.transactions.sameAccounts
+        : null;
+    setInvalid(problem);
+    if (!problem && parsed) save.mutate(kind === "income" ? parsed : `-${parsed}`);
   };
   const changeFrequency = (next: Frequency) => {
     // A weekday (0-6) and a day of the month (1-31) do not carry over.
@@ -507,9 +531,27 @@ function ItemForm({
       className="grid gap-4 rounded-lg border border-accent bg-surface p-4 sm:grid-cols-2"
     >
       <h2 className="text-lg font-bold sm:col-span-2">{title}</h2>
+      <fieldset className="flex items-center gap-4 sm:col-span-2">
+        <legend className="sr-only">{t.transactions.direction}</legend>
+        {(accounts.length > 1
+          ? (["expense", "income", "transfer"] as const)
+          : (["expense", "income"] as const)
+        ).map((value) => (
+          <label key={value} className="flex items-center gap-2 text-sm">
+            <input
+              type="radio"
+              name={ids.kind}
+              value={value}
+              checked={kind === value}
+              onChange={() => setKind(value)}
+            />
+            {t.transactions[value]}
+          </label>
+        ))}
+      </fieldset>
       <div className="flex flex-col gap-1">
         <label htmlFor={ids.account} className="text-sm font-medium">
-          {t.recurring.account}
+          {transfer ? t.transactions.fromAccount : t.recurring.account}
         </label>
         <select
           id={ids.account}
@@ -524,31 +566,37 @@ function ItemForm({
           ))}
         </select>
       </div>
+      {transfer && (
+        <div className="flex flex-col gap-1">
+          <label htmlFor={ids.destination} className="text-sm font-medium">
+            {t.transactions.toAccount}
+          </label>
+          <select
+            id={ids.destination}
+            className={fieldClass}
+            value={destinationId}
+            onChange={(e) => setDestinationId(e.target.value)}
+          >
+            {accounts.map((a) => (
+              <option key={a.id} value={a.id}>
+                {a.name} ({a.institution})
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
       <div className="flex flex-col gap-1">
         <TextField
-          label={t.recurring.label}
-          required
+          label={transfer ? t.transactions.labelOptional : t.recurring.label}
+          required={!transfer}
           maxLength={100}
           value={label}
           onChange={(e) => setLabel(e.target.value)}
         />
-        <p className="text-xs text-muted">{t.recurring.labelHelp}</p>
+        <p className="text-xs text-muted">
+          {transfer ? t.recurring.transferHelp : t.recurring.labelHelp}
+        </p>
       </div>
-      <fieldset className="flex items-center gap-4">
-        <legend className="sr-only">{t.transactions.direction}</legend>
-        {(["expense", "income"] as const).map((value) => (
-          <label key={value} className="flex items-center gap-2 text-sm">
-            <input
-              type="radio"
-              name={ids.kind}
-              value={value}
-              checked={kind === value}
-              onChange={() => setKind(value)}
-            />
-            {value === "expense" ? t.transactions.expense : t.transactions.income}
-          </label>
-        ))}
-      </fieldset>
       <TextField
         label={t.recurring.amountEur}
         inputMode="decimal"
@@ -627,22 +675,24 @@ function ItemForm({
         value={endOn}
         onChange={(e) => setEndOn(e.target.value)}
       />
-      <div className="flex flex-col gap-1 sm:col-span-2">
-        <label htmlFor={ids.category} className="text-sm font-medium">
-          {t.recurring.category}
-        </label>
-        <select
-          id={ids.category}
-          className={fieldClass}
-          value={categoryId}
-          onChange={(e) => setCategoryId(e.target.value)}
-        >
-          <option value="">{t.recurring.noCategory}</option>
-          <CategoryOptions categories={categories.data ?? []} />
-        </select>
-      </div>
+      {!transfer && (
+        <div className="flex flex-col gap-1 sm:col-span-2">
+          <label htmlFor={ids.category} className="text-sm font-medium">
+            {t.recurring.category}
+          </label>
+          <select
+            id={ids.category}
+            className={fieldClass}
+            value={categoryId}
+            onChange={(e) => setCategoryId(e.target.value)}
+          >
+            <option value="">{t.recurring.noCategory}</option>
+            <CategoryOptions categories={categories.data ?? []} />
+          </select>
+        </div>
+      )}
       <div className="sm:col-span-2">
-        <ErrorAlert message={invalid ? t.recurring.invalidAmount : (save.error?.message ?? null)} />
+        <ErrorAlert message={invalid ?? save.error?.message ?? null} />
       </div>
       <div className="flex gap-3 sm:col-span-2">
         <Button type="submit" disabled={save.isPending}>

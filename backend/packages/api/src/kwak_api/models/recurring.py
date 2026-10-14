@@ -27,6 +27,12 @@ class RecurringItem(UUIDPrimaryKey, Timestamps, Base):
     __table_args__ = (
         CheckConstraint("day BETWEEN 0 AND 31", name="day_range"),
         CheckConstraint("end_on IS NULL OR end_on >= start_on", name="start_before_end"),
+        CheckConstraint(
+            "destination_id IS NULL OR destination_id <> account_id", name="transfer_accounts"
+        ),
+        CheckConstraint(
+            "destination_id IS NULL OR category_id IS NULL", name="transfer_no_category"
+        ),
     )
 
     household_id: Mapped[UUID] = mapped_column(ForeignKey("household.id"), index=True)
@@ -34,8 +40,12 @@ class RecurringItem(UUIDPrimaryKey, Timestamps, Base):
         ForeignKey("account.id", ondelete="CASCADE"), index=True
     )
     category_id: Mapped[UUID | None] = mapped_column(ForeignKey("category.id", ondelete="SET NULL"))
+    destination_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("account.id", ondelete="CASCADE"), index=True
+    )
+    """Set for a transfer item (F-TX-9): the account its amount is paid into."""
     label: Mapped[str] = mapped_column(String(100))
-    """Matched in the transactions' labels as a rule's (F-CAT-2)."""
+    """Matched in the transactions' labels as a rule's (F-CAT-2); empty for a transfer item."""
     amount: Mapped[Decimal] = mapped_column(Numeric(14, 2))
     frequency: Mapped[Frequency] = mapped_column(
         Enum(
@@ -54,7 +64,8 @@ class RecurringItem(UUIDPrimaryKey, Timestamps, Base):
     estimated: Mapped[bool] = mapped_column(server_default=false())
     paused: Mapped[bool] = mapped_column(server_default=false())
 
-    account: Mapped[Account] = relationship()
+    account: Mapped[Account] = relationship(foreign_keys=[account_id])
+    destination: Mapped[Account | None] = relationship(foreign_keys=[destination_id])
 
 
 class RecurringSkip(UUIDPrimaryKey, Base):

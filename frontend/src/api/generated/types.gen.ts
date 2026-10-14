@@ -1292,6 +1292,10 @@ export type RecurringIn = {
      */
     day: number;
     /**
+     * Destination Account Id
+     */
+    destination_account_id?: string | null;
+    /**
      * End On
      */
     end_on?: string | null;
@@ -1342,6 +1346,14 @@ export type RecurringOut = {
      * Day
      */
     day: number;
+    /**
+     * Destination Account Id
+     */
+    destination_account_id: string | null;
+    /**
+     * Destination Account Name
+     */
+    destination_account_name: string | null;
     /**
      * End On
      */
@@ -1396,6 +1408,10 @@ export type RecurringPatch = {
      * Day
      */
     day?: number | null;
+    /**
+     * Destination Account Id
+     */
+    destination_account_id?: string | null;
     /**
      * End On
      */
@@ -2189,9 +2205,21 @@ export type UpcomingOccurrence = {
      */
     account_name: string;
     /**
+     * Amount In Scope
+     */
+    amount_in_scope: string;
+    /**
      * Category Id
      */
     category_id: string | null;
+    /**
+     * Destination Account Id
+     */
+    destination_account_id: string | null;
+    /**
+     * Destination Account Name
+     */
+    destination_account_name: string | null;
     /**
      * Due
      */

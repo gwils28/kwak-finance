@@ -78,6 +78,25 @@ export const transactionsEn = {
   link: "Link",
   transferLine: (amount: string, from: string, fromDate: string, to: string, toDate: string) =>
     `${amount} from ${from} (${fromDate}) to ${to} (${toDate})`,
+  transfer: "Transfer",
+  fromAccount: "From account",
+  toAccount: "To account",
+  labelOptional: "Label (optional)",
+  transferLabelHelp: "By default “Transfer to …” on one side and “Transfer from …” on the other.",
+  sameAccounts: "A transfer moves money between two different accounts: pick another one.",
+  transferSide: (direction: string) =>
+    `${direction}: the other side follows a change of amount or date while it is entered by hand.`,
+  linkTo: "Link to…",
+  linkNamed: (label: string) => `Link ${label} to a transfer`,
+  linkTitle: "Link to a transfer",
+  linkSource: (label: string, amount: string) => `${label}, ${amount}`,
+  linkHelp:
+    "The same amount the other way, on another of your accounts, within 31 days, closest first.",
+  noCandidates:
+    "No transaction of the opposite amount on your other accounts within 31 days: both sides of a transfer have the same amount.",
+  linkWith: (label: string, date: string) => `Link with ${label} of ${date}`,
+  linkFailed:
+    "Could not link them: one of the two is already part of a transfer, or has just changed.",
 };
 
 export const transactionsFr: typeof transactionsEn = {
@@ -158,4 +177,24 @@ export const transactionsFr: typeof transactionsEn = {
   link: "Lier",
   transferLine: (amount, from, fromDate, to, toDate) =>
     `${amount} de ${from} (${fromDate}) vers ${to} (${toDate})`,
+  transfer: "Virement",
+  fromAccount: "Depuis le compte",
+  toAccount: "Vers le compte",
+  labelOptional: "Libellé (facultatif)",
+  transferLabelHelp:
+    "Par défaut « Virement vers … » d'un côté et « Virement depuis … » de l'autre.",
+  sameAccounts: "Un virement va d'un compte à un autre : choisissez un autre compte.",
+  transferSide: (direction) =>
+    `${direction} : l'autre côté suit un changement de montant ou de date tant qu'il est saisi à la main.`,
+  linkTo: "Lier à…",
+  linkNamed: (label) => `Lier ${label} à un virement`,
+  linkTitle: "Lier à un virement",
+  linkSource: (label, amount) => `${label}, ${amount}`,
+  linkHelp:
+    "Le même montant dans l'autre sens, sur un autre de vos comptes, à 31 jours au plus, les plus proches d'abord.",
+  noCandidates:
+    "Aucune opération du montant opposé sur vos autres comptes à 31 jours près : les deux côtés d'un virement ont le même montant.",
+  linkWith: (label, date) => `Lier avec ${label} du ${date}`,
+  linkFailed:
+    "Impossible de les lier : l'une des deux fait déjà partie d'un virement, ou vient de changer.",
 };

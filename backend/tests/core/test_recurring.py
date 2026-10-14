@@ -5,6 +5,7 @@ from uuid import UUID, uuid4
 import pytest
 from hypothesis import given
 from hypothesis import strategies as st
+from kwak_core.accounts import AccountType
 from kwak_core.recurring import (
     LATE_WINDOW,
     TOLERANCE,
@@ -15,12 +16,14 @@ from kwak_core.recurring import (
     OccurrenceStatus,
     RecurringError,
     check_item,
+    check_transfer_accounts,
     detect,
     due_dates,
     entry_date,
     estimate,
     occurrences,
     projected_balance,
+    scope_amount,
     upcoming,
 )
 
@@ -341,3 +344,100 @@ def test_dismissed_and_known_series_are_not_suggested_again() -> None:
     history = [booked(date(2026, m, 4), "-15.99", "NETFLIX") for m in (7, 8, 9)]
     assert detect(history, today=date(2026, 10, 13), dismissed={(ACCOUNT, "NETFLIX")}) == []
     assert detect(history, today=date(2026, 10, 13), known={h.id for h in history}) == []
+
+
+# Transfer items (F-REC-1, F-TX-9).
+
+JOINT = uuid4()
+
+
+def share(**changes: object) -> Item:
+    """A member's monthly share, paid from their account into the joint one."""
+    fields: dict[str, object] = {
+        "label": "",
+        "amount": D("-500.00"),
+        "day": 5,
+        "destination_id": JOINT,
+    }
+    fields.update(changes)
+    return item(**fields)
+
+
+def sent(day: date, amount: str = "-500.00", to: UUID | None = JOINT) -> Booked:
+    """The outflow side of a linked transfer."""
+    return Booked(uuid4(), ACCOUNT, day, D(amount), "VIR VERS COMPTE COMMUN", transfer_to=to)
+
+
+def test_a_transfer_item_needs_no_label_but_two_accounts_and_an_outflow() -> None:
+    check_item(share())
+    with pytest.raises(RecurringError):
+        check_item(share(destination_id=ACCOUNT))
+    with pytest.raises(RecurringError):
+        check_item(share(amount=D("500.00")))
+    with pytest.raises(RecurringError, match="category"):
+        check_item(share(category_id=uuid4()))
+
+
+def test_a_transfer_item_only_moves_money_between_cash_accounts() -> None:
+    check_transfer_accounts(AccountType.CHECKING, AccountType.SAVINGS)
+    with pytest.raises(RecurringError, match="checking or savings"):
+        check_transfer_accounts(AccountType.CHECKING, AccountType.BROKERAGE)
+
+
+def test_a_transfer_item_is_fulfilled_by_a_linked_transfer_to_its_destination() -> None:
+    month = (date(2026, 10, 1), date(2026, 10, 31))
+    today = date(2026, 10, 20)
+    plain = booked(date(2026, 10, 5), "-500.00", "VIR VERS COMPTE COMMUN")
+    elsewhere = sent(date(2026, 10, 5), to=uuid4())
+    for txns in ([plain], [elsewhere]):
+        [o] = occurrences([share()], txns, *month, today=today)
+        assert o.status is OccurrenceStatus.LATE
+    paid = sent(date(2026, 10, 7), "-520.00")
+    [o] = occurrences([share()], [paid], *month, today=today)
+    assert (o.status, o.transaction_id) == (OccurrenceStatus.FULFILLED, paid.id)
+
+
+def test_a_transfer_side_does_not_fulfil_an_ordinary_item() -> None:
+    rent = item(label="VIR", amount=D("-500.00"), day=5)
+    [o] = occurrences(
+        [rent],
+        [sent(date(2026, 10, 5))],
+        date(2026, 10, 1),
+        date(2026, 10, 31),
+        today=date(2026, 10, 20),
+    )
+    assert o.status is OccurrenceStatus.LATE
+
+
+def test_transfers_are_never_suggested() -> None:
+    history = [sent(date(2026, m, 5)) for m in (7, 8, 9, 10)]
+    assert detect(history, today=date(2026, 10, 13)) == []
+
+
+def test_a_transfer_item_counts_on_each_side_in_the_scopes_holding_it() -> None:
+    mine, joint, household = {ACCOUNT}, {JOINT}, {ACCOUNT, JOINT}
+    it = share()
+    assert scope_amount(it, D("-500.00"), mine) == D("-500.00")
+    assert scope_amount(it, D("-500.00"), joint) == D("500.00")
+    assert scope_amount(it, D("-500.00"), household) == 0
+    rent = item()
+    assert scope_amount(rent, D("-950.00"), mine) == D("-950.00")
+    result = occurrences(
+        [it, rent], [], date(2026, 10, 1), date(2026, 10, 31), today=date(2026, 10, 1)
+    )
+    items = {it.id: it, rent.id: rent}
+    assert projected_balance(D("100.00"), result, items=items, accounts=joint) == D("600.00")
+    assert projected_balance(D("100.00"), result, items=items, accounts=household) == D("-850.00")
+
+
+@given(st.lists(st.tuples(st.integers(1, 28), st.integers(1, 2000)), max_size=6))
+def test_transfer_items_never_move_the_household_projection(shares: list[tuple[int, int]]) -> None:
+    """Invariant §8.16: a transfer item counts only its sides on the scope's accounts."""
+    items = {i.id: i for i in (share(day=d, amount=-D(c)) for d, c in shares)}
+    result = occurrences(
+        items.values(), [], date(2026, 10, 1), date(2026, 10, 31), today=date(2026, 10, 1)
+    )
+    assert projected_balance(D(0), result, items=items, accounts={ACCOUNT, JOINT}) == 0
+    assert projected_balance(D(0), result, items=items, accounts={JOINT}) == -projected_balance(
+        D(0), result, items=items, accounts={ACCOUNT}
+    )

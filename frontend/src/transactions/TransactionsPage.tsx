@@ -20,6 +20,7 @@ import { formatDate } from "../lib/dates";
 import { formatEur } from "../lib/money";
 import { monthLabel, shiftMonth } from "../lib/months";
 import { CategoryOptions, categoriesQuery } from "./categories";
+import { LinkPanel } from "./LinkPanel";
 import { RuleForm } from "./RuleForm";
 import { TransactionForm } from "./TransactionForm";
 import { afterTransferChange, TransferBanner } from "./TransferBanner";
@@ -69,6 +70,7 @@ export function TransactionsPage() {
   const [adding, setAdding] = useState(false);
   const [editing, setEditing] = useState<TransactionOut | null>(null);
   const [ruleFrom, setRuleFrom] = useState<TransactionOut | null>(null);
+  const [linkFrom, setLinkFrom] = useState<TransactionOut | null>(null);
   const [notice, setNotice] = useState("");
   const categories = useQuery(categoriesQuery);
   const accounts = useQuery({
@@ -165,6 +167,17 @@ export function TransactionsPage() {
           />
         </InView>
       )}
+      {linkFrom && (
+        <InView key={linkFrom.id}>
+          <LinkPanel
+            transaction={linkFrom}
+            onDone={(message) => {
+              setLinkFrom(null);
+              setNotice(message);
+            }}
+          />
+        </InView>
+      )}
       {notice && (
         <p className="rounded-md border border-accent px-3 py-2 text-sm" aria-live="polite">
           {notice}
@@ -192,6 +205,10 @@ export function TransactionsPage() {
             categories={categories.data ?? []}
             onNotice={setNotice}
             onRule={setRuleFrom}
+            onLink={setLinkFrom}
+            cashAccounts={
+              new Set(accounts.data?.filter((a) => CASH.has(a.type)).map((a) => a.id) ?? [])
+            }
             onEdit={(tx) => {
               setAdding(false);
               setEditing(tx);
@@ -343,12 +360,17 @@ function TransactionTable({
   categories,
   onEdit,
   onRule,
+  onLink,
+  cashAccounts,
   onNotice,
 }: {
   items: TransactionOut[];
   categories: CategoryOut[];
   onEdit: (tx: TransactionOut) => void;
   onRule: (tx: TransactionOut) => void;
+  onLink: (tx: TransactionOut) => void;
+  /** Transfers only link checking and savings accounts. */
+  cashAccounts: Set<string>;
   onNotice: (message: string) => void;
 }) {
   const { t } = useI18n();
@@ -556,6 +578,15 @@ function TransactionTable({
                     >
                       {t.transactions.rule}
                     </Button>
+                    {!tx.transfer_group_id && cashAccounts.has(tx.account_id) && (
+                      <Button
+                        variant="ghost"
+                        aria-label={t.transactions.linkNamed(tx.label)}
+                        onClick={() => onLink(tx)}
+                      >
+                        {t.transactions.linkTo}
+                      </Button>
+                    )}
                     {tx.source === "import" ? (
                       <span className="text-xs text-muted">{t.transactions.imported}</span>
                     ) : confirming === tx.id ? (
