@@ -1,13 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  type FormEvent,
-  Fragment,
-  type ReactNode,
-  useEffect,
-  useId,
-  useRef,
-  useState,
-} from "react";
+import { type FormEvent, Fragment, useId, useState } from "react";
 import {
   type AccountOut,
   createRecurring,
@@ -23,6 +15,7 @@ import {
   updateRecurring,
 } from "../api/generated";
 import { apiErrorMessage, detailSentence } from "../auth/errors";
+import { InView } from "../components/InView";
 import { Button, ErrorAlert, TextField } from "../components/ui";
 import { useI18n } from "../i18n";
 import { formatDate, todayIso } from "../lib/dates";
@@ -108,20 +101,6 @@ export function RecurringPage() {
           onEnter={enter}
         />
       )}
-    </div>
-  );
-}
-
-/** Brings a form opened from further down the page into view. */
-function InView({ children }: { children: ReactNode }) {
-  const ref = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    // Not returned: scrollIntoView may return a promise, which React would call as a cleanup.
-    ref.current?.scrollIntoView?.({ behavior: "smooth", block: "start" });
-  }, []);
-  return (
-    <div ref={ref} className="scroll-mt-20">
-      {children}
     </div>
   );
 }

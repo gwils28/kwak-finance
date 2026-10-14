@@ -1,6 +1,6 @@
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { afterEach, expect, test, vi } from "vitest";
+import { afterEach, expect, onTestFinished, test, vi } from "vitest";
 import { fakeApi, owner } from "../test/fakeApi";
 import { TestApp } from "../test/TestApp";
 
@@ -304,4 +304,25 @@ test("the list filters on the budget month", async () => {
   await screen.findByRole("table", { name: "Transactions" });
   expect(listQueries().at(-1)?.get("budget_month")).toBe("2026-04");
   expect(screen.getByLabelText("Budget month")).toHaveValue("2026-04");
+});
+
+test("the edit form opened from a row further down is brought into view and focused", async () => {
+  // jsdom has no scrollIntoView.
+  const scrollIntoView = vi.fn();
+  Object.defineProperty(HTMLElement.prototype, "scrollIntoView", {
+    value: scrollIntoView,
+    configurable: true,
+  });
+  onTestFinished(() => {
+    delete (HTMLElement.prototype as Partial<HTMLElement>).scrollIntoView;
+  });
+  api();
+  render(<TestApp path="/transactions" />);
+
+  const user = userEvent.setup();
+  await user.click(await screen.findByRole("button", { name: "Edit Salary" }));
+
+  const form = screen.getByRole("form", { name: "Edit transaction" });
+  expect(scrollIntoView).toHaveBeenCalled();
+  expect(form).toContainElement(document.activeElement as HTMLElement);
 });

@@ -12,6 +12,7 @@ import {
   unlinkTransfer,
   updateTransaction,
 } from "../api/generated";
+import { InView } from "../components/InView";
 import { Icon } from "../components/icons";
 import { Button, ErrorAlert } from "../components/ui";
 import { useI18n } from "../i18n";
@@ -140,27 +141,29 @@ export function TransactionsPage() {
         </div>
       </div>
       {(adding || editing) && accounts.data && (
-        <TransactionForm
-          key={editing?.id ?? "new"}
-          transaction={editing}
-          accounts={accounts.data.filter((a) => CASH.has(a.type) && !a.closed_on)}
-          onDone={() => {
-            setAdding(false);
-            setEditing(null);
-          }}
-        />
+        <InView key={editing?.id ?? "new"}>
+          <TransactionForm
+            transaction={editing}
+            accounts={accounts.data.filter((a) => CASH.has(a.type) && !a.closed_on)}
+            onDone={() => {
+              setAdding(false);
+              setEditing(null);
+            }}
+          />
+        </InView>
       )}
       <TransferBanner onNotice={setNotice} />
       {ruleFrom && categories.data && (
-        <RuleForm
-          key={ruleFrom.id}
-          transaction={ruleFrom}
-          categories={categories.data}
-          onDone={(message) => {
-            setRuleFrom(null);
-            setNotice(message);
-          }}
-        />
+        <InView key={ruleFrom.id}>
+          <RuleForm
+            transaction={ruleFrom}
+            categories={categories.data}
+            onDone={(message) => {
+              setRuleFrom(null);
+              setNotice(message);
+            }}
+          />
+        </InView>
       )}
       {notice && (
         <p className="rounded-md border border-accent px-3 py-2 text-sm" aria-live="polite">
