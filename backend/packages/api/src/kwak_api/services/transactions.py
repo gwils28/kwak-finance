@@ -9,6 +9,7 @@ from kwak_core.accounts import CASH_TYPES
 from kwak_core.budget import Month
 from kwak_core.budget_month import check_manual_month
 from kwak_core.imports import normalize_label
+from kwak_core.transfers import Movement, SideEdit, mirror_edit
 from sqlalchemy import func, select
 from sqlalchemy import update as sql_update
 from sqlalchemy.orm import Session
@@ -25,6 +26,11 @@ class TransferCategoryError(Exception):
 
 class ImportedTransactionError(Exception):
     """Imported rows mirror the bank: correct them by rolling the import back."""
+
+
+class HiddenSideError(Exception):
+    """The other side of the transfer is on an account the user cannot see: only the label
+    of their side can change. Raised before any check of that side, so nothing leaks."""
 
 
 @dataclass
@@ -127,6 +133,7 @@ def _manual_only(transaction: Transaction) -> None:
 
 def update(
     db: Session,
+    viewer: User,
     transaction: Transaction,
     account: Account,
     *,
@@ -151,11 +158,47 @@ def update(
             raise ValueError(
                 "the budget month set by hand would be more than one month from this date"
             ) from None
+    other = _other_side(db, transaction)
+    if other is not None and (booked_on or amount is not None):
+        if find_visible_account(db, viewer, other.account_id) is None:
+            raise HiddenSideError
+        mirrored = mirror_edit(
+            _movement(transaction),
+            _movement(other),
+            SideEdit(amount=amount, booked_on=booked_on),
+            other_manual=other.fingerprint is None,
+        )
+        if mirrored != SideEdit():
+            other_account = db.get_one(Account, other.account_id)
+            _check_entry(
+                other_account,
+                mirrored.booked_on or other.booked_on,
+                other.amount if mirrored.amount is None else mirrored.amount,
+                other.label_raw,
+            )
+            other.booked_on = mirrored.booked_on or other.booked_on
+            other.amount = other.amount if mirrored.amount is None else mirrored.amount
     transaction.booked_on = booked_on or transaction.booked_on
     transaction.amount = transaction.amount if amount is None else amount
     transaction.label_raw = label
     transaction.label_norm = normalize_label(label)
     db.flush()
+
+
+def _movement(t: Transaction) -> Movement:
+    return Movement(t.id, t.account_id, t.booked_on, t.amount)
+
+
+def _other_side(db: Session, transaction: Transaction) -> Transaction | None:
+    """The other side of the transfer the transaction belongs to, if any."""
+    if transaction.transfer_group_id is None:
+        return None
+    return db.scalar(
+        select(Transaction).where(
+            Transaction.transfer_group_id == transaction.transfer_group_id,
+            Transaction.id != transaction.id,
+        )
+    )
 
 
 class TransferMonthError(Exception):
@@ -199,7 +242,16 @@ def categorise(
     return len(result.all())
 
 
-def delete(db: Session, transaction: Transaction) -> None:
+def delete(db: Session, viewer: User, transaction: Transaction) -> None:
+    """Delete a manual entry. A transfer goes with its other side when that one is a manual
+    entry too; a side from a statement is only unlinked (F-TX-9)."""
     _manual_only(transaction)
+    other = _other_side(db, transaction)
+    if other is not None and find_visible_account(db, viewer, other.account_id) is None:
+        raise HiddenSideError
+    if other is not None and other.fingerprint is None:
+        db.delete(other)
+    elif other is not None:
+        other.transfer_group_id = None
     db.delete(transaction)
     db.flush()

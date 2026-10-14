@@ -2073,6 +2073,48 @@ export type TransactionPatch = {
 };
 
 /**
+ * TransferEntryIn
+ */
+export type TransferEntryIn = {
+    /**
+     * Amount
+     */
+    amount: number | string;
+    /**
+     * Booked On
+     */
+    booked_on: string;
+    /**
+     * Destination Account Id
+     */
+    destination_account_id: string;
+    /**
+     * Inflow Label
+     */
+    inflow_label: string;
+    /**
+     * Outflow Label
+     */
+    outflow_label: string;
+    /**
+     * Source Account Id
+     */
+    source_account_id: string;
+};
+
+/**
+ * TransferEntryOut
+ */
+export type TransferEntryOut = {
+    /**
+     * Group Id
+     */
+    group_id: string;
+    inflow: TransferSide;
+    outflow: TransferSide;
+};
+
+/**
  * TransferIn
  */
 export type TransferIn = {
@@ -4262,6 +4304,63 @@ export type AcceptTransferSuggestionsResponses = {
 };
 
 export type AcceptTransferSuggestionsResponse = AcceptTransferSuggestionsResponses[keyof AcceptTransferSuggestionsResponses];
+
+export type TransferCandidatesData = {
+    body?: never;
+    path: {
+        /**
+         * Transaction Id
+         */
+        transaction_id: string;
+    };
+    query?: never;
+    url: '/api/transfers/candidates/{transaction_id}';
+};
+
+export type TransferCandidatesErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type TransferCandidatesError = TransferCandidatesErrors[keyof TransferCandidatesErrors];
+
+export type TransferCandidatesResponses = {
+    /**
+     * Response Transfercandidates
+     *
+     * Successful Response
+     */
+    200: Array<TransferSide>;
+};
+
+export type TransferCandidatesResponse = TransferCandidatesResponses[keyof TransferCandidatesResponses];
+
+export type EnterTransferData = {
+    body: TransferEntryIn;
+    path?: never;
+    query?: never;
+    url: '/api/transfers/entries';
+};
+
+export type EnterTransferErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type EnterTransferError = EnterTransferErrors[keyof EnterTransferErrors];
+
+export type EnterTransferResponses = {
+    /**
+     * Successful Response
+     */
+    201: TransferEntryOut;
+};
+
+export type EnterTransferResponse = EnterTransferResponses[keyof EnterTransferResponses];
 
 export type TransferSuggestionsData = {
     body?: never;
