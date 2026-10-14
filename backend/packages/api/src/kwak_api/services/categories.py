@@ -26,8 +26,10 @@ from kwak_api.models import (
     CategorizationRule,
     Category,
     Transaction,
+    TransactionPart,
     User,
 )
+from kwak_api.services import budget_month
 from kwak_api.services.accounts import visible_accounts
 from kwak_api.services.budget import core_plan, is_editable, list_plans
 
@@ -186,6 +188,14 @@ def _count(
     return db.scalar(select(func.count()).select_from(model).where(model.category_id.in_(ids))) or 0
 
 
+def _split_count(db: Session, ids: list[UUID]) -> int:
+    """Split transactions with a part in these categories (F-TX-4)."""
+    query = select(func.count(func.distinct(TransactionPart.transaction_id))).where(
+        TransactionPart.category_id.in_(ids)
+    )
+    return db.scalar(query) or 0
+
+
 def restore_defaults(
     db: Session, household_id: UUID, language: Language, today: date, *, apply: bool
 ) -> RestoreSummary:
@@ -209,7 +219,8 @@ def restore_defaults(
         merged=[(categories[gone].name, final[kept]) for gone, kept in plan.merges.items()],
         moved=[final[cid] for cid in plan.moves],
         deleted=[categories[cid].name for cid in plan.deletes],
-        transactions_to_categorise=_count(db, Transaction, plan.deletes),
+        transactions_to_categorise=_count(db, Transaction, plan.deletes)
+        + _split_count(db, plan.deletes),
         rules_deleted=_count(db, CategorizationRule, plan.deletes),
     )
     # Plan targets lost: those of deleted categories, and a duplicate's where the kept
@@ -272,6 +283,11 @@ def _apply(
     for gone, kept in plan.merges.items():
         db.execute(
             update(Transaction).where(Transaction.category_id == gone).values(category_id=kept)
+        )
+        db.execute(
+            update(TransactionPart)
+            .where(TransactionPart.category_id == gone)
+            .values(category_id=kept)
         )
         db.execute(
             update(CategorizationRule)
@@ -340,10 +356,12 @@ def shift_preview(
             shift_day(child.shift_day, day),
         )
     accounts = [a.id for a in visible_accounts(db, viewer, include_closed=True)]
+    # A split transaction follows its first part's category (F-TX-4).
+    shift_category = budget_month.shift_category()
     rows = db.execute(
-        select(Transaction.category_id, Transaction.booked_on, Transaction.budget_month).where(
+        select(shift_category, Transaction.booked_on, Transaction.budget_month).where(
             Transaction.account_id.in_(accounts),
-            Transaction.category_id.in_(list(rules)),
+            shift_category.in_(list(rules)),
             Transaction.transfer_group_id.is_(None),
         )
     ).all()

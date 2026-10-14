@@ -1824,6 +1824,79 @@
         "title": "PaidFromIn",
         "type": "object"
       },
+      "PartIn": {
+        "properties": {
+          "amount": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              }
+            ],
+            "title": "Amount"
+          },
+          "category_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category Id"
+          }
+        },
+        "required": [
+          "category_id",
+          "amount"
+        ],
+        "title": "PartIn",
+        "type": "object"
+      },
+      "PartOut": {
+        "properties": {
+          "amount": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Amount",
+            "type": "string"
+          },
+          "category_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category Id"
+          },
+          "category_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category Name"
+          }
+        },
+        "required": [
+          "category_id",
+          "category_name",
+          "amount"
+        ],
+        "title": "PartOut",
+        "type": "object"
+      },
       "PasswordConfirmation": {
         "properties": {
           "password": {
@@ -3561,6 +3634,37 @@
         "title": "Side",
         "type": "string"
       },
+      "SplitIn": {
+        "properties": {
+          "parts": {
+            "items": {
+              "$ref": "#/components/schemas/PartIn"
+            },
+            "maxItems": 19,
+            "minItems": 1,
+            "title": "Parts",
+            "type": "array"
+          },
+          "rest_category_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rest Category Id"
+          }
+        },
+        "required": [
+          "parts",
+          "rest_category_id"
+        ],
+        "title": "SplitIn",
+        "type": "object"
+      },
       "SuggestionOut": {
         "properties": {
           "account_id": {
@@ -3821,6 +3925,24 @@
             "title": "Label",
             "type": "string"
           },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "parts": {
+            "items": {
+              "$ref": "#/components/schemas/PartOut"
+            },
+            "title": "Parts",
+            "type": "array"
+          },
           "source": {
             "enum": [
               "import",
@@ -3866,7 +3988,9 @@
           "transfer_group_id",
           "transfer_account_name",
           "budget_month",
-          "budget_month_set"
+          "budget_month_set",
+          "parts",
+          "note"
         ],
         "title": "TransactionOut",
         "type": "object"
@@ -3955,6 +4079,18 @@
               }
             ],
             "title": "Label"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "maxLength": 500,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
           }
         },
         "title": "TransactionPatch",
@@ -8541,6 +8677,134 @@
           }
         },
         "summary": "Update Transaction",
+        "tags": [
+          "transactions"
+        ]
+      }
+    },
+    "/api/transactions/{transaction_id}/split": {
+      "delete": {
+        "description": "Back to a single category, to categorise until one is chosen.",
+        "operationId": "unsplitTransaction",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "transaction_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Transaction Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "kwak_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Kwak Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransactionOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Unsplit Transaction",
+        "tags": [
+          "transactions"
+        ]
+      },
+      "put": {
+        "description": "Spread a transaction over categories (F-TX-4): the parts given, then the rest.",
+        "operationId": "splitTransaction",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "transaction_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Transaction Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "kwak_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Kwak Session"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SplitIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransactionOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Split Transaction",
         "tags": [
           "transactions"
         ]

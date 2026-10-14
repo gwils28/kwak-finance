@@ -10,7 +10,19 @@ from kwak_core.budget_month import Booked, budget_month, shift_day
 from sqlalchemy import ColumnElement, Date, and_, case, cast, extract, func, literal_column, select
 from sqlalchemy.orm import aliased
 
-from kwak_api.models import Category, Transaction
+from kwak_api.models import Category, Transaction, TransactionPart
+
+
+def shift_category() -> ColumnElement[UUID | None]:
+    """The category the month shift follows: the transaction's, or a split one's first part
+    (F-TX-4)."""
+    first_part = (
+        select(TransactionPart.category_id)
+        .where(TransactionPart.transaction_id == Transaction.id, TransactionPart.position == 0)
+        .correlate(Transaction)
+        .scalar_subquery()
+    )
+    return func.coalesce(Transaction.category_id, first_part)
 
 
 def _shift_from() -> ColumnElement[int]:
@@ -22,7 +34,7 @@ def _shift_from() -> ColumnElement[int]:
         select(func.nullif(func.coalesce(own.shift_day, parent.shift_day), literal_column("0")))
         .select_from(own)
         .outerjoin(parent, parent.id == own.parent_id)
-        .where(own.id == Transaction.category_id)
+        .where(own.id == shift_category())
         .correlate(Transaction)
         .scalar_subquery()
     )
@@ -54,7 +66,10 @@ def in_months(first: Month, last: Month) -> ColumnElement[bool]:
 
 
 def month_of(transaction: Transaction, categories: Mapping[UUID, Category]) -> Month:
-    category = categories.get(transaction.category_id) if transaction.category_id else None
+    category_id = transaction.category_id
+    if category_id is None and transaction.parts:
+        category_id = transaction.parts[0].category_id
+    category = categories.get(category_id) if category_id else None
     parent = categories.get(category.parent_id) if category and category.parent_id else None
     shift = (
         shift_day(category.shift_day, parent.shift_day if parent else None) if category else None

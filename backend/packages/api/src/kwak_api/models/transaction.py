@@ -92,3 +92,31 @@ class Transaction(UUIDPrimaryKey, Timestamps, Base):
     # was entered with, restored if the import is rolled back. NULL unless reconciled.
     bank_label: Mapped[str | None] = mapped_column(Text)
     entered_on: Mapped[date | None] = mapped_column(Date)
+    # F-TX-4: free text, searched with the label.
+    note: Mapped[str | None] = mapped_column(String(500))
+    # F-TX-4: a split transaction has no category of its own; its parts carry them.
+    parts: Mapped[list["TransactionPart"]] = relationship(
+        order_by="TransactionPart.position", cascade="all, delete-orphan", lazy="selectin"
+    )
+
+
+class TransactionPart(UUIDPrimaryKey, Base):
+    """One category's share of a split transaction (F-TX-4). The parts add up exactly to the
+    transaction's amount, each of its sign (invariant §8.2)."""
+
+    __tablename__ = "transaction_part"
+    __table_args__ = (
+        Index("uq_transaction_part_position", "transaction_id", "position", unique=True),
+        CheckConstraint("amount <> 0", name="amount_not_zero"),
+    )
+
+    transaction_id: Mapped[UUID] = mapped_column(
+        ForeignKey("transaction.id", ondelete="CASCADE"), index=True
+    )
+    position: Mapped[int] = mapped_column(Integer)
+    """0, 1, …: the last part takes the rest."""
+    # NULL = to categorise: deleting a category uncategorises the parts in it too.
+    category_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("category.id", ondelete="SET NULL"), index=True
+    )
+    amount: Mapped[Decimal] = mapped_column(Numeric(14, 2))

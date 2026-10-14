@@ -982,6 +982,38 @@ export type PaidFromIn = {
 };
 
 /**
+ * PartIn
+ */
+export type PartIn = {
+    /**
+     * Amount
+     */
+    amount: number | string;
+    /**
+     * Category Id
+     */
+    category_id: string | null;
+};
+
+/**
+ * PartOut
+ */
+export type PartOut = {
+    /**
+     * Amount
+     */
+    amount: string;
+    /**
+     * Category Id
+     */
+    category_id: string | null;
+    /**
+     * Category Name
+     */
+    category_name: string | null;
+};
+
+/**
  * PasswordConfirmation
  */
 export type PasswordConfirmation = {
@@ -1867,6 +1899,20 @@ export type ShiftPreviewOut = {
 export type Side = 'in' | 'out';
 
 /**
+ * SplitIn
+ */
+export type SplitIn = {
+    /**
+     * Parts
+     */
+    parts: Array<PartIn>;
+    /**
+     * Rest Category Id
+     */
+    rest_category_id: string | null;
+};
+
+/**
  * SuggestionOut
  */
 export type SuggestionOut = {
@@ -2033,6 +2079,14 @@ export type TransactionOut = {
      */
     label: string;
     /**
+     * Note
+     */
+    note: string | null;
+    /**
+     * Parts
+     */
+    parts: Array<PartOut>;
+    /**
      * Source
      */
     source: 'import' | 'manual';
@@ -2086,6 +2140,10 @@ export type TransactionPatch = {
      * Label
      */
     label?: string | null;
+    /**
+     * Note
+     */
+    note?: string | null;
 };
 
 /**
@@ -4282,6 +4340,66 @@ export type UpdateTransactionResponses = {
 };
 
 export type UpdateTransactionResponse = UpdateTransactionResponses[keyof UpdateTransactionResponses];
+
+export type UnsplitTransactionData = {
+    body?: never;
+    path: {
+        /**
+         * Transaction Id
+         */
+        transaction_id: string;
+    };
+    query?: never;
+    url: '/api/transactions/{transaction_id}/split';
+};
+
+export type UnsplitTransactionErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type UnsplitTransactionError = UnsplitTransactionErrors[keyof UnsplitTransactionErrors];
+
+export type UnsplitTransactionResponses = {
+    /**
+     * Successful Response
+     */
+    200: TransactionOut;
+};
+
+export type UnsplitTransactionResponse = UnsplitTransactionResponses[keyof UnsplitTransactionResponses];
+
+export type SplitTransactionData = {
+    body: SplitIn;
+    path: {
+        /**
+         * Transaction Id
+         */
+        transaction_id: string;
+    };
+    query?: never;
+    url: '/api/transactions/{transaction_id}/split';
+};
+
+export type SplitTransactionErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type SplitTransactionError = SplitTransactionErrors[keyof SplitTransactionErrors];
+
+export type SplitTransactionResponses = {
+    /**
+     * Successful Response
+     */
+    200: TransactionOut;
+};
+
+export type SplitTransactionResponse = SplitTransactionResponses[keyof SplitTransactionResponses];
 
 export type LinkTransferData = {
     body: TransferIn;

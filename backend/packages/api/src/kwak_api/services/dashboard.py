@@ -22,7 +22,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from kwak_api.models import Category, Transaction, User
-from kwak_api.services import budget_month
+from kwak_api.services import budget_month, lines
 from kwak_api.services.budget import crossing_by_month, matrix, scoped_accounts
 
 HISTORY_MONTHS = 12
@@ -81,14 +81,15 @@ def dashboard(db: Session, viewer: User, month: Month, scope: Scope) -> Dashboar
     # One labelled expression in SELECT and GROUP BY: written twice, each copy gets its own
     # bound parameter and Postgres sees two different expressions.
     outflow = (Transaction.amount < 0).label("outflow")
+    category = lines.category().label("category_id")
     rows = db.execute(
-        select(start_of, Transaction.category_id, outflow, func.sum(Transaction.amount))
+        lines.with_parts(select(start_of, category, outflow, func.sum(lines.amount())))
         .where(
             Transaction.account_id.in_(accounts),
             Transaction.transfer_group_id.is_(None),
             budget_month.in_months(first, month),
         )
-        .group_by(start_of, Transaction.category_id, outflow)
+        .group_by(start_of, category, outflow)
     )
     flows: dict[Month, list[Flow]] = defaultdict(list)
     for start, category_id, _outflow, total in rows:
@@ -111,10 +112,12 @@ def dashboard(db: Session, viewer: User, month: Month, scope: Scope) -> Dashboar
     history = [summaries[m].figures.spent for m in months[:-1] if flows[m]]
 
     daily: dict[date, Decimal] = defaultdict(Decimal)
-    uncategorised_count = 0
+    uncategorised: set[UUID] = set()
     uncategorised_spent = Decimal(0)
-    for booked_on, category_id, amount in db.execute(
-        select(Transaction.booked_on, Transaction.category_id, Transaction.amount).where(
+    for transaction_id, booked_on, category_id, amount in db.execute(
+        lines.with_parts(
+            select(Transaction.id, Transaction.booked_on, lines.category(), lines.amount())
+        ).where(
             Transaction.account_id.in_(accounts),
             Transaction.transfer_group_id.is_(None),
             budget_month.in_months(month, month),
@@ -123,7 +126,8 @@ def dashboard(db: Session, viewer: User, month: Month, scope: Scope) -> Dashboar
         # A transaction counted in this month from another one sits at its edge (F-TX-7).
         daily[budget_day(booked_on, month)] += _spent(category_id, amount, kinds)
         if category_id is None:
-            uncategorised_count += 1
+            # A split transaction counts once, however many of its parts are uncategorised.
+            uncategorised.add(transaction_id)
             uncategorised_spent += -amount if amount < 0 else Decimal(0)
 
     current = summaries[month]
@@ -133,7 +137,7 @@ def dashboard(db: Session, viewer: User, month: Month, scope: Scope) -> Dashboar
         previous=summaries[months[-2]].figures,
         average_spent=sum(history, Decimal(0)) / len(history) if history else Decimal(0),
         top=current.by_category[:5],
-        to_categorise_count=uncategorised_count,
+        to_categorise_count=len(uncategorised),
         to_categorise_spent=uncategorised_spent,
         monthly=[summaries[m] for m in months[1:]],
         cumulative=cumulative_by_day(month.year, month.month, daily),
