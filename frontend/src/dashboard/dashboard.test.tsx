@@ -167,18 +167,32 @@ test("a change cannot be computed from nothing", async () => {
   );
 });
 
-test("every chart has a table with its values", async () => {
+test("the month's top categories lead to its report", async () => {
   api();
   render(<TestApp path="/" />);
 
-  const byCategory = await screen.findByRole("table", { name: "Spending by category, Mar 2026" });
-  expect(within(byCategory).getByRole("row", { name: /Housing/ })).toHaveTextContent("€850");
-  expect(within(byCategory).getByRole("row", { name: /Housing/ })).toHaveTextContent("52%");
-  const months = screen.getByRole("table", { name: "Spending and income, last 12 months" });
-  expect(within(months).getAllByRole("row")).toHaveLength(13);
-  const pace = screen.getByRole("table", { name: "Spending so far against the budget pace" });
+  const top = await screen.findByRole("region", { name: "Top categories" });
+  const items = within(top).getAllByRole("listitem");
+  // The share is read out with what it is a share of.
+  expect(items[0]).toHaveTextContent("Housing€85052% of spending");
+  expect(items[1]).toHaveTextContent("Food€40625% of spending");
+  expect(within(top).getByRole("link", { name: "See the month's report" })).toHaveAttribute(
+    "href",
+    "/reports?start=2026-03&end=2026-03",
+  );
+});
+
+test("the pace chart has a table, and the months over time are left to the reports", async () => {
+  api();
+  render(<TestApp path="/" />);
+
+  const pace = await screen.findByRole("table", {
+    name: "Spending so far against the budget pace",
+  });
   expect(within(pace).getAllByRole("row").at(-1)).toHaveTextContent("€1,500");
   expect(within(pace).getAllByRole("row").at(-1)).toHaveTextContent("€1,800");
+  expect(screen.queryByRole("table", { name: /last 12 months/ })).not.toBeInTheDocument();
+  expect(screen.queryByRole("table", { name: /Spending by category/ })).not.toBeInTheDocument();
 });
 
 test("choosing a month refetches it", async () => {
@@ -422,4 +436,18 @@ test("a recurring transfer within the scope shows its amount without a sign", as
   const block = await screen.findByRole("region", { name: "Still expected this month" });
   const amount = within(block).getByText("€500.00");
   expect(amount).not.toHaveClass("text-positive");
+});
+
+test("a month without categorised spending says so, in French too", async () => {
+  fakeApi({
+    "GET /api/auth/me": () => Response.json({ ...owner, language: "fr" }),
+    "GET /api/dashboard": () => Response.json({ ...dashboard, top_categories: [] }),
+    "GET /api/budget/progress": () => Response.json(progress),
+    "GET /api/accounts": () => Response.json([]),
+  });
+  render(<TestApp path="/" language="fr" />);
+
+  const top = await screen.findByRole("region", { name: "Principales catégories" });
+  expect(top).toHaveTextContent("Aucune dépense catégorisée ce mois-ci.");
+  expect(within(top).getByRole("link", { name: "Voir le rapport du mois" })).toBeInTheDocument();
 });

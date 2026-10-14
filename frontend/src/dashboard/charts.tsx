@@ -6,11 +6,8 @@
 import { type ReactNode, useId } from "react";
 import {
   Area,
-  Bar,
-  BarChart,
   CartesianGrid,
   ComposedChart,
-  LabelList,
   Legend,
   Line,
   ResponsiveContainer,
@@ -18,11 +15,11 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import type { CategorySpending, DayPoint, MonthPoint } from "../api/generated";
+import type { DayPoint } from "../api/generated";
 import { useI18n } from "../i18n";
 import { formatDate } from "../lib/dates";
-import { formatEurWhole, formatPercent } from "../lib/money";
-import { daysInMonth, monthLabel, thisMonth } from "../lib/months";
+import { formatEurWhole } from "../lib/money";
+import { daysInMonth, thisMonth } from "../lib/months";
 
 export const ACCENT = "var(--color-chart-accent)";
 export const CONTEXT = "var(--color-chart-context)";
@@ -132,136 +129,6 @@ export function DataTable({
         </tbody>
       </table>
     </details>
-  );
-}
-
-/** Nominal categories: one hue for every bar, sorted by spending, value at the tip. */
-export function SpendingByCategory({
-  month,
-  categories,
-}: {
-  month: string;
-  categories: CategorySpending[];
-}) {
-  const { t } = useI18n();
-  const data = categories.map((c) => ({ name: c.name, spent: Number(c.spent) }));
-  const height = Math.max(120, data.length * 36 + 40);
-  return (
-    <Card title={t.dashboard.byCategory} subtitle={monthLabel(month)}>
-      {data.length === 0 ? (
-        <p className="text-sm text-muted">{t.dashboard.noCategorised}</p>
-      ) : (
-        <div style={{ height }}>
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart
-              data={data}
-              layout="vertical"
-              margin={{ top: 0, right: 72, bottom: 0, left: 0 }}
-            >
-              <CartesianGrid horizontal={false} stroke={GRID} />
-              <XAxis
-                type="number"
-                {...AXIS}
-                {...axisTicks(data.map((d) => d.spent))}
-                tickFormatter={(v: number) => formatEurWhole(v)}
-              />
-              <YAxis type="category" dataKey="name" width={130} {...AXIS} axisLine={false} />
-              <Tooltip {...TOOLTIP} cursor={{ fill: GRID, opacity: 0.4 }} />
-              <Bar
-                dataKey="spent"
-                name={t.dashboard.spent}
-                fill={ACCENT}
-                barSize={20}
-                radius={[0, 4, 4, 0]}
-                isAnimationActive={false}
-              >
-                <LabelList
-                  dataKey="spent"
-                  position="right"
-                  formatter={(v: unknown) => formatEurWhole(Number(v))}
-                  style={{ fill: "var(--color-fg)", fontSize: 12 }}
-                />
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      )}
-      <DataTable
-        label={t.dashboard.byCategoryOf(monthLabel(month))}
-        head={[t.dashboard.category, t.dashboard.spent, t.dashboard.share]}
-        rows={categories.map((c) => [
-          c.name,
-          formatEurWhole(c.spent),
-          c.share === null ? "" : formatPercent(c.share),
-        ])}
-      />
-    </Card>
-  );
-}
-
-/** Spending columns (accent) against the income line (grey), one euro axis. */
-export function SpendingOverMonths({ monthly }: { monthly: MonthPoint[] }) {
-  const { t } = useI18n();
-  // Months before the first transaction are not months of zero: leave them out.
-  const first = monthly.findIndex((m) => Number(m.spent) !== 0 || Number(m.income) !== 0);
-  const shown = first === -1 ? monthly : monthly.slice(first);
-  const data = shown.map((m) => ({
-    month: monthLabel(m.month),
-    spent: Number(m.spent),
-    income: Number(m.income),
-  }));
-  return (
-    <Card
-      title={t.dashboard.overMonths}
-      subtitle={
-        shown.length === 12
-          ? t.dashboard.last12
-          : t.dashboard.since(monthLabel(shown[0]?.month ?? ""))
-      }
-    >
-      <div style={{ height: 280 }}>
-        <ResponsiveContainer width="100%" height="100%">
-          <ComposedChart data={data} margin={{ top: 8, right: 16, bottom: 0, left: 0 }}>
-            <CartesianGrid vertical={false} stroke={GRID} />
-            <XAxis dataKey="month" {...AXIS} interval="preserveStartEnd" />
-            <YAxis
-              {...AXIS}
-              axisLine={false}
-              width={72}
-              {...axisTicks(data.flatMap((d) => [d.spent, d.income]))}
-              tickFormatter={(v: number) => formatEurWhole(v)}
-            />
-            <Tooltip {...TOOLTIP} cursor={{ stroke: GRID }} />
-            <Legend wrapperStyle={{ fontSize: 12 }} formatter={legendText} />
-            <Bar
-              dataKey="spent"
-              name={t.dashboard.spent}
-              fill={ACCENT}
-              barSize={20}
-              radius={[4, 4, 0, 0]}
-              isAnimationActive={false}
-            />
-            <Line
-              dataKey="income"
-              name={t.dashboard.income}
-              stroke={CONTEXT}
-              strokeWidth={2}
-              dot={{ r: 4, fill: CONTEXT, stroke: "var(--color-surface)", strokeWidth: 2 }}
-              isAnimationActive={false}
-            />
-          </ComposedChart>
-        </ResponsiveContainer>
-      </div>
-      <DataTable
-        label={t.dashboard.overMonthsTable}
-        head={[t.dashboard.monthColumn, t.dashboard.spent, t.dashboard.income]}
-        rows={monthly.map((m) => [
-          monthLabel(m.month),
-          formatEurWhole(m.spent),
-          formatEurWhole(m.income),
-        ])}
-      />
-    </Card>
   );
 }
 

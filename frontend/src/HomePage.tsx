@@ -5,8 +5,9 @@ import { dashboard as fetchDashboard, type Kpis, type Scope } from "./api/genera
 import { meQuery } from "./auth/session";
 import { ScopeSelect } from "./components/ScopeSelect";
 import { ErrorAlert } from "./components/ui";
-import { SpendingByCategory, SpendingOverMonths, SpendingPace } from "./dashboard/charts";
+import { SpendingPace } from "./dashboard/charts";
 import { MonthProgress } from "./dashboard/MonthProgress";
+import { TopCategories } from "./dashboard/TopCategories";
 import { Upcoming } from "./dashboard/Upcoming";
 import { GettingStarted } from "./guide/GettingStarted";
 import { useI18n } from "./i18n";
@@ -71,17 +72,13 @@ export function HomePage() {
           <MonthProgress month={data.month} scope={scope} isOwner={user.role === "owner"} />
           <Upcoming scope={scope} />
           <div className="grid gap-6 lg:grid-cols-2">
-            <SpendingByCategory
-              month={data.month}
-              categories={data.monthly.at(-1)?.by_category ?? []}
-            />
+            <TopCategories month={data.month} categories={data.top_categories} />
             <SpendingPace
               month={data.month}
               cumulative={data.cumulative}
               target={data.budget_target}
             />
           </div>
-          <SpendingOverMonths monthly={data.monthly} />
         </div>
       )}
     </div>

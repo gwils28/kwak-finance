@@ -20,6 +20,7 @@ import { HomePage } from "./HomePage";
 import { AcceptInvitePage } from "./household/AcceptInvitePage";
 import { MembersPage } from "./household/MembersPage";
 import { ImportPage } from "./imports/ImportPage";
+import { isMonth } from "./lib/months";
 import { RecurringPage } from "./recurring/RecurringPage";
 import { ReportsPage } from "./reports/ReportsPage";
 import { RunGuidePage } from "./runGuide/RunGuidePage";
@@ -100,7 +101,21 @@ const reviewRoute = createRoute({
 const reportsRoute = createRoute({
   getParentRoute: () => appRoute,
   path: "/reports",
-  component: ReportsPage,
+  validateSearch: (search: Record<string, unknown>): { start?: string; end?: string } =>
+    typeof search.start === "string" &&
+    typeof search.end === "string" &&
+    isMonth(search.start) &&
+    isMonth(search.end)
+      ? { start: search.start, end: search.end }
+      : // Explicit: the parent's raw search would otherwise show through.
+        { start: undefined, end: undefined },
+  component: function Reports() {
+    const { start, end } = reportsRoute.useSearch();
+    // Keyed by the link: following another one, or the tab without one, starts afresh.
+    return (
+      <ReportsPage key={`${start}-${end}`} initial={start && end ? { start, end } : undefined} />
+    );
+  },
 });
 
 const activityRoute = createRoute({

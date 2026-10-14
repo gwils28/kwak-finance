@@ -4,6 +4,11 @@ import { dateFormat } from "./locale";
 
 const MONTH_LABEL: Intl.DateTimeFormatOptions = { month: "short", year: "numeric" };
 
+/** "2026-03": a real month, as the API writes it. */
+export function isMonth(text: string): boolean {
+  return /^\d{4}-(0[1-9]|1[0-2])$/.test(text);
+}
+
 export function thisMonth(): string {
   const now = new Date();
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
