@@ -9,6 +9,7 @@ import {
 } from "@tanstack/react-router";
 import { AppLayout } from "./AppLayout";
 import { AccountsPage } from "./accounts/AccountsPage";
+import { ActivityPage } from "./activity/ActivityPage";
 import { LoginPage } from "./auth/LoginPage";
 import { meQuery } from "./auth/session";
 import { BudgetPage } from "./budget/BudgetPage";
@@ -20,6 +21,7 @@ import { AcceptInvitePage } from "./household/AcceptInvitePage";
 import { MembersPage } from "./household/MembersPage";
 import { ImportPage } from "./imports/ImportPage";
 import { RecurringPage } from "./recurring/RecurringPage";
+import { ReportsPage } from "./reports/ReportsPage";
 import { RunGuidePage } from "./runGuide/RunGuidePage";
 import { parseTransactionSearch, TransactionsPage } from "./transactions/TransactionsPage";
 
@@ -95,6 +97,18 @@ const reviewRoute = createRoute({
   },
 });
 
+const reportsRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: "/reports",
+  component: ReportsPage,
+});
+
+const activityRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: "/activity",
+  component: ActivityPage,
+});
+
 const guideRoute = createRoute({
   getParentRoute: () => appRoute,
   path: "/guide",
@@ -138,8 +152,10 @@ const routeTree = rootRoute.addChildren([
     recurringRoute,
     budgetRoute,
     reviewRoute,
+    reportsRoute,
     categoriesRoute,
     membersRoute,
+    activityRoute,
     guideRoute,
   ]),
   loginRoute,

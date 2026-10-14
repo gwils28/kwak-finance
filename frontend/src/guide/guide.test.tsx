@@ -134,6 +134,7 @@ test("the guide is in the header and has a section per feature", async () => {
     "The budget table",
     "Plan review",
     "Overview",
+    "Reports",
     "Members and security",
   ]);
   expect(entries[6]).toHaveAttribute("href", "#plans");

@@ -75,7 +75,8 @@ def client(session: Session, clock: Clock) -> Iterator[TestClient]:
     app.dependency_overrides[get_db] = db
     app.dependency_overrides[get_now] = lambda: clock.now
     # Session cookies are Secure: the client must speak https to send them back.
-    with TestClient(app, base_url="https://testserver") as client:
+    # A documentation address (RFC 5737): the activity log keeps only real addresses.
+    with TestClient(app, base_url="https://testserver", client=("192.0.2.10", 50000)) as client:
         yield client
 
 

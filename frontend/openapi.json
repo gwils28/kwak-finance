@@ -261,6 +261,143 @@
         "title": "ApplyRules",
         "type": "object"
       },
+      "AuditAction": {
+        "enum": [
+          "signed_in",
+          "sign_in_failed",
+          "signed_out",
+          "recovery_codes_renewed",
+          "invite_created",
+          "invite_revoked",
+          "member_joined",
+          "settings_changed",
+          "imported",
+          "import_rolled_back",
+          "transaction_deleted",
+          "category_deleted",
+          "plan_deleted",
+          "recurring_deleted",
+          "rule_created",
+          "rule_updated",
+          "rule_deleted",
+          "rules_applied",
+          "categories_restored"
+        ],
+        "title": "AuditAction",
+        "type": "string"
+      },
+      "AuditEntryOut": {
+        "properties": {
+          "action": {
+            "$ref": "#/components/schemas/AuditAction"
+          },
+          "at": {
+            "format": "date-time",
+            "title": "At",
+            "type": "string"
+          },
+          "details": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "title": "Details",
+            "type": "object"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "ip": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ip"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/AuditKind"
+          },
+          "user_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Id"
+          },
+          "user_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Name"
+          }
+        },
+        "required": [
+          "id",
+          "at",
+          "action",
+          "kind",
+          "user_id",
+          "user_name",
+          "ip",
+          "details"
+        ],
+        "title": "AuditEntryOut",
+        "type": "object"
+      },
+      "AuditKind": {
+        "enum": [
+          "sign_in",
+          "household",
+          "import",
+          "deletion",
+          "rules"
+        ],
+        "title": "AuditKind",
+        "type": "string"
+      },
+      "AuditPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/AuditEntryOut"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total"
+        ],
+        "title": "AuditPage",
+        "type": "object"
+      },
       "BalanceCheckOut": {
         "properties": {
           "bank": {
@@ -1737,6 +1874,37 @@
         "title": "MonthPoint",
         "type": "object"
       },
+      "MonthTotals": {
+        "properties": {
+          "income": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Income",
+            "type": "string"
+          },
+          "month": {
+            "title": "Month",
+            "type": "string"
+          },
+          "net": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Net",
+            "type": "string"
+          },
+          "spent": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Spent",
+            "type": "string"
+          }
+        },
+        "required": [
+          "month",
+          "income",
+          "spent",
+          "net"
+        ],
+        "title": "MonthTotals",
+        "type": "object"
+      },
       "OccurrenceOut": {
         "properties": {
           "due": {
@@ -1938,6 +2106,64 @@
         ],
         "title": "PeriodKind",
         "type": "string"
+      },
+      "PeriodTotals": {
+        "description": "As the home page's KPIs (F-DSH-4), over the whole period.",
+        "properties": {
+          "income": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Income",
+            "type": "string"
+          },
+          "net": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Net",
+            "type": "string"
+          },
+          "paid_in": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Paid In",
+            "type": "string"
+          },
+          "paid_out": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Paid Out",
+            "type": "string"
+          },
+          "saved": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Saved",
+            "type": "string"
+          },
+          "savings_rate": {
+            "anyOf": [
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Savings Rate"
+          },
+          "spent": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Spent",
+            "type": "string"
+          }
+        },
+        "required": [
+          "spent",
+          "income",
+          "paid_in",
+          "paid_out",
+          "net",
+          "saved",
+          "savings_rate"
+        ],
+        "title": "PeriodTotals",
+        "type": "object"
       },
       "PlanIn": {
         "properties": {
@@ -2797,6 +3023,177 @@
         "title": "RenameOut",
         "type": "object"
       },
+      "ReportOut": {
+        "properties": {
+          "changes": {
+            "$ref": "#/components/schemas/TotalsChange"
+          },
+          "end": {
+            "title": "End",
+            "type": "string"
+          },
+          "flows": {
+            "items": {
+              "$ref": "#/components/schemas/FlowOut"
+            },
+            "title": "Flows",
+            "type": "array"
+          },
+          "monthly": {
+            "items": {
+              "$ref": "#/components/schemas/MonthTotals"
+            },
+            "title": "Monthly",
+            "type": "array"
+          },
+          "months": {
+            "title": "Months",
+            "type": "integer"
+          },
+          "previous": {
+            "$ref": "#/components/schemas/PeriodTotals"
+          },
+          "previous_end": {
+            "title": "Previous End",
+            "type": "string"
+          },
+          "previous_start": {
+            "title": "Previous Start",
+            "type": "string"
+          },
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/ReportRowOut"
+            },
+            "title": "Rows",
+            "type": "array"
+          },
+          "sections": {
+            "items": {
+              "$ref": "#/components/schemas/SectionTotalOut"
+            },
+            "title": "Sections",
+            "type": "array"
+          },
+          "start": {
+            "title": "Start",
+            "type": "string"
+          },
+          "to_date": {
+            "title": "To Date",
+            "type": "boolean"
+          },
+          "totals": {
+            "$ref": "#/components/schemas/PeriodTotals"
+          }
+        },
+        "required": [
+          "start",
+          "end",
+          "to_date",
+          "months",
+          "previous_start",
+          "previous_end",
+          "totals",
+          "previous",
+          "changes",
+          "sections",
+          "rows",
+          "monthly",
+          "flows"
+        ],
+        "title": "ReportOut",
+        "type": "object"
+      },
+      "ReportRowOut": {
+        "properties": {
+          "amount": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Amount",
+            "type": "string"
+          },
+          "category_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category Id"
+          },
+          "change": {
+            "anyOf": [
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Change"
+          },
+          "children": {
+            "items": {
+              "$ref": "#/components/schemas/ReportRowOut"
+            },
+            "title": "Children",
+            "type": "array"
+          },
+          "monthly_average": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Monthly Average",
+            "type": "string"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "previous": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Previous",
+            "type": "string"
+          },
+          "section": {
+            "$ref": "#/components/schemas/Section"
+          },
+          "share": {
+            "anyOf": [
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Share"
+          }
+        },
+        "required": [
+          "section",
+          "category_id",
+          "name",
+          "amount",
+          "monthly_average",
+          "share",
+          "previous",
+          "change",
+          "children"
+        ],
+        "title": "ReportRowOut",
+        "type": "object"
+      },
       "RestoreOut": {
         "description": "What restoring the default categories does (GET) or did (POST).",
         "properties": {
@@ -3561,6 +3958,58 @@
         "title": "Scope",
         "type": "string"
       },
+      "Section": {
+        "enum": [
+          "income",
+          "spending",
+          "savings"
+        ],
+        "title": "Section",
+        "type": "string"
+      },
+      "SectionTotalOut": {
+        "properties": {
+          "amount": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Amount",
+            "type": "string"
+          },
+          "change": {
+            "anyOf": [
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Change"
+          },
+          "monthly_average": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Monthly Average",
+            "type": "string"
+          },
+          "previous": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Previous",
+            "type": "string"
+          },
+          "section": {
+            "$ref": "#/components/schemas/Section"
+          }
+        },
+        "required": [
+          "section",
+          "amount",
+          "monthly_average",
+          "previous",
+          "change"
+        ],
+        "title": "SectionTotalOut",
+        "type": "object"
+      },
       "SettingsOut": {
         "properties": {
           "warn_at": {
@@ -3750,6 +4199,67 @@
           "spent"
         ],
         "title": "ToCategorise",
+        "type": "object"
+      },
+      "TotalsChange": {
+        "description": "Against the previous period, by the size of its figure: from -500 to +200 is +1.4.",
+        "properties": {
+          "income": {
+            "anyOf": [
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Income"
+          },
+          "net": {
+            "anyOf": [
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Net"
+          },
+          "saved": {
+            "anyOf": [
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Saved"
+          },
+          "spent": {
+            "anyOf": [
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Spent"
+          }
+        },
+        "required": [
+          "income",
+          "spent",
+          "net",
+          "saved"
+        ],
+        "title": "TotalsChange",
         "type": "object"
       },
       "TotpCode": {
@@ -4902,6 +5412,114 @@
         "summary": "Preview Import",
         "tags": [
           "imports"
+        ]
+      }
+    },
+    "/api/audit": {
+      "get": {
+        "description": "The activity log (F-ADM-3): the owner sees the household's, a member their own;\nan entry about a private account is only shown to its owner.",
+        "operationId": "activityLog",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "kind",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/AuditKind"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Kind"
+            }
+          },
+          {
+            "description": "Only this member's entries",
+            "in": "query",
+            "name": "user_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only this member's entries",
+              "title": "User Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 200,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "kwak_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Kwak Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuditPage"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Activity Log",
+        "tags": [
+          "audit"
         ]
       }
     },
@@ -7914,6 +8532,87 @@
         "summary": "Skip Occurrence",
         "tags": [
           "recurring"
+        ]
+      }
+    },
+    "/api/reports": {
+      "get": {
+        "description": "Income and spending by category over a period, against the one before (F-DSH-2).\n\nA period running past the current month stops there and is compared with the same months\nof the period before.",
+        "operationId": "periodReport",
+        "parameters": [
+          {
+            "description": "First budget month, YYYY-MM",
+            "in": "query",
+            "name": "start",
+            "required": true,
+            "schema": {
+              "description": "First budget month, YYYY-MM",
+              "title": "Start",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Last budget month, YYYY-MM, included",
+            "in": "query",
+            "name": "end",
+            "required": true,
+            "schema": {
+              "description": "Last budget month, YYYY-MM, included",
+              "title": "End",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "scope",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/Scope",
+              "default": "household"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "kwak_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Kwak Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Period Report",
+        "tags": [
+          "reports"
         ]
       }
     },

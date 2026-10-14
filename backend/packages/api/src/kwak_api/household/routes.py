@@ -6,6 +6,7 @@ from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from kwak_core.audit import AuditAction
 from kwak_core.invites import InviteState
 from kwak_core.progress import check_warn_at
 from pydantic import AfterValidator, BaseModel, Field
@@ -13,6 +14,7 @@ from sqlalchemy import select
 
 from kwak_api.auth.routes import CurrentSession, Db, Now
 from kwak_api.models import Household, Invite, Role, User, UserSession
+from kwak_api.services import audit
 from kwak_api.services import invites as service
 
 router = APIRouter(prefix="/api", tags=["household"])
@@ -97,10 +99,13 @@ def get_settings(user_session: CurrentSession, db: Db) -> SettingsOut:
 
 
 @router.patch("/household/settings")
-def update_settings(body: SettingsPatch, user_session: OwnerSession, db: Db) -> SettingsOut:
+def update_settings(
+    body: SettingsPatch, user_session: OwnerSession, db: Db, now: Now
+) -> SettingsOut:
     household = db.get_one(Household, user_session.user.household_id)
-    if body.warn_at is not None:
+    if body.warn_at is not None and body.warn_at != household.warn_at:
         household.warn_at = body.warn_at
+        audit.record(db, user_session.user, AuditAction.SETTINGS_CHANGED, now, warn_at=body.warn_at)
     db.flush()
     return SettingsOut(warn_at=household.warn_at)
 
@@ -129,6 +134,7 @@ def create_invite(
         raise HTTPException(
             status.HTTP_409_CONFLICT, "an account already uses this email"
         ) from None
+    audit.record(db, user_session.user, AuditAction.INVITE_CREATED, now, email=invite.email)
     return InviteCreated(invite=InviteOut.of(invite, now), token=token)
 
 
@@ -140,8 +146,10 @@ def list_invites(user_session: OwnerSession, db: Db, now: Now) -> list[InviteOut
 
 @router.delete("/invites/{invite_id}", status_code=status.HTTP_204_NO_CONTENT)
 def revoke_invite(invite_id: UUID, user_session: OwnerSession, db: Db, now: Now) -> None:
-    if not service.revoke_invite(db, user_session.user.household_id, invite_id, now):
+    email = service.revoke_invite(db, user_session.user.household_id, invite_id, now)
+    if email is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "no pending invitation with this id")
+    audit.record(db, user_session.user, AuditAction.INVITE_REVOKED, now, email=email)
 
 
 @router.get("/invites/accept/{token}")
@@ -170,6 +178,7 @@ def accept_invite(token: str, body: InviteAccept, db: Db, now: Now) -> MemberOut
         ) from None
     if member is None:
         raise INVALID_LINK
+    audit.record(db, member, AuditAction.MEMBER_JOINED, now, email=member.email)
     return MemberOut(
         id=member.id, display_name=member.display_name, email=member.email, role=member.role
     )

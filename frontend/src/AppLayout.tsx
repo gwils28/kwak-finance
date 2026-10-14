@@ -15,6 +15,7 @@ const TABS = [
   { to: "/accounts", label: "accounts", exact: false },
   { to: "/transactions", label: "transactions", exact: false },
   { to: "/budget", label: "budget", exact: false },
+  { to: "/reports", label: "reports", exact: false },
 ] as const;
 
 const TAB =

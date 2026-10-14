@@ -2,6 +2,7 @@
 
 import base64
 import hmac
+import ipaddress
 from collections.abc import Callable
 from datetime import datetime
 from functools import cache
@@ -9,6 +10,7 @@ from typing import Annotated, Literal
 from uuid import UUID
 
 from fastapi import APIRouter, Cookie, Depends, HTTPException, Request, Response, status
+from kwak_core.audit import AuditAction
 from kwak_core.totp import provisioning_uri
 from kwak_core.users import Language, normalize_email
 from pydantic import BaseModel
@@ -33,6 +35,7 @@ from kwak_api.auth.throttle import (
 from kwak_api.auth.totp import check_code, start_enrollment
 from kwak_api.deps import get_db, get_now, get_secret_box, get_settings
 from kwak_api.models import Role, User, UserSession
+from kwak_api.services import audit
 from kwak_api.settings import Settings
 
 SESSION_COOKIE = "kwak_session"
@@ -109,6 +112,16 @@ class TotpSetupOut(BaseModel):
     """otpauth:// URI, to show as a QR code."""
 
 
+def client_ip(request: Request) -> str | None:
+    """The client's address, if it is one. Behind Caddy, uvicorn --proxy-headers puts the
+    real client address here, taken from a header."""
+    host = request.client.host if request.client else None
+    try:
+        return str(ipaddress.ip_address(host)) if host else None
+    except ValueError:
+        return None
+
+
 @cache
 def _dummy_hash() -> str:
     return hash_password("timing equaliser, never a real password")
@@ -155,8 +168,7 @@ def login(
     settings: AppSettings,
 ) -> LoginOut:
     invalid = HTTPException(status.HTTP_401_UNAUTHORIZED, "invalid email or password")
-    # Behind Caddy, uvicorn --proxy-headers puts the real client address here.
-    ip = ip_subject(request.client.host if request.client else "unknown")
+    ip = ip_subject(client_ip(request) or "unknown")
     try:
         email = normalize_email(body.email)
     except ValueError:
@@ -170,6 +182,11 @@ def login(
     # Hash even for unknown emails so response time does not reveal which accounts exist.
     password_ok = verify_password(user.password_hash if user else _dummy_hash(), body.password)
     if user is None or not user.is_active or not password_ok:
+        if user is not None:
+            # Committed by record_failure, with the failure it counts.
+            audit.record(
+                db, user, AuditAction.SIGN_IN_FAILED, now, ip=client_ip(request), step="password"
+            )
         record_failure(db, [account, ip], now)
         raise invalid
     clear_failures(db, account)
@@ -211,54 +228,71 @@ def totp_setup(user_session: PendingSession, box: Box) -> TotpSetupOut:
     )
 
 
-def _check_second_factor(db: Session, user: User, now: datetime, check: Callable[[], bool]) -> None:
+def _check_second_factor(
+    db: Session, user: User, now: datetime, ip: str | None, check: Callable[[], bool]
+) -> None:
     """TOTP and recovery codes share one attempt limit: both are the second factor."""
     subject = totp_subject(user.id)
     ensure_allowed(db, [(subject, TOTP_LIMITS)], now)
     if not check():
+        audit.record(db, user, AuditAction.SIGN_IN_FAILED, now, ip=ip, step="code")
         record_failure(db, [subject], now)
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "invalid code")
     clear_failures(db, subject)
 
 
-def _check_totp(db: Session, user: User, box: SecretBox, code: str, now: datetime) -> None:
-    _check_second_factor(db, user, now, lambda: check_code(user, box, code, now))
+def _check_totp(
+    db: Session, user: User, box: SecretBox, code: str, now: datetime, ip: str | None
+) -> None:
+    _check_second_factor(db, user, now, ip, lambda: check_code(user, box, code, now))
+
+
+def _signed_in(
+    db: Session, user_session: UserSession, now: datetime, ip: str | None, method: str
+) -> None:
+    user_session.mfa_verified_at = now
+    audit.record(db, user_session.user, AuditAction.SIGNED_IN, now, ip=ip, method=method)
 
 
 @router.post("/totp/confirm")
 def totp_confirm(
-    body: TotpCode, user_session: PendingSession, db: Db, box: Box, now: Now
+    body: TotpCode, request: Request, user_session: PendingSession, db: Db, box: Box, now: Now
 ) -> TotpConfirmOut:
     """Prove the authenticator app works; this completes the login and issues recovery codes."""
     user = user_session.user
     if user.totp_confirmed_at is not None or user.totp_secret_enc is None:
         raise HTTPException(status.HTTP_409_CONFLICT, "no TOTP setup in progress")
-    _check_totp(db, user, box, body.code, now)
+    ip = client_ip(request)
+    _check_totp(db, user, box, body.code, now, ip)
     user.totp_confirmed_at = now
-    user_session.mfa_verified_at = now
+    _signed_in(db, user_session, now, ip, "totp")
     return TotpConfirmOut(user=UserOut.of(user), recovery_codes=issue_recovery_codes(db, user))
 
 
 @router.post("/totp/verify")
 def totp_verify(
-    body: TotpCode, user_session: PendingSession, db: Db, box: Box, now: Now
+    body: TotpCode, request: Request, user_session: PendingSession, db: Db, box: Box, now: Now
 ) -> UserOut:
     user = user_session.user
     if user.totp_confirmed_at is None:
         raise HTTPException(status.HTTP_409_CONFLICT, "TOTP is not set up")
-    _check_totp(db, user, box, body.code, now)
-    user_session.mfa_verified_at = now
+    ip = client_ip(request)
+    _check_totp(db, user, box, body.code, now, ip)
+    _signed_in(db, user_session, now, ip, "totp")
     return UserOut.of(user)
 
 
 @router.post("/recovery")
-def recovery(body: RecoveryCodeIn, user_session: PendingSession, db: Db, now: Now) -> UserOut:
+def recovery(
+    body: RecoveryCodeIn, request: Request, user_session: PendingSession, db: Db, now: Now
+) -> UserOut:
     """Complete the login with a recovery code instead of a TOTP code."""
     user = user_session.user
     if user.totp_confirmed_at is None:
         raise HTTPException(status.HTTP_409_CONFLICT, "TOTP is not set up")
-    _check_second_factor(db, user, now, lambda: use_recovery_code(db, user, body.code, now))
-    user_session.mfa_verified_at = now
+    ip = client_ip(request)
+    _check_second_factor(db, user, now, ip, lambda: use_recovery_code(db, user, body.code, now))
+    _signed_in(db, user_session, now, ip, "recovery_code")
     return UserOut.of(user)
 
 
@@ -273,14 +307,22 @@ def regenerate_recovery_codes(
     if not verify_password(user.password_hash, body.password):
         record_failure(db, [subject], now)
         raise HTTPException(status.HTTP_403_FORBIDDEN, "invalid password")
+    audit.record(db, user, AuditAction.RECOVERY_CODES_RENEWED, now)
     return RecoveryCodesOut(recovery_codes=issue_recovery_codes(db, user))
 
 
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
 def logout(
-    user_session: PendingSession, response: Response, now: Now, settings: AppSettings
+    user_session: PendingSession,
+    request: Request,
+    response: Response,
+    db: Db,
+    now: Now,
+    settings: AppSettings,
 ) -> None:
     revoke_session(user_session, now)
+    if user_session.mfa_verified_at is not None:  # an abandoned sign-in is not a sign-out
+        audit.record(db, user_session.user, AuditAction.SIGNED_OUT, now, ip=client_ip(request))
     for name in (SESSION_COOKIE, CSRF_COOKIE):
         response.delete_cookie(name, secure=settings.cookie_secure, samesite="lax")
 

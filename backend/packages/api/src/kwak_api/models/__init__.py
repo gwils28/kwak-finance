@@ -1,6 +1,7 @@
 """All ORM models. Alembic's env.py imports this package so autogenerate sees every table."""
 
 from kwak_api.models.account import Account, Institution
+from kwak_api.models.audit import AuditEvent
 from kwak_api.models.auth_failure import AuthFailure
 from kwak_api.models.budget import BudgetPlan, BudgetPlanTarget
 from kwak_api.models.category import Category
@@ -14,6 +15,7 @@ from kwak_api.models.transaction import ImportBatch, Transaction, TransactionPar
 
 __all__ = [
     "Account",
+    "AuditEvent",
     "AuthFailure",
     "BudgetPlan",
     "BudgetPlanTarget",

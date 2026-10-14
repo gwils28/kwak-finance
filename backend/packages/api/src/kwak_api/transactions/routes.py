@@ -4,13 +4,15 @@ from typing import Annotated, Literal
 from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Query, status
+from kwak_core.audit import AuditAction
 from kwak_core.budget import Month
 from kwak_core.money import require_cents
 from pydantic import AfterValidator, BaseModel, Field
 
-from kwak_api.auth.routes import CurrentSession, Db
+from kwak_api.auth.routes import CurrentSession, Db, Now
 from kwak_api.models import Account, Category, Transaction
 from kwak_api.services import accounts as account_service
+from kwak_api.services import audit
 from kwak_api.services import budget_month as budget_month_service
 from kwak_api.services import categories as category_service
 from kwak_api.services import transactions as service
@@ -331,13 +333,27 @@ def categorise_transactions(body: Categorise, user_session: CurrentSession, db: 
 
 
 @router.delete("/transactions/{transaction_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_transaction(transaction_id: UUID, user_session: CurrentSession, db: Db) -> None:
+def delete_transaction(
+    transaction_id: UUID, user_session: CurrentSession, db: Db, now: Now
+) -> None:
     found = service.find_visible(db, user_session.user, transaction_id)
     if found is None:
         raise NOT_FOUND
+    transaction, account = found
+    label, amount, booked_on = transaction.label_raw, transaction.amount, transaction.booked_on
     try:
-        service.delete(db, user_session.user, found[0])
+        service.delete(db, user_session.user, transaction)
     except service.ImportedTransactionError as exc:
         raise _conflict(exc) from None
     except service.HiddenSideError:
         raise HIDDEN_SIDE from None
+    audit.record(
+        db,
+        user_session.user,
+        AuditAction.TRANSACTION_DELETED,
+        now,
+        accounts=[account],
+        label=label,
+        amount=amount,
+        date=booked_on.isoformat(),
+    )

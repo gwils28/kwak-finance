@@ -4,13 +4,15 @@ from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, status
+from kwak_core.audit import AuditAction
 from kwak_core.money import require_cents
 from kwak_core.rules import RuleError
 from pydantic import AfterValidator, BaseModel
 
-from kwak_api.auth.routes import CurrentSession, Db
-from kwak_api.models import CategorizationRule, Category, User
+from kwak_api.auth.routes import CurrentSession, Db, Now
+from kwak_api.models import Account, CategorizationRule, Category, User
 from kwak_api.services import accounts as account_service
+from kwak_api.services import audit
 from kwak_api.services import categories as category_service
 from kwak_api.services import rules as service
 
@@ -110,6 +112,32 @@ def _conditions(body: RuleIn | RulePatch) -> service.Conditions:
     )
 
 
+def _log(db: Db, user: User, action: AuditAction, rule: CategorizationRule, now: Now) -> None:
+    account = db.get(Account, rule.account_id) if rule.account_id else None
+    audit.record(
+        db,
+        user,
+        action,
+        now,
+        accounts=[account],
+        category=rule.category.name,
+        label=rule.label_contains,
+        min=rule.amount_min,
+        max=rule.amount_max,
+    )
+
+
+def _state(rule: CategorizationRule) -> tuple[object, ...]:
+    return (
+        rule.category_id,
+        rule.label_contains,
+        rule.amount_min,
+        rule.amount_max,
+        rule.account_id,
+        rule.priority,
+    )
+
+
 def _invalid(exc: RuleError) -> HTTPException:
     return HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, str(exc))
 
@@ -121,7 +149,7 @@ def list_rules(user_session: CurrentSession, db: Db) -> list[RuleOut]:
 
 
 @router.post("/rules", status_code=status.HTTP_201_CREATED)
-def create_rule(body: RuleIn, user_session: CurrentSession, db: Db) -> RuleOut:
+def create_rule(body: RuleIn, user_session: CurrentSession, db: Db, now: Now) -> RuleOut:
     """New rules run after the existing ones."""
     user = user_session.user
     category = _category(db, user, body.category_id)
@@ -130,11 +158,14 @@ def create_rule(body: RuleIn, user_session: CurrentSession, db: Db) -> RuleOut:
         rule = service.create(db, user.household_id, category, _conditions(body))
     except RuleError as exc:
         raise _invalid(exc) from None
+    _log(db, user, AuditAction.RULE_CREATED, rule, now)
     return RuleOut.of(rule)
 
 
 @router.patch("/rules/{rule_id}")
-def update_rule(rule_id: UUID, body: RulePatch, user_session: CurrentSession, db: Db) -> RuleOut:
+def update_rule(
+    rule_id: UUID, body: RulePatch, user_session: CurrentSession, db: Db, now: Now
+) -> RuleOut:
     user = user_session.user
     rule = db.get(CategorizationRule, rule_id)
     if rule is None or rule.household_id != user.household_id:
@@ -150,25 +181,31 @@ def update_rule(rule_id: UUID, body: RulePatch, user_session: CurrentSession, db
     category = _category(db, user, merged.category_id or rule.category_id)
     _check_account(db, user, merged.account_id)
     priority = body.priority if body.priority is not None else rule.priority
+    before = _state(rule)
     try:
         service.update(db, rule, category, _conditions(merged), priority)
     except RuleError as exc:
         raise _invalid(exc) from None
+    if _state(rule) != before:
+        _log(db, user, AuditAction.RULE_UPDATED, rule, now)
     return RuleOut.of(rule)
 
 
 @router.delete("/rules/{rule_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_rule(rule_id: UUID, user_session: CurrentSession, db: Db) -> None:
+def delete_rule(rule_id: UUID, user_session: CurrentSession, db: Db, now: Now) -> None:
     rule = db.get(CategorizationRule, rule_id)
     if rule is None or rule.household_id != user_session.user.household_id:
         raise NOT_FOUND
+    _log(db, user_session.user, AuditAction.RULE_DELETED, rule, now)
     db.delete(rule)
 
 
 @router.post("/rules/apply")
-def apply_rules(body: ApplyRules, user_session: CurrentSession, db: Db) -> Applied:
+def apply_rules(body: ApplyRules, user_session: CurrentSession, db: Db, now: Now) -> Applied:
     """Re-run every rule on past transactions the user can see."""
     updated = service.apply(db, user_session.user, only_uncategorised=body.only_uncategorised)
+    # No count: it would tell the owner how many of a member's private transactions matched.
+    audit.record(db, user_session.user, AuditAction.RULES_APPLIED, now)
     return Applied(updated=updated)
 
 

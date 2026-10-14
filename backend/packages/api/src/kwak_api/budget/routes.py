@@ -5,6 +5,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Query, status
 from kwak_core.accounts import Scope
+from kwak_core.audit import AuditAction
 from kwak_core.budget import BudgetStatus, Cell, Month, Row, month_range
 from kwak_core.flows import FlowKind, Side
 from kwak_core.money import require_cents
@@ -22,9 +23,9 @@ from pydantic import AfterValidator, BaseModel, Field
 
 from kwak_api.auth.routes import CurrentSession, Db, Now
 from kwak_api.models import BudgetPlan, Category
+from kwak_api.services import audit, plan_review
 from kwak_api.services import budget as service
 from kwak_api.services import categories as category_service
-from kwak_api.services import plan_review
 
 router = APIRouter(prefix="/api/budget", tags=["budget"])
 
@@ -284,10 +285,12 @@ def close_plan(
 def delete_plan(plan_id: UUID, user_session: CurrentSession, db: Db, now: Now) -> None:
     """Only while the plan is editable: afterwards, close it early instead."""
     plan = _plan(db, user_session.user.household_id, plan_id)
+    period = str(service.core_plan(plan).period)
     try:
         service.delete_plan(db, plan, now.date())
     except service.PlanConflictError as exc:
         raise HTTPException(status.HTTP_409_CONFLICT, str(exc)) from None
+    audit.record(db, user_session.user, AuditAction.PLAN_DELETED, now, period=period)
 
 
 CENTS = Decimal("0.01")
@@ -505,7 +508,11 @@ def plan_flows(
 ) -> FlowsOut:
     """Where the plan's money came from and went, for a Sankey diagram (F-DSH-2)."""
     plan = _plan(db, user_session.user.household_id, plan_id)
-    result = plan_review.flows(db, user_session.user, plan, scope=scope)
+    return FlowsOut(flows=flows_out(plan_review.flows(db, user_session.user, plan, scope=scope)))
+
+
+def flows_out(result: plan_review.PlanFlows) -> list[FlowOut]:
+    """The flows with their categories' names, for a plan or a report."""
     out = []
     for f in result.flows:
         category = result.categories.get(f.category_id) if f.category_id else None
@@ -523,7 +530,7 @@ def plan_flows(
                 parent_name=parent.name if parent else None,
             )
         )
-    return FlowsOut(flows=out)
+    return out
 
 
 class ComparisonRowOut(BaseModel):

@@ -25,6 +25,7 @@ test("the main tabs lead to the everyday pages, the current one marked", async (
     "Accounts",
     "Transactions",
     "Budget",
+    "Reports",
   ]);
   expect(within(main).getByRole("link", { name: "Accounts" })).toHaveAttribute(
     "aria-current",
@@ -56,6 +57,7 @@ test("the account menu holds the household settings and preferences", async () =
   expect(screen.getByText("owner@example.com")).toBeInTheDocument();
   expect(screen.getByRole("link", { name: "Categories" })).toHaveAttribute("href", "/categories");
   expect(screen.getByRole("link", { name: "Members" })).toHaveAttribute("href", "/members");
+  expect(screen.getByRole("link", { name: "Activity log" })).toHaveAttribute("href", "/activity");
   expect(screen.getByRole("button", { name: "Dark theme" })).toBeInTheDocument();
   expect(screen.getByRole("button", { name: "Sign out" })).toBeInTheDocument();
 

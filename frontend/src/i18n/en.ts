@@ -1,4 +1,5 @@
 import { accountsEn } from "./accounts";
+import { activityEn } from "./activity";
 import { authEn, navEn } from "./auth";
 import { budgetEn } from "./budget";
 import { categoriesEn } from "./categories";
@@ -8,6 +9,7 @@ import { guideEn } from "./guide";
 import { householdEn } from "./household";
 import { importsEn } from "./imports";
 import { recurringEn } from "./recurring";
+import { reportsEn } from "./reports";
 import { reviewEn } from "./review";
 import { runGuideEn } from "./runGuide";
 import { transactionsEn } from "./transactions";
@@ -26,6 +28,8 @@ export const en = {
   recurring: recurringEn,
   budget: budgetEn,
   review: reviewEn,
+  reports: reportsEn,
+  activity: activityEn,
   categories: categoriesEn,
   runGuide: runGuideEn,
   guide: guideEn,
