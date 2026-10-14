@@ -71,6 +71,8 @@ export const activityEn = {
     transaction_deleted: (d) => `Deleted “${d.label}” (${d.amount}, ${d.date}) on ${d.account}`,
     category_deleted: (d) => `Deleted the category ${d.name}`,
     plan_deleted: (d) => `Deleted the budget plan ${d.period}`,
+    wealth_line_deleted: (d) => `Deleted the wealth line ${d.name} (${d.category})`,
+    wealth_category_deleted: (d) => `Deleted the wealth category ${d.name}`,
     recurring_deleted: (d) =>
       `Deleted the recurring item ${d.label ? `“${d.label}” ` : ""}(${d.amount}) on ${d.account}`,
     rule_created: (d) => `Created a rule: ${ruleEn(d)} → ${d.category}`,
@@ -133,6 +135,8 @@ export const activityFr: typeof activityEn = {
       `« ${d.label} » supprimée (${d.amount}, ${d.date}) sur ${d.account}`,
     category_deleted: (d) => `Catégorie ${d.name} supprimée`,
     plan_deleted: (d) => `Plan de budget ${d.period} supprimé`,
+    wealth_line_deleted: (d) => `Ligne de patrimoine ${d.name} (${d.category}) supprimée`,
+    wealth_category_deleted: (d) => `Catégorie de patrimoine ${d.name} supprimée`,
     recurring_deleted: (d) =>
       `Échéance ${d.label ? `« ${d.label} » ` : ""}(${d.amount}) supprimée sur ${d.account}`,
     rule_created: (d) => `Règle créée : ${ruleFr(d)} → ${d.category}`,

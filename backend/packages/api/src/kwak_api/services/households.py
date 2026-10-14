@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 
 from kwak_api.auth.passwords import hash_password
 from kwak_api.models import Household, Role, User
+from kwak_api.services import wealth
 from kwak_api.services.categories import seed_defaults
 
 
@@ -46,4 +47,5 @@ def create_household(
     session.add(owner)
     session.flush()
     seed_defaults(session, owner.household_id, language or Language.EN)
+    wealth.seed_defaults(session, owner.household_id, language or Language.EN)
     return owner

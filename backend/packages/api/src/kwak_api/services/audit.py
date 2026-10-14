@@ -24,11 +24,13 @@ def record(
     now: datetime,
     *,
     accounts: Sequence[Account | None] = (),
+    private_to: UUID | None = None,
     ip: str | None = None,
     **details: Detail | Decimal,
 ) -> None:
     """Add an entry by `user` about `accounts` (the first one's name is kept). An entry about
-    a private account, even as the other side of a transfer, is only shown to its owner."""
+    a private account, even as the other side of a transfer, is only shown to its owner;
+    `private_to` does the same for anything else private (a wealth line)."""
     kept: dict[str, Any] = {
         k: str(v) if isinstance(v, Decimal) else v for k, v in details.items() if v is not None
     }
@@ -42,7 +44,7 @@ def record(
             user_id=user.id,
             at=now,
             action=action,
-            private_to=private.owner_id if private else None,
+            private_to=private.owner_id if private else private_to,
             ip=ip,
             details=kept,
         )
