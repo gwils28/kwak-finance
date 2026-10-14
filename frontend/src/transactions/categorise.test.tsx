@@ -1,6 +1,6 @@
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { afterEach, expect, test, vi } from "vitest";
+import { afterEach, expect, onTestFinished, test, vi } from "vitest";
 import { fakeApi, owner } from "../test/fakeApi";
 import { TestApp } from "../test/TestApp";
 
@@ -171,4 +171,29 @@ test("a rule can be created from a transaction, previewed and applied", async ()
   expect(calls.find((c) => c.route === "POST /api/rules/apply")?.body).toEqual({
     only_uncategorised: true,
   });
+});
+
+test("the rule form opened from a row further down is brought into view and focused", async () => {
+  // jsdom has no scrollIntoView.
+  const scrollIntoView = vi.fn();
+  Object.defineProperty(HTMLElement.prototype, "scrollIntoView", {
+    value: scrollIntoView,
+    configurable: true,
+  });
+  onTestFinished(() => {
+    delete (HTMLElement.prototype as Partial<HTMLElement>).scrollIntoView;
+  });
+  api();
+  render(<TestApp path="/transactions" />);
+
+  const user = userEvent.setup();
+  await user.click(
+    await screen.findByRole("button", {
+      name: "Create a rule from CARTE X0000 13/03 BOULANGERIE DU PARC 100000000000001IOPD",
+    }),
+  );
+
+  const panel = screen.getByRole("form", { name: "New rule" });
+  expect(scrollIntoView).toHaveBeenCalled();
+  expect(within(panel).getByLabelText("Label contains")).toHaveFocus();
 });
