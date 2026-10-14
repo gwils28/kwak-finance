@@ -23,9 +23,13 @@ NOT_FOUND = HTTPException(status.HTTP_404_NOT_FOUND, "recurring item not found")
 
 class RecurringIn(BaseModel):
     account_id: UUID
+    destination_account_id: UUID | None = None
+    """Set for a transfer item (F-TX-9): the account it pays into. It has no category, its
+    amount is the outflow of `account_id`, and a linked transfer between the two fulfils it."""
     category_id: UUID | None = None
     label: str = Field(max_length=100)
-    """Matched anywhere in the transactions' labels, ignoring case, spacing and accents."""
+    """Matched anywhere in the transactions' labels, ignoring case, spacing and accents.
+    Optional for a transfer item, where it is not matched."""
     amount: Cents
     """Signed, as a transaction's: -950.00 for rent. For an estimated item, the amount expected
     until it has occurrences to average."""
@@ -44,6 +48,7 @@ class RecurringPatch(BaseModel):
     """Only the fields present change."""
 
     account_id: UUID | None = None
+    destination_account_id: UUID | None = None
     category_id: UUID | None = None
     label: str | None = Field(default=None, max_length=100)
     amount: Cents | None = None
@@ -83,6 +88,9 @@ class RecurringOut(BaseModel):
     id: UUID
     account_id: UUID
     account_name: str
+    destination_account_id: UUID | None
+    """Set for a transfer item."""
+    destination_account_name: str | None
     category_id: UUID | None
     category_name: str | None
     label: str
@@ -105,6 +113,8 @@ class RecurringOut(BaseModel):
             id=item.id,
             account_id=item.account_id,
             account_name=item.account.name,
+            destination_account_id=item.destination_id,
+            destination_account_name=item.destination.name if item.destination else None,
             category_id=item.category_id,
             category_name=names.get(item.category_id) if item.category_id else None,
             label=item.label,
@@ -124,8 +134,13 @@ class UpcomingOccurrence(OccurrenceOut):
     label: str
     account_id: UUID
     account_name: str
+    destination_account_id: UUID | None
+    destination_account_name: str | None
     category_id: UUID | None
     estimated: bool
+    amount_in_scope: Decimal
+    """What it brings to the scope's accounts: `expected`, except for a transfer item, which
+    adds its inflow when its destination is in scope (0 when both of its accounts are)."""
 
 
 class UpcomingOut(BaseModel):
@@ -174,10 +189,14 @@ def _category(db: Db, user: User, category_id: UUID | None) -> Category | None:
 
 def _fields(db: Db, user: User, body: RecurringIn) -> service.Fields:
     account = account_service.find_visible_account(db, user, body.account_id)
-    if account is None:
+    destination = None
+    if body.destination_account_id is not None:
+        destination = account_service.find_visible_account(db, user, body.destination_account_id)
+    if account is None or (body.destination_account_id is not None and destination is None):
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "unknown account")
     return service.Fields(
         account=account,
+        destination=destination,
         category=_category(db, user, body.category_id),
         label=body.label,
         amount=body.amount,
@@ -236,6 +255,9 @@ def update_recurring(
     given = body.model_fields_set
     merged = RecurringIn(
         account_id=body.account_id or item.account_id,
+        destination_account_id=body.destination_account_id
+        if "destination_account_id" in given
+        else item.destination_id,
         category_id=body.category_id if "category_id" in given else item.category_id,
         label=body.label if body.label is not None else item.label,
         amount=body.amount if body.amount is not None else item.amount,
@@ -291,8 +313,11 @@ def upcoming_recurring(
                 label=item.label,
                 account_id=item.account_id,
                 account_name=item.account.name,
+                destination_account_id=item.destination_id,
+                destination_account_name=item.destination.name if item.destination else None,
                 category_id=item.category_id,
                 estimated=item.estimated,
+                amount_in_scope=result.amount_in_scope(o),
             )
         )
     return UpcomingOut(

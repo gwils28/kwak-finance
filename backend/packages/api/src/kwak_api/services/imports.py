@@ -292,5 +292,16 @@ def rollback(db: Session, batch: ImportBatch, now: datetime) -> None:
             import_batch_id=None,
         )
     )
+    # A deleted row takes its transfer with it: the other side stays, unlinked (F-TX-5), even
+    # on an account the caller cannot see. Unlike deleting a manual entry, which a hidden side
+    # refuses, the bank row is gone either way and a half transfer would count as nothing.
+    groups = select(Transaction.transfer_group_id).where(
+        Transaction.import_batch_id == batch.id, Transaction.transfer_group_id.is_not(None)
+    )
+    db.execute(
+        update(Transaction)
+        .where(Transaction.transfer_group_id.in_(groups))
+        .values(transfer_group_id=None)
+    )
     db.execute(delete(Transaction).where(Transaction.import_batch_id == batch.id))
     batch.rolled_back_at = now

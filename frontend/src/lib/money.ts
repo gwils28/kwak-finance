@@ -19,6 +19,11 @@ export function parseEurInput(text: string): string | null {
   return `${sign === "-" ? "-" : ""}${units}.${cents.padEnd(2, "0")}`;
 }
 
+/** "0.00", "-0.00", "0": the API's decimal string is zero, read without a float. */
+export function isZero(amount: string): boolean {
+  return /^[+-]?0*(\.0*)?$/.test(amount) && /\d/.test(amount);
+}
+
 /** "12.50" -> "12,50" in French: how an API amount reads in an input. */
 export function amountInput(amount: string): string {
   return currentLanguage() === "fr" ? amount.replace(".", ",") : amount;

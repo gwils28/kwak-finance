@@ -24,9 +24,9 @@ export function useCashAccounts() {
 }
 
 /** "Enter it" (F-REC-3): the item's account, label, category and the occurrence's expected
- * amount, on the date the API proposes. */
+ * amount, on the date the API proposes; a transfer item opens the transfer entry. */
 export function entryDraft(
-  item: Pick<RecurringOut, "account_id" | "label" | "category_id">,
+  item: Pick<RecurringOut, "account_id" | "label" | "category_id" | "destination_account_id">,
   occurrence: Pick<OccurrenceOut, "enter_on" | "expected">,
 ): EntryDraft {
   return {
@@ -35,7 +35,16 @@ export function entryDraft(
     amount: occurrence.expected,
     label: item.label,
     category_id: item.category_id,
+    destination_account_id: item.destination_account_id,
   };
+}
+
+/** An item's name: its label, or "Transfer to …" for a transfer item without one. */
+export function useItemLabel() {
+  const { t } = useI18n();
+  return (item: Pick<RecurringOut, "label" | "destination_account_name">) =>
+    item.label ||
+    (item.destination_account_name ? t.transactions.transferTo(item.destination_account_name) : "");
 }
 
 const LOOK: Record<OccurrenceStatus, string> = {

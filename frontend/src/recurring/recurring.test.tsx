@@ -197,6 +197,7 @@ test("a new weekly item is saved with its weekday", async () => {
 
   expect(calls.find((c) => c.route === "POST /api/recurring")?.body).toEqual({
     account_id: "a1",
+    destination_account_id: null,
     category_id: null,
     label: "Marché",
     amount: "-30.00",
@@ -248,4 +249,116 @@ test("an item can be paused", async () => {
   const user = userEvent.setup();
   await user.click(await screen.findByRole("button", { name: "Pause LOYER" }));
   expect(calls.find((c) => c.route === "PATCH /api/recurring/r1")?.body).toEqual({ paused: true });
+});
+
+const joint = { ...checking, id: "a2", name: "Compte commun", visibility: "joint" };
+const share = {
+  ...rent,
+  id: "r3",
+  destination_account_id: "a2",
+  destination_account_name: "Compte commun",
+  category_id: null,
+  category_name: null,
+  label: "",
+  amount: "-500.00",
+  day: 5,
+  next: { ...occurrence("2026-04-05", "upcoming"), item_id: "r3", expected: "-500.00" },
+  recent: [{ ...occurrence("2026-03-05", "late"), item_id: "r3", expected: "-500.00" }],
+};
+
+test("a recurring transfer is saved between two accounts, without a category", async () => {
+  const calls = api({
+    "GET /api/accounts": () => Response.json([checking, joint]),
+    "GET /api/recurring": () => Response.json([]),
+    "POST /api/recurring": (body) =>
+      Response.json({ ...share, ...(body as object) }, { status: 201 }),
+  });
+  render(<TestApp path="/recurring" />);
+
+  const user = userEvent.setup();
+  await user.click(await screen.findByRole("button", { name: "Add a recurring item" }));
+  const form = screen.getByRole("form", { name: "New recurring item" });
+  await user.click(within(form).getByRole("radio", { name: "Transfer" }));
+  expect(within(form).queryByLabelText("Category")).not.toBeInTheDocument();
+  await user.selectOptions(within(form).getByLabelText("To account"), "a2");
+  await user.type(within(form).getByLabelText("Amount (€)"), "500");
+  await user.clear(within(form).getByLabelText("Day of the month"));
+  await user.type(within(form).getByLabelText("Day of the month"), "5");
+  await user.click(within(form).getByRole("button", { name: "Save" }));
+
+  expect(calls.find((c) => c.route === "POST /api/recurring")?.body).toMatchObject({
+    account_id: "a1",
+    destination_account_id: "a2",
+    category_id: null,
+    label: "",
+    amount: "-500.00",
+    day: 5,
+  });
+});
+
+test("enter it on a recurring transfer opens the transfer entry", async () => {
+  const calls = api({
+    "GET /api/accounts": () => Response.json([checking, joint]),
+    "GET /api/recurring": () => Response.json([share]),
+    "POST /api/transfers/entries": () =>
+      Response.json({ group_id: "g1", outflow: {}, inflow: {} }, { status: 201 }),
+  });
+  render(<TestApp path="/recurring" />);
+
+  const table = await screen.findByRole("table", { name: "Recurring" });
+  expect(table).toHaveTextContent("Transfer to Compte commun");
+  expect(table).toHaveTextContent("Compte courant → Compte commun");
+  const user = userEvent.setup();
+  await user.click(
+    within(table).getByRole("button", { name: "Enter Transfer to Compte commun of 5 Mar 2026" }),
+  );
+  const form = screen.getByRole("form", { name: "New transaction" });
+  expect(within(form).getByRole("radio", { name: "Transfer" })).toBeChecked();
+  expect(within(form).getByLabelText("To account")).toHaveValue("a2");
+  await user.click(within(form).getByRole("button", { name: "Save" }));
+
+  expect(calls.find((c) => c.route === "POST /api/transfers/entries")?.body).toEqual({
+    source_account_id: "a1",
+    destination_account_id: "a2",
+    booked_on: "2026-03-05",
+    amount: "500.00",
+    outflow_label: "Transfer to Compte commun",
+    inflow_label: "Transfer from Compte courant",
+  });
+});
+
+test("a recurring transfer needs two different accounts", async () => {
+  const calls = api({
+    "GET /api/accounts": () => Response.json([checking, joint]),
+    "GET /api/recurring": () => Response.json([]),
+  });
+  render(<TestApp path="/recurring" />);
+
+  const user = userEvent.setup();
+  await user.click(await screen.findByRole("button", { name: "Add a recurring item" }));
+  const form = screen.getByRole("form", { name: "New recurring item" });
+  await user.click(within(form).getByRole("radio", { name: "Transfer" }));
+  await user.selectOptions(within(form).getByLabelText("To account"), "a1");
+  await user.type(within(form).getByLabelText("Amount (€)"), "500");
+  await user.click(within(form).getByRole("button", { name: "Save" }));
+
+  expect(within(form).getByRole("alert")).toHaveTextContent(/two different accounts/);
+  expect(calls.some((c) => c.route === "POST /api/recurring")).toBe(false);
+});
+
+test("enter it on a transfer to a closed account falls back to an open one", async () => {
+  const savings = { ...checking, id: "a3", name: "Livret A", type: "savings" };
+  api({
+    "GET /api/accounts": () => Response.json([checking, savings]),
+    "GET /api/recurring": () =>
+      Response.json([{ ...share, destination_account_id: "a9", destination_account_name: "Old" }]),
+  });
+  render(<TestApp path="/recurring" />);
+
+  const user = userEvent.setup();
+  await user.click(
+    await screen.findByRole("button", { name: "Enter Transfer to Old of 5 Mar 2026" }),
+  );
+  const form = screen.getByRole("form", { name: "New transaction" });
+  expect(within(form).getByLabelText("To account")).toHaveValue("a3");
 });

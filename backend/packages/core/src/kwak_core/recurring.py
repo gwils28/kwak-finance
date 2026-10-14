@@ -2,13 +2,15 @@
 
 An item never creates a transaction: a transaction of the item's account whose label matches
 (as a rule's, F-CAT-2), with the expected sign and amount, at most TOLERANCE days from a due
-date fulfils that occurrence (§8.16). Detection suggests weekly and monthly series.
+date fulfils that occurrence (§8.16). A transfer item expects a linked transfer from its
+account to another one instead, whatever the label (F-TX-9). Detection suggests weekly and
+monthly series, transfers left out.
 """
 
 import calendar
 import enum
 from collections import defaultdict
-from collections.abc import Collection, Iterable, Sequence
+from collections.abc import Collection, Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import date, timedelta
 from decimal import ROUND_HALF_UP, Decimal
@@ -16,6 +18,7 @@ from itertools import pairwise
 from statistics import median
 from uuid import UUID
 
+from kwak_core.accounts import CASH_TYPES, AccountType
 from kwak_core.rules import fold
 
 TOLERANCE = 5
@@ -54,17 +57,23 @@ class Item:
     estimated: bool = False
     """The amount is the average of the last 3 occurrences (e.g. electricity)."""
     paused: bool = False
+    destination_id: UUID | None = None
+    """Set for a transfer item: the account it pays into. Its amount is then the outflow of
+    `account_id` and its label is not matched."""
+    category_id: UUID | None = None
 
 
 @dataclass(frozen=True)
 class Booked:
-    """A transaction, as recurring items see it (transfers left out by the caller)."""
+    """A transaction, as recurring items see it. Of a linked transfer, the caller passes only
+    the outflow side, with the account it went to."""
 
     id: UUID
     account_id: UUID
     booked_on: date
     amount: Decimal
     label: str
+    transfer_to: UUID | None = None
 
 
 class OccurrenceStatus(enum.StrEnum):
@@ -88,7 +97,14 @@ class RecurringError(ValueError):
 
 
 def check_item(item: Item) -> None:
-    if not item.label.strip():
+    if item.destination_id is not None:
+        if item.destination_id == item.account_id:
+            raise RecurringError("a transfer moves money between two different accounts")
+        if item.amount > 0:
+            raise RecurringError("a transfer item's amount is what leaves its account")
+        if item.category_id is not None:
+            raise RecurringError("a transfer item has no category")
+    elif not item.label.strip():
         raise RecurringError("a recurring item needs a label")
     if item.amount == 0:
         raise RecurringError("a recurring item needs an amount")
@@ -97,6 +113,12 @@ def check_item(item: Item) -> None:
         raise RecurringError(f"day {item.day} is out of range for a {item.frequency} item")
     if item.end is not None and item.end < item.start:
         raise RecurringError("a recurring item cannot end before it starts")
+
+
+def check_transfer_accounts(source: AccountType, destination: AccountType) -> None:
+    """A transfer item moves money between two checking or savings accounts (F-TX-9)."""
+    if {source, destination} - CASH_TYPES:
+        raise RecurringError("a transfer moves money between checking or savings accounts")
 
 
 def _clamp(year: int, month: int, day: int) -> date:
@@ -136,7 +158,9 @@ def estimate(amounts: Sequence[Decimal]) -> Decimal | None:
 
 
 def _fits(item: Item, txn: Booked) -> bool:
-    if txn.account_id != item.account_id or fold(item.label) not in fold(txn.label):
+    if txn.account_id != item.account_id or txn.transfer_to != item.destination_id:
+        return False
+    if item.destination_id is None and fold(item.label) not in fold(txn.label):
         return False
     if (txn.amount < 0) != (item.amount < 0):
         return False
@@ -208,10 +232,34 @@ def upcoming(expected: Iterable[Occurrence], *, today: date) -> list[Occurrence]
     )
 
 
-def projected_balance(current: Decimal, expected: Iterable[Occurrence]) -> Decimal:
-    """The current balance plus what the upcoming and late occurrences will bring (§8.16)."""
+def scope_amount(item: Item, expected: Decimal, accounts: Collection[UUID]) -> Decimal:
+    """What an occurrence brings to a scope's accounts: a transfer item takes its amount from
+    its account and gives it to its destination, so it nets to zero when both are in scope."""
+    amount = expected if item.account_id in accounts else Decimal(0)
+    if item.destination_id is not None and item.destination_id in accounts:
+        amount -= expected
+    return amount
+
+
+def projected_balance(
+    current: Decimal,
+    expected: Iterable[Occurrence],
+    *,
+    items: Mapping[UUID, Item] | None = None,
+    accounts: Collection[UUID] | None = None,
+) -> Decimal:
+    """The current balance plus what the upcoming and late occurrences will bring (§8.16).
+    With the items and the scope's accounts, each counts by `scope_amount`."""
     open_ = (OccurrenceStatus.UPCOMING, OccurrenceStatus.LATE)
-    return current + sum((o.expected for o in expected if o.status in open_), Decimal(0))
+    total = Decimal(0)
+    for o in expected:
+        if o.status not in open_:
+            continue
+        if items is None or accounts is None:
+            total += o.expected
+        else:
+            total += scope_amount(items[o.item_id], o.expected, accounts)
+    return current + total
 
 
 @dataclass(frozen=True)
@@ -250,7 +298,7 @@ def detect(
     since = today - timedelta(days=DETECTION_DAYS)
     groups: dict[tuple[UUID, str], list[Booked]] = defaultdict(list)
     for t in transactions:
-        if since <= t.booked_on <= today:
+        if t.transfer_to is None and since <= t.booked_on <= today:
             groups[(t.account_id, fold(t.label))].append(t)
     suggestions = []
     for (account, label), series in sorted(groups.items(), key=lambda g: (str(g[0][0]), g[0][1])):

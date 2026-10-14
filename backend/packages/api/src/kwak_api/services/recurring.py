@@ -10,8 +10,8 @@ from kwak_core import recurring as core
 from kwak_core.accounts import CASH_TYPES, Scope
 from kwak_core.recurring import Frequency, Occurrence
 from kwak_core.rules import fold
-from sqlalchemy import delete, select
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy import delete, or_, select
+from sqlalchemy.orm import Session, aliased, joinedload
 
 from kwak_api.models import (
     Account,
@@ -45,6 +45,8 @@ class Fields:
     end_on: date | None
     estimated: bool
     paused: bool
+    destination: Account | None = None
+    """Set for a transfer item: the account it pays into."""
 
 
 def _core(item: RecurringItem) -> core.Item:
@@ -59,11 +61,19 @@ def _core(item: RecurringItem) -> core.Item:
         end=item.end_on,
         estimated=item.estimated,
         paused=item.paused,
+        destination_id=item.destination_id,
+        category_id=item.category_id,
     )
 
 
 def _apply(item: RecurringItem, fields: Fields) -> None:
+    if fields.destination is not None:
+        core.check_transfer_accounts(fields.account.type, fields.destination.type)
     item.account = fields.account
+    item.destination = fields.destination
+    # Set now, not at flush: check_item compares them.
+    item.account_id = fields.account.id
+    item.destination_id = fields.destination.id if fields.destination else None
     item.category_id = fields.category.id if fields.category else None
     item.label = " ".join(fields.label.split())
     item.amount = fields.amount
@@ -79,18 +89,23 @@ def _apply(item: RecurringItem, fields: Fields) -> None:
 def list_items(
     db: Session, viewer: User, accounts: list[UUID] | None = None
 ) -> list[RecurringItem]:
-    """The items on accounts the viewer can see (or on `accounts`), by label."""
-    if accounts is None:
-        accounts = [a.id for a in visible_accounts(db, viewer, include_closed=True)]
+    """The items the viewer can see (a transfer item: both its accounts), by label; with
+    `accounts`, only those touching one of them."""
+    visible = [a.id for a in visible_accounts(db, viewer, include_closed=True)]
+    query = select(RecurringItem).where(
+        RecurringItem.household_id == viewer.household_id,
+        RecurringItem.account_id.in_(visible),
+        or_(RecurringItem.destination_id.is_(None), RecurringItem.destination_id.in_(visible)),
+    )
+    if accounts is not None:
+        query = query.where(
+            or_(RecurringItem.account_id.in_(accounts), RecurringItem.destination_id.in_(accounts))
+        )
     return list(
         db.scalars(
-            select(RecurringItem)
-            .where(
-                RecurringItem.household_id == viewer.household_id,
-                RecurringItem.account_id.in_(accounts),
-            )
-            .options(joinedload(RecurringItem.account))
-            .order_by(RecurringItem.label, RecurringItem.id)
+            query.options(
+                joinedload(RecurringItem.account), joinedload(RecurringItem.destination)
+            ).order_by(RecurringItem.label, RecurringItem.id)
         )
     )
 
@@ -132,9 +147,11 @@ def unskip(db: Session, item: RecurringItem, due: date) -> None:
 
 
 def _booked(db: Session, accounts: list[UUID], first: date, last: date) -> list[core.Booked]:
-    """The accounts' transactions between the dates, transfers left out (F-TX-5)."""
+    """The accounts' transactions between the dates. Of a transfer (F-TX-5), only the outflow
+    side, with the account it went to: it can only fulfil a transfer item."""
     if not accounts:
         return []
+    other = aliased(Transaction)
     rows = db.execute(
         select(
             Transaction.id,
@@ -142,9 +159,16 @@ def _booked(db: Session, accounts: list[UUID], first: date, last: date) -> list[
             Transaction.booked_on,
             Transaction.amount,
             Transaction.label_raw,
-        ).where(
+            other.account_id,
+        )
+        .outerjoin(
+            other,
+            (other.transfer_group_id == Transaction.transfer_group_id)
+            & (other.id != Transaction.id),
+        )
+        .where(
             Transaction.account_id.in_(accounts),
-            Transaction.transfer_group_id.is_(None),
+            or_(Transaction.transfer_group_id.is_(None), Transaction.amount < 0),
             Transaction.booked_on.between(first, last),
         )
     )
@@ -204,8 +228,17 @@ def overview(db: Session, viewer: User, today: date) -> list[ItemView]:
 class Upcoming:
     occurrences: list[Occurrence]
     items: dict[UUID, RecurringItem]
+    accounts: list[UUID]
+    """The scope's accounts."""
     current_balance: Decimal
     projected_balance: Decimal
+
+    def amount_in_scope(self, occurrence: Occurrence) -> Decimal:
+        """What the occurrence brings to the scope's accounts (a transfer item: one side,
+        both, or neither)."""
+        return core.scope_amount(
+            _core(self.items[occurrence.item_id]), occurrence.expected, self.accounts
+        )
 
 
 def upcoming(db: Session, viewer: User, scope: Scope, today: date) -> Upcoming:
@@ -222,8 +255,11 @@ def upcoming(db: Session, viewer: User, scope: Scope, today: date) -> Upcoming:
     return Upcoming(
         occurrences=listed,
         items={i.id: i for i in items},
+        accounts=accounts,
         current_balance=current,
-        projected_balance=core.projected_balance(current, listed),
+        projected_balance=core.projected_balance(
+            current, listed, items={i.id: _core(i) for i in items}, accounts=accounts
+        ),
     )
 
 
