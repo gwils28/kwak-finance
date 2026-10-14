@@ -183,6 +183,11 @@ function Report({ report }: { report: ReportOut }) {
           : range(report.start, report.end)}{" "}
         · {t.reports.comparedWith(range(report.previous_start, report.previous_end))}
       </p>
+      {report.analysis_start && (
+        <p className="text-sm text-muted">
+          {t.reports.analysesStart(monthLabel(report.analysis_start))}
+        </p>
+      )}
       <Summary report={report} />
       {report.rows.length === 0 ? (
         <p className="text-sm">{t.reports.nothing}</p>

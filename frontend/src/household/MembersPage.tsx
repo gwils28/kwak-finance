@@ -12,6 +12,7 @@ import { meQuery } from "../auth/session";
 import { Button, ErrorAlert, TextField } from "../components/ui";
 import { useI18n } from "../i18n";
 import { formatDate } from "../lib/dates";
+import { AnalysisStart } from "./AnalysisStart";
 
 const membersQuery = {
   queryKey: ["members"],
@@ -55,6 +56,7 @@ export function MembersPage() {
         )}
       </section>
       {isOwner && <Invitations />}
+      <AnalysisStart isOwner={isOwner} />
     </div>
   );
 }

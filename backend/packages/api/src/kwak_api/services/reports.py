@@ -44,8 +44,12 @@ def report(db: Session, viewer: User, period: ReportPeriod, scope: Scope) -> Rep
     parents = {cid: c.parent_id for cid, c in categories.items() if c.parent_id}
     months = month_range(period.start, period.end)
     previous_months = month_range(period.previous_start, period.previous_end)
-    flows = flows_by_month(db, accounts, period.previous_start, period.end)
-    crossed = crossing_by_month(db, accounts, previous_months + months) if accounts else {}
+    # Months before the analyses start count as empty (F-ADM-4): the period itself was moved
+    # past them (kwak_core.reports.report_period), and a previous period reaching before them
+    # is not compared at all.
+    counted = previous_months + months if period.compared else months
+    flows = flows_by_month(db, accounts, counted[0], period.end)
+    crossed = crossing_by_month(db, accounts, counted) if accounts else {}
 
     def figures(m: Month) -> MonthFigures:
         paid_in, paid_out = crossed.get(m, (Decimal(0), Decimal(0)))

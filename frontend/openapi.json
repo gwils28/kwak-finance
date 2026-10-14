@@ -3025,6 +3025,17 @@
       },
       "ReportOut": {
         "properties": {
+          "analysis_start": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Analysis Start"
+          },
           "changes": {
             "$ref": "#/components/schemas/TotalsChange"
           },
@@ -3091,6 +3102,7 @@
           "start",
           "end",
           "to_date",
+          "analysis_start",
           "months",
           "previous_start",
           "previous_end",
@@ -4012,6 +4024,17 @@
       },
       "SettingsOut": {
         "properties": {
+          "analysis_start": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Analysis Start"
+          },
           "warn_at": {
             "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Warn At",
@@ -4019,13 +4042,25 @@
           }
         },
         "required": [
-          "warn_at"
+          "warn_at",
+          "analysis_start"
         ],
         "title": "SettingsOut",
         "type": "object"
       },
       "SettingsPatch": {
         "properties": {
+          "analysis_start": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Analysis Start"
+          },
           "warn_at": {
             "anyOf": [
               {

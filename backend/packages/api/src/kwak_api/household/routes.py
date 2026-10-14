@@ -1,5 +1,6 @@
 """Household members and invitations."""
 
+import re
 from datetime import datetime
 from decimal import Decimal
 from typing import Annotated
@@ -7,6 +8,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from kwak_core.audit import AuditAction
+from kwak_core.budget import Month
 from kwak_core.invites import InviteState
 from kwak_core.progress import check_warn_at
 from pydantic import AfterValidator, BaseModel, Field
@@ -18,6 +20,8 @@ from kwak_api.services import audit
 from kwak_api.services import invites as service
 
 router = APIRouter(prefix="/api", tags=["household"])
+
+MONTH = re.compile(r"[0-9]{4}-[0-9]{2}")
 
 INVALID_LINK = HTTPException(status.HTTP_404_NOT_FOUND, "this invitation is invalid or has expired")
 
@@ -80,6 +84,22 @@ class InviteAccept(BaseModel):
 class SettingsOut(BaseModel):
     warn_at: Decimal
     """The share of a monthly target from which a category is to watch (F-BUD-2)."""
+    analysis_start: str | None
+    """YYYY-MM: the first month analyses count (F-ADM-4); null: every month."""
+
+    @classmethod
+    def of(cls, household: Household) -> "SettingsOut":
+        start = household.analysis_start
+        return cls(
+            warn_at=household.warn_at, analysis_start=start.strftime("%Y-%m") if start else None
+        )
+
+
+def _month(value: str) -> str:
+    month = Month.parse(value) if MONTH.fullmatch(value) else None
+    if month is None or month.year < 1900:
+        raise ValueError("expected a month as YYYY-MM")
+    return str(month)
 
 
 def _warn_at(value: Decimal) -> Decimal:
@@ -90,12 +110,13 @@ def _warn_at(value: Decimal) -> Decimal:
 class SettingsPatch(BaseModel):
     warn_at: Annotated[Decimal, Field(decimal_places=2), AfterValidator(_warn_at)] | None = None
     """From 0.50 to 1, in whole percents. Leave it out to keep it."""
+    analysis_start: Annotated[str, AfterValidator(_month)] | None = None
+    """YYYY-MM; null to count every month. Leave it out to keep it."""
 
 
 @router.get("/household/settings")
 def get_settings(user_session: CurrentSession, db: Db) -> SettingsOut:
-    household = db.get_one(Household, user_session.user.household_id)
-    return SettingsOut(warn_at=household.warn_at)
+    return SettingsOut.of(db.get_one(Household, user_session.user.household_id))
 
 
 @router.patch("/household/settings")
@@ -106,8 +127,24 @@ def update_settings(
     if body.warn_at is not None and body.warn_at != household.warn_at:
         household.warn_at = body.warn_at
         audit.record(db, user_session.user, AuditAction.SETTINGS_CHANGED, now, warn_at=body.warn_at)
+    if "analysis_start" in body.model_fields_set:
+        if body.analysis_start and Month.parse(body.analysis_start) > Month.of(now.date()):
+            # It would empty every analysis until the month comes.
+            raise HTTPException(
+                status.HTTP_422_UNPROCESSABLE_CONTENT, "the analyses cannot start in the future"
+            )
+        start = Month.parse(body.analysis_start).first_day() if body.analysis_start else None
+        if start != household.analysis_start:
+            household.analysis_start = start
+            audit.record(
+                db,
+                user_session.user,
+                AuditAction.SETTINGS_CHANGED,
+                now,
+                analysis_start=body.analysis_start or "",
+            )
     db.flush()
-    return SettingsOut(warn_at=household.warn_at)
+    return SettingsOut.of(household)
 
 
 @router.get("/household/members")

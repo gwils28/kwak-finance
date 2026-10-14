@@ -46,6 +46,7 @@ const report = {
   start: "2026-01",
   end: "2026-12",
   to_date: false,
+  analysis_start: null,
   months: 12,
   previous_start: "2025-01",
   previous_end: "2025-12",
@@ -299,4 +300,12 @@ test("a link with an impossible month opens this year instead", async () => {
   await screen.findByRole("region", { name: "Totals" });
   expect(screen.getByLabelText("Period")).toHaveValue("thisYear");
   expect(asked[0]?.searchParams.get("start")).toBe("2026-01");
+});
+
+test("a report says from which month analyses start", async () => {
+  api(() => ({ ...report, start: "2026-10", analysis_start: "2026-10" }));
+  render(<TestApp path="/reports" />);
+  expect(
+    await screen.findByText("Analyses start in Oct 2026: earlier months are left out."),
+  ).toBeInTheDocument();
 });

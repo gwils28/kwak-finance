@@ -8,6 +8,7 @@ from uuid import UUID
 
 from kwak_core import recurring as core
 from kwak_core.accounts import CASH_TYPES, Scope
+from kwak_core.analysis import counted_day
 from kwak_core.recurring import Frequency, Occurrence
 from kwak_core.rules import fold
 from sqlalchemy import delete, or_, select
@@ -24,6 +25,7 @@ from kwak_api.models import (
 )
 from kwak_api.services.accounts import visible_accounts
 from kwak_api.services.budget import scoped_accounts
+from kwak_api.services.households import analysis_start
 from kwak_api.services.imports import balances
 
 HISTORY_DAYS = 400
@@ -278,7 +280,11 @@ def suggestions(db: Session, viewer: User, today: date) -> list[SuggestionView]:
     }
     if not accounts:
         return []
-    since = today - timedelta(days=core.DETECTION_DAYS)
+    # Nothing booked before the analyses start (F-ADM-4): an incomplete history makes poor
+    # series. Detection works on booking dates, not budget months.
+    since = counted_day(
+        today - timedelta(days=core.DETECTION_DAYS), analysis_start(db, viewer.household_id)
+    )
     rows = list(
         db.execute(
             select(

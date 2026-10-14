@@ -120,13 +120,13 @@ def test_only_an_expense_category_can_be_one_off(owner_client: TestClient) -> No
 
 
 def test_the_owner_sets_the_warning_threshold(owner_client: TestClient) -> None:
-    assert owner_client.get("/api/household/settings").json() == {"warn_at": "0.80"}
+    assert owner_client.get("/api/household/settings").json()["warn_at"] == "0.80"
 
     response = owner_client.patch(
         "/api/household/settings", json={"warn_at": "0.9"}, headers=csrf(owner_client)
     )
     assert response.status_code == 200, response.text
-    assert response.json() == {"warn_at": "0.90"}
+    assert response.json()["warn_at"] == "0.90"
     _january(owner_client)
     progress = _progress(owner_client)
     assert progress["warn_at"] == "0.90"
@@ -147,7 +147,7 @@ def test_the_warning_threshold_is_a_whole_percentage_from_50_to_100(
 @pytest.mark.usefixtures("member")
 def test_only_the_owner_changes_the_threshold(client: TestClient, clock: Clock) -> None:
     log_in(client, clock, "member@example.com")
-    assert client.get("/api/household/settings").json() == {"warn_at": "0.80"}
+    assert client.get("/api/household/settings").json()["warn_at"] == "0.80"
     response = client.patch(
         "/api/household/settings", json={"warn_at": "0.9"}, headers=csrf(client)
     )
