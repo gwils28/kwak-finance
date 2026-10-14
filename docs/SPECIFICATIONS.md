@@ -1,6 +1,6 @@
 # Functional Specifications
 
-Status: draft v0.10 — 2026-10-14. Owner: sole maintainer.
+Status: draft v0.11 — 2026-10-14. Owner: sole maintainer.
 
 ## 1. Purpose
 
@@ -47,7 +47,11 @@ Priority: **M** = MVP, **S** = should (later in MVP), **L** = later phase.
 - F-TX-1: Import CSV, OFX and QIF files. CSV import uses a per-bank **import profile** (column mapping, date format, decimal separator, sign convention), which is saved and reused.
 - F-TX-2: Import preview before commit: parsed rows, detected duplicates, and errors with line numbers.
 - F-TX-3: Deduplication via an import fingerprint (account, date, amount, normalised label) plus a hash of the source file. Re-importing the same file is a no-op.
-- F-TX-4: Manual creation and editing, split transactions (one bank line spread over several categories), notes and tags.
+- F-TX-4: Manual creation and editing (a transfer: F-TX-9), **split transactions** and **notes**. Tags are left out until a use for them shows up.
+  - **Split**: any transaction, entered by hand or imported, can be spread over two or more **parts**, each a category and an amount of the transaction's sign (none zero). The user enters every part but the last, which takes the rest, so the parts always add up exactly to the transaction (invariant 2). A split transaction counts in each part's category, for its part's amount, in every figure by category (budget matrix, plans and their review, the month so far, overview, money flows), all in the transaction's budget month (F-TX-7). The list shows it once, as "Split" with its parts; filtering on a category, or opening a matrix cell, finds it through any of its parts. Removing the split brings back a single category (or "to categorise").
+  - When the amount of a split manual entry changes, the last part takes the difference; the change is refused if that part would reach zero or change sign. Rules (F-CAT-2) and bulk categorisation leave a split transaction alone. A transfer (F-TX-5) cannot be split, and a split transaction cannot be linked as one.
+  - **Notes**: free text (up to 500 characters) on any transaction, entered by hand or imported. The list's label search also searches the notes.
+  - Reconciling a manual entry with a statement (F-TX-8) keeps its split and its note, as it keeps its category; rolling the import back restores them.
 - F-TX-5: Transfers between two own accounts are linked and excluded from income/expense totals. In a scope narrower than the household (§3: *mine*, *joint*), a transfer with an account outside the scope is shown apart as *paid in* or *paid out*, and counts in the net cash flow and savings (savings rate = net / (income + paid in)); transfers within the scope still net to zero. A transfer is linked in one of three ways:
   - **detected**: pairs of an outflow and an inflow of the same amount on two of the household's cash accounts, at most 3 days apart, are offered for linking, one by one or all at once;
   - **"Link to…"** on a transaction, for a pair the detection missed: it lists the unlinked transactions of the opposite amount on the other cash accounts the user can see, within 31 days, closest first. The amounts must be equal (invariant 3): a transfer that lost a fee on the way is not a transfer;
@@ -203,7 +207,7 @@ Money flows colours (the Sankey of the plan review, F-DSH-6) are semantic tokens
 ## 8. Domain invariants (to be enforced by tests)
 
 1. An account balance equals its opening balance plus the sum of its transactions at any date.
-2. The parts of a split transaction sum exactly to the parent amount.
+2. The parts of a split transaction sum exactly to the parent amount, each of its sign; summed over categories, a split transaction counts its amount exactly once.
 3. A linked transfer nets to zero across the two accounts and never counts as income or expense; its two sides keep opposite amounts through every edit (F-TX-9).
 4. Importing the same file twice leaves the database unchanged.
 5. A loan's amortisation schedule: principal repayments sum to the borrowed amount, and outstanding capital decreases monotonically.
