@@ -13,6 +13,7 @@ Read `CLAUDE.md`, then `git diff` (staged and unstaged) and the files it touches
 2. **Domain invariants** from `docs/SPECIFICATIONS.md` §8 that the change could break, and whether a test (ideally a hypothesis property test) covers them.
 3. **Layering**: `kwak_core` importing I/O or `kwak_api` / `kwak_analytics`; business logic leaking into routers or React components.
 4. **Tests**: missing failing-first test for new behaviour, mocked database where testcontainers should be used, real financial data in fixtures.
-5. **Scope**: does the diff mix several topics that should be separate commits?
+5. **Project rules**: user-visible text inline instead of in `frontend/src/i18n/` (or present in one language only), amounts or dates not formatted by `lib/money.ts` / `lib/dates.ts`, ad-hoc hex colours, a hand-edited `api/generated`, an edited migration that is already on `main`, a user-visible change without the matching `guide.ts` update (or an ops change without `runGuide.ts`).
+6. **Scope**: does the diff mix several topics that should be separate commits?
 
 For each finding give `file:line`, the concrete failure scenario, and a suggested fix. If nothing is wrong, say so plainly. Do not pad with style nits that ruff/Biome already enforce.
