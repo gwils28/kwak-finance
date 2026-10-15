@@ -27,7 +27,11 @@ def test_the_owner_sets_and_clears_the_analysis_start(owner_client: TestClient) 
     assert owner_client.get("/api/household/settings").json()["analysis_start"] is None
     response = _start(owner_client, "2026-04")
     assert response.status_code == 200, response.text
-    assert response.json() == {"warn_at": "0.80", "analysis_start": "2026-04"}
+    assert response.json() == {
+        "warn_at": "0.80",
+        "analysis_start": "2026-04",
+        "wealth_start": None,
+    }
     # Changing the threshold alone keeps the start.
     owner_client.patch(
         "/api/household/settings", json={"warn_at": "0.9"}, headers=csrf(owner_client)

@@ -2101,6 +2101,10 @@ export type SettingsOut = {
      * Warn At
      */
     warn_at: string;
+    /**
+     * Wealth Start
+     */
+    wealth_start: string | null;
 };
 
 /**
@@ -2115,6 +2119,10 @@ export type SettingsPatch = {
      * Warn At
      */
     warn_at?: number | string | null;
+    /**
+     * Wealth Start
+     */
+    wealth_start?: string | null;
 };
 
 /**

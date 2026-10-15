@@ -21,6 +21,14 @@ def analysis_start(db: Session, household_id: UUID) -> Month | None:
     return Month.of(start) if start else None
 
 
+def wealth_start(db: Session, household_id: UUID) -> Month | None:
+    """The first month the wealth matrix shows by default (F-WLT-5): its own, else the
+    analyses start; None: no limit."""
+    household = db.get_one(Household, household_id)
+    start = household.wealth_start or household.analysis_start
+    return Month.of(start) if start else None
+
+
 def create_household(
     session: Session,
     *,

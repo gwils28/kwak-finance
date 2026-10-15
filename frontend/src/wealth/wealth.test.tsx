@@ -151,6 +151,47 @@ test("the wealth tab shows net worth and its change", async () => {
   expect(plain(screen.getByRole("region", { name: "Debts" }).textContent)).toContain("€3,000");
 });
 
+test("the months shown can be chosen, back to the last 12", async () => {
+  const asked: URL[] = [];
+  api({
+    "GET /api/wealth/matrix": (_, url) => {
+      asked.push(url);
+      return Response.json(matrix);
+    },
+  });
+  render(<TestApp path="/wealth" />);
+  const from = await screen.findByLabelText("From");
+  const to = screen.getByLabelText("To");
+  // The fields show the months on screen.
+  await vi.waitFor(() => expect(from).toHaveValue("2026-10"));
+  expect(to).toHaveValue("2026-12");
+  expect(asked[0]?.searchParams.get("start")).toBeNull();
+
+  // jsdom cannot type into <input type="month">: set the value as the picker would.
+  fireEvent.change(from, { target: { value: "2026-01" } });
+  await vi.waitFor(() => expect(asked.at(-1)?.searchParams.get("start")).toBe("2026-01"));
+  expect(asked.at(-1)?.searchParams.get("end")).toBe("2026-12");
+
+  await userEvent.setup().click(screen.getByRole("button", { name: "Last 12 months" }));
+  await vi.waitFor(() => expect(asked.at(-1)?.searchParams.get("start")).toBeNull());
+});
+
+test("a period ending before it starts is not asked for", async () => {
+  const asked: URL[] = [];
+  api({
+    "GET /api/wealth/matrix": (_, url) => {
+      asked.push(url);
+      return Response.json(matrix);
+    },
+  });
+  render(<TestApp path="/wealth" />);
+  const from = await screen.findByLabelText("From");
+  await vi.waitFor(() => expect(from).toHaveValue("2026-10"));
+  fireEvent.change(screen.getByLabelText("To"), { target: { value: "2026-05" } });
+  expect(await screen.findByText("The period ends before it starts.")).toBeInTheDocument();
+  expect(asked.some((u) => u.searchParams.get("end") === "2026-05")).toBe(false);
+});
+
 test("the matrix groups lines by category, carried values marked", async () => {
   api();
   render(<TestApp path="/wealth" />);

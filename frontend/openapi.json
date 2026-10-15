@@ -4041,11 +4041,23 @@
             "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Warn At",
             "type": "string"
+          },
+          "wealth_start": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Wealth Start"
           }
         },
         "required": [
           "warn_at",
-          "analysis_start"
+          "analysis_start",
+          "wealth_start"
         ],
         "title": "SettingsOut",
         "type": "object"
@@ -4077,6 +4089,17 @@
               }
             ],
             "title": "Warn At"
+          },
+          "wealth_start": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Wealth Start"
           }
         },
         "title": "SettingsPatch",
@@ -11097,7 +11120,7 @@
     },
     "/api/wealth/matrix": {
       "get": {
-        "description": "The wealth matrix (F-WLT-5). Without a window: the last 12 months, from the analyses\nstart at the earliest (F-ADM-4).",
+        "description": "The wealth matrix (F-WLT-5). Without a window: the last 12 months, from the wealth start\nat the earliest (the analyses start without one, F-ADM-4).",
         "operationId": "wealthMatrix",
         "parameters": [
           {

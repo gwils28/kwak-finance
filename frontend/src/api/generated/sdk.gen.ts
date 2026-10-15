@@ -857,8 +857,8 @@ export const setWealthValue = <ThrowOnError extends boolean = false>(options: Op
 /**
  * Wealth Matrix
  *
- * The wealth matrix (F-WLT-5). Without a window: the last 12 months, from the analyses
- * start at the earliest (F-ADM-4).
+ * The wealth matrix (F-WLT-5). Without a window: the last 12 months, from the wealth start
+ * at the earliest (the analyses start without one, F-ADM-4).
  */
 export const wealthMatrix = <ThrowOnError extends boolean = false>(options?: Options<WealthMatrixData, ThrowOnError>): RequestResult<WealthMatrixResponses, WealthMatrixErrors, ThrowOnError> => (options?.client ?? client).get<WealthMatrixResponses, WealthMatrixErrors, ThrowOnError>({ url: '/api/wealth/matrix', ...options });
 
