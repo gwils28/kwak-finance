@@ -41,7 +41,7 @@ test("an account set to French shows the app in French, with French amounts and 
   render(<TestApp path="/accounts" language="en" />);
 
   expect(await screen.findByRole("heading", { name: "Comptes" })).toBeInTheDocument();
-  expect(screen.getByRole("link", { name: "Opérations" })).toBeInTheDocument();
+  expect(screen.getByRole("link", { name: "Dépenses" })).toBeInTheDocument();
   const row = await screen.findByRole("listitem");
   expect(plain(row.textContent)).toContain("1 234,56 €");
   expect(row).toHaveTextContent("1 janv. 2026");

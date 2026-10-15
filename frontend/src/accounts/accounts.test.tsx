@@ -219,13 +219,14 @@ test("closing an account hides it until closed accounts are shown", async () => 
   expect(body.closed_on).toMatch(/^\d{4}-\d{2}-\d{2}$/);
 });
 
-test("the header links to the accounts page", async () => {
+test("the account menu links to the accounts page, below the members", async () => {
   api([]);
   render(<TestApp path="/" />);
   const user = userEvent.setup();
-  // The overview stands apart: the spending tabs are in the Spending space.
-  await user.click(await screen.findByRole("link", { name: "Spending" }));
-  await user.click(await screen.findByRole("link", { name: "Accounts" }));
+  await user.click(await screen.findByRole("button", { name: /^Account menu/ }));
+  const links = screen.getAllByRole("link").map((link) => link.textContent);
+  expect(links.indexOf("Accounts")).toBe(links.indexOf("Members") + 1);
+  await user.click(screen.getByRole("link", { name: "Accounts" }));
   expect(await screen.findByRole("heading", { name: "Accounts" })).toBeInTheDocument();
 });
 
