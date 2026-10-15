@@ -25,9 +25,15 @@ test("the main tabs lead to the everyday pages, the current one marked", async (
     "Accounts",
     "Transactions",
     "Budget",
-    "Wealth",
     "Reports",
   ]);
+  // Spending is the space shown; wealth is one click away.
+  const spaces = screen.getByRole("navigation", { name: "Spaces" });
+  expect(within(spaces).getByRole("link", { name: "Spending" })).toHaveAttribute(
+    "aria-current",
+    "true",
+  );
+  expect(within(spaces).getByRole("link", { name: "Wealth" })).toHaveAttribute("href", "/wealth");
   expect(within(main).getByRole("link", { name: "Accounts" })).toHaveAttribute(
     "aria-current",
     "page",
@@ -95,5 +101,33 @@ test("the sign-in page opens with the logo and the app's name", async () => {
   await screen.findByRole("heading", { name: "Sign in" });
   expect(document.querySelector('img[src="/logo.png"]')?.parentElement).toHaveTextContent(
     "Kwak Finance",
+  );
+});
+
+test("the wealth space has its own tabs: monthly tracking and analysis", async () => {
+  fakeApi({
+    "GET /api/auth/me": () => Response.json(owner),
+    "PATCH /api/auth/me": (body) => Response.json({ ...owner, ...(body as object) }),
+  });
+  render(<TestApp path="/wealth/analysis" />);
+
+  const spaces = await screen.findByRole("navigation", { name: "Spaces" });
+  expect(within(spaces).getByRole("link", { name: "Wealth" })).toHaveAttribute(
+    "aria-current",
+    "true",
+  );
+  expect(within(spaces).getByRole("link", { name: "Spending" })).toHaveAttribute("href", "/");
+  const main = screen.getByRole("navigation", { name: "Main" });
+  expect(
+    within(main)
+      .getAllByRole("link")
+      .map((tab) => tab.textContent),
+  ).toEqual(["Monthly tracking", "Analysis"]);
+  expect(within(main).getByRole("link", { name: "Analysis" })).toHaveAttribute(
+    "aria-current",
+    "page",
+  );
+  expect(within(main).getByRole("link", { name: "Monthly tracking" })).not.toHaveAttribute(
+    "aria-current",
   );
 });

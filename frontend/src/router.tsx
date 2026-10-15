@@ -25,6 +25,7 @@ import { RecurringPage } from "./recurring/RecurringPage";
 import { ReportsPage } from "./reports/ReportsPage";
 import { RunGuidePage } from "./runGuide/RunGuidePage";
 import { parseTransactionSearch, TransactionsPage } from "./transactions/TransactionsPage";
+import { WealthAnalysisPage } from "./wealth/WealthAnalysisPage";
 import { WealthPage } from "./wealth/WealthPage";
 
 const rootRoute = createRootRouteWithContext<{ queryClient: QueryClient }>()({
@@ -125,6 +126,12 @@ const wealthRoute = createRoute({
   component: WealthPage,
 });
 
+const wealthAnalysisRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: "/wealth/analysis",
+  component: WealthAnalysisPage,
+});
+
 const activityRoute = createRoute({
   getParentRoute: () => appRoute,
   path: "/activity",
@@ -175,6 +182,7 @@ const routeTree = rootRoute.addChildren([
     budgetRoute,
     reviewRoute,
     wealthRoute,
+    wealthAnalysisRoute,
     reportsRoute,
     categoriesRoute,
     membersRoute,

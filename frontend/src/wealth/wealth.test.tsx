@@ -469,9 +469,22 @@ test("the tiles add the change over the months shown and the debt ratio", async 
   );
 });
 
-test("the charts read the matrix: allocation, mosaic, and what moved net worth", async () => {
+test("the monthly tracking page keeps to the table, the charts are on the analysis page", async () => {
   api();
   render(<TestApp path="/wealth" />);
+  await screen.findByRole("table", { name: "Wealth by month" });
+  expect(screen.queryByRole("region", { name: "Net worth over time" })).not.toBeInTheDocument();
+
+  await userEvent.setup().click(screen.getByRole("link", { name: "Analysis" }));
+  expect(await screen.findByRole("heading", { name: "Wealth analysis" })).toBeInTheDocument();
+  expect(screen.getByRole("region", { name: "Net worth" })).toBeInTheDocument();
+  expect(screen.getByLabelText("From")).toBeInTheDocument();
+  expect(screen.queryByRole("table", { name: "Wealth by month" })).not.toBeInTheDocument();
+});
+
+test("the charts read the matrix: allocation, mosaic, and what moved net worth", async () => {
+  api();
+  render(<TestApp path="/wealth/analysis" />);
   const user = userEvent.setup();
   expect(await screen.findByRole("region", { name: "Net worth over time" })).toBeInTheDocument();
 
@@ -483,11 +496,12 @@ test("the charts read the matrix: allocation, mosaic, and what moved net worth",
     within(allocation).getByRole("img", { name: "PEA Fortuneo: €10,600 · 93%" }),
   ).toBeInTheDocument();
 
-  // The mosaic gives each line a tile, read out with its category.
+  // The mosaic gives each category a tile.
   const mosaic = screen.getByRole("region", { name: "Mosaic" });
   expect(
-    within(mosaic).getByRole("img", { name: "Current accounts · Compte courant: €800 · 7%" }),
+    within(mosaic).getByRole("img", { name: "Current accounts: €800 · 7%" }),
   ).toBeInTheDocument();
+  expect(within(mosaic).queryByRole("img", { name: /PEA Fortuneo/ })).not.toBeInTheDocument();
 
   // Both read the month chosen, the last one by default.
   await user.selectOptions(
@@ -495,9 +509,7 @@ test("the charts read the matrix: allocation, mosaic, and what moved net worth",
     "2026-10",
   );
   expect(within(allocation).getByText(/What you own in Oct 2026/)).toBeInTheDocument();
-  expect(
-    within(mosaic).getByRole("img", { name: "Stocks · PEA Fortuneo: €10,000 · 91%" }),
-  ).toBeInTheDocument();
+  expect(within(mosaic).getByRole("img", { name: "Stocks: €10,000 · 91%" })).toBeInTheDocument();
 
   // The bridge goes from October's net worth to December's.
   const bridge = within(screen.getByRole("region", { name: "What moved net worth" })).getByRole(
