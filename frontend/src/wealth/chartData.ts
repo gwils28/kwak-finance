@@ -99,31 +99,16 @@ export function squarify(values: number[], rect: Rect): Rect[] {
   return out;
 }
 
-export type MosaicTile = {
-  category: CategorySlice;
-  rect: Rect;
-  lines: { line: LineSlice; rect: Rect }[];
-};
+export type MosaicTile = { category: CategorySlice; rect: Rect };
 
-/** The allocation as a mosaic: categories from the largest, each holding its lines' tiles. */
+/** The allocation as a mosaic: one tile per category, from the largest. */
 export function mosaic({ categories }: Allocation, rect: Rect): MosaicTile[] {
   const sorted = [...categories].sort((a, b) => b.value - a.value);
   const tiles = squarify(
     sorted.map((c) => c.value),
     rect,
   );
-  return sorted.map((category, i) => {
-    const tile = tiles[i] as Rect;
-    const inner = squarify(
-      category.lines.map((l) => l.value),
-      tile,
-    );
-    return {
-      category,
-      rect: tile,
-      lines: category.lines.map((line, j) => ({ line, rect: inner[j] as Rect })),
-    };
-  });
+  return sorted.map((category, i) => ({ category, rect: tiles[i] as Rect }));
 }
 
 export type HistoryRow = { month: string; net: number } & Record<string, number | string>;

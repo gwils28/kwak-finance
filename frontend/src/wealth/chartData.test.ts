@@ -118,16 +118,11 @@ test("squarify tiles the rectangle, each area proportional to its value", () => 
   expect(squarify([], { x: 0, y: 0, w: 10, h: 10 })).toEqual([]);
 });
 
-test("the mosaic nests each category's lines inside its tile", () => {
+test("the mosaic tiles the categories, largest first, each as large as its value", () => {
   const tiles = mosaic(allocation(matrix), { x: 0, y: 0, w: 600, h: 400 });
   expect(tiles.map((t) => t.category.name)).toEqual(["Stocks", "Savings accounts"]);
-  const stocks = tiles[0];
-  expect(area(stocks?.rect ?? { w: 0, h: 0 }) / (600 * 400)).toBeCloseTo(0.75, 6);
-  const inner = stocks?.lines ?? [];
-  expect(inner.map((l) => l.line.name)).toEqual(["CTO", "PEA"]);
-  expect(
-    area(inner[0]?.rect ?? { w: 0, h: 0 }) / area(inner[1]?.rect ?? { w: 1, h: 1 }),
-  ).toBeCloseTo(2, 6);
+  expect(area(tiles[0]?.rect ?? { w: 0, h: 0 }) / (600 * 400)).toBeCloseTo(0.75, 6);
+  expect(area(tiles[1]?.rect ?? { w: 0, h: 0 }) / (600 * 400)).toBeCloseTo(0.25, 6);
 });
 
 test("history stacks the assets above zero and the debts below, with net worth", () => {

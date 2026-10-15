@@ -302,7 +302,7 @@ function MosaicLabel({
   );
 }
 
-/** The allocation as a mosaic (a treemap): categories as blocks, their lines as tiles. */
+/** The allocation as a mosaic (a treemap): one tile per category, as large as its value. */
 function Mosaic({ matrix, index }: { matrix: WealthMatrixOut; index: number }) {
   const { t } = useI18n();
   const c = t.wealth.charts;
@@ -324,82 +324,51 @@ function Mosaic({ matrix, index }: { matrix: WealthMatrixOut; index: number }) {
         <>
           <svg viewBox={`0 0 ${W} ${H}`} aria-labelledby={ids.mosaic} className="w-full">
             <title id={ids.mosaic}>{c.mosaicLabel}</title>
-            {tiles.map(({ category, rect, lines }) => (
-              <g key={category.id}>
-                {lines.map(({ line, rect: r }) => {
-                  const key = `${category.id}-${line.id}`;
-                  const w = Math.max(r.w - 2, 0);
-                  const h = Math.max(r.h - 2, 0);
-                  return (
-                    <g key={key}>
-                      <rect
-                        x={r.x + 1}
-                        y={r.y + 1}
-                        width={w}
-                        height={h}
-                        rx={3}
-                        fill={wealthColour(category.colour)}
-                        opacity={pointed && pointed.id !== key ? 0.4 : 1}
-                        {...markProps(
-                          key,
-                          describe(`${category.name} · ${line.name}`, line.value, line.share),
-                          setPointed,
-                        )}
-                      />
-                      {w > 64 && h > 40 && (
-                        <MosaicLabel
-                          x={r.x + 5}
-                          y={r.y + 5}
-                          width={w - 8}
-                          lines={[
-                            line.name,
-                            `${formatEurWhole(line.value)} · ${formatPercent(line.share)}`,
-                          ]}
-                        />
-                      )}
-                    </g>
-                  );
-                })}
-                {/* The category's outline: a wider gap between categories than inside one. */}
-                <rect
-                  x={rect.x}
-                  y={rect.y}
-                  width={rect.w}
-                  height={rect.h}
-                  fill="none"
-                  stroke={SURFACE}
-                  strokeWidth={4}
-                  pointerEvents="none"
-                />
-              </g>
-            ))}
+            {tiles.map(({ category, rect: r }) => {
+              const w = Math.max(r.w - 4, 0);
+              const h = Math.max(r.h - 4, 0);
+              return (
+                <g key={category.id}>
+                  <rect
+                    x={r.x + 2}
+                    y={r.y + 2}
+                    width={w}
+                    height={h}
+                    rx={4}
+                    fill={wealthColour(category.colour)}
+                    opacity={pointed && pointed.id !== category.id ? 0.4 : 1}
+                    {...markProps(
+                      category.id,
+                      describe(category.name, category.value, category.share),
+                      setPointed,
+                    )}
+                  />
+                  {w > 64 && h > 40 && (
+                    <MosaicLabel
+                      x={r.x + 7}
+                      y={r.y + 7}
+                      width={w - 10}
+                      lines={[
+                        category.name,
+                        `${formatEurWhole(category.value)} · ${formatPercent(category.share)}`,
+                      ]}
+                    />
+                  )}
+                </g>
+              );
+            })}
           </svg>
-          <ul className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
-            {shown.categories.map((cat) => (
-              <li key={cat.id} className="flex items-center gap-2">
-                <span
-                  aria-hidden
-                  className="inline-block size-3 shrink-0 rounded-sm"
-                  style={{ background: wealthColour(cat.colour) }}
-                />
-                {cat.name}
-                <span className="tabular text-muted">{formatPercent(cat.share)}</span>
-              </li>
-            ))}
-          </ul>
           <p aria-live="polite" className="min-h-5 text-sm">
             {pointed?.text}
           </p>
           <DataTable
             label={c.mosaicTable}
-            head={[c.line, c.value, c.share]}
-            rows={tiles.flatMap(({ category, lines }) =>
-              lines.map(({ line }) => [
-                `${category.name} · ${line.name}`,
-                formatEurWhole(line.value),
-                formatPercent(line.share),
-              ]),
-            )}
+            head={[c.category, c.value, c.share]}
+            rows={tiles.map(({ category }) => [
+              category.name,
+              formatEurWhole(category.value),
+              formatPercent(category.share),
+            ])}
           />
         </>
       )}
