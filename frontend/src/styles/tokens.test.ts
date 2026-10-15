@@ -1,20 +1,6 @@
 import { expect, test } from "vitest";
+import { WEALTH_COLOURS as WEALTH_KEYS } from "../wealth/colours";
 import tokens from "./tokens.css?raw";
-
-/** The colour keys a wealth category can take (`WEALTH_COLOURS` in kwak_core.wealth). */
-const WEALTH_KEYS = [
-  "savings",
-  "current",
-  "stocks",
-  "crypto",
-  "bonds",
-  "private-equity",
-  "gold",
-  "real-estate",
-  "equipment",
-  "exotic",
-  "debts",
-];
 
 const block = (opening: string) => {
   const start = tokens.indexOf(opening);

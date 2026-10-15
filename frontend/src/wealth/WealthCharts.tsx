@@ -28,9 +28,7 @@ import { useI18n } from "../i18n";
 import { formatEurSigned, formatEurWhole, formatPercent } from "../lib/money";
 import { monthLabel } from "../lib/months";
 import { allocation, bridge, type HoldingColumn, history, holdings, JOINT } from "./chartData";
-
-/** A category's colour: its `wealth-*` token (spec §7). */
-export const wealthColour = (key: string) => `var(--color-wealth-${key})`;
+import { wealthColour } from "./colours";
 
 const SURFACE = "var(--color-surface)";
 const FG = "var(--color-fg)";

@@ -62,6 +62,9 @@ export const errorsFr: typeof errorsEn = {
  * API_PATTERNS below.
  */
 export const API_MESSAGES_FR: Record<string, string> = {
+  "another category has this name": "une autre catégorie porte ce nom",
+  "it still holds lines (perhaps a member's private ones): move or delete them first":
+    "elle contient encore des lignes (peut-être les lignes privées d'un membre) : déplacez-les ou supprimez-les d'abord",
   "a category cannot be its own parent": "une catégorie ne peut pas être sa propre parente",
   "a category name is required": "un nom de catégorie est obligatoire",
   "account name is required": "le nom du compte est obligatoire",
