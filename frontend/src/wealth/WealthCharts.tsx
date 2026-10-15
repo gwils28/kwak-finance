@@ -1,10 +1,9 @@
 /**
  * The wealth charts (F-WLT-6), drawn from the matrix on screen: net worth over time, the
- * allocation as a sunburst, who holds what as a Marimekko, and what moved net worth. Categories
- * keep their `wealth-*` colour everywhere; every chart has its table, and the sunburst and the
- * Marimekko read the pointed or focused mark out in words.
+ * allocation of a chosen month as a sunburst and as a mosaic, and what moved net worth.
+ * Categories keep their `wealth-*` colour everywhere; every chart has its table, and the sunburst
+ * and the mosaic read the pointed or focused mark out in words.
  */
-import { useSuspenseQuery } from "@tanstack/react-query";
 import { useId, useState } from "react";
 import {
   Bar,
@@ -22,24 +21,44 @@ import {
   YAxis,
 } from "recharts";
 import type { WealthMatrixOut } from "../api/generated";
-import { meQuery } from "../auth/session";
 import { AXIS, Card, DataTable, GRID, legendText, TOOLTIP } from "../dashboard/charts";
 import { useI18n } from "../i18n";
 import { formatEurSigned, formatEurWhole, formatPercent } from "../lib/money";
 import { monthLabel } from "../lib/months";
-import { allocation, bridge, type HoldingColumn, history, holdings, JOINT } from "./chartData";
+import { allocation, bridge, history, mosaic } from "./chartData";
 import { wealthColour } from "./colours";
 
 const SURFACE = "var(--color-surface)";
 const FG = "var(--color-fg)";
 
 export function WealthCharts({ matrix }: { matrix: WealthMatrixOut }) {
+  const { t } = useI18n();
+  const id = useId();
+  // The month the allocation charts show: the last one by default, or when off the window.
+  const [chosen, setChosen] = useState<string | null>(null);
+  const month = chosen && matrix.months.includes(chosen) ? chosen : (matrix.months.at(-1) ?? "");
+  const index = matrix.months.indexOf(month);
   return (
     <div className="flex flex-col gap-4">
       <History matrix={matrix} />
+      <label htmlFor={id} className="flex w-fit flex-col gap-1 text-sm font-medium">
+        {t.wealth.charts.monthShown}
+        <select
+          id={id}
+          className="rounded-md border border-border bg-surface px-3 py-2"
+          value={month}
+          onChange={(e) => setChosen(e.target.value)}
+        >
+          {matrix.months.map((m) => (
+            <option key={m} value={m}>
+              {monthLabel(m)}
+            </option>
+          ))}
+        </select>
+      </label>
       <div className="grid gap-4 lg:grid-cols-2">
-        <Allocation matrix={matrix} />
-        <Holdings matrix={matrix} />
+        <Allocation matrix={matrix} index={index} />
+        <Mosaic matrix={matrix} index={index} />
       </div>
       <Bridge matrix={matrix} />
     </div>
@@ -146,13 +165,13 @@ function markProps(id: string, text: string, setPointed: (p: Pointed) => void) {
   };
 }
 
-function Allocation({ matrix }: { matrix: WealthMatrixOut }) {
+function Allocation({ matrix, index }: { matrix: WealthMatrixOut; index: number }) {
   const { t } = useI18n();
   const c = t.wealth.charts;
   const [pointed, setPointed] = useState<Pointed>(null);
   const ids = { sunburst: useId() };
-  const { total, categories } = allocation(matrix);
-  const month = monthLabel(matrix.months.at(-1) ?? "");
+  const { total, categories } = allocation(matrix, index);
+  const month = monthLabel(matrix.months[index] ?? "");
   const SIZE = 300;
   const C = SIZE / 2;
   let angle = 0;
@@ -244,173 +263,141 @@ function Allocation({ matrix }: { matrix: WealthMatrixOut }) {
   );
 }
 
-/** Holders' shades of the category colour: the viewer full, the joint holding the palest. */
+/** Characters that fit in `width` at 12px, about. */
+const clip = (text: string, width: number) => {
+  const max = Math.floor(width / CHAR);
+  return text.length > max ? `${text.slice(0, Math.max(max - 1, 1))}…` : text;
+};
+
+/** Characters' width at 12px, about: sizes a label's backing. */
+const CHAR = 6.6;
+
 /**
- * How a holder's part is filled: the viewer in the category's colour, other members in a
- * lighter shade, the joint holding hatched (a texture, not a darker shade: it would sink into
- * the dark surface).
+ * A tile's name and value, in the text colour on a pill of the surface: legible on any hue in
+ * both themes, where text straight on the colour would not be.
  */
-const holderFill = (holder: string, viewerId: string, colour: string, hatch: string) =>
-  holder === JOINT
-    ? { fill: `url(#${hatch})` }
-    : { fill: colour, fillOpacity: holder === viewerId ? 1 : 0.55 };
-
-/** React's ids hold characters a `url(#…)` reference does not take. */
-const svgId = (id: string) => `w${id.replace(/[^a-zA-Z0-9_-]/g, "")}`;
-
-function HatchSwatch({ colour }: { colour: string }) {
-  const id = svgId(useId());
+function MosaicLabel({
+  x,
+  y,
+  width,
+  lines,
+}: {
+  x: number;
+  y: number;
+  width: number;
+  lines: [string, string];
+}) {
+  const [name, value] = lines.map((text) => clip(text, width - 10));
+  const wide = Math.min(width, Math.max(name?.length ?? 0, value?.length ?? 0) * CHAR + 12);
   return (
-    <svg aria-hidden viewBox="0 0 12 12" className="size-3 rounded-sm">
-      <defs>
-        <Hatch id={id} colour={colour} />
-      </defs>
-      <rect width={12} height={12} fill={`url(#${id})`} />
-    </svg>
+    <g pointerEvents="none">
+      <rect x={x} y={y} width={wide} height={34} rx={4} fill={SURFACE} fillOpacity={0.88} />
+      <text x={x + 6} y={y + 14} fontSize={12} fontWeight={600} fill={FG}>
+        {name}
+        <tspan x={x + 6} dy={15} fontWeight={400} fill="var(--color-muted)">
+          {value}
+        </tspan>
+      </text>
+    </g>
   );
 }
 
-function Hatch({ id, colour }: { id: string; colour: string }) {
-  return (
-    <pattern
-      id={id}
-      width={6}
-      height={6}
-      patternUnits="userSpaceOnUse"
-      patternTransform="rotate(45)"
-    >
-      <rect width={6} height={6} fill={colour} fillOpacity={0.3} />
-      <line x1={0} y1={0} x2={0} y2={6} stroke={colour} strokeWidth={4} />
-    </pattern>
-  );
-}
-
-function Holdings({ matrix }: { matrix: WealthMatrixOut }) {
+/** The allocation as a mosaic (a treemap): categories as blocks, their lines as tiles. */
+function Mosaic({ matrix, index }: { matrix: WealthMatrixOut; index: number }) {
   const { t } = useI18n();
   const c = t.wealth.charts;
-  const { data: user } = useSuspenseQuery(meQuery);
   const [pointed, setPointed] = useState<Pointed>(null);
-  const ids = { marimekko: svgId(useId()) };
-  const { holders, columns } = holdings(matrix, user.id);
-  const month = monthLabel(matrix.months.at(-1) ?? "");
-  const holderName = (key: string) =>
-    key === JOINT ? c.joint : (holders.find((h) => h.key === key)?.name ?? "");
-  const W = 640;
-  const H = 220;
-  const GAP = 2;
-  let x = 0;
-  const placed = columns.map((col) => {
-    const left = x;
-    x += col.share * W;
-    return { col, left, width: Math.max(col.share * W - GAP, 1) };
-  });
-  const describe = (col: HoldingColumn, holder: string, value: number, share: number) =>
-    `${col.name} · ${holderName(holder)}: ${formatEurWhole(value)} · ${c.ofCategory(formatPercent(share), col.name)}`;
+  const ids = { mosaic: useId() };
+  const shown = allocation(matrix, index);
+  const month = monthLabel(matrix.months[index] ?? "");
+  // About its drawn size beside the sunburst, so 12px text stays 12px.
+  const W = 520;
+  const H = 360;
+  const tiles = mosaic(shown, { x: 0, y: 0, w: W, h: H });
+  const describe = (name: string, value: number, share: number) =>
+    `${name}: ${formatEurWhole(value)} · ${formatPercent(share)}`;
   return (
-    <Card title={c.holdings} subtitle={c.holdingsHelp(month)}>
-      {columns.length === 0 ? (
+    <Card title={c.mosaic} subtitle={c.mosaicHelp(month)}>
+      {shown.total <= 0 ? (
         <p className="text-sm text-muted">{c.noAssets}</p>
       ) : (
         <>
-          <ul className="flex flex-wrap gap-4 text-sm">
-            {holders.map((h) => (
-              <li key={h.key} className="flex items-center gap-2">
-                {h.key === JOINT ? (
-                  <HatchSwatch colour={FG} />
-                ) : (
-                  <span
-                    aria-hidden
-                    className="inline-block size-3 rounded-sm"
-                    style={{ background: FG, opacity: h.key === user.id ? 1 : 0.55 }}
-                  />
-                )}
-                {holderName(h.key)}
-              </li>
-            ))}
-          </ul>
-          <svg viewBox={`0 0 ${W} ${H + 40}`} aria-labelledby={ids.marimekko} className="w-full">
-            <title id={ids.marimekko}>{c.marimekko}</title>
-            <defs>
-              {columns.map((col) => (
-                <Hatch
-                  key={col.id}
-                  id={`${ids.marimekko}-${col.id}`}
-                  colour={wealthColour(col.colour)}
-                />
-              ))}
-            </defs>
-            {placed.map(({ col, left, width }) => {
-              let bottom = H;
-              return (
-                <g key={col.id}>
-                  {col.parts.map((part) => {
-                    const height = Math.max(part.share * H - GAP, 1);
-                    const top = bottom - part.share * H;
-                    bottom = top;
-                    const key = `${col.id}-${part.holder}`;
-                    return (
+          <svg viewBox={`0 0 ${W} ${H}`} aria-labelledby={ids.mosaic} className="w-full">
+            <title id={ids.mosaic}>{c.mosaicLabel}</title>
+            {tiles.map(({ category, rect, lines }) => (
+              <g key={category.id}>
+                {lines.map(({ line, rect: r }) => {
+                  const key = `${category.id}-${line.id}`;
+                  const w = Math.max(r.w - 2, 0);
+                  const h = Math.max(r.h - 2, 0);
+                  return (
+                    <g key={key}>
                       <rect
-                        key={key}
-                        x={left}
-                        y={top + GAP}
-                        width={width}
-                        height={height}
-                        rx={2}
-                        {...holderFill(
-                          part.holder,
-                          user.id,
-                          wealthColour(col.colour),
-                          `${ids.marimekko}-${col.id}`,
-                        )}
-                        stroke={pointed?.id === key ? FG : "none"}
-                        strokeWidth={2}
+                        x={r.x + 1}
+                        y={r.y + 1}
+                        width={w}
+                        height={h}
+                        rx={3}
+                        fill={wealthColour(category.colour)}
+                        opacity={pointed && pointed.id !== key ? 0.4 : 1}
                         {...markProps(
                           key,
-                          describe(col, part.holder, part.value, part.share),
+                          describe(`${category.name} · ${line.name}`, line.value, line.share),
                           setPointed,
                         )}
                       />
-                    );
-                  })}
-                  {width >= 56 && (
-                    <>
-                      <text
-                        x={left + width / 2}
-                        y={H + 18}
-                        textAnchor="middle"
-                        fontSize={12}
-                        fill={FG}
-                      >
-                        {col.name.length > width / 7
-                          ? `${col.name.slice(0, Math.floor(width / 7) - 1)}…`
-                          : col.name}
-                      </text>
-                      <text
-                        x={left + width / 2}
-                        y={H + 34}
-                        textAnchor="middle"
-                        fontSize={11}
-                        fill="var(--color-muted)"
-                      >
-                        {formatPercent(col.share)}
-                      </text>
-                    </>
-                  )}
-                </g>
-              );
-            })}
+                      {w > 64 && h > 40 && (
+                        <MosaicLabel
+                          x={r.x + 5}
+                          y={r.y + 5}
+                          width={w - 8}
+                          lines={[
+                            line.name,
+                            `${formatEurWhole(line.value)} · ${formatPercent(line.share)}`,
+                          ]}
+                        />
+                      )}
+                    </g>
+                  );
+                })}
+                {/* The category's outline: a wider gap between categories than inside one. */}
+                <rect
+                  x={rect.x}
+                  y={rect.y}
+                  width={rect.w}
+                  height={rect.h}
+                  fill="none"
+                  stroke={SURFACE}
+                  strokeWidth={4}
+                  pointerEvents="none"
+                />
+              </g>
+            ))}
           </svg>
+          <ul className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
+            {shown.categories.map((cat) => (
+              <li key={cat.id} className="flex items-center gap-2">
+                <span
+                  aria-hidden
+                  className="inline-block size-3 shrink-0 rounded-sm"
+                  style={{ background: wealthColour(cat.colour) }}
+                />
+                {cat.name}
+                <span className="tabular text-muted">{formatPercent(cat.share)}</span>
+              </li>
+            ))}
+          </ul>
           <p aria-live="polite" className="min-h-5 text-sm">
             {pointed?.text}
           </p>
           <DataTable
-            label={c.holdingsTable}
-            head={[c.holder, c.value, c.share]}
-            rows={columns.flatMap((col) =>
-              col.parts.map((part) => [
-                `${col.name} · ${holderName(part.holder)}`,
-                formatEurWhole(part.value),
-                c.ofCategory(formatPercent(part.share), col.name),
+            label={c.mosaicTable}
+            head={[c.line, c.value, c.share]}
+            rows={tiles.flatMap(({ category, lines }) =>
+              lines.map(({ line }) => [
+                `${category.name} · ${line.name}`,
+                formatEurWhole(line.value),
+                formatPercent(line.share),
               ]),
             )}
           />

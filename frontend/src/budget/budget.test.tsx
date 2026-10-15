@@ -156,3 +156,19 @@ test("in French, the matrix names its own rows in French", async () => {
   expect(within(table).getByRole("rowheader", { name: "Total épargné" })).toBeInTheDocument();
   expect(within(table).queryByText("To categorise")).toBeNull();
 });
+
+test("the matrix keeps its months and its category names in view while scrolling", async () => {
+  api();
+  render(<TestApp path="/budget" />);
+  const table = await screen.findByRole("table", { name: "Budget by category and month" });
+  // Its own scroll area, both ways, so the header row and the first columns can stick.
+  expect(table.parentElement?.className).toMatch(/overflow-auto/);
+  expect(table.parentElement?.className).toMatch(/max-h-/);
+  for (const header of within(table).getAllByRole("columnheader")) {
+    expect(header.className).toMatch(/sticky/);
+    expect(header.className).toMatch(/top-0/);
+  }
+  const bakery = within(table).getByRole("rowheader", { name: "Bakery and coffee" });
+  expect(bakery.className).toMatch(/sticky/);
+  expect(bakery.className).toMatch(/left-0/);
+});

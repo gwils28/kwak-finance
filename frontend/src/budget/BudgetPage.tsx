@@ -15,6 +15,7 @@ import {
 } from "../api/generated";
 import { apiErrorMessage, detailSentence } from "../auth/errors";
 import { ScopeSelect, useHasJointAccount } from "../components/ScopeSelect";
+import { SCROLL_FRAME, STICKY_TOP } from "../components/stickyTable";
 import { ErrorAlert } from "../components/ui";
 import { useI18n } from "../i18n";
 import {
@@ -51,6 +52,8 @@ const fieldClass = "rounded-md border border-border bg-surface px-3 py-2";
 // The category and target columns stay visible while the months scroll sideways.
 const STICKY_NAME = "sticky left-0 z-10 w-52 min-w-52 bg-surface";
 const STICKY_TARGET = "sticky left-52 z-10 w-40 min-w-40 bg-surface border-r border-border";
+/** The two left headers also stay at the top, above the month headers. */
+const HEAD = "top-0 shadow-[inset_0_-1px_0_var(--color-border)]";
 
 export function BudgetPage() {
   const { t } = useI18n();
@@ -150,18 +153,23 @@ export function BudgetPage() {
       {matrix.isError && <ErrorAlert message={t.budget.loadFailed} />}
       {matrix.isPending && <p className="text-sm text-muted">{t.common.loading}</p>}
       {matrix.data && (
-        <div className="overflow-x-auto rounded-lg border border-border bg-surface">
+        <div className={SCROLL_FRAME}>
           <table aria-label={t.budget.table} className="w-full text-sm">
             <thead className="text-left text-muted">
               <tr>
-                <th className={`${STICKY_NAME} px-3 py-2 font-medium`}>{t.budget.category}</th>
-                <th className={`${STICKY_TARGET} px-3 py-2 font-medium`}>
+                <th className={`${STICKY_NAME} ${HEAD} z-30 px-3 py-2 font-medium`}>
+                  {t.budget.category}
+                </th>
+                <th className={`${STICKY_TARGET} ${HEAD} z-30 px-3 py-2 font-medium`}>
                   {plan
                     ? t.budget.monthlyTargetOf(periodLabel(plan.period))
                     : t.budget.monthlyTarget}
                 </th>
                 {matrix.data.months.map((m) => (
-                  <th key={m} className="whitespace-nowrap px-3 py-2 text-right font-medium">
+                  <th
+                    key={m}
+                    className={`${STICKY_TOP} whitespace-nowrap px-3 py-2 text-right font-medium`}
+                  >
                     {monthLabel(m)}
                   </th>
                 ))}
