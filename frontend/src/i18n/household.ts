@@ -44,6 +44,18 @@ export const householdEn = {
   countEveryMonth: "Count every month",
   analysisStartFailed: "Could not save the analyses start.",
   analysisStartLoadFailed: "Could not load the analyses start.",
+  wealthStart: "Wealth start",
+  wealthStartHelp:
+    "The wealth page opens on the last 12 months, from this month at the earliest. Without it, it follows the analyses start. Any other months can still be chosen on the wealth page.",
+  wealthStartMonth: "First month of the wealth",
+  wealthStartsIn: (month: string) => `The wealth starts in ${month}.`,
+  wealthFollows: (month: string | null) =>
+    month
+      ? `The wealth follows the analyses start (${month}).`
+      : "The wealth follows the analyses start: every month.",
+  followAnalyses: "Follow the analyses start",
+  wealthStartFailed: "Could not save the wealth start.",
+  wealthStartLoadFailed: "Could not load the wealth start.",
 };
 
 export const householdFr: typeof householdEn = {
@@ -93,4 +105,16 @@ export const householdFr: typeof householdEn = {
   countEveryMonth: "Compter tous les mois",
   analysisStartFailed: "Impossible d'enregistrer le début des analyses.",
   analysisStartLoadFailed: "Impossible de charger le début des analyses.",
+  wealthStart: "Début du patrimoine",
+  wealthStartHelp:
+    "La page Patrimoine s'ouvre sur les 12 derniers mois, au plus tôt à partir de ce mois. Sans réglage, elle suit le début des analyses. D'autres mois restent accessibles depuis la page Patrimoine.",
+  wealthStartMonth: "Premier mois du patrimoine",
+  wealthStartsIn: (month) => `Le patrimoine commence en ${month}.`,
+  wealthFollows: (month) =>
+    month
+      ? `Le patrimoine suit le début des analyses (${month}).`
+      : "Le patrimoine suit le début des analyses : tous les mois.",
+  followAnalyses: "Suivre le début des analyses",
+  wealthStartFailed: "Impossible d'enregistrer le début du patrimoine.",
+  wealthStartLoadFailed: "Impossible de charger le début du patrimoine.",
 };

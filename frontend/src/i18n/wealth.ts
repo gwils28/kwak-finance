@@ -47,6 +47,11 @@ export const wealthEn = {
     "Each line shows its last value: change what moved, leave the rest. Empty lines are left out.",
   nothingToUpdate: "No line to update: add one first.",
   saveFailed: "Could not save. Check the values.",
+  from: "From",
+  to: "To",
+  last12: "Last 12 months",
+  endsBeforeStart: "The period ends before it starts.",
+  tooLong: "A period covers 10 years at most.",
 };
 
 export const wealthFr: typeof wealthEn = {
@@ -99,4 +104,9 @@ export const wealthFr: typeof wealthEn = {
     "Chaque ligne affiche sa dernière valeur : changez ce qui a bougé, laissez le reste. Les lignes vides sont laissées de côté.",
   nothingToUpdate: "Aucune ligne à mettre à jour : ajoutez-en une d'abord.",
   saveFailed: "Impossible d'enregistrer. Vérifiez les valeurs.",
+  from: "Du",
+  to: "Au",
+  last12: "12 derniers mois",
+  endsBeforeStart: "La période se termine avant de commencer.",
+  tooLong: "Une période couvre 10 ans au plus.",
 };

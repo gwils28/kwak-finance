@@ -194,6 +194,52 @@ def test_the_default_window_is_the_last_12_months_from_the_analyses_start(
     assert _matrix(owner_client)["months"] == ["2026-10", "2026-11", "2026-12"]
 
 
+def _wealth_start(client: TestClient, month: str | None) -> Any:
+    return client.patch(
+        "/api/household/settings", json={"wealth_start": month}, headers=csrf(client)
+    )
+
+
+def test_the_wealth_has_its_own_start_apart_from_the_analyses(owner_client: TestClient) -> None:
+    h = csrf(owner_client)
+    owner_client.patch("/api/household/settings", json={"analysis_start": "2026-10"}, headers=h)
+    response = _wealth_start(owner_client, "2026-01")
+    assert response.status_code == 200, response.text
+    assert (response.json()["analysis_start"], response.json()["wealth_start"]) == (
+        "2026-10",
+        "2026-01",
+    )
+    months = _matrix(owner_client)["months"]
+    assert (months[0], months[-1], len(months)) == ("2026-01", "2026-12", 12)
+    # Changing the analyses start alone keeps the wealth's.
+    owner_client.patch("/api/household/settings", json={"analysis_start": "2026-11"}, headers=h)
+    assert owner_client.get("/api/household/settings").json()["wealth_start"] == "2026-01"
+    entry = owner_client.get("/api/audit", params={"kind": "household"}).json()["items"]
+    assert {"wealth_start": "2026-01"} in [e["details"] for e in entry]
+
+    # Without its own start, the wealth follows the analyses.
+    assert _wealth_start(owner_client, None).json()["wealth_start"] is None
+    assert _matrix(owner_client)["months"] == ["2026-11", "2026-12"]
+    # Any window can still be asked for, earlier months included.
+    assert _matrix(owner_client, start="2025-06", end="2025-07")["months"] == [
+        "2025-06",
+        "2025-07",
+    ]
+
+
+@pytest.mark.parametrize("month", ["2027-01", "2026-13", "1899-12"])
+def test_a_bad_or_future_wealth_start_is_rejected(owner_client: TestClient, month: str) -> None:
+    assert _wealth_start(owner_client, month).status_code == 422
+
+
+def test_only_the_owner_sets_the_wealth_start(
+    client: TestClient, clock: Clock, owner: User, member: User
+) -> None:
+    clock.now = TODAY
+    log_in(client, clock, "member@example.com")
+    assert _wealth_start(client, "2026-01").status_code == 403
+
+
 def test_categories_are_managed(owner_client: TestClient) -> None:
     response = owner_client.post(
         "/api/wealth/categories",

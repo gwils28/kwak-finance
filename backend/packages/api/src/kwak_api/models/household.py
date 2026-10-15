@@ -27,6 +27,7 @@ class Household(UUIDPrimaryKey, Timestamps, Base):
     __table_args__ = (
         CheckConstraint("warn_at BETWEEN 0.5 AND 1", name="warn_at_range"),
         CheckConstraint("extract(day from analysis_start) = 1", name="analysis_start_month"),
+        CheckConstraint("extract(day from wealth_start) = 1", name="wealth_start_month"),
     )
 
     name: Mapped[str] = mapped_column(String(100))
@@ -34,6 +35,8 @@ class Household(UUIDPrimaryKey, Timestamps, Base):
     warn_at: Mapped[Decimal] = mapped_column(Numeric(3, 2), server_default=text("0.80"))
     # F-ADM-4: the first month analyses count (its first day); NULL: from the beginning.
     analysis_start: Mapped[date | None] = mapped_column(Date)
+    # F-WLT-5: the first month the wealth matrix shows by default; NULL: the analyses start.
+    wealth_start: Mapped[date | None] = mapped_column(Date)
 
     users: Mapped[list["User"]] = relationship(back_populates="household")
 

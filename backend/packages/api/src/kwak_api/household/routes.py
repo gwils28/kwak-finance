@@ -1,7 +1,7 @@
 """Household members and invitations."""
 
 import re
-from datetime import datetime
+from datetime import date, datetime
 from decimal import Decimal
 from typing import Annotated
 from uuid import UUID
@@ -86,12 +86,18 @@ class SettingsOut(BaseModel):
     """The share of a monthly target from which a category is to watch (F-BUD-2)."""
     analysis_start: str | None
     """YYYY-MM: the first month analyses count (F-ADM-4); null: every month."""
+    wealth_start: str | None
+    """YYYY-MM: the first month the wealth matrix shows (F-WLT-5); null: the analyses start."""
 
     @classmethod
     def of(cls, household: Household) -> "SettingsOut":
-        start = household.analysis_start
+        def text(start: date | None) -> str | None:
+            return start.strftime("%Y-%m") if start else None
+
         return cls(
-            warn_at=household.warn_at, analysis_start=start.strftime("%Y-%m") if start else None
+            warn_at=household.warn_at,
+            analysis_start=text(household.analysis_start),
+            wealth_start=text(household.wealth_start),
         )
 
 
@@ -112,6 +118,17 @@ class SettingsPatch(BaseModel):
     """From 0.50 to 1, in whole percents. Leave it out to keep it."""
     analysis_start: Annotated[str, AfterValidator(_month)] | None = None
     """YYYY-MM; null to count every month. Leave it out to keep it."""
+    wealth_start: Annotated[str, AfterValidator(_month)] | None = None
+    """YYYY-MM; null to follow the analyses start. Leave it out to keep it."""
+
+
+def _start(month: str | None, now: datetime, future: str) -> date | None:
+    """A month to start from, never one to come: it would empty what it starts."""
+    if month is None:
+        return None
+    if Month.parse(month) > Month.of(now.date()):
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, future)
+    return Month.parse(month).first_day()
 
 
 @router.get("/household/settings")
@@ -127,13 +144,9 @@ def update_settings(
     if body.warn_at is not None and body.warn_at != household.warn_at:
         household.warn_at = body.warn_at
         audit.record(db, user_session.user, AuditAction.SETTINGS_CHANGED, now, warn_at=body.warn_at)
-    if "analysis_start" in body.model_fields_set:
-        if body.analysis_start and Month.parse(body.analysis_start) > Month.of(now.date()):
-            # It would empty every analysis until the month comes.
-            raise HTTPException(
-                status.HTTP_422_UNPROCESSABLE_CONTENT, "the analyses cannot start in the future"
-            )
-        start = Month.parse(body.analysis_start).first_day() if body.analysis_start else None
+    given = body.model_fields_set
+    if "analysis_start" in given:
+        start = _start(body.analysis_start, now, "the analyses cannot start in the future")
         if start != household.analysis_start:
             household.analysis_start = start
             audit.record(
@@ -142,6 +155,17 @@ def update_settings(
                 AuditAction.SETTINGS_CHANGED,
                 now,
                 analysis_start=body.analysis_start or "",
+            )
+    if "wealth_start" in given:
+        start = _start(body.wealth_start, now, "the wealth cannot start in the future")
+        if start != household.wealth_start:
+            household.wealth_start = start
+            audit.record(
+                db,
+                user_session.user,
+                AuditAction.SETTINGS_CHANGED,
+                now,
+                wealth_start=body.wealth_start or "",
             )
     db.flush()
     return SettingsOut.of(household)

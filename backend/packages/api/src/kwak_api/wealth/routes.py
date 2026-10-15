@@ -16,7 +16,7 @@ from kwak_api.auth.routes import CurrentSession, Db, Now
 from kwak_api.models import WealthCategory, WealthLine
 from kwak_api.services import audit
 from kwak_api.services import wealth as service
-from kwak_api.services.households import analysis_start
+from kwak_api.services.households import wealth_start
 
 router = APIRouter(prefix="/api/wealth", tags=["wealth"])
 
@@ -434,10 +434,10 @@ def wealth_matrix(
     end: Annotated[str | None, Query(description="Last month, YYYY-MM")] = None,
     scope: Scope = Scope.HOUSEHOLD,
 ) -> WealthMatrixOut:
-    """The wealth matrix (F-WLT-5). Without a window: the last 12 months, from the analyses
-    start at the earliest (F-ADM-4)."""
+    """The wealth matrix (F-WLT-5). Without a window: the last 12 months, from the wealth start
+    at the earliest (the analyses start without one, F-ADM-4)."""
     user = user_session.user
-    months = _window(start, end, now.date(), analysis_start(db, user.household_id))
+    months = _window(start, end, now.date(), wealth_start(db, user.household_id))
     m = service.matrix(db, user, months, scope)
     r = m.result
     by_category: dict[UUID, list[service.LineView]] = {c.id: [] for c in m.categories}

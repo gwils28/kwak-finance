@@ -26,7 +26,8 @@ function formatted(
     else if (key === "date") out[key] = formatDate(text);
     else if (key === "warn_at") out[key] = formatPercent(text);
     else if (key === "period") out[key] = period(text);
-    else if (key === "analysis_start") out[key] = text && monthLabel(text);
+    else if (key === "analysis_start" || key === "wealth_start")
+      out[key] = text && monthLabel(text);
     else out[key] = text;
   }
   return out;

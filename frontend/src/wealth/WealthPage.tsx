@@ -44,6 +44,14 @@ const fieldClass = "rounded-md border border-border bg-surface px-3 py-2";
 const labelClass = "flex flex-col gap-1 text-sm font-medium";
 const VISIBILITIES: Visibility[] = ["shared", "private", "joint"];
 const KEY = ["wealth"];
+const MAX_MONTHS = 120;
+
+type Period = { start: string; end: string };
+
+const monthIndex = (month: string) => {
+  const [year, m] = month.split("-").map(Number) as [number, number];
+  return year * 12 + m;
+};
 
 type Panel =
   | { kind: "add" }
@@ -64,9 +72,13 @@ export function WealthPage() {
   const { t } = useI18n();
   const [scope, setScope] = useState<Scope>("household");
   const [panel, setPanel] = useState<Panel | null>(null);
+  // The months asked for (null: the last 12, from the wealth start), and the ones being typed.
+  const [period, setPeriod] = useState<Period | null>(null);
+  const [draft, setDraft] = useState<Period | null>(null);
   const matrix = useQuery({
-    queryKey: [...KEY, "matrix", scope],
-    queryFn: async () => (await wealthMatrix({ query: { scope }, throwOnError: true })).data,
+    queryKey: [...KEY, "matrix", scope, period],
+    queryFn: async () =>
+      (await wealthMatrix({ query: { scope, ...period }, throwOnError: true })).data,
     placeholderData: keepPreviousData,
   });
   const close = () => setPanel(null);
@@ -87,6 +99,24 @@ export function WealthPage() {
             labelClassName={labelClass}
             fieldClassName={fieldClass}
           />
+          {data && (
+            <PeriodPicker
+              shown={{ start: data.months[0] ?? "", end: data.months.at(-1) ?? "" }}
+              draft={draft}
+              onChange={(next) => {
+                setDraft(next);
+                if (periodProblem(next) === null) setPeriod(next);
+              }}
+              onReset={
+                draft || period
+                  ? () => {
+                      setDraft(null);
+                      setPeriod(null);
+                    }
+                  : null
+              }
+            />
+          )}
           <Button variant="ghost" onClick={() => setPanel({ kind: "add" })}>
             {t.wealth.addLine}
           </Button>
@@ -107,6 +137,67 @@ export function WealthPage() {
       {data && empty && <p className="text-sm">{t.wealth.empty}</p>}
       {data && !empty && <Matrix matrix={data} onOpen={setPanel} />}
     </div>
+  );
+}
+
+type PeriodProblem = "endsBeforeStart" | "tooLong" | "incomplete";
+
+function periodProblem({ start, end }: Period): PeriodProblem | null {
+  if (!isMonth(start) || !isMonth(end) || end > thisMonth()) return "incomplete";
+  if (end < start) return "endsBeforeStart";
+  return monthIndex(end) - monthIndex(start) + 1 > MAX_MONTHS ? "tooLong" : null;
+}
+
+function PeriodPicker({
+  shown,
+  draft,
+  onChange,
+  onReset,
+}: {
+  shown: Period;
+  draft: Period | null;
+  onChange: (period: Period) => void;
+  onReset: (() => void) | null;
+}) {
+  const { t } = useI18n();
+  const ids = { from: useId(), to: useId() };
+  const value = draft ?? shown;
+  const problem = draft ? periodProblem(draft) : null;
+  return (
+    <>
+      <label htmlFor={ids.from} className={labelClass}>
+        {t.wealth.from}
+        <input
+          id={ids.from}
+          type="month"
+          className={fieldClass}
+          value={value.start}
+          max={thisMonth()}
+          onChange={(e) => onChange({ ...value, start: e.target.value })}
+        />
+      </label>
+      <label htmlFor={ids.to} className={labelClass}>
+        {t.wealth.to}
+        <input
+          id={ids.to}
+          type="month"
+          className={fieldClass}
+          value={value.end}
+          max={thisMonth()}
+          onChange={(e) => onChange({ ...value, end: e.target.value })}
+        />
+      </label>
+      {onReset && (
+        <Button variant="ghost" onClick={onReset}>
+          {t.wealth.last12}
+        </Button>
+      )}
+      {(problem === "endsBeforeStart" || problem === "tooLong") && (
+        <div className="basis-full">
+          <ErrorAlert message={t.wealth[problem]} />
+        </div>
+      )}
+    </>
   );
 }
 
