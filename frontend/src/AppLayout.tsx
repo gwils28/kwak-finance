@@ -10,13 +10,13 @@ import { Logo } from "./components/Logo";
 import { useI18n } from "./i18n";
 
 /**
- * The overview, a summary of the whole app, then two spaces with their tabs: spending (the
- * everyday pages) and wealth, apart since it is followed monthly rather than daily. A new page
- * adds its tab to its space.
+ * Two spaces with their tabs: spending (the everyday pages) and wealth, apart since it is
+ * followed monthly rather than daily. The overview, a summary of the whole app, is the app's
+ * name; the household pages (accounts, categories, members…) are in the account menu. A new
+ * page adds its tab to its space.
  */
 const SPACES = {
   spending: [
-    { to: "/accounts", label: "accounts", exact: false },
     { to: "/transactions", label: "transactions", exact: false },
     { to: "/budget", label: "budget", exact: false },
     { to: "/reports", label: "reports", exact: false },
@@ -29,25 +29,16 @@ const SPACES = {
 
 type Space = keyof typeof SPACES;
 
-/** Where each switch leads: the overview, or a space's most used page. */
+/** Where each switch leads: the space's most used page. */
 const SWITCH = [
-  { key: "overview", to: "/", label: "overview" },
   { key: "spending", to: "/transactions", label: "spending" },
   { key: "wealth", to: "/wealth", label: "wealth" },
 ] as const;
 
-const SPENDING_PAGES = [
-  "/accounts",
-  "/transactions",
-  "/recurring",
-  "/budget",
-  "/reports",
-  "/categories",
-];
+const SPENDING_PAGES = ["/transactions", "/recurring", "/budget", "/reports"];
 
-/** The overview, a space, or neither for the household pages (members, activity, guide). */
-function placeOf(pathname: string): Space | "overview" | null {
-  if (pathname === "/") return "overview";
+/** The space a page belongs to; none for the overview and the account menu's pages. */
+function placeOf(pathname: string): Space | null {
   const under = (root: string) => pathname === root || pathname.startsWith(`${root}/`);
   if (under("/wealth")) return "wealth";
   return SPENDING_PAGES.some(under) ? "spending" : null;

@@ -26,7 +26,7 @@ export type GuideSection = {
 export const guideEn = {
   title: "Using Kwak Finance",
   intro:
-    "Kwak Finance keeps your household's accounts, spending, budget and wealth in one place, on your own computer. This guide walks through each page. At the top, “Overview” sums up the whole app, then “Spending” and “Wealth” switch between two spaces, each with its tabs: the everyday pages (accounts, transactions, budget, reports) and the wealth (monthly tracking, analysis); categories, members, the activity log, language and theme are in the menu under your name, next to this guide. To install, start or update the app, see “How to run the app” at the bottom of every page.",
+    "Kwak Finance keeps your household's accounts, spending, budget and wealth in one place, on your own computer. This guide walks through each page. The app's name, at the top left, leads to the overview, the summary of the whole app. Next to it, “Spending” and “Wealth” switch between two spaces, each with its tabs: the everyday pages (transactions, budget, reports) and the wealth (monthly tracking, analysis). Categories, members, accounts, the activity log, language and theme are in the menu under your name, next to this guide. To install, start or update the app, see “How to run the app” at the bottom of every page.",
   contents: "Contents",
   sections: [
     {
@@ -187,7 +187,7 @@ export const guideEn = {
 export const guideFr: typeof guideEn = {
   title: "Utiliser Kwak Finance",
   intro:
-    "Kwak Finance réunit les comptes, les dépenses, le budget et le patrimoine de votre foyer, sur votre propre ordinateur. Ce guide parcourt chaque page. En haut, « Vue d'ensemble » résume toute l'application, puis « Dépenses » et « Patrimoine » passent d'un espace à l'autre, chacun avec ses onglets : les pages du quotidien (comptes, opérations, budget, rapports) et le patrimoine (suivi mensuel, analyse) ; les catégories, les membres, le journal d'activité, la langue et le thème sont dans le menu à votre nom, à côté de ce guide. Pour installer, lancer ou mettre à jour l'application, voyez « Lancer et arrêter l'application » en bas de chaque page.",
+    "Kwak Finance réunit les comptes, les dépenses, le budget et le patrimoine de votre foyer, sur votre propre ordinateur. Ce guide parcourt chaque page. Le nom de l'application, en haut à gauche, mène à la vue d'ensemble, le résumé de toute l'application. À côté, « Dépenses » et « Patrimoine » passent d'un espace à l'autre, chacun avec ses onglets : les pages du quotidien (opérations, budget, rapports) et le patrimoine (suivi mensuel, analyse). Les catégories, les membres, les comptes, le journal d'activité, la langue et le thème sont dans le menu à votre nom, à côté de ce guide. Pour installer, lancer ou mettre à jour l'application, voyez « Lancer et arrêter l'application » en bas de chaque page.",
   contents: "Sommaire",
   sections: [
     {
