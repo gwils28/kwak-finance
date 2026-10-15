@@ -10,13 +10,12 @@ import { Logo } from "./components/Logo";
 import { useI18n } from "./i18n";
 
 /**
- * Two spaces, each with its tabs: spending (the everyday pages, and every page outside wealth)
- * and wealth, apart since it is followed monthly rather than daily. A new page adds its tab
- * to its space.
+ * The overview, a summary of the whole app, then two spaces with their tabs: spending (the
+ * everyday pages) and wealth, apart since it is followed monthly rather than daily. A new page
+ * adds its tab to its space.
  */
 const SPACES = {
   spending: [
-    { to: "/", label: "overview", exact: true },
     { to: "/accounts", label: "accounts", exact: false },
     { to: "/transactions", label: "transactions", exact: false },
     { to: "/budget", label: "budget", exact: false },
@@ -29,6 +28,30 @@ const SPACES = {
 } as const;
 
 type Space = keyof typeof SPACES;
+
+/** Where each switch leads: the overview, or a space's most used page. */
+const SWITCH = [
+  { key: "overview", to: "/", label: "overview" },
+  { key: "spending", to: "/transactions", label: "spending" },
+  { key: "wealth", to: "/wealth", label: "wealth" },
+] as const;
+
+const SPENDING_PAGES = [
+  "/accounts",
+  "/transactions",
+  "/recurring",
+  "/budget",
+  "/reports",
+  "/categories",
+];
+
+/** The overview, a space, or neither for the household pages (members, activity, guide). */
+function placeOf(pathname: string): Space | "overview" | null {
+  if (pathname === "/") return "overview";
+  const under = (root: string) => pathname === root || pathname.startsWith(`${root}/`);
+  if (under("/wealth")) return "wealth";
+  return SPENDING_PAGES.some(under) ? "spending" : null;
+}
 
 const SPACE =
   "rounded-full px-3 py-1 text-sm font-medium whitespace-nowrap transition-colors focus-visible:outline-2 focus-visible:outline-accent";
@@ -43,8 +66,7 @@ export function AppLayout() {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const pathname = useRouterState({ select: (state) => state.location.pathname });
-  const space: Space =
-    pathname === "/wealth" || pathname.startsWith("/wealth/") ? "wealth" : "spending";
+  const place = placeOf(pathname);
 
   // The account's language wins; with none saved yet, keep the browser's and save it.
   useEffect(() => {
@@ -79,39 +101,41 @@ export function AppLayout() {
             aria-label={t.nav.spacesLabel}
             className="flex items-center gap-1 rounded-full border border-border p-0.5"
           >
-            {(["spending", "wealth"] as const).map((key) => (
+            {SWITCH.map(({ key, to, label }) => (
               <Link
                 key={key}
-                to={key === "wealth" ? "/wealth" : "/"}
-                aria-current={space === key ? "true" : undefined}
-                className={`${SPACE} ${
-                  space === key ? "bg-accent text-bg" : "text-muted hover:text-fg"
-                }`}
-                // The router marks the link "page" on the space's first page only; elsewhere in
-                // the space, the space marks itself.
-                activeOptions={{ exact: true }}
-              >
-                {key === "wealth" ? t.nav.wealth : t.nav.spending}
-              </Link>
-            ))}
-          </nav>
-          <nav
-            aria-label={t.nav.mainLabel}
-            className="-mx-4 order-last flex w-[calc(100%+2rem)] gap-6 self-stretch overflow-x-auto border-t border-border px-4 md:order-none md:mx-0 md:w-auto md:border-t-0 md:px-0"
-          >
-            {SPACES[space].map(({ to, label, exact }) => (
-              <Link
-                key={to}
                 to={to}
-                activeOptions={{ exact }}
-                className={TAB}
-                activeProps={{ className: "border-accent text-fg" }}
-                inactiveProps={{ className: "border-transparent text-muted" }}
+                aria-current={place === key ? "true" : undefined}
+                className={`${SPACE} ${
+                  place === key ? "bg-accent text-bg" : "text-muted hover:text-fg"
+                }`}
+                // The router marks the link "page" on its own page only; elsewhere in the
+                // space, the space marks itself.
+                activeOptions={{ exact: true }}
               >
                 {t.nav[label]}
               </Link>
             ))}
           </nav>
+          {(place === "spending" || place === "wealth") && (
+            <nav
+              aria-label={t.nav.mainLabel}
+              className="-mx-4 order-last flex w-[calc(100%+2rem)] gap-6 self-stretch overflow-x-auto border-t border-border px-4 md:order-none md:mx-0 md:w-auto md:border-t-0 md:px-0"
+            >
+              {SPACES[place].map(({ to, label, exact }) => (
+                <Link
+                  key={to}
+                  to={to}
+                  activeOptions={{ exact }}
+                  className={TAB}
+                  activeProps={{ className: "border-accent text-fg" }}
+                  inactiveProps={{ className: "border-transparent text-muted" }}
+                >
+                  {t.nav[label]}
+                </Link>
+              ))}
+            </nav>
+          )}
           <div className="ml-auto flex items-center gap-3">
             <Link
               to="/guide"
