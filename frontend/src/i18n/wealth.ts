@@ -52,6 +52,40 @@ export const wealthEn = {
   last12: "Last 12 months",
   endsBeforeStart: "The period ends before it starts.",
   tooLong: "A period covers 10 years at most.",
+  sinceStart: (change: string, month: string) => `${change} since ${month}`,
+  debtRatio: (ratio: string) => `${ratio} of gross assets`,
+  charts: {
+    history: "Net worth over time",
+    historyHelp:
+      "Each category's total at the end of each month, debts below zero; the line is net worth.",
+    historyTable: "Wealth by category and month",
+    net: "Net worth",
+    month: "Month",
+    allocation: "Allocation",
+    allocationHelp: (month: string) =>
+      `What you own in ${month}: categories inside, their lines outside. Point at a ring to read it.`,
+    allocationTable: "Allocation by category and line",
+    sunburst: "Allocation by category and line",
+    holdings: "Who holds what",
+    holdingsHelp: (month: string) =>
+      `In ${month}, each column is a category, as wide as its share of what you own, split by who holds it.`,
+    holdingsTable: "Holdings by category and holder",
+    marimekko: "Categories by share of gross assets, split by holder",
+    joint: "Joint",
+    holder: "Holder",
+    ofCategory: (share: string, category: string) => `${share} of ${category}`,
+    ofGross: (share: string) => `${share} of gross assets`,
+    bridge: "What moved net worth",
+    bridgeHelp: (start: string, from: string, end: string, to: string, change: string) =>
+      `Net worth went from ${start} in ${from} to ${end} in ${to} (${change}): each category's contribution; a debt repaid lifts it.`,
+    bridgeTable: "Net worth change by category",
+    contribution: "Contribution",
+    category: "Category",
+    line: "Line",
+    value: "Value",
+    share: "Share",
+    noAssets: "Nothing owned in the last month shown.",
+  },
 };
 
 export const wealthFr: typeof wealthEn = {
@@ -109,4 +143,38 @@ export const wealthFr: typeof wealthEn = {
   last12: "12 derniers mois",
   endsBeforeStart: "La période se termine avant de commencer.",
   tooLong: "Une période couvre 10 ans au plus.",
+  sinceStart: (change, month) => `${change} depuis ${month}`,
+  debtRatio: (ratio) => `${ratio} de l'actif brut`,
+  charts: {
+    history: "Patrimoine dans le temps",
+    historyHelp:
+      "Le total de chaque catégorie à la fin de chaque mois, les dettes sous zéro ; la ligne est le patrimoine net.",
+    historyTable: "Patrimoine par catégorie et par mois",
+    net: "Patrimoine net",
+    month: "Mois",
+    allocation: "Répartition",
+    allocationHelp: (month) =>
+      `Ce que vous possédez en ${month} : les catégories au centre, leurs lignes autour. Pointez un anneau pour le lire.`,
+    allocationTable: "Répartition par catégorie et par ligne",
+    sunburst: "Répartition par catégorie et par ligne",
+    holdings: "Qui détient quoi",
+    holdingsHelp: (month) =>
+      `En ${month}, chaque colonne est une catégorie, aussi large que sa part de ce que vous possédez, partagée selon qui la détient.`,
+    holdingsTable: "Avoirs par catégorie et par détenteur",
+    marimekko: "Catégories selon leur part de l'actif brut, partagées par détenteur",
+    joint: "Commun",
+    holder: "Détenteur",
+    ofCategory: (share, category) => `${share} de ${category}`,
+    ofGross: (share) => `${share} de l'actif brut`,
+    bridge: "Ce qui a fait bouger le patrimoine",
+    bridgeHelp: (start, from, end, to, change) =>
+      `Le patrimoine net est passé de ${start} en ${from} à ${end} en ${to} (${change}) : la contribution de chaque catégorie ; une dette remboursée le fait monter.`,
+    bridgeTable: "Variation du patrimoine par catégorie",
+    contribution: "Contribution",
+    category: "Catégorie",
+    line: "Ligne",
+    value: "Valeur",
+    share: "Part",
+    noAssets: "Rien de possédé le dernier mois affiché.",
+  },
 };

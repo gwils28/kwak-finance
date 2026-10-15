@@ -1,6 +1,6 @@
 # Functional Specifications
 
-Status: draft v0.17 — 2026-10-15. Owner: sole maintainer.
+Status: draft v0.18 — 2026-10-15. Owner: sole maintainer.
 
 ## 1. Purpose
 
@@ -124,7 +124,13 @@ Net worth is followed as a **monthly wealth matrix**, like the maintainer's own 
 - F-WLT-3: **Monthly values**: each line has at most one value per calendar month, in EUR, positive (a debt is entered as what is still owed and counts negatively). A month without a value carries the previous one forward, shown as carried, until a new value is entered; before its first value a line is empty. A closed month takes no value, and the matrix ends with the current month at the latest: later months are unknown. Values are entered in the matrix or with **"Update this month"**, which lists the open lines with their last value pre-filled and saves them all at once, or none if one is refused.
 - F-WLT-4: **Bank accounts are lines entered by hand** (since v0.16): Savings accounts and Current accounts are ordinary categories, where the user adds one line per account ("Livret A", "Compte joint"…) and enters its value each month like any other line. The app's cash accounts are not read: the matrix shows what the maintainer enters, whether the account is imported or not.
 - F-WLT-5: **The wealth matrix**: lines grouped by category in rows, months in columns (the last 12 by default, from the **wealth start** at the earliest; any other period of up to 120 months can be chosen, ending this month at the latest), with category subtotals in the category's colour, **gross assets**, **debts** and **net worth**, and for each month the change against the previous one (€ and %). A column gives each category's **share** of gross assets for the last month shown. Scope: *household*, *joint* or *mine*, as for the budget (§3).
-- F-WLT-6: **Wealth charts**: net worth over time, stacked by category in their colours (debts below zero); the allocation of the last month (share per category, then per line on demand); every chart has its table (no value reachable only by hovering).
+- F-WLT-6: **Wealth charts**, below the matrix and over the same months and scope, each category in its colour:
+  - **net worth over time**: each category's total per month, stacked (debts below zero), with net worth as a line;
+  - **allocation** of the last month as a **sunburst**: categories in the inner ring, their lines in the outer one, gross assets in the centre;
+  - **who holds what** as a **Marimekko**: one column per asset category, as wide as its share of gross assets, split by holder (the viewer, the other members, the joint holding), each holder a shade of the category's colour;
+  - **what moved net worth**: a bridge from the first month's net worth to the last's, one step per category that moved (a debt repaid lifts it);
+  - the net worth tile adds its change over the months shown, the debts tile the **debt ratio** (debts / gross assets).
+  Every chart has its table, and the sunburst and the Marimekko read the pointed or focused mark out in words: no value is reachable only by hovering.
 - F-WLT-7: The overview (F-DSH-1) shows net worth and its change over the month.
 
 ### 4.8 Dashboard and reporting (M)

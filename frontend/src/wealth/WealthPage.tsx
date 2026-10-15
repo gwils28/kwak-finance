@@ -39,6 +39,7 @@ import {
   parseEurInput,
 } from "../lib/money";
 import { isMonth, monthLabel, thisMonth } from "../lib/months";
+import { WealthCharts, wealthColour } from "./WealthCharts";
 
 const fieldClass = "rounded-md border border-border bg-surface px-3 py-2";
 const labelClass = "flex flex-col gap-1 text-sm font-medium";
@@ -64,9 +65,6 @@ type Panel =
       cell: WealthCellOut | null;
       debt: boolean;
     };
-
-/** A category's colour: its `wealth-*` token (spec §7). */
-export const wealthColour = (key: string) => `var(--color-wealth-${key})`;
 
 export function WealthPage() {
   const { t } = useI18n();
@@ -136,6 +134,7 @@ export function WealthPage() {
       {data && !empty && <Summary matrix={data} />}
       {data && empty && <p className="text-sm">{t.wealth.empty}</p>}
       {data && !empty && <Matrix matrix={data} onOpen={setPanel} />}
+      {data && !empty && <WealthCharts matrix={data} />}
     </div>
   );
 }
@@ -219,15 +218,27 @@ function Summary({ matrix }: { matrix: WealthMatrixOut }) {
   const last = matrix.months.length - 1;
   if (last < 0) return null;
   const change = matrix.change[last];
+  const gross = matrix.gross[last] as string;
+  // Over the months shown: against the first one's net worth, when it held something.
+  const first = Number(matrix.net[0]);
+  const moved = Number(matrix.net[last]) - first;
+  const since =
+    last > 0 && first !== 0 ? changeText(String(moved), String(moved / Math.abs(first))) : null;
   return (
     <div className="grid gap-4 sm:grid-cols-3">
       <Tile label={t.wealth.netWorth} value={formatEurWhole(matrix.net[last] as string)}>
-        {change
-          ? t.wealth.versusLastMonth(changeText(change, matrix.change_ratio[last] ?? null))
-          : t.wealth.nothingBefore}
+        <p>
+          {change
+            ? t.wealth.versusLastMonth(changeText(change, matrix.change_ratio[last] ?? null))
+            : t.wealth.nothingBefore}
+        </p>
+        {since && <p>{t.wealth.sinceStart(since, monthLabel(matrix.months[0] as string))}</p>}
       </Tile>
-      <Tile label={t.wealth.gross} value={formatEurWhole(matrix.gross[last] as string)} />
-      <Tile label={t.wealth.debts} value={formatEurWhole(matrix.debts[last] as string)} />
+      <Tile label={t.wealth.gross} value={formatEurWhole(gross)} />
+      <Tile label={t.wealth.debts} value={formatEurWhole(matrix.debts[last] as string)}>
+        {Number(gross) > 0 &&
+          t.wealth.debtRatio(formatPercent(Number(matrix.debts[last]) / Number(gross)))}
+      </Tile>
     </div>
   );
 }

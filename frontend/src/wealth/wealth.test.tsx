@@ -458,3 +458,52 @@ test("in French, amounts and months read French", async () => {
   expect(plain(net.textContent)).toContain("8 400 €");
   expect(await screen.findByRole("columnheader", { name: "déc. 2026" })).toBeInTheDocument();
 });
+
+test("the tiles add the change over the months shown and the debt ratio", async () => {
+  api();
+  render(<TestApp path="/wealth" />);
+  const net = await screen.findByRole("region", { name: "Net worth" });
+  expect(plain(net.textContent)).toContain("+€400 · +5% since Oct 2026");
+  expect(plain(screen.getByRole("region", { name: "Debts" }).textContent)).toContain(
+    "26% of gross assets",
+  );
+});
+
+test("the charts read the matrix: allocation, holders, and what moved net worth", async () => {
+  api();
+  render(<TestApp path="/wealth" />);
+  const user = userEvent.setup();
+  expect(await screen.findByRole("region", { name: "Net worth over time" })).toBeInTheDocument();
+
+  // The sunburst reads the pointed ring out.
+  const allocation = screen.getByRole("region", { name: "Allocation" });
+  await user.hover(within(allocation).getByRole("img", { name: "Stocks: €10,600 · 93%" }));
+  expect(within(allocation).getByText("Stocks: €10,600 · 93%")).toBeInTheDocument();
+  expect(
+    within(allocation).getByRole("img", { name: "PEA Fortuneo: €10,600 · 93%" }),
+  ).toBeInTheDocument();
+
+  // The Marimekko splits each category by holder.
+  const holders = screen.getByRole("region", { name: "Who holds what" });
+  expect(
+    within(holders).getByRole("img", {
+      name: "Current accounts · Wilson: €800 · 100% of Current accounts",
+    }),
+  ).toBeInTheDocument();
+
+  // The bridge goes from October's net worth to December's.
+  const bridge = within(screen.getByRole("region", { name: "What moved net worth" })).getByRole(
+    "table",
+    { hidden: true },
+  );
+  const rows = within(bridge)
+    .getAllByRole("row", { hidden: true })
+    .map((r) => plain(r.textContent));
+  expect(rows).toEqual([
+    "CategoryContribution",
+    "Oct 2026€8,000",
+    "Current accounts-€200",
+    "Stocks+€600",
+    "Dec 2026€8,400",
+  ]);
+});
