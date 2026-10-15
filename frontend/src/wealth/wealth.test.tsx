@@ -27,12 +27,11 @@ const category = (
   kind: "asset",
   colour,
   position: 0,
-  holds: null,
   ...extra,
 });
 const categories = [
-  category("c-savings", "Savings accounts", "savings", { holds: "savings" }),
-  category("c-current", "Current accounts", "current", { holds: "checking" }),
+  category("c-savings", "Savings accounts", "savings"),
+  category("c-current", "Current accounts", "current"),
   category("c-stocks", "Stocks", "stocks"),
   category("c-debts", "Debts", "debts", { kind: "debt" }),
 ];
@@ -52,13 +51,11 @@ const matrix: WealthMatrixOut = {
       share: "0.0702",
       lines: [
         {
-          id: "a1",
+          id: "l-current",
           name: "Compte courant",
           owner_id: owner.id,
           owner_name: "Wilson",
           visibility: "shared",
-          automatic: true,
-          account_id: "a1",
           closed_from: null,
           cells: [cell("1000.00"), cell("750.00"), cell("800.00")],
           share: "0.0702",
@@ -76,8 +73,6 @@ const matrix: WealthMatrixOut = {
           owner_id: owner.id,
           owner_name: "Wilson",
           visibility: "shared",
-          automatic: false,
-          account_id: null,
           closed_from: null,
           cells: [cell("10000.00"), cell("10000.00", true), cell("10600.00")],
           share: "0.9298",
@@ -95,8 +90,6 @@ const matrix: WealthMatrixOut = {
           owner_id: owner.id,
           owner_name: "Wilson",
           visibility: "private",
-          automatic: false,
-          account_id: null,
           closed_from: null,
           cells: [cell("3000.00"), cell("3000.00", true), cell("3000.00", true)],
           share: null,
@@ -158,7 +151,7 @@ test("the wealth tab shows net worth and its change", async () => {
   expect(plain(screen.getByRole("region", { name: "Debts" }).textContent)).toContain("€3,000");
 });
 
-test("the matrix groups lines by category, carried and automatic values marked", async () => {
+test("the matrix groups lines by category, carried values marked", async () => {
   api();
   render(<TestApp path="/wealth" />);
   const table = await screen.findByRole("table", { name: "Wealth by month" });
@@ -170,7 +163,11 @@ test("the matrix groups lines by category, carried and automatic values marked",
   expect(rows.find((r) => r?.startsWith("PEA Fortuneo"))).toContain(
     "€10,000 (carried from an earlier month)",
   );
-  expect(rows.find((r) => r?.startsWith("Compte courant"))).toContain("automatic");
+  // A bank account's line is entered by hand like any other.
+  expect(within(table).getByRole("button", { name: "Edit Compte courant" })).toBeInTheDocument();
+  expect(
+    within(table).getByRole("button", { name: /^Value of Compte courant, Dec 2026/ }),
+  ).toBeInTheDocument();
   expect(rows).toContain("Net worth€8,000€7,750€8,400");
   expect(rows).toContain("Change-€250 · -3%+€650 · +8%");
   // An empty category keeps no row of noise.
@@ -202,7 +199,6 @@ test("a manual cell opens its value, saved for its month", async () => {
       amount: "10250.50",
     },
   );
-  expect(screen.queryByRole("button", { name: /Value of Compte courant/ })).not.toBeInTheDocument();
 });
 
 test("update this month pre-fills the last values and saves what is filled", async () => {
@@ -240,7 +236,7 @@ test("update this month pre-fills the last values and saves what is filled", asy
   });
 });
 
-test("a line is added in a category the user fills by hand", async () => {
+test("a line is added in any category, the bank accounts' ones too", async () => {
   const calls = api({ "POST /api/wealth/lines": () => Response.json(lines[0], { status: 201 }) });
   render(<TestApp path="/wealth" />);
   const user = userEvent.setup();
@@ -248,10 +244,8 @@ test("a line is added in a category the user fills by hand", async () => {
 
   const form = screen.getByRole("form", { name: "New line" });
   const select = within(form).getByLabelText("Category");
-  // The cash accounts' categories fill themselves.
-  expect(
-    within(select).queryByRole("option", { name: "Current accounts" }),
-  ).not.toBeInTheDocument();
+  expect(within(select).getByRole("option", { name: "Current accounts" })).toBeInTheDocument();
+  expect(within(select).getByRole("option", { name: "Savings accounts" })).toBeInTheDocument();
   await user.selectOptions(select, "c-stocks");
   await user.type(within(form).getByLabelText("Name"), "CTO Trade Republic");
   await user.selectOptions(within(form).getByLabelText("Who sees it"), "private");

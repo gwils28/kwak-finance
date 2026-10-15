@@ -215,24 +215,14 @@ function Matrix({ matrix, onOpen }: { matrix: WealthMatrixOut; onOpen: (panel: P
                     className="whitespace-nowrap py-2 pr-3 pl-8 text-left font-normal"
                     style={{ borderLeft: `4px solid ${wealthColour(c.colour)}` }}
                   >
-                    {line.automatic ? (
-                      <>
-                        {line.name}{" "}
-                        <span className="text-xs text-muted">
-                          {t.wealth.automatic}
-                          <span className="sr-only"> ({t.wealth.automaticHelp})</span>
-                        </span>
-                      </>
-                    ) : (
-                      <button
-                        type="button"
-                        aria-label={t.wealth.editLine(line.name)}
-                        className="text-left hover:text-accent hover:underline"
-                        onClick={() => onOpen({ kind: "edit", lineId: line.id })}
-                      >
-                        {line.name}
-                      </button>
-                    )}
+                    <button
+                      type="button"
+                      aria-label={t.wealth.editLine(line.name)}
+                      className="text-left hover:text-accent hover:underline"
+                      onClick={() => onOpen({ kind: "edit", lineId: line.id })}
+                    >
+                      {line.name}
+                    </button>
                     {line.owner_id !== user.id && (
                       <span className="text-xs text-muted">
                         {" "}
@@ -258,7 +248,7 @@ function Matrix({ matrix, onOpen }: { matrix: WealthMatrixOut; onOpen: (panel: P
                       : t.wealth.noValue;
                     return (
                       <td key={month} className={num}>
-                        {line.automatic || closed ? (
+                        {closed ? (
                           shown
                         ) : (
                           <button
@@ -382,14 +372,11 @@ function CategorySelect({ value, onChange }: { value: string; onChange: (id: str
         <option value="" disabled>
           {t.wealth.category}
         </option>
-        {/* The cash accounts' categories fill themselves (F-WLT-4). */}
-        {categories.data
-          ?.filter((c) => c.holds === null)
-          .map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.name}
-            </option>
-          ))}
+        {categories.data?.map((c) => (
+          <option key={c.id} value={c.id}>
+            {c.name}
+          </option>
+        ))}
       </select>
     </label>
   );

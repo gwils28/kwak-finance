@@ -1,6 +1,6 @@
 # Functional Specifications
 
-Status: draft v0.15 — 2026-10-15. Owner: sole maintainer.
+Status: draft v0.16 — 2026-10-15. Owner: sole maintainer.
 
 ## 1. Purpose
 
@@ -117,12 +117,12 @@ Most transactions are entered by hand, once a week or a fortnight, because the b
 
 ### 4.7 Wealth / net worth (M)
 
-Net worth is followed as a **monthly wealth matrix**, like the maintainer's own spreadsheet: what each holding is worth at the end of each month, by category. There are no securities positions, no market prices and no loan schedules: values are entered once a month (or read from the app's cash accounts), which is what the maintainer already does.
+Net worth is followed as a **monthly wealth matrix**, like the maintainer's own spreadsheet: what each holding is worth at the end of each month, by category. There are no securities positions, no market prices and no loan schedules: every value is entered by hand once a month, the bank accounts' too, which is what the maintainer already does.
 
-- F-WLT-1: **Wealth categories**, two levels like the budget's (F-CAT-1). Defaults, in the owner's language: Savings accounts (Livrets), Current accounts (Comptes courants), Stocks (Actions), Crypto (Cryptos), Bonds (Obligations), Private equity, Gold (Or), Real estate (Immobilier), Equipment (Matériels), Exotic (Exotiques) and **Debts** (Dettes), the one liability category. Categories can be renamed, moved, added or deleted: a category holding lines cannot be (any line counts, a member's private ones included, which would be lost otherwise), nor the two holding the cash accounts (F-WLT-4), which can only be renamed. Each category has its own colour from the `wealth-*` set (§7); its lines share it.
+- F-WLT-1: **Wealth categories**, two levels like the budget's (F-CAT-1). Defaults, in the owner's language: Savings accounts (Livrets), Current accounts (Comptes courants), Stocks (Actions), Crypto (Cryptos), Bonds (Obligations), Private equity, Gold (Or), Real estate (Immobilier), Equipment (Matériels), Exotic (Exotiques) and **Debts** (Dettes), the one liability category. Categories can be renamed, moved, added or deleted: a category holding lines cannot be (any line counts, a member's private ones included, which would be lost otherwise). Each category has its own colour from the `wealth-*` set (§7); its lines share it.
 - F-WLT-2: **Wealth lines** are the subcategories: one holding each (e.g. "PEA Fortuneo" and "CTO Trade Republic" under Stocks, "Lynxéa Spirit 2" where the owner files it, "Crédit immobilier" under Debts). Like an account, a line has an **owner** and a **visibility** (`private`, `shared` or `joint`, §3); a private line is shown to its owner only. A line can be closed from a month on (sold, repaid): it keeps its history and leaves later months.
-- F-WLT-3: **Monthly values**: each line has at most one value per calendar month, in EUR, positive (a debt is entered as what is still owed and counts negatively). A month without a value carries the previous one forward, shown as carried, until a new value is entered; before its first value a line is empty. A closed month takes no value, and the matrix ends with the current month at the latest: later months are unknown. Values are entered in the matrix or with **"Update this month"**, which lists the open manual lines with their last value pre-filled and saves them all at once, or none if one is refused.
-- F-WLT-4: **Cash lines are automatic**: each checking or joint checking account appears under Current accounts and each savings account under Savings accounts, valued at its balance at the end of the month (invariant §8.1), read-only, with the account's owner and visibility. Closed accounts leave the months after their closing.
+- F-WLT-3: **Monthly values**: each line has at most one value per calendar month, in EUR, positive (a debt is entered as what is still owed and counts negatively). A month without a value carries the previous one forward, shown as carried, until a new value is entered; before its first value a line is empty. A closed month takes no value, and the matrix ends with the current month at the latest: later months are unknown. Values are entered in the matrix or with **"Update this month"**, which lists the open lines with their last value pre-filled and saves them all at once, or none if one is refused.
+- F-WLT-4: **Bank accounts are lines entered by hand** (since v0.16): Savings accounts and Current accounts are ordinary categories, where the user adds one line per account ("Livret A", "Compte joint"…) and enters its value each month like any other line. The app's cash accounts are not read: the matrix shows what the maintainer enters, whether the account is imported or not.
 - F-WLT-5: **The wealth matrix**: lines grouped by category in rows, months in columns (the last 12 by default, from the analyses start, F-ADM-4), with category subtotals in the category's colour, **gross assets**, **debts** and **net worth**, and for each month the change against the previous one (€ and %). A column gives each category's **share** of gross assets for the last month shown. Scope: *household*, *joint* or *mine*, as for the budget (§3).
 - F-WLT-6: **Wealth charts**: net worth over time, stacked by category in their colours (debts below zero); the allocation of the last month (share per category, then per line on demand); every chart has its table (no value reachable only by hovering).
 - F-WLT-7: The overview (F-DSH-1) shows net worth and its change over the month.
@@ -165,7 +165,7 @@ Net worth is followed as a **monthly wealth matrix**, like the maintainer's own 
 | 0 — Foundations | Repo, tooling, CI, Claude Code config, design tokens, Docker Compose skeleton |
 | 1 — Budget MVP | Auth + household, accounts, import, manual entry, categorisation, transactions, budget targets vs actual (F-BUD-1, 2, 4, 5) with the budget matrix (F-BUD-6), spending KPIs and charts (F-DSH-4, 5) |
 | 2 — Budget complete | Budget plans by period and their review, with steering dashboards (F-BUD-7, 8, F-DSH-6), then recurrences, reports and the activity log |
-| 3 — Wealth | The monthly wealth matrix: categories and lines, cash lines from the accounts, debts and net worth, evolution and allocation charts |
+| 3 — Wealth | The monthly wealth matrix: categories and lines entered by hand, debts and net worth, evolution and allocation charts |
 | 4 — Analytics & DS | Cash-flow **forecasting** (time-series, temporal back-testing, naive baseline first), **wealth simulation** (Monte Carlo, FIRE / retirement projection, allocation scenarios). Interactive Dash pages for exploration |
 | 5 — Local GenAI | Ollama-based assistant: natural-language questions over your own data (text-to-SQL on a read-only analytics view), categorisation suggestions, monthly narrative summary. No data leaves the host |
 
@@ -213,7 +213,7 @@ Wealth category colours (F-WLT-1) are a categorical set of semantic tokens, `wea
 2. The parts of a split transaction sum exactly to the parent amount, each of its sign; summed over categories, a split transaction counts its amount exactly once.
 3. A linked transfer nets to zero across the two accounts and never counts as income or expense; its two sides keep opposite amounts through every edit (F-TX-9).
 4. Importing the same file twice leaves the database unchanged.
-5. A line's value in a month is the last value entered in that month or before (carried forward), and nothing before its first value or after its closing; a cash line's value is its account's balance at the end of the month (invariant 1).
+5. A line's value in a month is the last value entered in that month or before (carried forward), and nothing before its first value or after its closing.
 6. A month's net worth equals the sum of its asset lines minus the sum of its debt lines; each category's subtotal is the sum of its lines, and the scopes add up as in invariant 11 (*household* = *mine* + *joint* + the lines other members share).
 7. Forecasts and back-tests (phase 4) never read data after their origin date.
 8. Budget plans never overlap, and each lies within one calendar period (year, semester or quarter).

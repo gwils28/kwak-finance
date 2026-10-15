@@ -775,7 +775,7 @@ export const createWealthCategory = <ThrowOnError extends boolean = false>(optio
 /**
  * Delete Wealth Category
  *
- * Only once it holds no line; a category holding cash accounts loses them.
+ * Only once it holds no line.
  */
 export const deleteWealthCategory = <ThrowOnError extends boolean = false>(options: Options<DeleteWealthCategoryData, ThrowOnError>): RequestResult<DeleteWealthCategoryResponses, DeleteWealthCategoryErrors, ThrowOnError> => (options.client ?? client).delete<DeleteWealthCategoryResponses, DeleteWealthCategoryErrors, ThrowOnError>({ url: '/api/wealth/categories/{category_id}', ...options });
 
@@ -794,7 +794,7 @@ export const updateWealthCategory = <ThrowOnError extends boolean = false>(optio
 /**
  * List Wealth Lines
  *
- * The manual lines the user can see, closed ones included.
+ * The lines the user can see, closed ones included.
  */
 export const listWealthLines = <ThrowOnError extends boolean = false>(options?: Options<ListWealthLinesData, ThrowOnError>): RequestResult<ListWealthLinesResponses, ListWealthLinesErrors, ThrowOnError> => (options?.client ?? client).get<ListWealthLinesResponses, ListWealthLinesErrors, ThrowOnError>({ url: '/api/wealth/lines', ...options });
 
@@ -865,7 +865,7 @@ export const wealthMatrix = <ThrowOnError extends boolean = false>(options?: Opt
 /**
  * Wealth Lines To Update
  *
- * "Update this month": the open manual lines, with their last value pre-filled.
+ * "Update this month": the open lines, with their last value pre-filled.
  */
 export const wealthLinesToUpdate = <ThrowOnError extends boolean = false>(options?: Options<WealthLinesToUpdateData, ThrowOnError>): RequestResult<WealthLinesToUpdateResponses, WealthLinesToUpdateErrors, ThrowOnError> => (options?.client ?? client).get<WealthLinesToUpdateResponses, WealthLinesToUpdateErrors, ThrowOnError>({ url: '/api/wealth/update', ...options });
 

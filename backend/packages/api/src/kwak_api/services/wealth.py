@@ -1,5 +1,4 @@
-"""The monthly wealth matrix (F-WLT): categories, manual lines and their values, and the cash
-accounts as automatic lines valued at their balance at each month's end."""
+"""The monthly wealth matrix (F-WLT): categories, lines entered by hand and their values."""
 
 from collections import defaultdict
 from collections.abc import Sequence
@@ -7,7 +6,7 @@ from dataclasses import dataclass
 from decimal import Decimal
 from uuid import UUID
 
-from kwak_core.accounts import CASH_TYPES, AccountType, Scope, Visibility, can_view
+from kwak_core.accounts import Scope, can_view
 from kwak_core.budget import Month
 from kwak_core.ids import uuid7
 from kwak_core.users import Language
@@ -17,7 +16,6 @@ from kwak_core.wealth import (
     LineInput,
     WealthMatrix,
     in_scope,
-    month_end_balances,
     to_update,
     wealth_matrix,
 )
@@ -26,8 +24,7 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload
 
-from kwak_api.models import Account, Transaction, User, WealthCategory, WealthLine, WealthValue
-from kwak_api.services.accounts import visible_accounts
+from kwak_api.models import User, WealthCategory, WealthLine, WealthValue
 
 
 class CategoryInUseError(Exception):
@@ -46,7 +43,6 @@ def seed_defaults(db: Session, household_id: UUID, language: Language = Language
             kind=default.kind,
             colour=default.colour,
             position=position,
-            holds=default.holds,
         )
         for position, default in enumerate(DEFAULT_WEALTH_CATEGORIES)
     )
@@ -171,34 +167,11 @@ def _values(db: Session, lines: Sequence[WealthLine]) -> dict[UUID, dict[Month, 
     return out
 
 
-def _month_end_balances(
-    db: Session, accounts: Sequence[Account], last: Month
-) -> dict[UUID, dict[Month, Decimal]]:
-    """Each account's balance at the end of every month from its opening to `last`."""
-    start_of = func.date_trunc("month", Transaction.booked_on).label("month")
-    sums: dict[UUID, dict[Month, Decimal]] = defaultdict(dict)
-    for account_id, month, total in db.execute(
-        select(Transaction.account_id, start_of, func.sum(Transaction.amount))
-        .where(
-            Transaction.account_id.in_([a.id for a in accounts]),
-            Transaction.booked_on < last.next().first_day(),
-        )
-        .group_by(Transaction.account_id, start_of)
-    ):
-        sums[account_id][Month.of(month)] = Decimal(total)
-    return {
-        a.id: month_end_balances(a.opening_balance, a.opening_date, sums[a.id], last=last)
-        for a in accounts
-    }
-
-
 @dataclass
 class LineView:
     input: LineInput
     name: str
     owner_name: str
-    automatic: bool
-    """A cash account (F-WLT-4): its id is the account's."""
 
 
 @dataclass
@@ -208,57 +181,29 @@ class Matrix:
     result: WealthMatrix
 
 
-def _line_views(
-    db: Session, viewer: User, rows: Sequence[WealthCategory], last: Month
-) -> list[LineView]:
-    holding = {c.holds: c.id for c in rows if c.holds}
-    views = []
-    manual = visible_lines(db, viewer)
-    values = _values(db, manual)
-    for line in manual:
-        views.append(
-            LineView(
-                LineInput(
-                    line.id,
-                    line.category_id,
-                    values.get(line.id, {}),
-                    line.owner_id,
-                    line.visibility,
-                    closed_from=Month.of(line.closed_from) if line.closed_from else None,
-                ),
-                line.name,
-                line.owner.display_name,
-                automatic=False,
-            )
+def _line_views(db: Session, viewer: User) -> list[LineView]:
+    lines = visible_lines(db, viewer)
+    values = _values(db, lines)
+    return [
+        LineView(
+            LineInput(
+                line.id,
+                line.category_id,
+                values.get(line.id, {}),
+                line.owner_id,
+                line.visibility,
+                closed_from=Month.of(line.closed_from) if line.closed_from else None,
+            ),
+            line.name,
+            line.owner.display_name,
         )
-    accounts = [
-        a
-        for a in visible_accounts(db, viewer, include_closed=True)
-        if a.type in CASH_TYPES and a.type in holding
+        for line in lines
     ]
-    balances = _month_end_balances(db, accounts, last)
-    for account in accounts:
-        views.append(
-            LineView(
-                LineInput(
-                    account.id,
-                    holding[AccountType(account.type)],
-                    balances[account.id],
-                    account.owner_id,
-                    Visibility(account.visibility),
-                    closed_from=Month.of(account.closed_on).next() if account.closed_on else None,
-                ),
-                account.name,
-                account.owner.display_name,
-                automatic=True,
-            )
-        )
-    return views
 
 
 def matrix(db: Session, viewer: User, months: list[Month], scope: Scope) -> Matrix:
     rows = categories(db, viewer.household_id)
-    views = _line_views(db, viewer, rows, months[-1])
+    views = _line_views(db, viewer)
     kept = {line.id for line in in_scope([v.input for v in views], scope, viewer.id)}
     scoped = [v for v in views if v.input.id in kept]
     result = wealth_matrix(
@@ -270,7 +215,7 @@ def matrix(db: Session, viewer: User, months: list[Month], scope: Scope) -> Matr
 def lines_to_update(
     db: Session, viewer: User, month: Month
 ) -> list[tuple[WealthLine, Decimal | None]]:
-    """The open manual lines the viewer sees, with their last value (F-WLT-3)."""
+    """The open lines the viewer sees, with their last value (F-WLT-3)."""
     manual = visible_lines(db, viewer)
     values = _values(db, manual)
     by_id = {line.id: line for line in manual}

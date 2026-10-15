@@ -1,7 +1,7 @@
 export const wealthEn = {
   title: "Wealth",
   intro:
-    "What each holding is worth at the end of each month, by category. Your current accounts and savings accounts fill in by themselves; enter the rest once a month.",
+    "What each holding is worth at the end of each month, by category, current accounts and savings accounts included. Enter the values once a month.",
   loadFailed: "Could not load your wealth.",
   netWorth: "Net worth",
   gross: "Gross assets",
@@ -12,8 +12,6 @@ export const wealthEn = {
   matrix: "Wealth by month",
   line: "Line",
   share: "Share",
-  automatic: "automatic",
-  automaticHelp: "Read from the account's balance at the end of the month.",
   carried: "carried from an earlier month",
   owner: (name: string) => `${name}'s`,
   empty: "No line yet: add your holdings, then enter their value each month.",
@@ -54,7 +52,7 @@ export const wealthEn = {
 export const wealthFr: typeof wealthEn = {
   title: "Patrimoine",
   intro:
-    "Ce que vaut chaque avoir à la fin de chaque mois, par catégorie. Vos comptes courants et livrets se remplissent seuls ; saisissez le reste une fois par mois.",
+    "Ce que vaut chaque avoir à la fin de chaque mois, par catégorie, comptes courants et livrets compris. Saisissez les valeurs une fois par mois.",
   loadFailed: "Impossible de charger votre patrimoine.",
   netWorth: "Patrimoine net",
   gross: "Actif brut",
@@ -65,8 +63,6 @@ export const wealthFr: typeof wealthEn = {
   matrix: "Patrimoine par mois",
   line: "Ligne",
   share: "Part",
-  automatic: "automatique",
-  automaticHelp: "Repris du solde du compte en fin de mois.",
   carried: "reportée d'un mois précédent",
   owner: (name) => `de ${name}`,
   empty:

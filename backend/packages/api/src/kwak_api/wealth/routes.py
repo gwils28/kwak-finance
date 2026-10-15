@@ -5,7 +5,7 @@ from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Query, status
-from kwak_core.accounts import AccountType, Scope, Visibility
+from kwak_core.accounts import Scope, Visibility
 from kwak_core.audit import AuditAction
 from kwak_core.budget import Month, month_range
 from kwak_core.money import quantize, require_cents
@@ -75,14 +75,10 @@ class WealthCategoryOut(BaseModel):
     colour: str
     """The key of its `wealth-<key>` colour token."""
     position: int
-    holds: AccountType | None
-    """The app's cash accounts of this type are its lines, valued automatically."""
 
     @classmethod
     def of(cls, c: WealthCategory) -> "WealthCategoryOut":
-        return cls(
-            id=c.id, name=c.name, kind=c.kind, colour=c.colour, position=c.position, holds=c.holds
-        )
+        return cls(id=c.id, name=c.name, kind=c.kind, colour=c.colour, position=c.position)
 
 
 class WealthCategoryIn(BaseModel):
@@ -144,14 +140,10 @@ def update_wealth_category(
 def delete_wealth_category(
     category_id: UUID, user_session: CurrentSession, db: Db, now: Now
 ) -> None:
-    """Only once it holds no line; a category holding cash accounts loses them."""
+    """Only once it holds no line."""
     category = service.find_category(db, user_session.user.household_id, category_id)
     if category is None:
         raise NO_CATEGORY
-    if category.holds is not None:
-        raise HTTPException(
-            status.HTTP_409_CONFLICT, "this category holds the cash accounts: rename it instead"
-        )
     name = category.name
     try:
         service.delete_category(db, category)
@@ -213,14 +205,12 @@ def _category_of(db: Db, user_session: CurrentSession, category_id: UUID) -> Wea
     category = service.find_category(db, user_session.user.household_id, category_id)
     if category is None:
         raise _unprocessable("unknown wealth category")
-    if category.holds is not None:
-        raise _unprocessable("this category holds the app's cash accounts only")
     return category
 
 
 @router.get("/lines")
 def list_wealth_lines(user_session: CurrentSession, db: Db) -> list[WealthLineOut]:
-    """The manual lines the user can see, closed ones included."""
+    """The lines the user can see, closed ones included."""
     return [WealthLineOut.of(line) for line in service.visible_lines(db, user_session.user)]
 
 
@@ -289,7 +279,7 @@ class WealthValueIn(BaseModel):
 
 def _checked(amount: Decimal) -> Decimal:
     try:
-        check_value(amount, cash=False)
+        check_value(amount)
     except WealthValueError as exc:
         raise _unprocessable(str(exc)) from None
     return amount
@@ -342,7 +332,7 @@ def wealth_lines_to_update(
     now: Now,
     month: Annotated[str | None, Query(description="YYYY-MM; default: this month")] = None,
 ) -> list[WealthUpdateLineOut]:
-    """ "Update this month": the open manual lines, with their last value pre-filled."""
+    """ "Update this month": the open lines, with their last value pre-filled."""
     when = _parse_month(month) if month else Month.of(now.date())
     return [
         WealthUpdateLineOut(
@@ -382,13 +372,10 @@ def _cell(cell: Cell | None) -> WealthCellOut | None:
 
 class WealthMatrixLineOut(BaseModel):
     id: UUID
-    """The line's, or the cash account's for an automatic line."""
     name: str
     owner_id: UUID
     owner_name: str
     visibility: Visibility
-    automatic: bool
-    account_id: UUID | None
     closed_from: str | None
     """YYYY-MM: from this month on the line holds nothing and takes no value."""
     cells: list[WealthCellOut | None]
@@ -473,13 +460,11 @@ def wealth_matrix(
                         owner_id=v.input.owner_id,
                         owner_name=v.owner_name,
                         visibility=v.input.visibility,
-                        automatic=v.automatic,
-                        account_id=v.input.id if v.automatic else None,
                         closed_from=str(v.input.closed_from) if v.input.closed_from else None,
                         cells=[_cell(cell) for cell in r.lines[v.input.id]],
                         share=_ratio(r.line_shares.get(v.input.id)),
                     )
-                    for v in sorted(by_category[c.id], key=lambda v: (v.automatic, v.name.lower()))
+                    for v in sorted(by_category[c.id], key=lambda v: v.name.lower())
                 ],
             )
             for c in m.categories

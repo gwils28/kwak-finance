@@ -2,7 +2,7 @@ from datetime import date
 from decimal import Decimal
 from uuid import UUID
 
-from kwak_core.accounts import AccountType, Visibility
+from kwak_core.accounts import Visibility
 from kwak_core.wealth import WealthKind
 from sqlalchemy import (
     CheckConstraint,
@@ -22,9 +22,7 @@ from kwak_api.db import Base, Timestamps, UUIDPrimaryKey
 from kwak_api.models.household import User
 
 
-def _string_enum(
-    enum_type: type[WealthKind] | type[Visibility] | type[AccountType], name: str
-) -> Enum:
+def _string_enum(enum_type: type[WealthKind] | type[Visibility], name: str) -> Enum:
     """VARCHAR + CHECK (not a native enum), so adding a value is a plain migration."""
     return Enum(
         enum_type,
@@ -44,8 +42,6 @@ class WealthCategory(UUIDPrimaryKey, Timestamps, Base):
         Index(
             "uq_wealth_category_household_name", "household_id", text("lower(name)"), unique=True
         ),
-        # The cash accounts of one type go to one category at most.
-        UniqueConstraint("household_id", "holds"),
     )
 
     household_id: Mapped[UUID] = mapped_column(ForeignKey("household.id"), index=True)
@@ -55,12 +51,10 @@ class WealthCategory(UUIDPrimaryKey, Timestamps, Base):
     """The key of its `wealth-<key>` colour token."""
     position: Mapped[int] = mapped_column(Integer)
     """Its row in the matrix, from the top."""
-    holds: Mapped[AccountType | None] = mapped_column(_string_enum(AccountType, "account_type"))
-    """The app's cash accounts of this type are its lines, valued automatically (F-WLT-4)."""
 
 
 class WealthLine(UUIDPrimaryKey, Timestamps, Base):
-    """A holding entered by hand (F-WLT-2). Cash lines are not stored: they are the accounts."""
+    """A holding entered by hand (F-WLT-2), a bank account's included (F-WLT-4)."""
 
     __tablename__ = "wealth_line"
     __table_args__ = (
