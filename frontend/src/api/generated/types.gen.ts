@@ -2679,7 +2679,6 @@ export type WealthCategoryOut = {
      * Colour
      */
     colour: string;
-    holds: AccountType | null;
     /**
      * Id
      */
@@ -2834,14 +2833,6 @@ export type WealthMatrixCategoryOut = {
  * WealthMatrixLineOut
  */
 export type WealthMatrixLineOut = {
-    /**
-     * Account Id
-     */
-    account_id: string | null;
-    /**
-     * Automatic
-     */
-    automatic: boolean;
     /**
      * Cells
      */

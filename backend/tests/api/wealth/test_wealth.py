@@ -71,9 +71,7 @@ def test_a_new_household_has_the_default_categories(owner_client: TestClient) ->
         "kind": "debt",
         "colour": "debts",
         "position": 10,
-        "holds": None,
     }
-    assert categories[0]["holds"] == "savings"
 
 
 def test_values_carry_forward_into_the_matrix(owner_client: TestClient) -> None:
@@ -88,7 +86,17 @@ def test_values_carry_forward_into_the_matrix(owner_client: TestClient) -> None:
     stocks = next(c for c in m["categories"] if c["name"] == "Stocks")
     assert stocks["subtotals"] == ["10000.00", "10000.00", "10600.00"]
     line = stocks["lines"][0]
-    assert (line["name"], line["owner_name"], line["automatic"]) == ("PEA Fortuneo", "Owner", False)
+    assert (line["name"], line["owner_name"]) == ("PEA Fortuneo", "Owner")
+    assert set(line) == {
+        "id",
+        "name",
+        "owner_id",
+        "owner_name",
+        "visibility",
+        "closed_from",
+        "cells",
+        "share",
+    }
     assert line["cells"][1] == {"amount": "10000.00", "carried": True}
     assert (m["gross"], m["debts"], m["net"]) == (
         ["10000.00", "10000.00", "10600.00"],
@@ -99,35 +107,31 @@ def test_values_carry_forward_into_the_matrix(owner_client: TestClient) -> None:
     assert stocks["share"] == "1.0000"
 
 
-def test_cash_accounts_are_automatic_lines_at_their_month_end_balance(
+def test_bank_accounts_are_lines_entered_by_hand_like_any_other(
     owner_client: TestClient,
 ) -> None:
     checking = _account(owner_client, "Compte courant", "checking", "1000.00")
     _account(owner_client, "Livret A", "savings", "5000.00")
-    entry = {"account_id": checking, "booked_on": "2026-11-12", "amount": "-250.00", "label": "X"}
-    owner_client.post("/api/transactions", json=entry, headers=csrf(owner_client))
-
-    m = _matrix(owner_client, start="2026-09", end="2026-11")
-    current = next(c for c in m["categories"] if c["name"] == "Current accounts")
-    line = current["lines"][0]
-    assert (line["name"], line["automatic"], line["account_id"]) == (
-        "Compte courant",
-        True,
-        checking,
-    )
-    # Nothing before the account opens; never carried.
-    assert line["cells"] == [
-        None,
-        {"amount": "1000.00", "carried": False},
-        {"amount": "750.00", "carried": False},
-    ]
-    savings = next(c for c in m["categories"] if c["name"] == "Savings accounts")
-    assert savings["subtotals"] == ["0.00", "5000.00", "5000.00"]
-
-
-def test_an_automatic_line_cannot_be_entered(owner_client: TestClient) -> None:
-    checking = _account(owner_client, "Compte courant", "checking", "1000.00")
+    # An account is not a line: the categories stay empty until lines are added.
+    m = _matrix(owner_client, start="2026-11", end="2026-11")
+    assert m["gross"] == ["0.00"]
     assert _value(owner_client, checking, "2026-11", "1.00").status_code == 404
+
+    livret = _line(owner_client, "Savings accounts", "Livret A")
+    _value(owner_client, livret, "2026-11", "5200.00")
+    current = _line(owner_client, "Current accounts", "Compte courant")
+    _value(owner_client, current, "2026-11", "800.00")
+    lines = owner_client.get("/api/wealth/update", params={"month": "2026-12"}).json()
+    assert [(x["name"], x["last_value"]) for x in lines] == [
+        ("Livret A", "5200.00"),
+        ("Compte courant", "800.00"),
+    ]
+    m = _matrix(owner_client, start="2026-11", end="2026-11")
+    subtotals = {c["name"]: c["subtotals"] for c in m["categories"]}
+    assert (subtotals["Savings accounts"], subtotals["Current accounts"]) == (
+        ["5200.00"],
+        ["800.00"],
+    )
 
 
 def test_values_are_positive_cents(owner_client: TestClient) -> None:
@@ -167,7 +171,6 @@ def test_update_this_month_lists_the_open_lines_and_saves_them_at_once(
     pea = _line(owner_client, "Stocks", "PEA")
     _value(owner_client, pea, "2026-11", "1000.00")
     btc = _line(owner_client, "Crypto", "Kraken")
-    _account(owner_client, "Compte courant", "checking", "1000.00")  # automatic: not listed
 
     lines = owner_client.get("/api/wealth/update", params={"month": "2026-12"}).json()
     assert [(x["name"], x["last_value"]) for x in lines] == [("PEA", "1000.00"), ("Kraken", None)]
@@ -178,8 +181,7 @@ def test_update_this_month_lists_the_open_lines_and_saves_them_at_once(
     }
     response = owner_client.post("/api/wealth/update", json=body, headers=csrf(owner_client))
     assert response.status_code == 204, response.text
-    # 1100 + 250, plus the current account's 1000.
-    assert _matrix(owner_client, start="2026-12", end="2026-12")["gross"] == ["2350.00"]
+    assert _matrix(owner_client, start="2026-12", end="2026-12")["gross"] == ["1350.00"]
 
 
 def test_the_default_window_is_the_last_12_months_from_the_analyses_start(
@@ -323,16 +325,6 @@ def test_a_private_line_is_hidden_from_other_members_everywhere(
     assert _matrix(client, start="2026-12", end="2026-12")["gross"] == ["0.00"]
 
 
-def test_a_members_private_account_is_not_an_automatic_line_for_others(
-    client: TestClient, clock: Clock, owner: User, member: User
-) -> None:
-    clock.now = TODAY
-    log_in(client, clock, "member@example.com")
-    _account(client, "Perso", "checking", "900.00", "private")
-    log_in(client, clock)
-    assert _matrix(client, start="2026-12", end="2026-12")["gross"] == ["0.00"]
-
-
 @pytest.mark.parametrize("amount", ["1e100000", "1e20", "-0.01"])
 def test_an_impossible_amount_is_rejected(owner_client: TestClient, amount: str) -> None:
     pea = _line(owner_client, "Stocks", "PEA")
@@ -357,12 +349,6 @@ def test_blank_names_and_unknown_colours_are_rejected(owner_client: TestClient) 
     assert owner_client.post("/api/wealth/categories", json=body, headers=h).status_code == 422
 
 
-def test_the_categories_of_the_cash_accounts_stay(owner_client: TestClient) -> None:
-    current = _categories(owner_client)["Current accounts"]["id"]
-    response = owner_client.delete(f"/api/wealth/categories/{current}", headers=csrf(owner_client))
-    assert response.status_code == 409
-
-
 def test_a_category_holding_someone_elses_private_line_stays(
     client: TestClient, clock: Clock, owner: User, member: User
 ) -> None:
@@ -376,36 +362,12 @@ def test_a_category_holding_someone_elses_private_line_stays(
     )
 
 
-def test_a_cash_line_follows_its_account_overdrawn_or_closed(owner_client: TestClient) -> None:
-    checking = _account(owner_client, "Compte courant", "checking", "100.00")
+def test_lines_live_in_categories_of_this_household(owner_client: TestClient) -> None:
     h = csrf(owner_client)
-    entry = {"account_id": checking, "booked_on": "2026-10-20", "amount": "-300.00", "label": "X"}
-    owner_client.post("/api/transactions", json=entry, headers=h)
-    owner_client.patch(f"/api/accounts/{checking}", json={"closed_on": "2026-11-30"}, headers=h)
-
-    m = _matrix(owner_client, start="2026-10", end="2026-12")
-    line = next(c for c in m["categories"] if c["name"] == "Current accounts")["lines"][0]
-    assert [c and c["amount"] for c in line["cells"]] == ["-200.00", "-200.00", None]
-
-
-def test_a_joint_account_is_in_the_joint_view(owner_client: TestClient) -> None:
-    _account(owner_client, "Commun", "checking", "400.00", "joint")
-    _account(owner_client, "Perso", "checking", "100.00")
-    joint = _matrix(owner_client, start="2026-12", end="2026-12", scope="joint")
-    assert joint["gross"] == ["400.00"]
-
-
-def test_lines_live_in_categories_of_this_household_without_accounts(
-    owner_client: TestClient,
-) -> None:
-    h = csrf(owner_client)
-    current = _categories(owner_client)["Current accounts"]["id"]
-    body = {"category_id": current, "name": "Espèces"}
-    assert owner_client.post("/api/wealth/lines", json=body, headers=h).status_code == 422
     body = {"category_id": "00000000-0000-0000-0000-000000000000", "name": "X"}
     assert owner_client.post("/api/wealth/lines", json=body, headers=h).status_code == 422
     pea = _line(owner_client, "Stocks", "PEA")
-    move = {"category_id": current}
+    move = {"category_id": "00000000-0000-0000-0000-000000000000"}
     assert owner_client.patch(f"/api/wealth/lines/{pea}", json=move, headers=h).status_code == 422
     unknown = "/api/wealth/categories/00000000-0000-0000-0000-000000000000"
     assert owner_client.patch(unknown, json={"name": "X"}, headers=h).status_code == 404

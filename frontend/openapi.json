@@ -5084,16 +5084,6 @@
             "title": "Colour",
             "type": "string"
           },
-          "holds": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/AccountType"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
           "id": {
             "format": "uuid",
             "title": "Id",
@@ -5116,8 +5106,7 @@
           "name",
           "kind",
           "colour",
-          "position",
-          "holds"
+          "position"
         ],
         "title": "WealthCategoryOut",
         "type": "object"
@@ -5382,22 +5371,6 @@
       },
       "WealthMatrixLineOut": {
         "properties": {
-          "account_id": {
-            "anyOf": [
-              {
-                "format": "uuid",
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Account Id"
-          },
-          "automatic": {
-            "title": "Automatic",
-            "type": "boolean"
-          },
           "cells": {
             "items": {
               "anyOf": [
@@ -5463,8 +5436,6 @@
           "owner_id",
           "owner_name",
           "visibility",
-          "automatic",
-          "account_id",
           "closed_from",
           "cells",
           "share"
@@ -10641,7 +10612,7 @@
     },
     "/api/wealth/categories/{category_id}": {
       "delete": {
-        "description": "Only once it holds no line; a category holding cash accounts loses them.",
+        "description": "Only once it holds no line.",
         "operationId": "deleteWealthCategory",
         "parameters": [
           {
@@ -10761,7 +10732,7 @@
     },
     "/api/wealth/lines": {
       "get": {
-        "description": "The manual lines the user can see, closed ones included.",
+        "description": "The lines the user can see, closed ones included.",
         "operationId": "listWealthLines",
         "parameters": [
           {
@@ -11221,7 +11192,7 @@
     },
     "/api/wealth/update": {
       "get": {
-        "description": "\"Update this month\": the open manual lines, with their last value pre-filled.",
+        "description": "\"Update this month\": the open lines, with their last value pre-filled.",
         "operationId": "wealthLinesToUpdate",
         "parameters": [
           {

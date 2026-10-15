@@ -1,13 +1,10 @@
-from datetime import date as date_
-from datetime import timedelta
 from decimal import Decimal
 from uuid import UUID, uuid4
 
 import pytest
 from hypothesis import given
 from hypothesis import strategies as st
-from kwak_core.accounts import AccountType, Scope, Visibility
-from kwak_core.balances import balance_on
+from kwak_core.accounts import Scope, Visibility
 from kwak_core.budget import Month, month_range
 from kwak_core.users import Language
 from kwak_core.wealth import (
@@ -19,7 +16,6 @@ from kwak_core.wealth import (
     check_value,
     in_scope,
     line_cell,
-    month_end_balances,
     to_update,
     wealth_matrix,
 )
@@ -123,13 +119,12 @@ def test_no_month_and_no_line() -> None:
     assert (empty.net, empty.change, empty.change_ratio) == ([D("0")], [None], [None])
 
 
-def test_values_are_positive_except_a_cash_lines_balance() -> None:
-    check_value(D("0"), cash=False)
-    check_value(D("-120.50"), cash=True)  # an overdrawn current account
+def test_values_are_positive_cents() -> None:
+    check_value(D("0"))
     with pytest.raises(WealthValueError):
-        check_value(D("-1"), cash=False)
+        check_value(D("-1"))
     with pytest.raises(WealthValueError):
-        check_value(D("1.005"), cash=False)  # cents at most
+        check_value(D("1.005"))  # cents at most
 
 
 def test_update_this_month_lists_the_open_lines_with_their_last_value() -> None:
@@ -156,9 +151,8 @@ def test_default_categories_end_with_the_debts() -> None:
     assert names[-1] == "Dettes"
     assert [c.kind for c in DEFAULT_WEALTH_CATEGORIES].count(WealthKind.DEBT) == 1
     assert len({c.colour for c in DEFAULT_WEALTH_CATEGORIES}) == len(DEFAULT_WEALTH_CATEGORIES)
-    # The app's cash accounts fill these two automatically (F-WLT-4).
-    holds = {c.holds: c.names.name(Language.FR) for c in DEFAULT_WEALTH_CATEGORIES if c.holds}
-    assert holds == {AccountType.SAVINGS: "Livrets", AccountType.CHECKING: "Comptes courants"}
+    # Every category takes lines entered by hand, the bank accounts' ones too (F-WLT-4).
+    assert not any(hasattr(c, "holds") for c in DEFAULT_WEALTH_CATEGORIES)
 
 
 ALL = month_range(Month(2026, 1), Month(2026, 12))
@@ -219,37 +213,3 @@ def test_the_household_is_mine_plus_joint_plus_what_others_share(
     ]
     household = net(in_scope(lines, Scope.HOUSEHOLD, ME))
     assert household == [sum(column, D(0)) for column in zip(*parts, strict=True)]
-
-
-def test_month_end_balances_start_with_the_account() -> None:
-    balances = month_end_balances(
-        D("1000"), date_(2026, 10, 15), {NOV: D("-250"), DEC: D("100")}, last=DEC
-    )
-    assert balances == {OCT: D("1000"), NOV: D("750"), DEC: D("850")}
-
-
-@given(
-    st.integers(-100_000, 100_000).map(lambda c: D(c) / 100),
-    st.lists(
-        st.tuples(
-            st.dates(min_value=date_(2025, 1, 1), max_value=date_(2026, 12, 31)),
-            st.integers(-100_000, 100_000).map(lambda c: D(c) / 100),
-        ),
-        max_size=20,
-    ),
-    st.dates(min_value=date_(2025, 1, 1), max_value=date_(2026, 12, 31)),
-)
-def test_a_cash_lines_value_is_its_balance_at_the_end_of_the_month(
-    opening: Decimal, movements: list[tuple[date_, Decimal]], opened_on: date_
-) -> None:
-    """Invariants §8.1 and §8.5: whatever the movements, even ones booked before the opening
-    date (a date moved later), each month's value is the account's balance at its last day."""
-    by_month: dict[Month, Decimal] = {}
-    for day, amount in movements:
-        by_month[Month.of(day)] = by_month.get(Month.of(day), D(0)) + amount
-    last = Month(2026, 12)
-    balances = month_end_balances(opening, opened_on, by_month, last=last)
-    assert min(balances) == Month.of(opened_on)
-    for month, value in balances.items():
-        end = month.next().first_day() - timedelta(days=1)
-        assert value == balance_on(opening, movements, on=end)

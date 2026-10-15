@@ -10,16 +10,16 @@ from tests.api.db.test_savings_category_migration import _household, clean  # no
 WEALTH_REVISION = "02d05c0c4e51"
 
 
-def _categories(engine: Engine, household: Any) -> list[tuple[str, str, int, str | None]]:
+def _categories(engine: Engine, household: Any) -> list[tuple[str, str, int]]:
     with engine.connect() as conn:
         rows = conn.execute(
             text(
-                "SELECT name, kind, position, holds FROM wealth_category"
+                "SELECT name, kind, position FROM wealth_category"
                 " WHERE household_id = :h ORDER BY position"
             ),
             {"h": household},
         ).all()
-    return [(name, kind, position, holds) for name, kind, position, holds in rows]
+    return [(name, kind, position) for name, kind, position in rows]
 
 
 @pytest.mark.usefixtures("clean")
@@ -34,9 +34,9 @@ def test_existing_households_get_the_wealth_categories_in_their_owners_language(
     command.upgrade(config, "head")
 
     fr = _categories(engine, french)
-    assert fr[0] == ("Livrets", "asset", 0, "savings")
-    assert fr[1] == ("Comptes courants", "asset", 1, "checking")
-    assert fr[-1] == ("Dettes", "debt", 10, None)
+    assert fr[0] == ("Livrets", "asset", 0)
+    assert fr[1] == ("Comptes courants", "asset", 1)
+    assert fr[-1] == ("Dettes", "debt", 10)
     assert [c[0] for c in _categories(engine, english)][:3] == [
         "Savings accounts",
         "Current accounts",
