@@ -223,6 +223,8 @@ test("the header links to the accounts page", async () => {
   api([]);
   render(<TestApp path="/" />);
   const user = userEvent.setup();
+  // The overview stands apart: the spending tabs are in the Spending space.
+  await user.click(await screen.findByRole("link", { name: "Spending" }));
   await user.click(await screen.findByRole("link", { name: "Accounts" }));
   expect(await screen.findByRole("heading", { name: "Accounts" })).toBeInTheDocument();
 });

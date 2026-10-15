@@ -21,7 +21,6 @@ test("the main tabs lead to the everyday pages, the current one marked", async (
   const main = await screen.findByRole("navigation", { name: "Main" });
   const tabs = within(main).getAllByRole("link");
   expect(tabs.map((tab) => tab.textContent)).toEqual([
-    "Overview",
     "Accounts",
     "Transactions",
     "Budget",
@@ -29,6 +28,11 @@ test("the main tabs lead to the everyday pages, the current one marked", async (
   ]);
   // Spending is the space shown; wealth is one click away.
   const spaces = screen.getByRole("navigation", { name: "Spaces" });
+  expect(
+    within(spaces)
+      .getAllByRole("link")
+      .map((link) => link.textContent),
+  ).toEqual(["Overview", "Spending", "Wealth"]);
   expect(within(spaces).getByRole("link", { name: "Spending" })).toHaveAttribute(
     "aria-current",
     "true",
@@ -38,7 +42,6 @@ test("the main tabs lead to the everyday pages, the current one marked", async (
     "aria-current",
     "page",
   );
-  expect(within(main).getByRole("link", { name: "Overview" })).not.toHaveAttribute("aria-current");
 });
 
 test("the guide stands apart from the main tabs", async () => {
@@ -116,7 +119,10 @@ test("the wealth space has its own tabs: monthly tracking and analysis", async (
     "aria-current",
     "true",
   );
-  expect(within(spaces).getByRole("link", { name: "Spending" })).toHaveAttribute("href", "/");
+  expect(within(spaces).getByRole("link", { name: "Spending" })).toHaveAttribute(
+    "href",
+    "/transactions",
+  );
   const main = screen.getByRole("navigation", { name: "Main" });
   expect(
     within(main)
@@ -130,4 +136,21 @@ test("the wealth space has its own tabs: monthly tracking and analysis", async (
   expect(within(main).getByRole("link", { name: "Monthly tracking" })).not.toHaveAttribute(
     "aria-current",
   );
+});
+
+test("the overview sums up the whole app: it stands apart from both spaces", async () => {
+  api();
+  render(<TestApp path="/" />);
+
+  const spaces = await screen.findByRole("navigation", { name: "Spaces" });
+  expect(within(spaces).getByRole("link", { name: "Overview" })).toHaveAttribute(
+    "aria-current",
+    "page",
+  );
+  expect(within(spaces).getByRole("link", { name: "Spending" })).not.toHaveAttribute(
+    "aria-current",
+  );
+  expect(within(spaces).getByRole("link", { name: "Wealth" })).not.toHaveAttribute("aria-current");
+  // No tabs of its own: the overview is a single page.
+  expect(screen.queryByRole("navigation", { name: "Main" })).toBeNull();
 });

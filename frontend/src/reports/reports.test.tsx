@@ -181,6 +181,8 @@ test("the reports tab shows this year's totals against the year before", async (
   const asked = api();
   render(<TestApp path="/" />);
   const user = userEvent.setup();
+  // The overview stands apart: the spending tabs are in the Spending space.
+  await user.click(await screen.findByRole("link", { name: "Spending" }));
   await user.click(await screen.findByRole("link", { name: "Reports" }));
 
   const summary = await screen.findByRole("region", { name: "Totals" });
