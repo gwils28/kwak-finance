@@ -1,9 +1,8 @@
 import { expect, test } from "vitest";
 import type { WealthMatrixLineOut, WealthMatrixOut } from "../api/generated";
-import { allocation, bridge, history, holdings, JOINT } from "./chartData";
+import { allocation, bridge, history, mosaic, squarify } from "./chartData";
 
 const ME = "me";
-const PARTNER = "partner";
 
 const line = (
   id: string,
@@ -33,7 +32,7 @@ const matrix: WealthMatrixOut = {
       share: "0.2500",
       lines: [
         line("Livret A", ["1000.00", "1000.00"]),
-        line("LDDS", [null, "500.00"], { owner_id: PARTNER, owner_name: "Alex" }),
+        line("LDDS", [null, "500.00"], { owner_id: "partner", owner_name: "Alex" }),
       ],
     },
     {
@@ -88,16 +87,47 @@ test("the allocation is the last month's assets, by category then line, empty on
   ]);
 });
 
-test("holdings split each category by holder: the viewer first, joint last", () => {
-  const h = holdings(matrix, ME);
-  expect(h.holders.map((x) => x.key)).toEqual([ME, PARTNER, JOINT]);
-  expect(h.holders.map((x) => x.name)).toEqual(["Wilson", "Alex", null]);
-  const stocks = h.columns.find((c) => c.name === "Stocks");
-  expect(stocks?.share).toBe(0.75);
-  expect(stocks?.parts).toEqual([
-    { holder: ME, value: 1500, share: 1 / 3 },
-    { holder: JOINT, value: 3000, share: 2 / 3 },
+test("the allocation can be read for any month shown", () => {
+  const january = allocation(matrix, 0);
+  expect(january.total).toBe(6000);
+  expect(january.categories.map((c) => [c.name, c.value])).toEqual([
+    ["Savings accounts", 1000],
+    ["Stocks", 5000],
   ]);
+  // LDDS had no value yet in January.
+  expect(january.categories[0]?.lines.map((l) => l.name)).toEqual(["Livret A"]);
+});
+
+const area = (r: { w: number; h: number }) => r.w * r.h;
+
+test("squarify tiles the rectangle, each area proportional to its value", () => {
+  const values = [6, 6, 4, 3, 2, 2, 1];
+  const tiles = squarify(values, { x: 0, y: 0, w: 600, h: 400 });
+  expect(tiles).toHaveLength(7);
+  const total = 600 * 400;
+  tiles.forEach((tile, i) => {
+    expect(area(tile) / total).toBeCloseTo((values[i] ?? 0) / 24, 6);
+    expect(tile.x).toBeGreaterThanOrEqual(-1e-9);
+    expect(tile.y).toBeGreaterThanOrEqual(-1e-9);
+    expect(tile.x + tile.w).toBeLessThanOrEqual(600 + 1e-9);
+    expect(tile.y + tile.h).toBeLessThanOrEqual(400 + 1e-9);
+  });
+  // Squarified: no sliver thinner than a tenth of its length here.
+  for (const tile of tiles)
+    expect(Math.min(tile.w, tile.h) / Math.max(tile.w, tile.h)).toBeGreaterThan(0.1);
+  expect(squarify([], { x: 0, y: 0, w: 10, h: 10 })).toEqual([]);
+});
+
+test("the mosaic nests each category's lines inside its tile", () => {
+  const tiles = mosaic(allocation(matrix), { x: 0, y: 0, w: 600, h: 400 });
+  expect(tiles.map((t) => t.category.name)).toEqual(["Stocks", "Savings accounts"]);
+  const stocks = tiles[0];
+  expect(area(stocks?.rect ?? { w: 0, h: 0 }) / (600 * 400)).toBeCloseTo(0.75, 6);
+  const inner = stocks?.lines ?? [];
+  expect(inner.map((l) => l.line.name)).toEqual(["CTO", "PEA"]);
+  expect(
+    area(inner[0]?.rect ?? { w: 0, h: 0 }) / area(inner[1]?.rect ?? { w: 1, h: 1 }),
+  ).toBeCloseTo(2, 6);
 });
 
 test("history stacks the assets above zero and the debts below, with net worth", () => {

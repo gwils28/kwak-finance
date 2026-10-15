@@ -95,15 +95,12 @@ export const wealthEn = {
       `What you own in ${month}: categories inside, their lines outside. Point at a ring to read it.`,
     allocationTable: "Allocation by category and line",
     sunburst: "Allocation by category and line",
-    holdings: "Who holds what",
-    holdingsHelp: (month: string) =>
-      `In ${month}, each column is a category, as wide as its share of what you own, split by who holds it.`,
-    holdingsTable: "Holdings by category and holder",
-    marimekko: "Categories by share of gross assets, split by holder",
-    joint: "Joint",
-    holder: "Holder",
-    ofCategory: (share: string, category: string) => `${share} of ${category}`,
-    ofGross: (share: string) => `${share} of gross assets`,
+    monthShown: "Month shown in the allocation and the mosaic",
+    mosaic: "Mosaic",
+    mosaicHelp: (month: string) =>
+      `What you own in ${month}, each line as a tile as large as its value, grouped by category.`,
+    mosaicLabel: "Mosaic of the lines by value, grouped by category",
+    mosaicTable: "Lines by value",
     bridge: "What moved net worth",
     bridgeHelp: (start: string, from: string, end: string, to: string, change: string) =>
       `Net worth went from ${start} in ${from} to ${end} in ${to} (${change}): each category's contribution; a debt repaid lifts it.`,
@@ -215,15 +212,12 @@ export const wealthFr: typeof wealthEn = {
       `Ce que vous possédez en ${month} : les catégories au centre, leurs lignes autour. Pointez un anneau pour le lire.`,
     allocationTable: "Répartition par catégorie et par ligne",
     sunburst: "Répartition par catégorie et par ligne",
-    holdings: "Qui détient quoi",
-    holdingsHelp: (month) =>
-      `En ${month}, chaque colonne est une catégorie, aussi large que sa part de ce que vous possédez, partagée selon qui la détient.`,
-    holdingsTable: "Avoirs par catégorie et par détenteur",
-    marimekko: "Catégories selon leur part de l'actif brut, partagées par détenteur",
-    joint: "Commun",
-    holder: "Détenteur",
-    ofCategory: (share, category) => `${share} de ${category}`,
-    ofGross: (share) => `${share} de l'actif brut`,
+    monthShown: "Mois affiché dans la répartition et la mosaïque",
+    mosaic: "Mosaïque",
+    mosaicHelp: (month) =>
+      `Ce que vous possédez en ${month}, chaque ligne en tuile aussi grande que sa valeur, groupée par catégorie.`,
+    mosaicLabel: "Mosaïque des lignes par valeur, groupées par catégorie",
+    mosaicTable: "Lignes par valeur",
     bridge: "Ce qui a fait bouger le patrimoine",
     bridgeHelp: (start, from, end, to, change) =>
       `Le patrimoine net est passé de ${start} en ${from} à ${end} en ${to} (${change}) : la contribution de chaque catégorie ; une dette remboursée le fait monter.`,

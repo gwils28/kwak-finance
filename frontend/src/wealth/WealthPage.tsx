@@ -28,6 +28,7 @@ import { detailSentence } from "../auth/errors";
 import { meQuery } from "../auth/session";
 import { InView } from "../components/InView";
 import { ScopeSelect } from "../components/ScopeSelect";
+import { SCROLL_FRAME, STICKY_CORNER, STICKY_LEFT, STICKY_TOP } from "../components/stickyTable";
 import { Button, ErrorAlert, TextField } from "../components/ui";
 import { useI18n } from "../i18n";
 import {
@@ -264,7 +265,10 @@ function Matrix({ matrix, onOpen }: { matrix: WealthMatrixOut; onOpen: (panel: P
   const months = matrix.months;
   const totals = (label: string, values: (string | null)[], strong = false) => (
     <tr className={strong ? "border-t-2 border-border font-bold" : ""}>
-      <th scope="row" className="whitespace-nowrap px-3 py-2 text-left font-semibold">
+      <th
+        scope="row"
+        className={`${STICKY_LEFT} whitespace-nowrap px-3 py-2 text-left font-semibold`}
+      >
         {label}
       </th>
       {values.map((v, i) => (
@@ -276,23 +280,23 @@ function Matrix({ matrix, onOpen }: { matrix: WealthMatrixOut; onOpen: (panel: P
     </tr>
   );
   return (
-    <div className="overflow-x-auto rounded-lg border border-border bg-surface">
+    <div className={SCROLL_FRAME}>
       <table aria-label={t.wealth.matrix} className="w-full text-sm">
         <thead className="text-left text-muted">
           <tr>
-            <th scope="col" className="px-3 py-2 font-medium">
+            <th scope="col" className={`${STICKY_CORNER} px-3 py-2 font-medium`}>
               {t.wealth.line}
             </th>
             {months.map((m) => (
               <th
                 key={m}
                 scope="col"
-                className="whitespace-nowrap px-3 py-2 text-right font-medium"
+                className={`${STICKY_TOP} whitespace-nowrap px-3 py-2 text-right font-medium`}
               >
                 {monthLabel(m)}
               </th>
             ))}
-            <th scope="col" className="px-3 py-2 text-right font-medium">
+            <th scope="col" className={`${STICKY_TOP} px-3 py-2 text-right font-medium`}>
               {t.wealth.share}
             </th>
           </tr>
@@ -302,7 +306,10 @@ function Matrix({ matrix, onOpen }: { matrix: WealthMatrixOut; onOpen: (panel: P
           .map((c) => (
             <tbody key={c.id} className="divide-y divide-border border-t-4 border-border">
               <tr>
-                <th scope="row" className="whitespace-nowrap px-3 py-2 text-left font-bold">
+                <th
+                  scope="row"
+                  className={`${STICKY_LEFT} whitespace-nowrap px-3 py-2 text-left font-bold`}
+                >
                   <span
                     aria-hidden="true"
                     className="mr-2 inline-block size-3 rounded-sm align-middle"
@@ -321,7 +328,7 @@ function Matrix({ matrix, onOpen }: { matrix: WealthMatrixOut; onOpen: (panel: P
                 <tr key={line.id}>
                   <th
                     scope="row"
-                    className="whitespace-nowrap py-2 pr-3 pl-8 text-left font-normal"
+                    className={`${STICKY_LEFT} whitespace-nowrap py-2 pr-3 pl-8 text-left font-normal`}
                     style={{ borderLeft: `4px solid ${wealthColour(c.colour)}` }}
                   >
                     <button

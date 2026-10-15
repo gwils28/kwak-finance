@@ -4,9 +4,6 @@
  */
 import type { WealthMatrixOut } from "../api/generated";
 
-/** The holder of the household's joint lines. */
-export const JOINT = "joint";
-
 export type LineSlice = { id: string; name: string; value: number; share: number };
 
 export type CategorySlice = {
@@ -22,9 +19,14 @@ export type CategorySlice = {
 
 const lastIndex = (m: WealthMatrixOut) => m.months.length - 1;
 
-/** The last month's assets by category (the matrix's order) then line; empty ones left out. */
-export function allocation(m: WealthMatrixOut): { total: number; categories: CategorySlice[] } {
-  const last = lastIndex(m);
+export type Allocation = { total: number; categories: CategorySlice[] };
+
+/**
+ * A month's assets (the last one shown by default) by category, in the matrix's order, then
+ * line; empty ones left out.
+ */
+export function allocation(m: WealthMatrixOut, month = lastIndex(m)): Allocation {
+  const last = month;
   const total = Number(m.gross[last] ?? 0);
   if (total <= 0) return { total: 0, categories: [] };
   const categories = m.categories
@@ -41,59 +43,87 @@ export function allocation(m: WealthMatrixOut): { total: number; categories: Cat
   return { total, categories };
 }
 
-/** `name` is null for the joint holder: the caller names it in the user's language. */
-export type Holder = { key: string; name: string | null };
+export type Rect = { x: number; y: number; w: number; h: number };
 
-export type HoldingColumn = {
-  id: string;
-  name: string;
-  colour: string;
-  value: number;
-  /** Of gross assets: the column's width. */
-  share: number;
-  /** In the holders' order; `share` is of the column. */
-  parts: { holder: string; value: number; share: number }[];
+/**
+ * Squarified treemap (Bruls, Huizing, van Wijk): tiles `rect` with one rectangle per value, in
+ * the given order (largest first reads best), each as close to a square as the row allows.
+ */
+export function squarify(values: number[], rect: Rect): Rect[] {
+  const total = values.reduce((sum, v) => sum + v, 0);
+  if (values.length === 0 || total <= 0) return values.map(() => ({ ...rect, w: 0, h: 0 }));
+  const scale = (rect.w * rect.h) / total;
+  const areas = values.map((v) => v * scale);
+  const out: Rect[] = [];
+  let free = { ...rect };
+  let start = 0;
+  const worst = (row: number[], side: number) => {
+    const sum = row.reduce((a, b) => a + b, 0);
+    const max = Math.max(...row);
+    const min = Math.min(...row);
+    return Math.max((side * side * max) / (sum * sum), (sum * sum) / (side * side * min));
+  };
+  while (start < areas.length) {
+    const side = Math.min(free.w, free.h);
+    let end = start + 1;
+    while (
+      end < areas.length &&
+      worst(areas.slice(start, end + 1), side) <= worst(areas.slice(start, end), side)
+    )
+      end += 1;
+    const row = areas.slice(start, end);
+    const sum = row.reduce((a, b) => a + b, 0);
+    if (free.w >= free.h) {
+      // A column along the left side.
+      const width = free.h > 0 ? sum / free.h : 0;
+      let y = free.y;
+      for (const a of row) {
+        const h = width > 0 ? a / width : 0;
+        out.push({ x: free.x, y, w: width, h });
+        y += h;
+      }
+      free = { x: free.x + width, y: free.y, w: free.w - width, h: free.h };
+    } else {
+      // A row along the top.
+      const height = free.w > 0 ? sum / free.w : 0;
+      let x = free.x;
+      for (const a of row) {
+        const w = height > 0 ? a / height : 0;
+        out.push({ x, y: free.y, w, h: height });
+        x += w;
+      }
+      free = { x: free.x, y: free.y + height, w: free.w, h: free.h - height };
+    }
+    start = end;
+  }
+  return out;
+}
+
+export type MosaicTile = {
+  category: CategorySlice;
+  rect: Rect;
+  lines: { line: LineSlice; rect: Rect }[];
 };
 
-/** Each asset category split by who holds it: the viewer first, other members, joint last. */
-export function holdings(
-  m: WealthMatrixOut,
-  viewerId: string,
-): { holders: Holder[]; columns: HoldingColumn[] } {
-  const last = lastIndex(m);
-  const names = new Map<string, string>();
-  const columns = allocation(m).categories.map((slice) => {
-    const category = m.categories.find((c) => c.id === slice.id);
-    const byHolder = new Map<string, number>();
-    for (const l of category?.lines ?? []) {
-      const value = Number(l.cells[last]?.amount ?? 0);
-      if (value <= 0) continue;
-      const holder = l.visibility === "joint" ? JOINT : l.owner_id;
-      if (holder !== JOINT) names.set(holder, l.owner_name);
-      byHolder.set(holder, (byHolder.get(holder) ?? 0) + value);
-    }
-    return { slice, byHolder };
-  });
-  const rank = (key: string) => (key === viewerId ? 0 : key === JOINT ? 2 : 1);
-  const keys = [...new Set(columns.flatMap((c) => [...c.byHolder.keys()]))].sort(
-    (a, b) => rank(a) - rank(b) || (names.get(a) ?? "").localeCompare(names.get(b) ?? ""),
+/** The allocation as a mosaic: categories from the largest, each holding its lines' tiles. */
+export function mosaic({ categories }: Allocation, rect: Rect): MosaicTile[] {
+  const sorted = [...categories].sort((a, b) => b.value - a.value);
+  const tiles = squarify(
+    sorted.map((c) => c.value),
+    rect,
   );
-  return {
-    holders: keys.map((key) => ({ key, name: key === JOINT ? null : (names.get(key) ?? null) })),
-    columns: columns.map(({ slice, byHolder }) => ({
-      id: slice.id,
-      name: slice.name,
-      colour: slice.colour,
-      value: slice.value,
-      share: slice.share,
-      parts: keys
-        .filter((key) => byHolder.has(key))
-        .map((key) => {
-          const value = byHolder.get(key) ?? 0;
-          return { holder: key, value, share: value / slice.value };
-        }),
-    })),
-  };
+  return sorted.map((category, i) => {
+    const tile = tiles[i] as Rect;
+    const inner = squarify(
+      category.lines.map((l) => l.value),
+      tile,
+    );
+    return {
+      category,
+      rect: tile,
+      lines: category.lines.map((line, j) => ({ line, rect: inner[j] as Rect })),
+    };
+  });
 }
 
 export type HistoryRow = { month: string; net: number } & Record<string, number | string>;

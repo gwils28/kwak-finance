@@ -469,7 +469,7 @@ test("the tiles add the change over the months shown and the debt ratio", async 
   );
 });
 
-test("the charts read the matrix: allocation, holders, and what moved net worth", async () => {
+test("the charts read the matrix: allocation, mosaic, and what moved net worth", async () => {
   api();
   render(<TestApp path="/wealth" />);
   const user = userEvent.setup();
@@ -483,12 +483,20 @@ test("the charts read the matrix: allocation, holders, and what moved net worth"
     within(allocation).getByRole("img", { name: "PEA Fortuneo: €10,600 · 93%" }),
   ).toBeInTheDocument();
 
-  // The Marimekko splits each category by holder.
-  const holders = screen.getByRole("region", { name: "Who holds what" });
+  // The mosaic gives each line a tile, read out with its category.
+  const mosaic = screen.getByRole("region", { name: "Mosaic" });
   expect(
-    within(holders).getByRole("img", {
-      name: "Current accounts · Wilson: €800 · 100% of Current accounts",
-    }),
+    within(mosaic).getByRole("img", { name: "Current accounts · Compte courant: €800 · 7%" }),
+  ).toBeInTheDocument();
+
+  // Both read the month chosen, the last one by default.
+  await user.selectOptions(
+    screen.getByLabelText("Month shown in the allocation and the mosaic"),
+    "2026-10",
+  );
+  expect(within(allocation).getByText(/What you own in Oct 2026/)).toBeInTheDocument();
+  expect(
+    within(mosaic).getByRole("img", { name: "Stocks · PEA Fortuneo: €10,000 · 91%" }),
   ).toBeInTheDocument();
 
   // The bridge goes from October's net worth to December's.
@@ -558,4 +566,21 @@ test("categories are renamed, recoloured, moved, added and deleted", async () =>
     kind: "asset",
     colour: "gold",
   });
+});
+
+test("the matrix keeps its months and its line names in view while scrolling", async () => {
+  api();
+  render(<TestApp path="/wealth" />);
+  const table = await screen.findByRole("table", { name: "Wealth by month" });
+  // Its own scroll area, both ways, so the header row and the first column can stick.
+  expect(table.parentElement?.className).toMatch(/overflow-auto/);
+  expect(table.parentElement?.className).toMatch(/max-h-/);
+  for (const header of within(table).getAllByRole("columnheader")) {
+    expect(header.className).toMatch(/sticky/);
+    expect(header.className).toMatch(/top-0/);
+  }
+  for (const header of within(table).getAllByRole("rowheader")) {
+    expect(header.className).toMatch(/sticky/);
+    expect(header.className).toMatch(/left-0/);
+  }
 });

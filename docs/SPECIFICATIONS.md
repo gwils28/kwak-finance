@@ -1,6 +1,6 @@
 # Functional Specifications
 
-Status: draft v0.19 — 2026-10-15. Owner: sole maintainer.
+Status: draft v0.20 — 2026-10-15. Owner: sole maintainer.
 
 ## 1. Purpose
 
@@ -86,7 +86,7 @@ Goal of the budget module: **follow spending simply**, whether entered by hand o
 - F-BUD-3: Household, joint or personal scope (§3).
 - F-BUD-4: Target vs actual over past months and year to date, to see which categories are regularly over or under target.
 - F-BUD-5: Transactions without a category are listed as "to categorise" and counted apart, so totals are never silently wrong.
-- F-BUD-6: **Budget matrix**, the main view of F-BUD-4. One row per expense category (parent categories with their total, children below), one column per month (default: the last 12), plus a first column with the category's **monthly target**. Each cell shows the month's spending, its **gap to the target in € and in %** ((spent − target) / target), and a colour:
+- F-BUD-6: **Budget matrix**, the main view of F-BUD-4. One row per expense category (parent categories with their total, children below), one column per month (default: the last 12), plus a first column with the category's **monthly target**. The matrix scrolls within its frame: the month headers stay at the top and the category and target columns on the left. Each cell shows the month's spending, its **gap to the target in € and in %** ((spent − target) / target), and a colour:
   - **under**: spent more than 5 % below the target → green;
   - **on target**: within ±5 % → neutral (pale grey);
   - **over**: more than 5 % above the target → burnt orange / terracotta.
@@ -123,14 +123,14 @@ Net worth is followed as a **monthly wealth matrix**, like the maintainer's own 
 - F-WLT-2: **Wealth lines** are the subcategories: one holding each (e.g. "PEA Fortuneo" and "CTO Trade Republic" under Stocks, "Lynxéa Spirit 2" where the owner files it, "Crédit immobilier" under Debts). Like an account, a line has an **owner** and a **visibility** (`private`, `shared` or `joint`, §3); a private line is shown to its owner only. A line can be closed from a month on (sold, repaid): it keeps its history and leaves later months.
 - F-WLT-3: **Monthly values**: each line has at most one value per calendar month, in EUR, positive (a debt is entered as what is still owed and counts negatively). A month without a value carries the previous one forward, shown as carried, until a new value is entered; before its first value a line is empty. A closed month takes no value, and the matrix ends with the current month at the latest: later months are unknown. Values are entered in the matrix or with **"Update this month"**, which lists the open lines with their last value pre-filled and saves them all at once, or none if one is refused.
 - F-WLT-4: **Bank accounts are lines entered by hand** (since v0.16): Savings accounts and Current accounts are ordinary categories, where the user adds one line per account ("Livret A", "Compte joint"…) and enters its value each month like any other line. The app's cash accounts are not read: the matrix shows what the maintainer enters, whether the account is imported or not.
-- F-WLT-5: **The wealth matrix**: lines grouped by category in rows, months in columns (the last 12 by default, from the **wealth start** at the earliest; any other period of up to 120 months can be chosen, ending this month at the latest), with category subtotals in the category's colour, **gross assets**, **debts** and **net worth**, and for each month the change against the previous one (€ and %). A column gives each category's **share** of gross assets for the last month shown. Scope: *household*, *joint* or *mine*, as for the budget (§3).
+- F-WLT-5: **The wealth matrix**: lines grouped by category in rows, months in columns (the last 12 by default, from the **wealth start** at the earliest; any other period of up to 120 months can be chosen, ending this month at the latest), with category subtotals in the category's colour, **gross assets**, **debts** and **net worth**, and for each month the change against the previous one (€ and %). A column gives each category's **share** of gross assets for the last month shown. Scope: *household*, *joint* or *mine*, as for the budget (§3). As the budget matrix (F-BUD-6), it scrolls within its frame, its month headers and its line names staying in view both ways.
 - F-WLT-6: **Wealth charts**, below the matrix and over the same months and scope, each category in its colour:
   - **net worth over time**: each category's total per month, stacked (debts below zero), with net worth as a line;
-  - **allocation** of the last month as a **sunburst**: categories in the inner ring, their lines in the outer one, gross assets in the centre;
-  - **who holds what** as a **Marimekko**: one column per asset category, as wide as its share of gross assets, split by holder (the viewer, the other members, the joint holding), each holder a shade of the category's colour;
+  - **allocation** of a chosen month (the last one shown by default, one choice for both charts) as a **sunburst**: categories in the inner ring, their lines in the outer one, gross assets in the centre;
+  - the same allocation as a **mosaic** (a squarified treemap, as Finary shows it): one tile per line, as large as its value, grouped by category, the largest first, labelled with its name, value and share when it has the room;
   - **what moved net worth**: a bridge from the first month's net worth to the last's, one step per category that moved (a debt repaid lifts it);
   - the net worth tile adds its change over the months shown, the debts tile the **debt ratio** (debts / gross assets).
-  Every chart has its table, and the sunburst and the Marimekko read the pointed or focused mark out in words: no value is reachable only by hovering.
+  Every chart has its table, and the sunburst and the mosaic read the pointed or focused mark out in words: no value is reachable only by hovering.
 - F-WLT-7: The overview (F-DSH-1) opens with net worth at the end of its month and its change over that month, in its scope, once the wealth has a line, with a link to the wealth page.
 
 ### 4.8 Dashboard and reporting (M)
