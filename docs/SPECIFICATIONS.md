@@ -1,6 +1,6 @@
 # Functional Specifications
 
-Status: draft v0.18 — 2026-10-15. Owner: sole maintainer.
+Status: draft v0.19 — 2026-10-15. Owner: sole maintainer.
 
 ## 1. Purpose
 
@@ -119,7 +119,7 @@ Most transactions are entered by hand, once a week or a fortnight, because the b
 
 Net worth is followed as a **monthly wealth matrix**, like the maintainer's own spreadsheet: what each holding is worth at the end of each month, by category. There are no securities positions, no market prices and no loan schedules: every value is entered by hand once a month, the bank accounts' too, which is what the maintainer already does.
 
-- F-WLT-1: **Wealth categories**, two levels like the budget's (F-CAT-1). Defaults, in the owner's language: Savings accounts (Livrets), Current accounts (Comptes courants), Stocks (Actions), Crypto (Cryptos), Bonds (Obligations), Private equity, Gold (Or), Real estate (Immobilier), Equipment (Matériels), Exotic (Exotiques) and **Debts** (Dettes), the one liability category. Categories can be renamed, moved, added or deleted: a category holding lines cannot be (any line counts, a member's private ones included, which would be lost otherwise). Each category has its own colour from the `wealth-*` set (§7); its lines share it.
+- F-WLT-1: **Wealth categories**, two levels like the budget's (F-CAT-1). Defaults, in the owner's language: Savings accounts (Livrets), Current accounts (Comptes courants), Stocks (Actions), Crypto (Cryptos), Bonds (Obligations), Private equity, Gold (Or), Real estate (Immobilier), Equipment (Matériels), Exotic (Exotiques) and **Debts** (Dettes), the one liability category. Categories can be renamed, recoloured, moved, added (an asset or a debt) or deleted, from "Manage categories" on the wealth page: a category holding lines cannot be (any line counts, a member's private ones included, which would be lost otherwise). Each category has its own colour from the `wealth-*` set (§7); its lines share it.
 - F-WLT-2: **Wealth lines** are the subcategories: one holding each (e.g. "PEA Fortuneo" and "CTO Trade Republic" under Stocks, "Lynxéa Spirit 2" where the owner files it, "Crédit immobilier" under Debts). Like an account, a line has an **owner** and a **visibility** (`private`, `shared` or `joint`, §3); a private line is shown to its owner only. A line can be closed from a month on (sold, repaid): it keeps its history and leaves later months.
 - F-WLT-3: **Monthly values**: each line has at most one value per calendar month, in EUR, positive (a debt is entered as what is still owed and counts negatively). A month without a value carries the previous one forward, shown as carried, until a new value is entered; before its first value a line is empty. A closed month takes no value, and the matrix ends with the current month at the latest: later months are unknown. Values are entered in the matrix or with **"Update this month"**, which lists the open lines with their last value pre-filled and saves them all at once, or none if one is refused.
 - F-WLT-4: **Bank accounts are lines entered by hand** (since v0.16): Savings accounts and Current accounts are ordinary categories, where the user adds one line per account ("Livret A", "Compte joint"…) and enters its value each month like any other line. The app's cash accounts are not read: the matrix shows what the maintainer enters, whether the account is imported or not.
@@ -131,7 +131,7 @@ Net worth is followed as a **monthly wealth matrix**, like the maintainer's own 
   - **what moved net worth**: a bridge from the first month's net worth to the last's, one step per category that moved (a debt repaid lifts it);
   - the net worth tile adds its change over the months shown, the debts tile the **debt ratio** (debts / gross assets).
   Every chart has its table, and the sunburst and the Marimekko read the pointed or focused mark out in words: no value is reachable only by hovering.
-- F-WLT-7: The overview (F-DSH-1) shows net worth and its change over the month.
+- F-WLT-7: The overview (F-DSH-1) opens with net worth at the end of its month and its change over that month, in its scope, once the wealth has a line, with a link to the wealth page.
 
 ### 4.8 Dashboard and reporting (M)
 

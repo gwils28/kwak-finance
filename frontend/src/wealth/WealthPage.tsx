@@ -39,7 +39,9 @@ import {
   parseEurInput,
 } from "../lib/money";
 import { isMonth, monthLabel, thisMonth } from "../lib/months";
-import { WealthCharts, wealthColour } from "./WealthCharts";
+import { wealthColour } from "./colours";
+import { ManageCategories } from "./ManageCategories";
+import { WealthCharts } from "./WealthCharts";
 
 const fieldClass = "rounded-md border border-border bg-surface px-3 py-2";
 const labelClass = "flex flex-col gap-1 text-sm font-medium";
@@ -57,6 +59,7 @@ const monthIndex = (month: string) => {
 type Panel =
   | { kind: "add" }
   | { kind: "update" }
+  | { kind: "categories" }
   | { kind: "edit"; lineId: string }
   | {
       kind: "value";
@@ -115,6 +118,9 @@ export function WealthPage() {
               }
             />
           )}
+          <Button variant="ghost" onClick={() => setPanel({ kind: "categories" })}>
+            {t.wealth.manageCategories}
+          </Button>
           <Button variant="ghost" onClick={() => setPanel({ kind: "add" })}>
             {t.wealth.addLine}
           </Button>
@@ -125,6 +131,7 @@ export function WealthPage() {
         <div key={JSON.stringify(panel)}>
           {panel.kind === "add" && <AddLine onDone={close} />}
           {panel.kind === "update" && <UpdateMonth onDone={close} />}
+          {panel.kind === "categories" && <ManageCategories onDone={close} />}
           {panel.kind === "edit" && <EditLine lineId={panel.lineId} onDone={close} />}
           {panel.kind === "value" && <EditValue {...panel} onDone={close} />}
         </div>

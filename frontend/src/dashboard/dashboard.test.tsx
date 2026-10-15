@@ -104,7 +104,7 @@ const progress = {
 function api(
   data: unknown = dashboard,
   accounts: unknown[] = [],
-  extra: Record<string, (body: unknown) => Response> = {},
+  extra: Record<string, (body: unknown, url: URL) => Response> = {},
 ) {
   return fakeApi({
     "GET /api/auth/me": () => Response.json(owner),
@@ -450,4 +450,65 @@ test("a month without categorised spending says so, in French too", async () => 
   const top = await screen.findByRole("region", { name: "Principales catégories" });
   expect(top).toHaveTextContent("Aucune dépense catégorisée ce mois-ci.");
   expect(within(top).getByRole("link", { name: "Voir le rapport du mois" })).toBeInTheDocument();
+});
+
+const wealth = (lines: number) => ({
+  months: ["2026-03"],
+  categories: [
+    {
+      id: "c-stocks",
+      name: "Stocks",
+      kind: "asset",
+      colour: "stocks",
+      subtotals: ["8400.00"],
+      share: "1.0000",
+      lines: Array.from({ length: lines }, (_, i) => ({
+        id: `l${i}`,
+        name: "PEA",
+        owner_id: owner.id,
+        owner_name: "Wilson",
+        visibility: "shared",
+        closed_from: null,
+        cells: [{ amount: "8400.00", carried: false }],
+        share: "1.0000",
+      })),
+    },
+  ],
+  gross: ["8400.00"],
+  debts: ["0.00"],
+  net: ["8400.00"],
+  change: ["650.00"],
+  change_ratio: ["0.0838"],
+});
+
+test("the overview leads with net worth and its change over the month", async () => {
+  const asked: URL[] = [];
+  api(dashboard, [], {
+    "GET /api/wealth/matrix": (_body, url) => {
+      asked.push(url);
+      return Response.json(wealth(1));
+    },
+  });
+  render(<TestApp path="/" />);
+
+  const tile = await screen.findByRole("region", { name: "Net worth" });
+  expect(tile).toHaveTextContent("€8,400");
+  expect(tile).toHaveTextContent("+€650 · +8% vs last month");
+  expect(within(tile).getByRole("link", { name: "Open your wealth" })).toHaveAttribute(
+    "href",
+    "/wealth",
+  );
+  // One month, the overview's, in its scope.
+  const query = asked[0]?.searchParams;
+  expect(query?.get("start")).toBe(query?.get("end"));
+  expect(query?.get("scope")).toBe("household");
+});
+
+test("without any wealth line, the overview shows no net worth", async () => {
+  api(dashboard, [], {
+    "GET /api/wealth/matrix": () => Response.json(wealth(0)),
+  });
+  render(<TestApp path="/" />);
+  await screen.findByRole("region", { name: "Spent" });
+  expect(screen.queryByRole("region", { name: "Net worth" })).not.toBeInTheDocument();
 });

@@ -507,3 +507,55 @@ test("the charts read the matrix: allocation, holders, and what moved net worth"
     "Dec 2026€8,400",
   ]);
 });
+
+test("categories are renamed, recoloured, moved, added and deleted", async () => {
+  const calls = api({
+    "PATCH /api/wealth/categories/c-stocks": () => Response.json(categories[2]),
+    "POST /api/wealth/categories": () => Response.json(categories[2], { status: 201 }),
+    "DELETE /api/wealth/categories/c-savings": () =>
+      Response.json(
+        {
+          detail:
+            "it still holds lines (perhaps a member's private ones): move or delete them first",
+        },
+        { status: 409 },
+      ),
+  });
+  render(<TestApp path="/wealth" />);
+  const user = userEvent.setup();
+  await user.click(await screen.findByRole("button", { name: "Manage categories" }));
+  const panel = screen.getByRole("region", { name: "Categories" });
+
+  const name = within(panel).getByLabelText("Name of Stocks");
+  await user.clear(name);
+  await user.type(name, "Actions");
+  await user.selectOptions(within(panel).getByLabelText("Colour of Stocks"), "exotic");
+  await user.click(within(panel).getByRole("button", { name: "Save Stocks" }));
+  expect(calls.find((c) => c.route === "PATCH /api/wealth/categories/c-stocks")?.body).toEqual({
+    name: "Actions",
+    colour: "exotic",
+  });
+
+  // The first one cannot go up; Stocks goes one row up.
+  expect(within(panel).getByRole("button", { name: "Move Savings accounts up" })).toBeDisabled();
+  await user.click(within(panel).getByRole("button", { name: "Move Stocks up" }));
+  expect(
+    calls.filter((c) => c.route === "PATCH /api/wealth/categories/c-stocks").at(-1)?.body,
+  ).toEqual({ position: 1 });
+
+  // A category still holding lines stays, and the server says why.
+  await user.click(within(panel).getByRole("button", { name: "Delete Savings accounts" }));
+  expect(await within(panel).findByRole("alert")).toHaveTextContent(
+    "It still holds lines (perhaps a member's private ones): move or delete them first.",
+  );
+
+  const form = within(panel).getByRole("form", { name: "New category" });
+  await user.type(within(form).getByLabelText("Name"), "Montres");
+  await user.selectOptions(within(form).getByLabelText("Colour"), "gold");
+  await user.click(within(form).getByRole("button", { name: "Add" }));
+  expect(calls.find((c) => c.route === "POST /api/wealth/categories")?.body).toEqual({
+    name: "Montres",
+    kind: "asset",
+    colour: "gold",
+  });
+});
