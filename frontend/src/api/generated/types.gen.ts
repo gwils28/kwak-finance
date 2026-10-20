@@ -680,6 +680,30 @@ export type FlowsOut = {
 export type Frequency = 'weekly' | 'monthly' | 'quarterly' | 'yearly';
 
 /**
+ * GoalAdjustmentIn
+ */
+export type GoalAdjustmentIn = {
+    /**
+     * Amount
+     */
+    amount: number | string;
+};
+
+/**
+ * GoalAdjustmentOut
+ */
+export type GoalAdjustmentOut = {
+    /**
+     * Amount
+     */
+    amount: string;
+    /**
+     * Month
+     */
+    month: string;
+};
+
+/**
  * GoalDetailOut
  */
 export type GoalDetailOut = {
@@ -731,6 +755,10 @@ export type GoalFundingIn = {
  * GoalFundingOut
  */
 export type GoalFundingOut = {
+    /**
+     * Adjustments
+     */
+    adjustments: Array<GoalAdjustmentOut>;
     /**
      * Held
      */
@@ -4715,6 +4743,82 @@ export type UpdateGoalResponses = {
 };
 
 export type UpdateGoalResponse = UpdateGoalResponses[keyof UpdateGoalResponses];
+
+export type RemoveAdjustmentData = {
+    body?: never;
+    path: {
+        /**
+         * Goal Id
+         */
+        goal_id: string;
+        /**
+         * Line Id
+         */
+        line_id: string;
+        /**
+         * Month
+         */
+        month: string;
+    };
+    query?: never;
+    url: '/api/goals/{goal_id}/envelopes/{line_id}/{month}';
+};
+
+export type RemoveAdjustmentErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type RemoveAdjustmentError = RemoveAdjustmentErrors[keyof RemoveAdjustmentErrors];
+
+export type RemoveAdjustmentResponses = {
+    /**
+     * Successful Response
+     */
+    204: void;
+};
+
+export type RemoveAdjustmentResponse = RemoveAdjustmentResponses[keyof RemoveAdjustmentResponses];
+
+export type AdjustEnvelopeData = {
+    body: GoalAdjustmentIn;
+    path: {
+        /**
+         * Goal Id
+         */
+        goal_id: string;
+        /**
+         * Line Id
+         */
+        line_id: string;
+        /**
+         * Month
+         */
+        month: string;
+    };
+    query?: never;
+    url: '/api/goals/{goal_id}/envelopes/{line_id}/{month}';
+};
+
+export type AdjustEnvelopeErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type AdjustEnvelopeError = AdjustEnvelopeErrors[keyof AdjustEnvelopeErrors];
+
+export type AdjustEnvelopeResponses = {
+    /**
+     * Successful Response
+     */
+    200: GoalDetailOut;
+};
+
+export type AdjustEnvelopeResponse = AdjustEnvelopeResponses[keyof AdjustEnvelopeResponses];
 
 export type HealthData = {
     body?: never;

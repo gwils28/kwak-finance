@@ -8,7 +8,7 @@ more to enter. Shares are rounded down to the cent, so goals never hold more tha
 import enum
 import math
 from collections.abc import Iterable, Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from decimal import ROUND_DOWN, Decimal
 from uuid import UUID
 
@@ -215,6 +215,8 @@ class FundedGoal:
     precaution: bool = False
     closed_from: Month | None = None
     """From this month, its envelopes are freed."""
+    adjustments: Mapping[tuple[UUID, Month], Decimal] = field(default_factory=dict)
+    """(line, month) -> what its envelope on the line holds from that month, set by hand."""
 
 
 @dataclass(frozen=True)
@@ -247,7 +249,8 @@ def envelopes(
 
     `months` run without a gap from the earliest start. Each month: a line's rise is shared out
     by the goals it funded the month before, never beyond their targets; goals starting take
-    their opening amounts from what is free; closed goals free theirs; then a line worth less
+    their opening amounts from what is free; envelopes adjusted by hand take the amount set, as
+    far as the line and the target allow; closed goals free theirs; then a line worth less
     than its envelopes cuts them from the farthest deadline to the nearest, the precaution last.
     """
     if any(g.start < months[0] for g in goals):
@@ -286,6 +289,15 @@ def envelopes(
                     room = max(ZERO, worth[e.line] - on_line(e.line))
                     take = min(e.opening, room, max(ZERO, g.target - total(g)))
                     held[(g.id, e.line)] = take
+        for g in active:
+            for e in g.envelopes:
+                wanted = g.adjustments.get((e.line, month))
+                if wanted is None:
+                    continue
+                mine = held.get((g.id, e.line), ZERO)
+                room = max(ZERO, worth[e.line] - on_line(e.line) + mine)
+                elsewhere = total(g) - mine
+                held[(g.id, e.line)] = min(wanted, room, max(ZERO, g.target - elsewhere))
         for key in [k for k in held if k[0] not in {g.id for g in active}]:
             del held[key]
         for line in lines:

@@ -13,7 +13,7 @@ from kwak_core.recurring import Frequency
 from pydantic import AfterValidator, BaseModel, Field, StringConstraints
 
 from kwak_api.auth.routes import CurrentSession, Db, Now
-from kwak_api.models import ClosedAs, Goal, GoalFunding
+from kwak_api.models import ClosedAs, Goal, GoalAdjustment, GoalFunding
 from kwak_api.services import audit
 from kwak_api.services import goals as service
 
@@ -64,6 +64,12 @@ class GoalFundingIn(BaseModel):
     """Taken from the line's free part in the goal's start month (at most what is free)."""
 
 
+class GoalAdjustmentOut(BaseModel):
+    month: str
+    """YYYY-MM: the envelope holds `amount` from this month."""
+    amount: Decimal
+
+
 class GoalFundingOut(BaseModel):
     line_id: UUID
     line_name: str
@@ -71,6 +77,11 @@ class GoalFundingOut(BaseModel):
     opening: Decimal
     held: Decimal
     """What the goal holds on the line in the last month it is tracked."""
+    adjustments: list[GoalAdjustmentOut]
+
+
+class GoalAdjustmentIn(BaseModel):
+    amount: Opening
 
 
 class GoalLineOut(BaseModel):
@@ -180,6 +191,11 @@ def _out(goal: Goal, t: core.Tracking, o: service.Overview, effort: Decimal | No
                 share=f.share,
                 opening=quantize(f.opening),
                 held=quantize(held[f.line_id]),
+                adjustments=[
+                    GoalAdjustmentOut(month=str(Month.of(a.month)), amount=quantize(a.amount))
+                    for a in goal.adjustments
+                    if a.line_id == f.line_id
+                ],
             )
             for f in goal.fundings
         ],
@@ -373,6 +389,8 @@ def _fundings(
     if len(set(ids)) != len(ids):
         raise _unprocessable("a line funds a goal once")
     lines = service.lines_by_id(db, user_session.user, ids)
+    # A line kept keeps its row: a new one would clash with it before the old one is deleted.
+    kept = {f.line_id: f for f in goal.fundings}
     out = []
     for f in given:
         line = lines.get(f.line_id)
@@ -382,7 +400,9 @@ def _fundings(
             service.check_funding(goal, line)
         except core.GoalError as exc:
             raise _unprocessable(str(exc)) from None
-        out.append(GoalFunding(line_id=line.id, line=line, share=f.share, opening=f.opening))
+        funding = kept.get(line.id) or GoalFunding(line_id=line.id, line=line)
+        funding.share, funding.opening = f.share, f.opening
+        out.append(funding)
     return out
 
 
@@ -505,6 +525,60 @@ def update_goal(
                 "this goal is reached: raise its target or make it permanent to reopen it"
             )
     return _detail(db, user_session, now, goal)
+
+
+def _adjustment(
+    db: Db, user_session: CurrentSession, now: Now, goal_id: UUID, line_id: UUID, month: str
+) -> tuple[Goal, GoalAdjustment | None, Month]:
+    """The goal's adjustment of its envelope on the line in that month, if any."""
+    goal = _goal(db, user_session, goal_id)
+    if line_id not in {f.line_id for f in goal.fundings}:
+        raise NOT_FOUND
+    at = _month(month)
+    if not Month.of(goal.start) <= at <= Month.of(now.date()):
+        raise _unprocessable(
+            "an envelope is adjusted in a month between its goal's start and this one"
+        )
+    found = next(
+        (a for a in goal.adjustments if a.line_id == line_id and Month.of(a.month) == at), None
+    )
+    return goal, found, at
+
+
+@router.put("/{goal_id}/envelopes/{line_id}/{month}")
+def adjust_envelope(
+    goal_id: UUID,
+    line_id: UUID,
+    month: str,
+    body: GoalAdjustmentIn,
+    user_session: CurrentSession,
+    db: Db,
+    now: Now,
+) -> GoalDetailOut:
+    """Set what the goal's envelope on the line holds from that month (F-GOAL-3): for a rise the
+    app credited to it that was not for it. It never holds more than the line or the target
+    allow. Anyone who sees the goal adjusts it."""
+    goal, found, at = _adjustment(db, user_session, now, goal_id, line_id, month)
+    if found is None:
+        goal.adjustments.append(
+            GoalAdjustment(line_id=line_id, month=at.first_day(), amount=body.amount)
+        )
+    else:
+        found.amount = body.amount
+    db.flush()
+    db.refresh(goal)
+    return get_goal(goal.id, user_session, db, now)
+
+
+@router.delete("/{goal_id}/envelopes/{line_id}/{month}", status_code=status.HTTP_204_NO_CONTENT)
+def remove_adjustment(
+    goal_id: UUID, line_id: UUID, month: str, user_session: CurrentSession, db: Db, now: Now
+) -> None:
+    """The envelope goes back to what its rises and falls give."""
+    goal, found, _ = _adjustment(db, user_session, now, goal_id, line_id, month)
+    if found is None:
+        raise NOT_FOUND
+    goal.adjustments.remove(found)
 
 
 @router.delete("/{goal_id}", status_code=status.HTTP_204_NO_CONTENT)

@@ -64,6 +64,7 @@ def test_a_goal_follows_the_values_of_the_lines_that_fund_it(owner_client: TestC
             "share": 50,
             "opening": "400.00",
             "held": "600.00",
+            "adjustments": [],
         }
     ]
 
@@ -84,6 +85,19 @@ def test_a_goal_follows_the_values_of_the_lines_that_fund_it(owner_client: TestC
         ("2026-10", "600.00", "100.00"),
     ]
     assert detail["months"][0]["expected"] == "400.00"
+
+
+def test_a_goal_keeps_a_line_while_its_envelope_changes(owner_client: TestClient) -> None:
+    livret = _livret(owner_client)
+    goal = _goal(owner_client, fundings=[{"line_id": livret, "share": 100}])
+    response = owner_client.patch(
+        f"/api/goals/{goal['id']}",
+        json={"fundings": [{"line_id": livret, "share": 40, "opening": "100.00"}]},
+        headers=csrf(owner_client),
+    )
+    assert response.status_code == 200, response.text
+    [funding] = response.json()["fundings"]
+    assert (funding["share"], funding["opening"]) == (40, "100.00")
 
 
 def test_the_start_defaults_to_this_month(owner_client: TestClient) -> None:
@@ -404,3 +418,47 @@ def test_the_precaution_proposal_counts_months_of_fixed_expenses(
     ]
     response = owner_client.get("/api/goals/precaution-proposal", params={"months": 13})
     assert response.status_code == 422
+
+
+def test_an_envelope_is_adjusted_by_hand_and_the_adjustment_removed(
+    owner_client: TestClient,
+) -> None:
+    livret = _livret(owner_client)  # 800, 1000, 1200 from August
+    goal = _goal(owner_client, start="2026-08", fundings=[{"line_id": livret, "share": 100}])
+    assert goal["value"] == "400.00"  # both rises
+    url = f"/api/goals/{goal['id']}/envelopes/{livret}/2026-09"
+    response = owner_client.put(url, json={"amount": "50.00"}, headers=csrf(owner_client))
+    assert response.status_code == 200, response.text
+    adjusted = response.json()
+    # 50 from September, then October's rise of 200
+    assert adjusted["goal"]["value"] == "250.00"
+    [funding] = adjusted["goal"]["fundings"]
+    assert funding["adjustments"] == [{"month": "2026-09", "amount": "50.00"}]
+    # it survives an edit of the goal's fundings
+    owner_client.patch(
+        f"/api/goals/{goal['id']}",
+        json={"fundings": [{"line_id": livret, "share": 100}]},
+        headers=csrf(owner_client),
+    )
+    assert owner_client.get(f"/api/goals/{goal['id']}").json()["goal"]["value"] == "250.00"
+    assert owner_client.delete(url, headers=csrf(owner_client)).status_code == 204
+    assert owner_client.get(f"/api/goals/{goal['id']}").json()["goal"]["value"] == "400.00"
+
+
+@pytest.mark.parametrize(
+    ("path", "status"),
+    [
+        ("{line}/2026-07", 422),  # before the goal's start
+        ("{line}/2026-11", 422),  # a month to come
+        ("{other}/2026-09", 404),  # a line that does not fund it
+    ],
+)
+def test_an_adjustment_stays_within_the_goals_months_and_lines(
+    owner_client: TestClient, path: str, status: int
+) -> None:
+    livret = _livret(owner_client)
+    other = _line(owner_client, "Savings accounts", "LDDS")
+    goal = _goal(owner_client, start="2026-08", fundings=[{"line_id": livret, "share": 100}])
+    url = f"/api/goals/{goal['id']}/envelopes/" + path.format(line=livret, other=other)
+    response = owner_client.put(url, json={"amount": "50.00"}, headers=csrf(owner_client))
+    assert response.status_code == status

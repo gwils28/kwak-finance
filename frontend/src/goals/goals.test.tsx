@@ -30,7 +30,16 @@ const goal = (fields: Partial<GoalOut>): GoalOut => ({
   visibility: "shared",
   closed_from: null,
   closed_as: null,
-  fundings: [{ line_id: "l-ldds", line_name: "LDDS", share: 75, opening: "0.00", held: "3100.00" }],
+  fundings: [
+    {
+      line_id: "l-ldds",
+      line_name: "LDDS",
+      share: 75,
+      opening: "0.00",
+      held: "3100.00",
+      adjustments: [],
+    },
+  ],
   value: "3100.00",
   progress: "0.5167",
   remaining: "2900.00",
@@ -65,6 +74,7 @@ const precaution = goal({
       share: 100,
       opening: "9800.00",
       held: "12400.00",
+      adjustments: [],
     },
   ],
   value: "12400.00",
@@ -98,6 +108,16 @@ const summer = goal({
   extra: "80.00",
   status: "behind",
   effort: "115.00",
+  fundings: [
+    {
+      line_id: "l-ldds",
+      line_name: "LDDS",
+      share: 25,
+      opening: "300.00",
+      held: "900.00",
+      adjustments: [{ month: "2026-09", amount: "800.00" }],
+    },
+  ],
 });
 
 const goals: GoalsOut = {
@@ -154,6 +174,9 @@ function api(me: object = owner) {
         },
       ]),
     "DELETE /api/goals/g-summer": () => new Response(null, { status: 204 }),
+    "PUT /api/goals/g-summer/envelopes/l-ldds/2026-10": () => Response.json(detail),
+    "DELETE /api/goals/g-summer/envelopes/l-ldds/2026-09": () =>
+      new Response(null, { status: 204 }),
     "PATCH /api/goals/g-japan": () => Response.json(goal({})),
     "POST /api/goals": () => Response.json(goal({ id: "g-new" }), { status: 201 }),
     "GET /api/goals/precaution-proposal": (_, url) =>
@@ -403,4 +426,34 @@ test("a line shared out beyond 100% says, in French too, how much is left", () =
     "LDDS financerait des objectifs ouverts au-delà de 100 % : il ne reste que 25 % de ses hausses à répartir",
   );
   setCurrentLanguage("en");
+});
+
+test("an envelope is adjusted by hand on the goal's page, and its adjustment removed", async () => {
+  const calls = api();
+  render(<TestApp path="/goals/g-summer" />);
+  const envelopes = await screen.findByRole("table", { name: "Envelopes" });
+  const row = within(envelopes).getByRole("row", { name: /LDDS/ });
+  expect(plain(row.textContent)).toContain("€300");
+  expect(plain(row.textContent)).toContain("25 %");
+  expect(plain(row.textContent)).toContain("Set to €800 from Sept 2026");
+
+  const user = userEvent.setup();
+  await user.click(within(row).getByRole("button", { name: "Remove the adjustment of Sept 2026" }));
+  await vi.waitFor(() =>
+    expect(calls.map((c) => c.route)).toContain(
+      "DELETE /api/goals/g-summer/envelopes/l-ldds/2026-09",
+    ),
+  );
+
+  await user.click(screen.getByRole("button", { name: "Adjust the envelope on LDDS" }));
+  const form = screen.getByRole("form", { name: "Adjust the envelope on LDDS" });
+  expect(within(form).getByLabelText("Amount it holds")).toHaveValue("900");
+  await user.clear(within(form).getByLabelText("Amount it holds"));
+  await user.type(within(form).getByLabelText("Amount it holds"), "500");
+  await user.click(within(form).getByRole("button", { name: "Save" }));
+  await vi.waitFor(() =>
+    expect(
+      calls.find((c) => c.route === "PUT /api/goals/g-summer/envelopes/l-ldds/2026-10")?.body,
+    ).toEqual({ amount: "500.00" }),
+  );
 });
