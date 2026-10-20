@@ -76,7 +76,7 @@ The rule is **CLI before connectors**:
 - `gh` for issues and PRs (Claude may draft a PR body; the maintainer merges).
 - `psql` against a **read-only** DB role for inspection. No write-capable DB MCP.
 - **Claude in Chrome** for UI verification (DOM, screenshots, console).
-- An MCP server is added only for structured access that a CLI cannot provide (for example MLflow in phase 4, if adopted).
+- An MCP server is added only for structured access that a CLI cannot provide (for example MLflow in phase 5, if adopted).
 
 ## 7. Session habits
 

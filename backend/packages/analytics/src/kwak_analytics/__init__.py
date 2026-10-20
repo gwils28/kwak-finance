@@ -1,1 +1,1 @@
-"""Kwak Finance analytics: DuckDB queries, forecasting, simulation (phase 4)."""
+"""Kwak Finance analytics: DuckDB queries, forecasting, simulation (phase 5)."""
