@@ -31,6 +31,8 @@ def test_the_owner_sets_and_clears_the_analysis_start(owner_client: TestClient) 
         "warn_at": "0.80",
         "analysis_start": "2026-04",
         "wealth_start": None,
+        "precaution_share": "0.70",
+        "goal_capacity": None,
     }
     # Changing the threshold alone keeps the start.
     owner_client.patch(

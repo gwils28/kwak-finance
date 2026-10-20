@@ -5,6 +5,7 @@ from kwak_api.models.audit import AuditEvent
 from kwak_api.models.auth_failure import AuthFailure
 from kwak_api.models.budget import BudgetPlan, BudgetPlanTarget
 from kwak_api.models.category import Category
+from kwak_api.models.goal import ClosedAs, Goal, GoalFunding
 from kwak_api.models.household import Household, Role, User
 from kwak_api.models.invite import Invite
 from kwak_api.models.recovery_code import RecoveryCode
@@ -22,7 +23,10 @@ __all__ = [
     "BudgetPlanTarget",
     "CategorizationRule",
     "Category",
+    "ClosedAs",
     "DismissedSuggestion",
+    "Goal",
+    "GoalFunding",
     "Household",
     "ImportBatch",
     "Institution",

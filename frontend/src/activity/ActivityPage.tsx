@@ -24,7 +24,8 @@ function formatted(
     const text = String(value);
     if (key === "amount" || key === "min" || key === "max") out[key] = formatEur(text);
     else if (key === "date") out[key] = formatDate(text);
-    else if (key === "warn_at") out[key] = formatPercent(text);
+    else if (key === "warn_at" || key === "precaution_share") out[key] = formatPercent(text);
+    else if (key === "goal_capacity") out[key] = text && formatEur(text);
     else if (key === "period") out[key] = period(text);
     else if (key === "analysis_start" || key === "wealth_start")
       out[key] = text && monthLabel(text);

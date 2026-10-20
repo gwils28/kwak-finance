@@ -40,6 +40,9 @@ const entries = [
     { email: "a@example.com" },
     { user_id: null, user_name: null },
   ),
+  entry("goal_deleted", "deletion", { name: "Voyage", tier: "medium" }, { id: "e-goal" }),
+  entry("settings_changed", "household", { precaution_share: "0.70" }, { id: "e-share" }),
+  entry("settings_changed", "household", { goal_capacity: "1350.00" }, { id: "e-cap" }),
 ];
 const members = [
   { id: owner.id, display_name: "Wilson", email: owner.email, role: "owner" },
@@ -81,6 +84,9 @@ test("the account menu leads to the activity log, each entry in words", async ()
   expect(rows[7]).toContain("Set the analyses to start in Oct 2026");
   expect(rows[8]).toContain("Set the analyses to count every month");
   expect(rows[9]).toContain("A former memberRevoked the invitation of a@example.com");
+  expect(rows[10]).toContain("Deleted the goal Voyage");
+  expect(rows[11]).toContain("Set the precaution share of the goals' effort to 70%");
+  expect(rows[12]).toContain("Set the goals' monthly capacity to €1,350.00");
 });
 
 test("the owner filters by kind and by member", async () => {

@@ -137,7 +137,7 @@ export type ApplyRules = {
 /**
  * AuditAction
  */
-export type AuditAction = 'signed_in' | 'sign_in_failed' | 'signed_out' | 'recovery_codes_renewed' | 'invite_created' | 'invite_revoked' | 'member_joined' | 'settings_changed' | 'imported' | 'import_rolled_back' | 'transaction_deleted' | 'category_deleted' | 'plan_deleted' | 'recurring_deleted' | 'wealth_line_deleted' | 'wealth_category_deleted' | 'rule_created' | 'rule_updated' | 'rule_deleted' | 'rules_applied' | 'categories_restored';
+export type AuditAction = 'signed_in' | 'sign_in_failed' | 'signed_out' | 'recovery_codes_renewed' | 'invite_created' | 'invite_revoked' | 'member_joined' | 'settings_changed' | 'imported' | 'import_rolled_back' | 'transaction_deleted' | 'category_deleted' | 'plan_deleted' | 'recurring_deleted' | 'wealth_line_deleted' | 'wealth_category_deleted' | 'goal_deleted' | 'rule_created' | 'rule_updated' | 'rule_deleted' | 'rules_applied' | 'categories_restored';
 
 /**
  * AuditEntryOut
@@ -453,6 +453,11 @@ export type CloseIn = {
 };
 
 /**
+ * ClosedAs
+ */
+export type ClosedAs = 'reached' | 'abandoned';
+
+/**
  * ComparisonOut
  */
 export type ComparisonOut = {
@@ -673,6 +678,328 @@ export type FlowsOut = {
  * Frequency
  */
 export type Frequency = 'weekly' | 'monthly' | 'quarterly' | 'yearly';
+
+/**
+ * GoalDetailOut
+ */
+export type GoalDetailOut = {
+    goal: GoalOut;
+    /**
+     * Months
+     */
+    months: Array<GoalMonthOut>;
+};
+
+/**
+ * GoalFixedItemOut
+ */
+export type GoalFixedItemOut = {
+    /**
+     * Amount
+     */
+    amount: string;
+    frequency: Frequency;
+    /**
+     * Label
+     */
+    label: string;
+    /**
+     * Monthly
+     */
+    monthly: string;
+};
+
+/**
+ * GoalFundingIn
+ */
+export type GoalFundingIn = {
+    /**
+     * Line Id
+     */
+    line_id: string;
+    /**
+     * Share
+     */
+    share: number;
+};
+
+/**
+ * GoalFundingOut
+ */
+export type GoalFundingOut = {
+    /**
+     * Line Id
+     */
+    line_id: string;
+    /**
+     * Line Name
+     */
+    line_name: string;
+    /**
+     * Share
+     */
+    share: number;
+};
+
+/**
+ * GoalIn
+ */
+export type GoalIn = {
+    /**
+     * Deadline
+     */
+    deadline?: string | null;
+    /**
+     * Fundings
+     */
+    fundings?: Array<GoalFundingIn>;
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Start
+     */
+    start?: string | null;
+    /**
+     * Target
+     */
+    target: number | string;
+    tier: Tier;
+    visibility?: Visibility;
+};
+
+/**
+ * GoalMonthOut
+ */
+export type GoalMonthOut = {
+    /**
+     * Expected
+     */
+    expected: string | null;
+    /**
+     * Gained
+     */
+    gained: string | null;
+    /**
+     * Gap
+     */
+    gap: string | null;
+    /**
+     * Month
+     */
+    month: string;
+    /**
+     * Value
+     */
+    value: string;
+};
+
+/**
+ * GoalOut
+ */
+export type GoalOut = {
+    /**
+     * Actual
+     */
+    actual: string | null;
+    closed_as: ClosedAs | null;
+    /**
+     * Closed From
+     */
+    closed_from: string | null;
+    /**
+     * Deadline
+     */
+    deadline: string | null;
+    /**
+     * Effort
+     */
+    effort: string | null;
+    /**
+     * Estimated
+     */
+    estimated: string | null;
+    /**
+     * Extra
+     */
+    extra: string | null;
+    /**
+     * Fundings
+     */
+    fundings: Array<GoalFundingOut>;
+    /**
+     * Horizon Flagged
+     */
+    horizon_flagged: boolean;
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Months Early
+     */
+    months_early: number | null;
+    /**
+     * Months Left
+     */
+    months_left: number | null;
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Never
+     */
+    never: boolean;
+    /**
+     * Owner Id
+     */
+    owner_id: string;
+    /**
+     * Owner Name
+     */
+    owner_name: string;
+    /**
+     * Progress
+     */
+    progress: string;
+    /**
+     * Remaining
+     */
+    remaining: string;
+    /**
+     * Required
+     */
+    required: string | null;
+    /**
+     * Start
+     */
+    start: string;
+    status: GoalStatus;
+    /**
+     * Target
+     */
+    target: string;
+    tier: Tier;
+    /**
+     * Value
+     */
+    value: string;
+    visibility: Visibility;
+};
+
+/**
+ * GoalPatch
+ *
+ * Only the fields present change.
+ */
+export type GoalPatch = {
+    closed_as?: ClosedAs | null;
+    /**
+     * Closed From
+     */
+    closed_from?: string | null;
+    /**
+     * Deadline
+     */
+    deadline?: string | null;
+    /**
+     * Fundings
+     */
+    fundings?: Array<GoalFundingIn> | null;
+    /**
+     * Name
+     */
+    name?: string | null;
+    /**
+     * Start
+     */
+    start?: string | null;
+    /**
+     * Target
+     */
+    target?: number | string | null;
+    tier?: Tier | null;
+    visibility?: Visibility | null;
+};
+
+/**
+ * GoalPlanOut
+ */
+export type GoalPlanOut = {
+    /**
+     * Capacity
+     */
+    capacity: string;
+    /**
+     * Capacity Set
+     */
+    capacity_set: boolean;
+    /**
+     * Months To Fill
+     */
+    months_to_fill: number | null;
+    /**
+     * Precaution Share
+     */
+    precaution_share: string;
+    /**
+     * Shortfall
+     */
+    shortfall: string;
+    /**
+     * Unallocated
+     */
+    unallocated: string;
+};
+
+/**
+ * GoalStatus
+ */
+export type GoalStatus = 'reached' | 'ahead' | 'on' | 'behind' | 'fill_first';
+
+/**
+ * GoalTierOut
+ */
+export type GoalTierOut = {
+    /**
+     * Progress
+     */
+    progress: string | null;
+    /**
+     * Target
+     */
+    target: string;
+    tier: Tier;
+    /**
+     * Value
+     */
+    value: string;
+};
+
+/**
+ * GoalsOut
+ */
+export type GoalsOut = {
+    /**
+     * Closed
+     */
+    closed: Array<GoalOut>;
+    /**
+     * Goals
+     */
+    goals: Array<GoalOut>;
+    /**
+     * Month
+     */
+    month: string;
+    plan: GoalPlanOut;
+    /**
+     * Pyramid
+     */
+    pyramid: Array<GoalTierOut>;
+};
 
 /**
  * HTTPValidationError
@@ -1252,6 +1579,28 @@ export type PlanTargetOut = {
      */
     category_id: string;
     paid_from: PaidFrom | null;
+};
+
+/**
+ * PrecautionProposalOut
+ */
+export type PrecautionProposalOut = {
+    /**
+     * Amount
+     */
+    amount: string;
+    /**
+     * Items
+     */
+    items: Array<GoalFixedItemOut>;
+    /**
+     * Monthly Fixed
+     */
+    monthly_fixed: string;
+    /**
+     * Months
+     */
+    months: number;
 };
 
 /**
@@ -2098,6 +2447,14 @@ export type SettingsOut = {
      */
     analysis_start: string | null;
     /**
+     * Goal Capacity
+     */
+    goal_capacity: string | null;
+    /**
+     * Precaution Share
+     */
+    precaution_share: string;
+    /**
      * Warn At
      */
     warn_at: string;
@@ -2115,6 +2472,14 @@ export type SettingsPatch = {
      * Analysis Start
      */
     analysis_start?: string | null;
+    /**
+     * Goal Capacity
+     */
+    goal_capacity?: number | string | null;
+    /**
+     * Precaution Share
+     */
+    precaution_share?: number | string | null;
     /**
      * Warn At
      */
@@ -2206,6 +2571,11 @@ export type SuggestionOut = {
      */
     start_on: string;
 };
+
+/**
+ * Tier
+ */
+export type Tier = 'precaution' | 'medium' | 'long';
 
 /**
  * ToCategorise
@@ -4079,6 +4449,181 @@ export type DashboardResponses = {
 };
 
 export type DashboardResponse = DashboardResponses[keyof DashboardResponses];
+
+export type ListGoalsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        scope?: Scope;
+    };
+    url: '/api/goals';
+};
+
+export type ListGoalsErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ListGoalsError = ListGoalsErrors[keyof ListGoalsErrors];
+
+export type ListGoalsResponses = {
+    /**
+     * Successful Response
+     */
+    200: GoalsOut;
+};
+
+export type ListGoalsResponse = ListGoalsResponses[keyof ListGoalsResponses];
+
+export type CreateGoalData = {
+    body: GoalIn;
+    path?: never;
+    query?: never;
+    url: '/api/goals';
+};
+
+export type CreateGoalErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type CreateGoalError = CreateGoalErrors[keyof CreateGoalErrors];
+
+export type CreateGoalResponses = {
+    /**
+     * Successful Response
+     */
+    201: GoalOut;
+};
+
+export type CreateGoalResponse = CreateGoalResponses[keyof CreateGoalResponses];
+
+export type PrecautionProposalData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Months
+         *
+         * 1 to 12
+         */
+        months?: number;
+        scope?: Scope;
+    };
+    url: '/api/goals/precaution-proposal';
+};
+
+export type PrecautionProposalErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type PrecautionProposalError = PrecautionProposalErrors[keyof PrecautionProposalErrors];
+
+export type PrecautionProposalResponses = {
+    /**
+     * Successful Response
+     */
+    200: PrecautionProposalOut;
+};
+
+export type PrecautionProposalResponse = PrecautionProposalResponses[keyof PrecautionProposalResponses];
+
+export type DeleteGoalData = {
+    body?: never;
+    path: {
+        /**
+         * Goal Id
+         */
+        goal_id: string;
+    };
+    query?: never;
+    url: '/api/goals/{goal_id}';
+};
+
+export type DeleteGoalErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type DeleteGoalError = DeleteGoalErrors[keyof DeleteGoalErrors];
+
+export type DeleteGoalResponses = {
+    /**
+     * Successful Response
+     */
+    204: void;
+};
+
+export type DeleteGoalResponse = DeleteGoalResponses[keyof DeleteGoalResponses];
+
+export type GetGoalData = {
+    body?: never;
+    path: {
+        /**
+         * Goal Id
+         */
+        goal_id: string;
+    };
+    query?: never;
+    url: '/api/goals/{goal_id}';
+};
+
+export type GetGoalErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type GetGoalError = GetGoalErrors[keyof GetGoalErrors];
+
+export type GetGoalResponses = {
+    /**
+     * Successful Response
+     */
+    200: GoalDetailOut;
+};
+
+export type GetGoalResponse = GetGoalResponses[keyof GetGoalResponses];
+
+export type UpdateGoalData = {
+    body: GoalPatch;
+    path: {
+        /**
+         * Goal Id
+         */
+        goal_id: string;
+    };
+    query?: never;
+    url: '/api/goals/{goal_id}';
+};
+
+export type UpdateGoalErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type UpdateGoalError = UpdateGoalErrors[keyof UpdateGoalErrors];
+
+export type UpdateGoalResponses = {
+    /**
+     * Successful Response
+     */
+    200: GoalOut;
+};
+
+export type UpdateGoalResponse = UpdateGoalResponses[keyof UpdateGoalResponses];
 
 export type HealthData = {
     body?: never;
