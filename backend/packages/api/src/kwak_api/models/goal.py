@@ -75,6 +75,9 @@ class Goal(UUIDPrimaryKey, Timestamps, Base):
     fundings: Mapped[list["GoalFunding"]] = relationship(
         back_populates="goal", cascade="all, delete-orphan", order_by="GoalFunding.id"
     )
+    adjustments: Mapped[list["GoalAdjustment"]] = relationship(
+        cascade="all, delete-orphan", order_by="GoalAdjustment.month"
+    )
 
 
 class GoalFunding(UUIDPrimaryKey, Base):
@@ -98,3 +101,22 @@ class GoalFunding(UUIDPrimaryKey, Base):
 
     goal: Mapped[Goal] = relationship(back_populates="fundings")
     line: Mapped[WealthLine] = relationship()
+
+
+class GoalAdjustment(UUIDPrimaryKey, Base):
+    """What a goal's envelope on a line holds from a month, set by hand (F-GOAL-3). Kept by goal
+    and line, so it outlives a change of the goal's fundings."""
+
+    __tablename__ = "goal_adjustment"
+    __table_args__ = (
+        UniqueConstraint("goal_id", "line_id", "month"),
+        CheckConstraint("amount >= 0", name="amount_positive"),
+        CheckConstraint("extract(day from month) = 1", name="month_first_day"),
+    )
+
+    goal_id: Mapped[UUID] = mapped_column(ForeignKey("goal.id", ondelete="CASCADE"))
+    line_id: Mapped[UUID] = mapped_column(
+        ForeignKey("wealth_line.id", ondelete="CASCADE"), index=True
+    )
+    month: Mapped[date] = mapped_column(Date)
+    amount: Mapped[Decimal] = mapped_column(Numeric(14, 2))

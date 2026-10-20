@@ -15,6 +15,7 @@ import { Button, ErrorAlert } from "../components/ui";
 import { useI18n } from "../i18n";
 import { formatEurSigned, formatEurWhole, formatPercent } from "../lib/money";
 import { monthLabel, shiftMonth, thisMonth } from "../lib/months";
+import { Envelopes } from "./Envelopes";
 import { estimateText, paceSentence } from "./GoalCard";
 import { GoalForm } from "./GoalForm";
 import { GOALS_KEY, StatusChip } from "./shared";
@@ -56,6 +57,7 @@ export function GoalPage({ goalId }: { goalId: string }) {
             </h2>
             <Trajectory detail={detail} />
           </section>
+          <Envelopes goal={detail.goal} />
           <Months detail={detail} />
         </>
       )}

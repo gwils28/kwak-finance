@@ -164,6 +164,7 @@ def _funded(goal: Goal) -> core.FundedGoal:
         Month.of(goal.deadline) if goal.deadline else None,
         goal.precaution,
         Month.of(goal.closed_from) if goal.closed_from else None,
+        {(a.line_id, Month.of(a.month)): a.amount for a in goal.adjustments},
     )
 
 
@@ -177,7 +178,10 @@ def envelopes(db: Session, household_id: UUID, this_month: Month) -> core.Envelo
         db.scalars(
             select(Goal)
             .where(Goal.household_id == household_id)
-            .options(selectinload(Goal.fundings).joinedload(GoalFunding.line))
+            .options(
+                selectinload(Goal.fundings).joinedload(GoalFunding.line),
+                selectinload(Goal.adjustments),
+            )
         )
     )
     line_rows = {f.line_id: f.line for g in goals for f in g.fundings}

@@ -1,6 +1,6 @@
 from decimal import Decimal
 from typing import Any
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 import pytest
 from hypothesis import given
@@ -187,8 +187,11 @@ def _funded(
     deadline: Month | None = MAY,
     precaution: bool = False,
     closed_from: Month | None = None,
+    adjustments: dict[tuple[UUID, Month], Decimal] | None = None,
 ) -> FundedGoal:
-    return FundedGoal(uuid4(), D(target), start, envelopes, deadline, precaution, closed_from)
+    return FundedGoal(
+        uuid4(), D(target), start, envelopes, deadline, precaution, closed_from, adjustments or {}
+    )
 
 
 def _series(*amounts: int, start: Month = JUL) -> dict[Month, Decimal]:
@@ -239,6 +242,24 @@ def test_a_line_worth_less_than_its_goals_cuts_the_farthest_deadline_first() -> 
     assert held.value(house.id) == [D("300"), D("0"), D("0")]
     assert held.value(trip.id) == [D("300"), D("100"), D("0")]
     assert held.value(fund.id) == [D("400"), D("400"), D("100")]
+
+
+def test_an_adjusted_envelope_holds_the_amount_set_then_goes_on() -> None:
+    # 2000 parked on the LDDS in August, not for the trip: brought back to 200
+    aug = Month(2026, 8)
+    trip = _funded("2500", Envelope(LDDS, 100), adjustments={(LDDS, aug): D("200")})
+    held = envelopes({LDDS: Line(_series(8500, 10500, 10750))}, [trip], _months(JUL, 3))
+    assert held.value(trip.id) == [D("0"), D("200"), D("450")]
+    assert held.free(LDDS) == [D("8500"), D("10300"), D("10300")]
+
+
+def test_an_adjustment_never_takes_more_than_the_line_allows_or_the_target() -> None:
+    fund = _funded("9000", Envelope(LDDS, 50, D("800")), deadline=None, precaution=True)
+    trip = _funded("600", Envelope(LDDS, 50), adjustments={(LDDS, Month(2026, 8)): D("5000")})
+    held = envelopes({LDDS: Line(_series(1000, 1000))}, [fund, trip], _months(JUL, 2))
+    # the target caps it, then what the line holds beyond the other envelope
+    assert held.value(trip.id) == [D("0"), D("200")]
+    assert held.value(fund.id) == [D("800"), D("800")]
 
 
 def test_a_closed_goal_or_line_frees_its_envelopes() -> None:
@@ -408,6 +429,7 @@ MONTHS = _months(Month(2026, 1), 6)
             st.lists(st.tuples(st.integers(0, 2), st.integers(1, 100), amounts), max_size=3),
             st.booleans(),
             st.sampled_from([None, Month(2027, 1), Month(2032, 1)]),
+            st.lists(amounts, max_size=3),
         ),
         max_size=4,
     ),
@@ -419,7 +441,7 @@ def test_goals_never_hold_more_than_their_lines_and_a_covered_fall_changes_none(
     lines = {i: Line(v) for i, v in zip(line_ids, series, strict=True)}
     left = dict.fromkeys(line_ids, 100)
     goals = []
-    for start, target, wanted, precaution, deadline in drawn:
+    for start, target, wanted, precaution, deadline, wanted_adjust in drawn:
         envs, used = [], set()
         for index, share, opening in wanted:
             line = line_ids[index % len(line_ids)]
@@ -428,8 +450,19 @@ def test_goals_never_hold_more_than_their_lines_and_a_covered_fall_changes_none(
                 used.add(line)
                 left[line] -= take
                 envs.append(Envelope(line, take, opening))
+        adjust = {
+            (e.line, month): amount
+            for e, month, amount in zip(envs, MONTHS[::2], wanted_adjust, strict=False)
+        }
         goals.append(
-            _funded(str(target + 1), *envs, start=start, deadline=deadline, precaution=precaution)
+            _funded(
+                str(target + 1),
+                *envs,
+                start=start,
+                deadline=deadline,
+                precaution=precaution,
+                adjustments=adjust,
+            )
         )
     held = envelopes(lines, goals, MONTHS)
     for k, month in enumerate(MONTHS):
@@ -442,8 +475,12 @@ def test_goals_never_hold_more_than_their_lines_and_a_covered_fall_changes_none(
             assert held.free(line)[k] == worth - sum(amounts_on_line)
             if k and worth < line_worth(lines[line], MONTHS[k - 1]):
                 before = [held.held(g.id, line)[k - 1] for g in goals if g.start < month]
+                # a goal adjusted that month holds what was set; the others stay as they were
+                kept = [g for g in goals if g.start < month and (line, month) not in g.adjustments]
                 if worth >= sum(before):
-                    assert before == [held.held(g.id, line)[k] for g in goals if g.start < month]
+                    assert [held.held(g.id, line)[k - 1] for g in kept] == [
+                        held.held(g.id, line)[k] for g in kept
+                    ]
         for g in goals:
             assert held.value(g.id)[k] <= g.target
 
