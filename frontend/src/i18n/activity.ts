@@ -61,15 +61,21 @@ export const activityEn = {
     invite_revoked: (d) => `Revoked the invitation of ${d.email}`,
     member_joined: (d) => `Joined the household (${d.email})`,
     settings_changed: (d) =>
-      d.wealth_start !== undefined
-        ? d.wealth_start
-          ? `Set the wealth to start in ${d.wealth_start}`
-          : "Set the wealth to follow the analyses start"
-        : d.analysis_start === undefined
-          ? `Set the budget warning threshold to ${d.warn_at}`
-          : d.analysis_start
-            ? `Set the analyses to start in ${d.analysis_start}`
-            : "Set the analyses to count every month",
+      d.precaution_share !== undefined
+        ? `Set the precaution share of the goals' effort to ${d.precaution_share}`
+        : d.goal_capacity !== undefined
+          ? d.goal_capacity
+            ? `Set the goals' monthly capacity to ${d.goal_capacity}`
+            : "Set the goals' capacity to follow the net cash flow"
+          : d.wealth_start !== undefined
+            ? d.wealth_start
+              ? `Set the wealth to start in ${d.wealth_start}`
+              : "Set the wealth to follow the analyses start"
+            : d.analysis_start === undefined
+              ? `Set the budget warning threshold to ${d.warn_at}`
+              : d.analysis_start
+                ? `Set the analyses to start in ${d.analysis_start}`
+                : "Set the analyses to count every month",
     imported: (d) => `Imported ${d.file} into ${d.account}: ${d.added} transactions added`,
     import_rolled_back: (d) => `Rolled back the import of ${d.file} on ${d.account}`,
     transaction_deleted: (d) => `Deleted “${d.label}” (${d.amount}, ${d.date}) on ${d.account}`,
@@ -77,6 +83,7 @@ export const activityEn = {
     plan_deleted: (d) => `Deleted the budget plan ${d.period}`,
     wealth_line_deleted: (d) => `Deleted the wealth line ${d.name} (${d.category})`,
     wealth_category_deleted: (d) => `Deleted the wealth category ${d.name}`,
+    goal_deleted: (d) => `Deleted the goal ${d.name}`,
     recurring_deleted: (d) =>
       `Deleted the recurring item ${d.label ? `“${d.label}” ` : ""}(${d.amount}) on ${d.account}`,
     rule_created: (d) => `Created a rule: ${ruleEn(d)} → ${d.category}`,
@@ -128,15 +135,21 @@ export const activityFr: typeof activityEn = {
     invite_revoked: (d) => `Invitation de ${d.email} annulée`,
     member_joined: (d) => `A rejoint le foyer (${d.email})`,
     settings_changed: (d) =>
-      d.wealth_start !== undefined
-        ? d.wealth_start
-          ? `Début du patrimoine fixé à ${d.wealth_start}`
-          : "Le patrimoine suit de nouveau le début des analyses"
-        : d.analysis_start === undefined
-          ? `Seuil d'alerte du budget réglé à ${d.warn_at}`
-          : d.analysis_start
-            ? `Début des analyses fixé à ${d.analysis_start}`
-            : "Les analyses comptent de nouveau tous les mois",
+      d.precaution_share !== undefined
+        ? `Part de l'effort réservée à la précaution réglée à ${d.precaution_share}`
+        : d.goal_capacity !== undefined
+          ? d.goal_capacity
+            ? `Capacité mensuelle des objectifs fixée à ${d.goal_capacity}`
+            : "La capacité des objectifs suit de nouveau le solde net"
+          : d.wealth_start !== undefined
+            ? d.wealth_start
+              ? `Début du patrimoine fixé à ${d.wealth_start}`
+              : "Le patrimoine suit de nouveau le début des analyses"
+            : d.analysis_start === undefined
+              ? `Seuil d'alerte du budget réglé à ${d.warn_at}`
+              : d.analysis_start
+                ? `Début des analyses fixé à ${d.analysis_start}`
+                : "Les analyses comptent de nouveau tous les mois",
     imported: (d) => `Import de ${d.file} dans ${d.account} : ${d.added} opérations ajoutées`,
     import_rolled_back: (d) => `Import de ${d.file} sur ${d.account} annulé`,
     transaction_deleted: (d) =>
@@ -145,6 +158,7 @@ export const activityFr: typeof activityEn = {
     plan_deleted: (d) => `Plan de budget ${d.period} supprimé`,
     wealth_line_deleted: (d) => `Ligne de patrimoine ${d.name} (${d.category}) supprimée`,
     wealth_category_deleted: (d) => `Catégorie de patrimoine ${d.name} supprimée`,
+    goal_deleted: (d) => `Objectif ${d.name} supprimé`,
     recurring_deleted: (d) =>
       `Échéance ${d.label ? `« ${d.label} » ` : ""}(${d.amount}) supprimée sur ${d.account}`,
     rule_created: (d) => `Règle créée : ${ruleFr(d)} → ${d.category}`,

@@ -9,7 +9,9 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status
 from kwak_core.audit import AuditAction
 from kwak_core.budget import Month
+from kwak_core.goals import check_precaution_share
 from kwak_core.invites import InviteState
+from kwak_core.money import require_cents
 from kwak_core.progress import check_warn_at
 from pydantic import AfterValidator, BaseModel, Field
 from sqlalchemy import select
@@ -88,6 +90,10 @@ class SettingsOut(BaseModel):
     """YYYY-MM: the first month analyses count (F-ADM-4); null: every month."""
     wealth_start: str | None
     """YYYY-MM: the first month the wealth matrix shows (F-WLT-5); null: the analyses start."""
+    precaution_share: Decimal
+    """The share of the capacity kept for the precaution while it falls short (F-GOAL-6)."""
+    goal_capacity: Decimal | None
+    """The monthly capacity of the effort plan set by hand; null: the average net cash flow."""
 
     @classmethod
     def of(cls, household: Household) -> "SettingsOut":
@@ -98,6 +104,8 @@ class SettingsOut(BaseModel):
             warn_at=household.warn_at,
             analysis_start=text(household.analysis_start),
             wealth_start=text(household.wealth_start),
+            precaution_share=household.precaution_share,
+            goal_capacity=household.goal_capacity,
         )
 
 
@@ -113,6 +121,11 @@ def _warn_at(value: Decimal) -> Decimal:
     return value.quantize(Decimal("0.01"))
 
 
+def _precaution_share(value: Decimal) -> Decimal:
+    check_precaution_share(value)
+    return value.quantize(Decimal("0.01"))
+
+
 class SettingsPatch(BaseModel):
     warn_at: Annotated[Decimal, Field(decimal_places=2), AfterValidator(_warn_at)] | None = None
     """From 0.50 to 1, in whole percents. Leave it out to keep it."""
@@ -120,6 +133,14 @@ class SettingsPatch(BaseModel):
     """YYYY-MM; null to count every month. Leave it out to keep it."""
     wealth_start: Annotated[str, AfterValidator(_month)] | None = None
     """YYYY-MM; null to follow the analyses start. Leave it out to keep it."""
+    precaution_share: (
+        Annotated[Decimal, Field(decimal_places=2), AfterValidator(_precaution_share)] | None
+    ) = None
+    """From 0.50 to 1, in whole percents. Leave it out to keep it."""
+    goal_capacity: (
+        Annotated[Decimal, Field(ge=0, lt=Decimal("1e12")), AfterValidator(require_cents)] | None
+    ) = None
+    """Null to use the average net cash flow. Leave it out to keep it."""
 
 
 def _start(month: str | None, now: datetime, future: str) -> date | None:
@@ -167,6 +188,24 @@ def update_settings(
                 now,
                 wealth_start=body.wealth_start or "",
             )
+    if body.precaution_share is not None and body.precaution_share != household.precaution_share:
+        household.precaution_share = body.precaution_share
+        audit.record(
+            db,
+            user_session.user,
+            AuditAction.SETTINGS_CHANGED,
+            now,
+            precaution_share=body.precaution_share,
+        )
+    if "goal_capacity" in given and body.goal_capacity != household.goal_capacity:
+        household.goal_capacity = body.goal_capacity
+        audit.record(
+            db,
+            user_session.user,
+            AuditAction.SETTINGS_CHANGED,
+            now,
+            goal_capacity="" if body.goal_capacity is None else str(body.goal_capacity),
+        )
     db.flush()
     return SettingsOut.of(household)
 

@@ -8,13 +8,14 @@ from fastapi import APIRouter, HTTPException, Query, status
 from kwak_core.accounts import Scope, Visibility
 from kwak_core.audit import AuditAction
 from kwak_core.budget import Month, month_range
+from kwak_core.goals import GoalError
 from kwak_core.money import quantize, require_cents
 from kwak_core.wealth import WEALTH_COLOURS, Cell, WealthKind, WealthValueError, check_value
 from pydantic import AfterValidator, BaseModel, Field, StringConstraints
 
 from kwak_api.auth.routes import CurrentSession, Db, Now
 from kwak_api.models import WealthCategory, WealthLine
-from kwak_api.services import audit
+from kwak_api.services import audit, goals
 from kwak_api.services import wealth as service
 from kwak_api.services.households import wealth_start
 
@@ -242,6 +243,10 @@ def update_wealth_line(
     if body.visibility is not None and body.visibility != line.visibility:
         if line.owner_id != user_session.user.id:
             raise HTTPException(status.HTTP_403_FORBIDDEN, "only its owner changes who sees it")
+        try:
+            goals.check_line_visibility(db, line, body.visibility)
+        except GoalError as exc:
+            raise HTTPException(status.HTTP_409_CONFLICT, f"it funds a goal: {exc}") from None
         line.visibility = body.visibility
     if body.category_id is not None:
         line.category_id = _category_of(db, user_session, body.category_id).id

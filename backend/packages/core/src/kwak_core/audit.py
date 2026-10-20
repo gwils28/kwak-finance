@@ -40,6 +40,7 @@ class AuditAction(enum.StrEnum):
     RECURRING_DELETED = "recurring_deleted", AuditKind.DELETION
     WEALTH_LINE_DELETED = "wealth_line_deleted", AuditKind.DELETION
     WEALTH_CATEGORY_DELETED = "wealth_category_deleted", AuditKind.DELETION
+    GOAL_DELETED = "goal_deleted", AuditKind.DELETION
     RULE_CREATED = "rule_created", AuditKind.RULES
     RULE_UPDATED = "rule_updated", AuditKind.RULES
     RULE_DELETED = "rule_deleted", AuditKind.RULES

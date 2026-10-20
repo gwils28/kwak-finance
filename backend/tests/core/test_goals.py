@@ -124,6 +124,7 @@ def test_a_goal_uses_its_owners_lines_and_joint_ones_never_a_debt() -> None:
         return True
 
     assert ok(Visibility.PRIVATE, ME, Visibility.PRIVATE)
+    assert not ok(Visibility.SHARED, ME, Visibility.PRIVATE)
     assert ok(Visibility.SHARED, ME, Visibility.SHARED)
     assert ok(Visibility.PRIVATE, OTHER, Visibility.JOINT)
     assert not ok(Visibility.SHARED, OTHER, Visibility.SHARED)

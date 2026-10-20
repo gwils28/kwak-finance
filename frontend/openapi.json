@@ -279,6 +279,7 @@
           "recurring_deleted",
           "wealth_line_deleted",
           "wealth_category_deleted",
+          "goal_deleted",
           "rule_created",
           "rule_updated",
           "rule_deleted",
@@ -893,6 +894,14 @@
         "title": "CloseIn",
         "type": "object"
       },
+      "ClosedAs": {
+        "enum": [
+          "reached",
+          "abandoned"
+        ],
+        "title": "ClosedAs",
+        "type": "string"
+      },
       "ComparisonOut": {
         "properties": {
           "a": {
@@ -1340,6 +1349,697 @@
         ],
         "title": "Frequency",
         "type": "string"
+      },
+      "GoalDetailOut": {
+        "properties": {
+          "goal": {
+            "$ref": "#/components/schemas/GoalOut"
+          },
+          "months": {
+            "items": {
+              "$ref": "#/components/schemas/GoalMonthOut"
+            },
+            "title": "Months",
+            "type": "array"
+          }
+        },
+        "required": [
+          "goal",
+          "months"
+        ],
+        "title": "GoalDetailOut",
+        "type": "object"
+      },
+      "GoalFixedItemOut": {
+        "properties": {
+          "amount": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Amount",
+            "type": "string"
+          },
+          "frequency": {
+            "$ref": "#/components/schemas/Frequency"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "monthly": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Monthly",
+            "type": "string"
+          }
+        },
+        "required": [
+          "label",
+          "frequency",
+          "amount",
+          "monthly"
+        ],
+        "title": "GoalFixedItemOut",
+        "type": "object"
+      },
+      "GoalFundingIn": {
+        "properties": {
+          "line_id": {
+            "format": "uuid",
+            "title": "Line Id",
+            "type": "string"
+          },
+          "share": {
+            "maximum": 100.0,
+            "minimum": 1.0,
+            "title": "Share",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "line_id",
+          "share"
+        ],
+        "title": "GoalFundingIn",
+        "type": "object"
+      },
+      "GoalFundingOut": {
+        "properties": {
+          "line_id": {
+            "format": "uuid",
+            "title": "Line Id",
+            "type": "string"
+          },
+          "line_name": {
+            "title": "Line Name",
+            "type": "string"
+          },
+          "share": {
+            "title": "Share",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "line_id",
+          "line_name",
+          "share"
+        ],
+        "title": "GoalFundingOut",
+        "type": "object"
+      },
+      "GoalIn": {
+        "properties": {
+          "deadline": {
+            "anyOf": [
+              {
+                "maxLength": 7,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Deadline"
+          },
+          "fundings": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/GoalFundingIn"
+            },
+            "maxItems": 50,
+            "title": "Fundings",
+            "type": "array"
+          },
+          "name": {
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "start": {
+            "anyOf": [
+              {
+                "maxLength": 7,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Start"
+          },
+          "target": {
+            "anyOf": [
+              {
+                "exclusiveMaximum": 1000000000000.0,
+                "exclusiveMinimum": 0.0,
+                "type": "number"
+              },
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              }
+            ],
+            "title": "Target"
+          },
+          "tier": {
+            "$ref": "#/components/schemas/Tier"
+          },
+          "visibility": {
+            "$ref": "#/components/schemas/Visibility",
+            "default": "shared"
+          }
+        },
+        "required": [
+          "name",
+          "tier",
+          "target"
+        ],
+        "title": "GoalIn",
+        "type": "object"
+      },
+      "GoalMonthOut": {
+        "properties": {
+          "expected": {
+            "anyOf": [
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expected"
+          },
+          "gained": {
+            "anyOf": [
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gained"
+          },
+          "gap": {
+            "anyOf": [
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gap"
+          },
+          "month": {
+            "title": "Month",
+            "type": "string"
+          },
+          "value": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Value",
+            "type": "string"
+          }
+        },
+        "required": [
+          "month",
+          "value",
+          "gained",
+          "expected",
+          "gap"
+        ],
+        "title": "GoalMonthOut",
+        "type": "object"
+      },
+      "GoalOut": {
+        "properties": {
+          "actual": {
+            "anyOf": [
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Actual"
+          },
+          "closed_as": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ClosedAs"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "closed_from": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Closed From"
+          },
+          "deadline": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Deadline"
+          },
+          "effort": {
+            "anyOf": [
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Effort"
+          },
+          "estimated": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Estimated"
+          },
+          "extra": {
+            "anyOf": [
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Extra"
+          },
+          "fundings": {
+            "items": {
+              "$ref": "#/components/schemas/GoalFundingOut"
+            },
+            "title": "Fundings",
+            "type": "array"
+          },
+          "horizon_flagged": {
+            "title": "Horizon Flagged",
+            "type": "boolean"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "months_early": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Months Early"
+          },
+          "months_left": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Months Left"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "never": {
+            "title": "Never",
+            "type": "boolean"
+          },
+          "owner_id": {
+            "format": "uuid",
+            "title": "Owner Id",
+            "type": "string"
+          },
+          "owner_name": {
+            "title": "Owner Name",
+            "type": "string"
+          },
+          "progress": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Progress",
+            "type": "string"
+          },
+          "remaining": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Remaining",
+            "type": "string"
+          },
+          "required": {
+            "anyOf": [
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Required"
+          },
+          "start": {
+            "title": "Start",
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/GoalStatus"
+          },
+          "target": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Target",
+            "type": "string"
+          },
+          "tier": {
+            "$ref": "#/components/schemas/Tier"
+          },
+          "value": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Value",
+            "type": "string"
+          },
+          "visibility": {
+            "$ref": "#/components/schemas/Visibility"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "tier",
+          "target",
+          "start",
+          "deadline",
+          "owner_id",
+          "owner_name",
+          "visibility",
+          "closed_from",
+          "closed_as",
+          "fundings",
+          "horizon_flagged",
+          "value",
+          "progress",
+          "remaining",
+          "months_left",
+          "required",
+          "actual",
+          "estimated",
+          "never",
+          "months_early",
+          "extra",
+          "status",
+          "effort"
+        ],
+        "title": "GoalOut",
+        "type": "object"
+      },
+      "GoalPatch": {
+        "description": "Only the fields present change.",
+        "properties": {
+          "closed_as": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ClosedAs"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "closed_from": {
+            "anyOf": [
+              {
+                "maxLength": 7,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Closed From"
+          },
+          "deadline": {
+            "anyOf": [
+              {
+                "maxLength": 7,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Deadline"
+          },
+          "fundings": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/GoalFundingIn"
+                },
+                "maxItems": 50,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fundings"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "maxLength": 100,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "start": {
+            "anyOf": [
+              {
+                "maxLength": 7,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Start"
+          },
+          "target": {
+            "anyOf": [
+              {
+                "exclusiveMaximum": 1000000000000.0,
+                "exclusiveMinimum": 0.0,
+                "type": "number"
+              },
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target"
+          },
+          "tier": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Tier"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "visibility": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Visibility"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "title": "GoalPatch",
+        "type": "object"
+      },
+      "GoalPlanOut": {
+        "properties": {
+          "capacity": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Capacity",
+            "type": "string"
+          },
+          "capacity_set": {
+            "title": "Capacity Set",
+            "type": "boolean"
+          },
+          "months_to_fill": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Months To Fill"
+          },
+          "precaution_share": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Precaution Share",
+            "type": "string"
+          },
+          "shortfall": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Shortfall",
+            "type": "string"
+          },
+          "unallocated": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Unallocated",
+            "type": "string"
+          }
+        },
+        "required": [
+          "capacity",
+          "capacity_set",
+          "precaution_share",
+          "unallocated",
+          "months_to_fill",
+          "shortfall"
+        ],
+        "title": "GoalPlanOut",
+        "type": "object"
+      },
+      "GoalStatus": {
+        "enum": [
+          "reached",
+          "ahead",
+          "on",
+          "behind",
+          "fill_first"
+        ],
+        "title": "GoalStatus",
+        "type": "string"
+      },
+      "GoalTierOut": {
+        "properties": {
+          "progress": {
+            "anyOf": [
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Progress"
+          },
+          "target": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Target",
+            "type": "string"
+          },
+          "tier": {
+            "$ref": "#/components/schemas/Tier"
+          },
+          "value": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Value",
+            "type": "string"
+          }
+        },
+        "required": [
+          "tier",
+          "value",
+          "target",
+          "progress"
+        ],
+        "title": "GoalTierOut",
+        "type": "object"
+      },
+      "GoalsOut": {
+        "properties": {
+          "closed": {
+            "items": {
+              "$ref": "#/components/schemas/GoalOut"
+            },
+            "title": "Closed",
+            "type": "array"
+          },
+          "goals": {
+            "items": {
+              "$ref": "#/components/schemas/GoalOut"
+            },
+            "title": "Goals",
+            "type": "array"
+          },
+          "month": {
+            "title": "Month",
+            "type": "string"
+          },
+          "plan": {
+            "$ref": "#/components/schemas/GoalPlanOut"
+          },
+          "pyramid": {
+            "items": {
+              "$ref": "#/components/schemas/GoalTierOut"
+            },
+            "title": "Pyramid",
+            "type": "array"
+          }
+        },
+        "required": [
+          "month",
+          "pyramid",
+          "plan",
+          "goals",
+          "closed"
+        ],
+        "title": "GoalsOut",
+        "type": "object"
       },
       "HTTPValidationError": {
         "properties": {
@@ -2354,6 +3054,39 @@
           "paid_from"
         ],
         "title": "PlanTargetOut",
+        "type": "object"
+      },
+      "PrecautionProposalOut": {
+        "properties": {
+          "amount": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Amount",
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/GoalFixedItemOut"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "monthly_fixed": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Monthly Fixed",
+            "type": "string"
+          },
+          "months": {
+            "title": "Months",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "months",
+          "monthly_fixed",
+          "amount",
+          "items"
+        ],
+        "title": "PrecautionProposalOut",
         "type": "object"
       },
       "Preferences": {
@@ -4037,6 +4770,23 @@
             ],
             "title": "Analysis Start"
           },
+          "goal_capacity": {
+            "anyOf": [
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Goal Capacity"
+          },
+          "precaution_share": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Precaution Share",
+            "type": "string"
+          },
           "warn_at": {
             "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Warn At",
@@ -4057,7 +4807,9 @@
         "required": [
           "warn_at",
           "analysis_start",
-          "wealth_start"
+          "wealth_start",
+          "precaution_share",
+          "goal_capacity"
         ],
         "title": "SettingsOut",
         "type": "object"
@@ -4074,6 +4826,38 @@
               }
             ],
             "title": "Analysis Start"
+          },
+          "goal_capacity": {
+            "anyOf": [
+              {
+                "exclusiveMaximum": 1000000000000.0,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Goal Capacity"
+          },
+          "precaution_share": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d{0,2}0*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Precaution Share"
           },
           "warn_at": {
             "anyOf": [
@@ -4241,6 +5025,15 @@
         ],
         "title": "SuggestionOut",
         "type": "object"
+      },
+      "Tier": {
+        "enum": [
+          "precaution",
+          "medium",
+          "long"
+        ],
+        "title": "Tier",
+        "type": "string"
       },
       "ToCategorise": {
         "properties": {
@@ -8122,6 +8915,373 @@
         "summary": "Dashboard",
         "tags": [
           "dashboard"
+        ]
+      }
+    },
+    "/api/goals": {
+      "get": {
+        "description": "The pyramid, the month's effort plan and the goals in scope (F-GOAL-6, 7).",
+        "operationId": "listGoals",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "scope",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/Scope",
+              "default": "household"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "kwak_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Kwak Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GoalsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Goals",
+        "tags": [
+          "goals"
+        ]
+      },
+      "post": {
+        "description": "The user owns the goals they create.",
+        "operationId": "createGoal",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "kwak_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Kwak Session"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GoalIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GoalOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Goal",
+        "tags": [
+          "goals"
+        ]
+      }
+    },
+    "/api/goals/precaution-proposal": {
+      "get": {
+        "description": "A target for the precaution: months of fixed expenses (F-GOAL-2).",
+        "operationId": "precautionProposal",
+        "parameters": [
+          {
+            "description": "1 to 12",
+            "in": "query",
+            "name": "months",
+            "required": false,
+            "schema": {
+              "default": 6,
+              "description": "1 to 12",
+              "title": "Months",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "scope",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/Scope",
+              "default": "household"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "kwak_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Kwak Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PrecautionProposalOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Precaution Proposal",
+        "tags": [
+          "goals"
+        ]
+      }
+    },
+    "/api/goals/{goal_id}": {
+      "delete": {
+        "description": "With its funding, never a line. Only its owner can; closing it keeps it instead.",
+        "operationId": "deleteGoal",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "goal_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Goal Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "kwak_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Kwak Session"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Goal",
+        "tags": [
+          "goals"
+        ]
+      },
+      "get": {
+        "description": "A goal with its months (F-GOAL-7).",
+        "operationId": "getGoal",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "goal_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Goal Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "kwak_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Kwak Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GoalDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Goal",
+        "tags": [
+          "goals"
+        ]
+      },
+      "patch": {
+        "description": "Anyone who sees a goal edits it; only its owner changes who sees it (F-GOAL-8).",
+        "operationId": "updateGoal",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "goal_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Goal Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "kwak_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Kwak Session"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GoalPatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GoalOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Update Goal",
+        "tags": [
+          "goals"
         ]
       }
     },

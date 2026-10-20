@@ -139,7 +139,8 @@ def check_funding_line(
     line_visibility: Visibility,
     line_kind: WealthKind,
 ) -> None:
-    """A goal uses its owner's lines and joint ones; a joint goal joint lines only."""
+    """A goal uses its owner's lines and joint ones; a joint goal joint lines only; a private
+    line only a private goal, whose value would otherwise show it to the household."""
     if line_kind is WealthKind.DEBT:
         raise GoalError("a debt cannot fund a goal")
     if line_visibility is Visibility.JOINT:
@@ -148,6 +149,8 @@ def check_funding_line(
         raise GoalError("a joint goal uses joint lines only")
     if line_owner_id != goal_owner_id:
         raise GoalError("a goal uses its owner's lines and joint ones")
+    if line_visibility is Visibility.PRIVATE and goal_visibility is not Visibility.PRIVATE:
+        raise GoalError("a private line funds a private goal only: it would show its value")
 
 
 def check_line_shares(shares: Sequence[int]) -> None:
