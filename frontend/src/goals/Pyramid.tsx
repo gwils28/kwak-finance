@@ -1,7 +1,7 @@
 import type { GoalsOut } from "../api/generated";
 import { useI18n } from "../i18n";
 import { formatEurWhole, formatPercent } from "../lib/money";
-import { TIERS, tierColour } from "./shared";
+import { PYRAMID, TIERS, tierColour } from "./shared";
 
 const WIDTH = 360;
 const HEIGHT = 286;
@@ -10,7 +10,7 @@ const BASE_Y = 234;
 const HALF_BASE = 114;
 /** The foundation: a slab under the pyramid, a little wider than its base. */
 const FOUNDATION = { x: 0, y: 244, width: 240, height: 36 };
-const TIERS_ABOVE = TIERS.filter((tier) => tier !== "precaution");
+const TIERS_ABOVE = PYRAMID.filter((tier) => tier !== "precaution");
 
 /** The pyramid on its foundation, the emergency fund, each filled to its progress (F-GOAL-7). */
 export function Pyramid({ data }: { data: GoalsOut }) {
@@ -96,7 +96,7 @@ export function Pyramid({ data }: { data: GoalsOut }) {
         />
       </svg>
       <ul className="flex flex-col gap-1 text-sm">
-        {[...TIERS].reverse().map((tier) => {
+        {[...PYRAMID].reverse().map((tier) => {
           const p = byTier.get(tier);
           return (
             <li key={tier} className="flex flex-wrap justify-between gap-2">

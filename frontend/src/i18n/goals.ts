@@ -163,7 +163,8 @@ export const goalsEn = {
   // The form
   formNew: "New goal",
   formEdit: "Edit the goal",
-  tierOf: (tier: string) => `${tier}, given by the deadline: a goal moves down a tier as it nears.`,
+  tierOf: (tier: string) =>
+    `${tier}, given by the deadline: a goal moves up a tier as it nears, towards the top.`,
   name: "Name",
   target: "Target",
   targetInvalid: "Enter a positive amount, e.g. 6000 or 6 000,00.",
@@ -381,7 +382,7 @@ export const goalsFr: typeof goalsEn = {
   formNew: "Nouvel objectif",
   formEdit: "Modifier l'objectif",
   tierOf: (tier) =>
-    `${tier}, selon l'échéance : un objectif descend d'étage à mesure qu'elle approche.`,
+    `${tier}, selon l'échéance : un objectif monte d'étage à mesure qu'elle approche, vers le sommet.`,
   name: "Nom",
   target: "Montant cible",
   targetInvalid: "Saisissez un montant positif, par ex. 6000 ou 6 000,00.",

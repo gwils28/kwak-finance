@@ -226,6 +226,13 @@ test("the goals page shows the pyramid, the month's effort and each goal by tier
       name: "Emergency fund: 84%, Short term: No goal, Medium term: 47%, Long term: No goal",
     }),
   ).toBeInTheDocument();
+  // the long term is the pyramid's base and the short term its top, as the legend reads
+  const pyramid = screen.getByRole("region", { name: "The pyramid" });
+  expect(
+    within(pyramid)
+      .getAllByRole("listitem")
+      .map((li) => plain(li.textContent)?.split(" · ")[0]),
+  ).toEqual(["Short term", "Medium term", "Long term", "Emergency fund"]);
 
   const effort = screen.getByRole("table", { name: "Effort by goal" });
   const rows = within(effort)
