@@ -7,13 +7,13 @@ Status: draft v0.1 — 2026-10-06. Complements `docs/SPECIFICATIONS.md`.
 ```
                  LAN (TLS)
  Browser ──────────────► Caddy (reverse proxy, serves the built SPA)
-                           │  /api/*            │  /dash/* (phase 4)
+                           │  /api/*            │  /dash/* (phase 5)
                            ▼                    ▼
                     FastAPI (uvicorn) ── mounted Dash app (WSGI)
                            │
           ┌────────────────┼──────────────────┬───────────────┐
           ▼                ▼                  ▼               ▼
-     PostgreSQL 17    Scheduler (jobs)   DuckDB (analytics) Ollama (phase 5)
+     PostgreSQL 17    Scheduler (jobs)   DuckDB (analytics) Ollama (phase 6)
      (system of       prices, snapshots, attaches Postgres
       record)         recurrences,       read-only + Parquet
           │           backups            snapshots
@@ -36,7 +36,7 @@ Everything runs from a single `docker compose up`. The front end is served from 
 | Auth | argon2-cffi, pyotp, server-side sessions table | Simple, no third-party identity provider in a self-hosted app |
 | Jobs | APScheduler, in a dedicated `worker` container | Few, simple daily jobs. No broker needed |
 | File parsing | `ofxtools` (OFX), a small in-house QIF parser, CSV via import profiles | QIF libraries are poorly maintained |
-| Analytics | **DuckDB**, polars, numpy, statsmodels / statsforecast (phase 4) | DuckDB reads Postgres directly, so no ETL pipeline at first |
+| Analytics | **DuckDB**, polars, numpy, statsmodels / statsforecast (phase 5) | DuckDB reads Postgres directly, so no ETL pipeline at first |
 | Logging | structlog (JSON) | |
 | Lint / format | **ruff** (lint + format) | |
 | Types | **mypy --strict** (or pyright strict, to be decided in phase 0) | Money code must be typed |
@@ -56,13 +56,13 @@ Everything runs from a single `docker compose up`. The front end is served from 
 | Lint / format | **Biome** (the TS counterpart of ruff: one fast tool) |
 | Tests | **Vitest** + Testing Library. **Playwright** for E2E smoke tests |
 
-### Dash integration (phase 4)
+### Dash integration (phase 5)
 
 The React app is the product. Dash is used only for **exploratory analytics pages** (forecast diagnostics, Monte Carlo explorers), where Python-side interactivity saves a lot of front-end work. Dash is mounted inside FastAPI at `/dash` (WSGI middleware). It reuses the session cookie for auth and the same Plotly theme, and is embedded in React through a full-height route. If a Dash page becomes a core feature, it is rewritten in React on top of a dedicated API endpoint.
 
 ### Infrastructure
 
-- Docker Compose services: `caddy`, `api`, `worker`, `db` (Postgres 17), `backup`; then `ollama` (phase 5).
+- Docker Compose services: `caddy`, `api`, `worker`, `db` (Postgres 17), `backup`; then `ollama` (phase 6).
 - Caddy provides local TLS (internal CA) on the LAN hostname.
 - Secrets live in `.env` (template in `.env.example`, which is committed).
 - GitHub Actions CI on each PR: ruff, mypy, pytest (Postgres started by testcontainers), Biome, tsc, Vitest, Docker build. `main` is protected and requires CI to pass.
@@ -82,7 +82,7 @@ The React app is the product. Dash is used only for **exploratory analytics page
 │   ├── packages/
 │   │   ├── core/            # kwak_core: pure domain, no I/O (money, rules, amortisation, dedup)
 │   │   ├── api/             # kwak_api: FastAPI app, routers, schemas, persistence (SQLAlchemy, Alembic)
-│   │   └── analytics/       # kwak_analytics: DuckDB queries, forecasting, simulation (phase 4)
+│   │   └── analytics/       # kwak_analytics: DuckDB queries, forecasting, simulation (phase 5)
 │   └── tests/               # mirrors packages; fixtures/ holds synthetic bank files only
 ├── frontend/
 │   └── src/{routes,features,components,api(generated),styles}
@@ -117,8 +117,8 @@ Conventions: UUIDv7 primary keys, `created_at` / `updated_at` in UTC (`timestamp
 ## 5. Analytics path
 
 1. **Phases 1–3**: dashboards query Postgres (SQL views / materialised views refreshed by the worker).
-2. **Phase 4**: `kwak_analytics` opens DuckDB, attaches Postgres **read-only** (a dedicated read-only role), and writes dated Parquet snapshots to `data/snapshots/` for reproducible experiments. Forecasting follows a written protocol: temporal split only, a naive baseline first (seasonal naive / moving average), metrics with dispersion across rolling origins, and fixed seeds.
-3. **Phase 5**: an Ollama service. The LLM only sees a curated read-only analytics schema (text-to-SQL validated against an allow-list, executed under the read-only role). pgvector is added if RAG over documents is needed.
+2. **Phase 5**: `kwak_analytics` opens DuckDB, attaches Postgres **read-only** (a dedicated read-only role), and writes dated Parquet snapshots to `data/snapshots/` for reproducible experiments. Forecasting follows a written protocol: temporal split only, a naive baseline first (seasonal naive / moving average), metrics with dispersion across rolling origins, and fixed seeds.
+3. **Phase 6**: an Ollama service. The LLM only sees a curated read-only analytics schema (text-to-SQL validated against an allow-list, executed under the read-only role). pgvector is added if RAG over documents is needed.
 
 ## 6. Decisions
 
