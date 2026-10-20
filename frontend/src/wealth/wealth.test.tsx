@@ -596,3 +596,29 @@ test("the matrix keeps its months and its line names in view while scrolling", a
     expect(header.className).toMatch(/left-0/);
   }
 });
+
+test("each line says what goals set aside on it", async () => {
+  const setAside = (amount: string) => () =>
+    Response.json([
+      {
+        line_id: "l-pea",
+        line_name: "PEA Fortuneo",
+        worth: "9000.00",
+        set_aside: amount,
+        free: "0",
+      },
+    ]);
+  api({ "GET /api/goals/lines": setAside("2500.00") });
+  const { unmount } = render(<TestApp path="/wealth" />);
+  expect(await screen.findByText("€2,500 set aside for goals")).toBeInTheDocument();
+  unmount();
+
+  api({
+    "GET /api/auth/me": () => Response.json({ ...owner, language: "fr" }),
+    "GET /api/goals/lines": setAside("2500.00"),
+  });
+  render(<TestApp path="/wealth" language="fr" />);
+  expect(plain((await screen.findByText(/réservés aux objectifs/)).textContent)).toBe(
+    "2 500 € réservés aux objectifs",
+  );
+});

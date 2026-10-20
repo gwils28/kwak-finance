@@ -4,6 +4,7 @@ import { useId, useState } from "react";
 import { listAccounts, listMembers, listPlans, listTransactions } from "../api/generated";
 import { PLANS_KEY } from "../budget/PlanPanel";
 import { Button } from "../components/ui";
+import { goalsQuery } from "../goals/GoalsPage";
 import { useI18n } from "../i18n";
 
 const HIDDEN_KEY = "kwak-getting-started-hidden";
@@ -54,7 +55,10 @@ export function GettingStarted() {
     queryFn: async () => (await listMembers({ throwOnError: true })).data,
     enabled: !hidden,
   });
+  // Optional for the list: without goals (or if they cannot load), the step stays to do.
+  const goals = useQuery({ ...goalsQuery("household"), enabled: !hidden });
   if (hidden || !accounts.data || !transactions.data || !plans.data || !members.data) return null;
+  if (goals.isPending && goals.fetchStatus !== "idle") return null;
 
   const imported = transactions.data.all > 0;
   const steps: { key: keyof typeof c.steps; done: boolean; link: LinkProps }[] = [
@@ -69,6 +73,13 @@ export function GettingStarted() {
       key: "plan",
       done: plans.data.some((p) => p.targets.length > 0),
       link: { to: "/budget" },
+    },
+    {
+      key: "goal",
+      done: [...(goals.data?.goals ?? []), ...(goals.data?.closed ?? [])].some(
+        (goal) => goal.precaution,
+      ),
+      link: { to: "/goals" },
     },
     { key: "invite", done: members.data.length > 1, link: { to: "/members" } },
   ];
@@ -105,7 +116,7 @@ export function GettingStarted() {
           </Button>
         </div>
       </div>
-      <ol className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
+      <ol className="grid gap-2 sm:grid-cols-2 lg:grid-cols-6">
         {steps.map((step, i) => (
           <li
             key={step.key}

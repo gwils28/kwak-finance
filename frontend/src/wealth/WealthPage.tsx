@@ -21,6 +21,7 @@ import { meQuery } from "../auth/session";
 import { InView } from "../components/InView";
 import { SCROLL_FRAME, STICKY_CORNER, STICKY_LEFT, STICKY_TOP } from "../components/stickyTable";
 import { Button, ErrorAlert, TextField } from "../components/ui";
+import { GOALS_KEY, goalLinesQuery } from "../goals/shared";
 import { useI18n } from "../i18n";
 import { amountInputShort, formatEurWhole, formatPercent, parseEurInput } from "../lib/money";
 import { isMonth, monthLabel, thisMonth } from "../lib/months";
@@ -94,6 +95,11 @@ export function WealthPage() {
 function Matrix({ matrix, onOpen }: { matrix: WealthMatrixOut; onOpen: (panel: Panel) => void }) {
   const { t } = useI18n();
   const { data: user } = useSuspenseQuery(meQuery);
+  // What the goals the viewer sees set aside on each line this month (F-GOAL-3).
+  const setAside = useQuery({
+    ...goalLinesQuery,
+    select: (rows) => new Map(rows.map((row) => [row.line_id, row.set_aside])),
+  });
   const num = "whitespace-nowrap px-3 py-2 text-right tabular";
   const months = matrix.months;
   const totals = (label: string, values: (string | null)[], strong = false) => (
@@ -181,6 +187,11 @@ function Matrix({ matrix, onOpen }: { matrix: WealthMatrixOut; onOpen: (panel: P
                     {line.visibility === "private" && (
                       <span className="text-xs text-muted"> · {t.wealth.onlyYou}</span>
                     )}
+                    {Number(setAside.data?.get(line.id) ?? 0) > 0 && (
+                      <span className="block text-xs text-muted">
+                        {t.wealth.setAside(formatEurWhole(setAside.data?.get(line.id) ?? "0"))}
+                      </span>
+                    )}
                   </th>
                   {line.cells.map((cell, i) => {
                     const month = months[i] as string;
@@ -251,7 +262,11 @@ function useSave<A>(
       const told = response && [403, 409, 422].includes(response.status);
       throw new Error((told && detailSentence(error)) || t.wealth.saveFailed);
     },
-    onSettled: () => queryClient.invalidateQueries({ queryKey: KEY }),
+    onSettled: () => {
+      // A line's value moves the goals it funds: refreshed without holding the page.
+      void queryClient.invalidateQueries({ queryKey: GOALS_KEY });
+      return queryClient.invalidateQueries({ queryKey: KEY });
+    },
     onSuccess: onDone,
   });
 }

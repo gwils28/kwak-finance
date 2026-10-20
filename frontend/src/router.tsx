@@ -15,6 +15,8 @@ import { meQuery } from "./auth/session";
 import { BudgetPage } from "./budget/BudgetPage";
 import { ReviewPage } from "./budget/ReviewPage";
 import { CategoriesPage } from "./categories/CategoriesPage";
+import { GoalPage } from "./goals/GoalPage";
+import { GoalsPage } from "./goals/GoalsPage";
 import { GuidePage } from "./guide/GuidePage";
 import { HomePage } from "./HomePage";
 import { AcceptInvitePage } from "./household/AcceptInvitePage";
@@ -132,6 +134,21 @@ const wealthAnalysisRoute = createRoute({
   component: WealthAnalysisPage,
 });
 
+const goalsRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: "/goals",
+  component: GoalsPage,
+});
+
+const goalRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: "/goals/$goalId",
+  component: function Goal() {
+    const { goalId } = goalRoute.useParams();
+    return <GoalPage key={goalId} goalId={goalId} />;
+  },
+});
+
 const activityRoute = createRoute({
   getParentRoute: () => appRoute,
   path: "/activity",
@@ -183,6 +200,8 @@ const routeTree = rootRoute.addChildren([
     reviewRoute,
     wealthRoute,
     wealthAnalysisRoute,
+    goalsRoute,
+    goalRoute,
     reportsRoute,
     categoriesRoute,
     membersRoute,

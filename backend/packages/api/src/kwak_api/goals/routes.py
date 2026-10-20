@@ -27,6 +27,7 @@ GoalName = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1,
 MonthText = Annotated[str, StringConstraints(max_length=7)]
 # What NUMERIC(14, 2) holds, whole cents only.
 Target = Annotated[Decimal, Field(gt=0, lt=Decimal("1e12")), AfterValidator(require_cents)]
+Opening = Annotated[Decimal, Field(ge=0, lt=Decimal("1e12")), AfterValidator(require_cents)]
 
 
 def _unprocessable(message: str) -> HTTPException:
@@ -57,19 +58,37 @@ def _money(value: Decimal | None) -> Decimal | None:
 
 class GoalFundingIn(BaseModel):
     line_id: UUID
-    share: int = Field(ge=1, le=100)
-    """In %; 100 is the line in full."""
+    share: int = Field(default=100, ge=1, le=100)
+    """Of the line's rises, in %."""
+    opening: Opening = Decimal(0)
+    """Taken from the line's free part in the goal's start month (at most what is free)."""
 
 
 class GoalFundingOut(BaseModel):
     line_id: UUID
     line_name: str
     share: int
+    opening: Decimal
+    held: Decimal
+    """What the goal holds on the line in the last month it is tracked."""
+
+
+class GoalLineOut(BaseModel):
+    """A visible asset line this month, and what the viewer's goals set aside on it."""
+
+    line_id: UUID
+    line_name: str
+    worth: Decimal
+    set_aside: Decimal
+    free: Decimal
 
 
 class GoalIn(BaseModel):
     name: GoalName
-    tier: core.Tier
+    precaution: bool = False
+    """The emergency fund, filled first: always short-term and permanent."""
+    permanent: bool = False
+    """Kept in view once reached, its deadline optional; any other goal archives itself."""
     target: Target
     deadline: MonthText | None = None
     """YYYY-MM; required but for the precaution."""
@@ -83,7 +102,8 @@ class GoalPatch(BaseModel):
     """Only the fields present change."""
 
     name: GoalName | None = None
-    tier: core.Tier | None = None
+    precaution: bool | None = None
+    permanent: bool | None = None
     target: Target | None = None
     deadline: MonthText | None = None
     start: MonthText | None = None
@@ -100,6 +120,9 @@ class GoalOut(BaseModel):
     id: UUID
     name: str
     tier: core.Tier
+    """Given by the deadline (F-GOAL-1): it moves down as the deadline nears."""
+    precaution: bool
+    permanent: bool
     target: Decimal
     start: str
     deadline: str | None
@@ -109,11 +132,12 @@ class GoalOut(BaseModel):
     closed_from: str | None
     closed_as: ClosedAs | None
     fundings: list[GoalFundingOut]
-    horizon_flagged: bool
-    """The deadline lies outside the tier's horizon (F-GOAL-1)."""
     value: Decimal
     progress: Decimal
     remaining: Decimal
+    expected: Decimal | None
+    """Where the goal should stand this month, on its line to the target; null without a
+    deadline."""
     months_left: int | None
     required: Decimal | None
     """The monthly effort that reaches the target at the deadline."""
@@ -132,11 +156,15 @@ class GoalOut(BaseModel):
     """This month's share of the effort plan (F-GOAL-6); null for a goal outside it."""
 
 
-def _out(goal: Goal, t: core.Tracking, this_month: Month, effort: Decimal | None) -> GoalOut:
+def _out(goal: Goal, t: core.Tracking, o: service.Overview, effort: Decimal | None) -> GoalOut:
+    this_month = o.this_month
+    held = service.held(goal, o.envelopes, this_month)
     return GoalOut(
         id=goal.id,
         name=goal.name,
-        tier=goal.tier,
+        tier=service.tier(goal, this_month),
+        precaution=goal.precaution,
+        permanent=goal.permanent,
         target=quantize(goal.target),
         start=str(Month.of(goal.start)),
         deadline=_text(Month.of(goal.deadline) if goal.deadline else None),
@@ -146,15 +174,19 @@ def _out(goal: Goal, t: core.Tracking, this_month: Month, effort: Decimal | None
         closed_from=_text(Month.of(goal.closed_from) if goal.closed_from else None),
         closed_as=goal.closed_as,
         fundings=[
-            GoalFundingOut(line_id=f.line_id, line_name=f.line.name, share=f.share)
+            GoalFundingOut(
+                line_id=f.line_id,
+                line_name=f.line.name,
+                share=f.share,
+                opening=quantize(f.opening),
+                held=quantize(held[f.line_id]),
+            )
             for f in goal.fundings
         ],
-        horizon_flagged=core.horizon_flagged(
-            goal.tier, Month.of(goal.deadline) if goal.deadline else None, this_month=this_month
-        ),
         value=quantize(t.value),
         progress=_ratio(t.progress) or Decimal(0),
         remaining=quantize(t.remaining),
+        expected=_money(t.months[-1].expected),
         months_left=t.months_left,
         required=_money(t.required),
         actual=_money(t.actual),
@@ -242,10 +274,12 @@ def list_goals(
             shortfall=quantize(o.plan.shortfall),
         ),
         goals=[
-            _out(g, t, o.this_month, efforts.get(g.id))
-            for g, t in sorted(o.open, key=lambda pair: tiers.index(pair[0].tier))
+            _out(g, t, o, efforts.get(g.id))
+            for g, t in sorted(
+                o.open, key=lambda pair: tiers.index(service.tier(pair[0], o.this_month))
+            )
         ],
-        closed=[_out(g, t, o.this_month, None) for g, t in o.closed],
+        closed=[_out(g, t, o, None) for g, t in o.closed],
     )
 
 
@@ -263,6 +297,22 @@ class PrecautionProposalOut(BaseModel):
     """The monthly equivalent of the active recurring expense items."""
     amount: Decimal
     items: list[GoalFixedItemOut]
+
+
+@router.get("/lines")
+def goal_lines(user_session: CurrentSession, db: Db, now: Now) -> list[GoalLineOut]:
+    """Each visible asset line this month: its worth, the part the viewer's goals set aside on
+    it and the rest, free (F-GOAL-3)."""
+    return [
+        GoalLineOut(
+            line_id=x.line.id,
+            line_name=x.line.name,
+            worth=quantize(x.worth),
+            set_aside=quantize(x.set_aside),
+            free=quantize(x.worth - x.set_aside),
+        )
+        for x in service.lines_free(db, user_session.user, now.date())
+    ]
 
 
 @router.get("/precaution-proposal")
@@ -302,7 +352,7 @@ def get_goal(goal_id: UUID, user_session: CurrentSession, db: Db, now: Now) -> G
         raise NOT_FOUND
     goal, t = found
     return GoalDetailOut(
-        goal=_out(goal, t, o.this_month, o.plan.allocations.get(goal.id)),
+        goal=_out(goal, t, o, o.plan.allocations.get(goal.id)),
         months=[
             GoalMonthOut(
                 month=str(m.month),
@@ -332,7 +382,7 @@ def _fundings(
             service.check_funding(goal, line)
         except core.GoalError as exc:
             raise _unprocessable(str(exc)) from None
-        out.append(GoalFunding(line_id=line.id, line=line, share=f.share))
+        out.append(GoalFunding(line_id=line.id, line=line, share=f.share, opening=f.opening))
     return out
 
 
@@ -340,8 +390,9 @@ def _check(goal: Goal, this_month: Month) -> None:
     deadline = Month.of(goal.deadline) if goal.deadline else None
     try:
         core.check_goal(
-            goal.tier,
             goal.target,
+            precaution=goal.precaution,
+            permanent=goal.permanent,
             deadline=deadline,
             start=Month.of(goal.start),
             this_month=this_month,
@@ -356,7 +407,8 @@ def _check_open(db: Db, goal: Goal) -> None:
         service.check_open(db, goal)
     except service.SharesExceededError as exc:
         raise HTTPException(
-            status.HTTP_409_CONFLICT, f"{exc} would fund open goals beyond 100 %"
+            status.HTTP_409_CONFLICT,
+            f"{exc.line} would fund open goals beyond 100 %: {exc.left} % of its rises left",
         ) from None
     except service.PrecautionTakenError as exc:
         raise HTTPException(status.HTTP_409_CONFLICT, str(exc)) from None
@@ -376,7 +428,8 @@ def create_goal(body: GoalIn, user_session: CurrentSession, db: Db, now: Now) ->
     goal = Goal(
         household_id=user.household_id,
         name=body.name,
-        tier=body.tier,
+        precaution=body.precaution,
+        permanent=body.permanent or body.precaution,
         target=body.target,
         start=(_month(body.start) if body.start else this_month).first_day(),
         deadline=_month(body.deadline).first_day() if body.deadline else None,
@@ -411,15 +464,18 @@ def update_goal(
         goal.visibility = body.visibility
     if body.name is not None:
         goal.name = body.name
-    if body.tier is not None:
-        goal.tier = body.tier
+    if body.precaution is not None:
+        goal.precaution = body.precaution
+        goal.permanent = goal.permanent or body.precaution
+    if body.permanent is not None:
+        goal.permanent = body.permanent
     if body.target is not None:
         goal.target = body.target
     if "deadline" in given:
         goal.deadline = _month(body.deadline).first_day() if body.deadline else None
     if body.start is not None:
         goal.start = _month(body.start).first_day()
-    if {"deadline", "start", "tier", "target"} & given:
+    if {"deadline", "start", "precaution", "permanent", "target"} & given:
         # An overdue goal stays editable: its deadline is only checked when it changes.
         kept = goal.deadline if "deadline" not in given else None
         _check(goal, min(this_month, Month.of(kept)) if kept else this_month)
@@ -429,9 +485,10 @@ def update_goal(
         else:
             closed = _month(body.closed_from)
             if body.closed_as is None:
-                raise _unprocessable("say whether the goal was reached or abandoned")
-            if not Month.of(goal.start) <= closed <= this_month:
-                raise _unprocessable("a goal closes from a month between its start and this one")
+                raise _unprocessable("say whether the goal is archived or cancelled")
+            # Next month at most: archived after this month, which still counts.
+            if not Month.of(goal.start) <= closed <= this_month.next():
+                raise _unprocessable("a goal closes from a month between its start and the next")
             goal.closed_from, goal.closed_as = closed.first_day(), body.closed_as
     if body.fundings is not None:
         goal.fundings = _fundings(db, user_session, goal, body.fundings)
@@ -443,6 +500,10 @@ def update_goal(
                 raise _unprocessable(str(exc)) from None
     if goal.closed_from is None:
         _check_open(db, goal)
+        if "closed_from" in given and service.reached(db, goal, now.date(), DEFAULT_BAND):
+            raise _unprocessable(
+                "this goal is reached: raise its target or make it permanent to reopen it"
+            )
     return _detail(db, user_session, now, goal)
 
 
@@ -459,6 +520,6 @@ def delete_goal(goal_id: UUID, user_session: CurrentSession, db: Db, now: Now) -
         now,
         private_to=goal.owner_id if goal.visibility is Visibility.PRIVATE else None,
         name=goal.name,
-        tier=goal.tier.value,
+        tier=service.tier(goal, Month.of(now.date())).value,
     )
     db.delete(goal)

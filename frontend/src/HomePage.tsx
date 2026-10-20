@@ -6,6 +6,7 @@ import { meQuery } from "./auth/session";
 import { ScopeSelect } from "./components/ScopeSelect";
 import { ErrorAlert } from "./components/ui";
 import { SpendingPace } from "./dashboard/charts";
+import { GoalsTile } from "./dashboard/GoalsTile";
 import { MonthProgress } from "./dashboard/MonthProgress";
 import { NetWorth } from "./dashboard/NetWorth";
 import { TopCategories } from "./dashboard/TopCategories";
@@ -58,6 +59,7 @@ export function HomePage() {
       </div>
       <GettingStarted />
       <NetWorth month={month} scope={scope} />
+      <GoalsTile scope={scope} />
       {query.isError && <ErrorAlert message={t.dashboard.loadFailed} />}
       {query.isPending && <p className="text-sm text-muted">{t.common.loading}</p>}
       {data && empty && (

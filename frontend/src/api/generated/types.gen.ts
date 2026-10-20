@@ -455,7 +455,7 @@ export type CloseIn = {
 /**
  * ClosedAs
  */
-export type ClosedAs = 'reached' | 'abandoned';
+export type ClosedAs = 'archived' | 'cancelled';
 
 /**
  * ComparisonOut
@@ -718,15 +718,23 @@ export type GoalFundingIn = {
      */
     line_id: string;
     /**
+     * Opening
+     */
+    opening?: number | string;
+    /**
      * Share
      */
-    share: number;
+    share?: number;
 };
 
 /**
  * GoalFundingOut
  */
 export type GoalFundingOut = {
+    /**
+     * Held
+     */
+    held: string;
     /**
      * Line Id
      */
@@ -735,6 +743,10 @@ export type GoalFundingOut = {
      * Line Name
      */
     line_name: string;
+    /**
+     * Opening
+     */
+    opening: string;
     /**
      * Share
      */
@@ -758,6 +770,14 @@ export type GoalIn = {
      */
     name: string;
     /**
+     * Permanent
+     */
+    permanent?: boolean;
+    /**
+     * Precaution
+     */
+    precaution?: boolean;
+    /**
      * Start
      */
     start?: string | null;
@@ -765,8 +785,35 @@ export type GoalIn = {
      * Target
      */
     target: number | string;
-    tier: Tier;
     visibility?: Visibility;
+};
+
+/**
+ * GoalLineOut
+ *
+ * A visible asset line this month, and what the viewer's goals set aside on it.
+ */
+export type GoalLineOut = {
+    /**
+     * Free
+     */
+    free: string;
+    /**
+     * Line Id
+     */
+    line_id: string;
+    /**
+     * Line Name
+     */
+    line_name: string;
+    /**
+     * Set Aside
+     */
+    set_aside: string;
+    /**
+     * Worth
+     */
+    worth: string;
 };
 
 /**
@@ -821,6 +868,10 @@ export type GoalOut = {
      */
     estimated: string | null;
     /**
+     * Expected
+     */
+    expected: string | null;
+    /**
      * Extra
      */
     extra: string | null;
@@ -828,10 +879,6 @@ export type GoalOut = {
      * Fundings
      */
     fundings: Array<GoalFundingOut>;
-    /**
-     * Horizon Flagged
-     */
-    horizon_flagged: boolean;
     /**
      * Id
      */
@@ -860,6 +907,14 @@ export type GoalOut = {
      * Owner Name
      */
     owner_name: string;
+    /**
+     * Permanent
+     */
+    permanent: boolean;
+    /**
+     * Precaution
+     */
+    precaution: boolean;
     /**
      * Progress
      */
@@ -913,6 +968,14 @@ export type GoalPatch = {
      */
     name?: string | null;
     /**
+     * Permanent
+     */
+    permanent?: boolean | null;
+    /**
+     * Precaution
+     */
+    precaution?: boolean | null;
+    /**
      * Start
      */
     start?: string | null;
@@ -920,7 +983,6 @@ export type GoalPatch = {
      * Target
      */
     target?: number | string | null;
-    tier?: Tier | null;
     visibility?: Visibility | null;
 };
 
@@ -957,7 +1019,7 @@ export type GoalPlanOut = {
 /**
  * GoalStatus
  */
-export type GoalStatus = 'reached' | 'ahead' | 'on' | 'behind' | 'fill_first';
+export type GoalStatus = 'reached' | 'ahead' | 'on' | 'behind' | 'fill_first' | 'open';
 
 /**
  * GoalTierOut
@@ -2574,8 +2636,10 @@ export type SuggestionOut = {
 
 /**
  * Tier
+ *
+ * The pyramid's levels, from its foundation up.
  */
-export type Tier = 'precaution' | 'medium' | 'long';
+export type Tier = 'precaution' | 'short' | 'medium' | 'long';
 
 /**
  * ToCategorise
@@ -4501,6 +4565,33 @@ export type CreateGoalResponses = {
 };
 
 export type CreateGoalResponse = CreateGoalResponses[keyof CreateGoalResponses];
+
+export type GoalLinesData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/goals/lines';
+};
+
+export type GoalLinesErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type GoalLinesError = GoalLinesErrors[keyof GoalLinesErrors];
+
+export type GoalLinesResponses = {
+    /**
+     * Response Goallines
+     *
+     * Successful Response
+     */
+    200: Array<GoalLineOut>;
+};
+
+export type GoalLinesResponse = GoalLinesResponses[keyof GoalLinesResponses];
 
 export type PrecautionProposalData = {
     body?: never;

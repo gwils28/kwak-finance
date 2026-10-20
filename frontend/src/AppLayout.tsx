@@ -10,8 +10,8 @@ import { Logo } from "./components/Logo";
 import { useI18n } from "./i18n";
 
 /**
- * Two spaces with their tabs: spending (the everyday pages) and wealth, apart since it is
- * followed monthly rather than daily. The overview, a summary of the whole app, is the app's
+ * Three spaces: spending (the everyday pages) and wealth with their tabs, apart since wealth is
+ * followed monthly rather than daily, and goals, one page without tabs. The overview, a summary of the whole app, is the app's
  * name; the household pages (accounts, categories, members…) are in the account menu. A new
  * page adds its tab to its space.
  */
@@ -27,12 +27,13 @@ const SPACES = {
   ],
 } as const;
 
-type Space = keyof typeof SPACES;
+type Space = keyof typeof SPACES | "goals";
 
 /** Where each switch leads: the space's most used page. */
 const SWITCH = [
   { key: "spending", to: "/transactions", label: "spending" },
   { key: "wealth", to: "/wealth", label: "wealth" },
+  { key: "goals", to: "/goals", label: "goals" },
 ] as const;
 
 const SPENDING_PAGES = ["/transactions", "/recurring", "/budget", "/reports"];
@@ -41,6 +42,7 @@ const SPENDING_PAGES = ["/transactions", "/recurring", "/budget", "/reports"];
 function placeOf(pathname: string): Space | null {
   const under = (root: string) => pathname === root || pathname.startsWith(`${root}/`);
   if (under("/wealth")) return "wealth";
+  if (under("/goals")) return "goals";
   return SPENDING_PAGES.some(under) ? "spending" : null;
 }
 

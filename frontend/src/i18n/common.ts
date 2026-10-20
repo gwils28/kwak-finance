@@ -62,6 +62,32 @@ export const errorsFr: typeof errorsEn = {
  * API_PATTERNS below.
  */
 export const API_MESSAGES_FR: Record<string, string> = {
+  "a target is a positive amount in cents": "une cible est un montant positif, en centimes",
+  "a medium- or long-term goal needs a deadline":
+    "un objectif à moyen ou long terme a besoin d'une échéance",
+  "a goal's start is never a month to come": "un objectif ne commence jamais dans un mois à venir",
+  "a deadline is never a past month": "une échéance n'est jamais un mois passé",
+  "the household already has a joint precaution goal":
+    "le foyer a déjà une épargne de précaution commune",
+  "this member already has a precaution goal": "ce membre a déjà une épargne de précaution",
+  "the proposal counts 1 to 12 months": "la proposition compte de 1 à 12 mois",
+  "a debt cannot fund a goal": "une dette ne peut pas financer un objectif",
+  "a joint goal uses joint lines only": "un objectif commun n'utilise que des lignes communes",
+  "a goal uses its owner's lines and joint ones":
+    "un objectif utilise les lignes de son titulaire et les lignes communes",
+  "a private line funds a private goal only: it would show its value":
+    "une ligne privée ne finance qu'un objectif privé : elle en montrerait la valeur",
+  "a share is from 1 to 100 %": "une part va de 1 à 100 %",
+  "a line's shares sum to 100 % at most": "les parts d'une ligne font 100 % au plus",
+  "the precaution share is from 50 % to 100 %": "la part de la précaution va de 50 % à 100 %",
+  "no such goal": "objectif introuvable",
+  "a line funds a goal once": "une ligne finance un objectif une seule fois",
+  "unknown wealth line": "ligne de patrimoine inconnue",
+  "say whether the goal was reached or abandoned": "dites si l'objectif a été atteint ou abandonné",
+  "a goal closes from a month between its start and this one":
+    "un objectif se clôt à partir d'un mois entre son début et ce mois-ci",
+  "only its owner changes who sees it": "seul son titulaire change qui le voit",
+  "only its owner deletes it": "seul son titulaire peut le supprimer",
   "another category has this name": "une autre catégorie porte ce nom",
   "it still holds lines (perhaps a member's private ones): move or delete them first":
     "elle contient encore des lignes (peut-être les lignes privées d'un membre) : déplacez-les ou supprimez-les d'abord",
@@ -145,6 +171,11 @@ export const API_MESSAGES_FR: Record<string, string> = {
 
 /** API messages that carry a value: [English pattern, French replacement]. */
 export const API_PATTERNS_FR: [RegExp, string][] = [
+  [
+    /^(.+) would fund open goals beyond 100 %: (\d+) % of its rises left$/,
+    "$1 financerait des objectifs ouverts au-delà de 100 % : il ne reste que $2 % de ses hausses à répartir",
+  ],
+  [/^it funds a goal: (.+)$/, "elle finance un objectif : $1"],
   [
     /^password must be at least (\d+) characters$/,
     "le mot de passe doit faire au moins $1 caractères",

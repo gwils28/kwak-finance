@@ -6,6 +6,7 @@ import { categoriesFr } from "./categories";
 import { commonFr, errorsFr } from "./common";
 import { dashboardFr } from "./dashboard";
 import type { Messages } from "./en";
+import { goalsFr } from "./goals";
 import { guideFr } from "./guide";
 import { householdFr } from "./household";
 import { importsFr } from "./imports";
@@ -32,6 +33,7 @@ export const fr: Messages = {
   reports: reportsFr,
   activity: activityFr,
   wealth: wealthFr,
+  goals: goalsFr,
   categories: categoriesFr,
   runGuide: runGuideFr,
   guide: guideFr,

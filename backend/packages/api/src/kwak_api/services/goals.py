@@ -14,10 +14,20 @@ from kwak_core.budget import Month, month_range
 from kwak_core.categories import CategoryKind
 from kwak_core.kpis import month_figures
 from kwak_core.recurring import Frequency
+from kwak_core.wealth import WealthKind
 from sqlalchemy import select
 from sqlalchemy.orm import Session, joinedload, selectinload
 
-from kwak_api.models import Category, Goal, GoalFunding, Household, User, WealthLine, WealthValue
+from kwak_api.models import (
+    Category,
+    ClosedAs,
+    Goal,
+    GoalFunding,
+    Household,
+    User,
+    WealthLine,
+    WealthValue,
+)
 from kwak_api.services import recurring, wealth
 from kwak_api.services.budget import crossing_by_month, scoped_accounts
 from kwak_api.services.dashboard import flows_by_month
@@ -26,6 +36,10 @@ from kwak_api.services.households import analysis_start
 
 class SharesExceededError(Exception):
     """A line's shares in open goals would sum to more than 100 %."""
+
+    def __init__(self, line: str, left: int) -> None:
+        super().__init__(line)
+        self.line, self.left = line, left
 
 
 class PrecautionTakenError(Exception):
@@ -82,15 +96,16 @@ def _open_shares(db: Session, line_id: UUID, but: UUID | None) -> list[int]:
 def check_open(db: Session, goal: Goal) -> None:
     """What an open goal must respect against the household's other open goals."""
     for funding in goal.fundings:
+        taken = _open_shares(db, funding.line_id, goal.id)
         try:
-            core.check_line_shares([*_open_shares(db, funding.line_id, goal.id), funding.share])
+            core.check_line_shares([*taken, funding.share])
         except core.GoalError:
-            raise SharesExceededError(funding.line.name) from None
-    if goal.tier is core.Tier.PRECAUTION:
+            raise SharesExceededError(funding.line.name, max(0, 100 - sum(taken))) from None
+    if goal.precaution:
         others = db.execute(
             select(Goal.owner_id, Goal.visibility).where(
                 Goal.household_id == goal.household_id,
-                Goal.tier == core.Tier.PRECAUTION,
+                Goal.precaution.is_(True),
                 Goal.closed_from.is_(None),
                 Goal.id != goal.id,
             )
@@ -131,28 +146,116 @@ def last_month(goal: Goal, this_month: Month) -> Month:
     return max(min(closed, this_month), Month.of(goal.start))
 
 
-def track(
-    goal: Goal, values: dict[UUID, dict[Month, Decimal]], this_month: Month, band: Decimal
-) -> core.Tracking:
-    last = last_month(goal, this_month)
-    fundings = [
-        core.Funding(
-            values.get(f.line_id, {}),
-            f.share,
-            closed_from=Month.of(f.line.closed_from) if f.line.closed_from else None,
+def tier(goal: Goal, this_month: Month) -> core.Tier:
+    """The tier its deadline gives it in the last month it is tracked."""
+    return core.tier_of(
+        Month.of(goal.deadline) if goal.deadline else None,
+        this_month=last_month(goal, this_month),
+        precaution=goal.precaution,
+    )
+
+
+def _funded(goal: Goal) -> core.FundedGoal:
+    return core.FundedGoal(
+        goal.id,
+        goal.target,
+        Month.of(goal.start),
+        [core.Envelope(f.line_id, f.share, f.opening) for f in goal.fundings],
+        Month.of(goal.deadline) if goal.deadline else None,
+        goal.precaution,
+        Month.of(goal.closed_from) if goal.closed_from else None,
+    )
+
+
+def envelopes(db: Session, household_id: UUID, this_month: Month) -> core.Envelopes:
+    """Every goal's envelopes in the household up to this month (F-GOAL-3).
+
+    All the household's goals count, whoever sees them: a line's rises and falls are shared
+    out the same way for every viewer.
+    """
+    goals = list(
+        db.scalars(
+            select(Goal)
+            .where(Goal.household_id == household_id)
+            .options(selectinload(Goal.fundings).joinedload(GoalFunding.line))
         )
-        for f in goal.fundings
-    ]
-    months = month_range(Month.of(goal.start), last)
+    )
+    line_rows = {f.line_id: f.line for g in goals for f in g.fundings}
+    values = _values(db, set(line_rows))
+    lines = {
+        line_id: core.Line(
+            values.get(line_id, {}),
+            Month.of(line.closed_from) if line.closed_from else None,
+        )
+        for line_id, line in line_rows.items()
+    }
+    first = min((Month.of(g.start) for g in goals), default=this_month)
+    return core.envelopes(
+        lines, [_funded(g) for g in goals], month_range(min(first, this_month), this_month)
+    )
+
+
+def _at(env: core.Envelopes, month: Month) -> int:
+    return list(env.months).index(month)
+
+
+def held(goal: Goal, env: core.Envelopes, this_month: Month) -> dict[UUID, Decimal]:
+    """What the goal holds on each of its lines in the last month it is tracked."""
+    k = _at(env, last_month(goal, this_month))
+    return {f.line_id: env.held(goal.id, f.line_id)[k] for f in goal.fundings}
+
+
+def track(goal: Goal, env: core.Envelopes, this_month: Month, band: Decimal) -> core.Tracking:
+    last = last_month(goal, this_month)
+    values = env.value(goal.id)[_at(env, Month.of(goal.start)) : _at(env, last) + 1]
     return core.track(
-        goal.tier,
         goal.target,
         Month.of(goal.start),
         Month.of(goal.deadline) if goal.deadline else None,
-        core.goal_values(fundings, months),
+        values,
         this_month=last,
+        precaution=goal.precaution,
         band=band,
     )
+
+
+def reached(db: Session, goal: Goal, today: date, band: Decimal) -> bool:
+    """Whether an open goal that is not permanent would archive itself at once."""
+    this_month = Month.of(today)
+    t = track(goal, envelopes(db, goal.household_id, this_month), this_month, band)
+    return core.archives_itself(t, permanent=goal.permanent)
+
+
+@dataclass
+class LineFree:
+    line: WealthLine
+    worth: Decimal
+    set_aside: Decimal
+    """By the goals the viewer sees."""
+
+
+def lines_free(db: Session, viewer: User, today: date) -> list[LineFree]:
+    """This month, each visible asset line's worth and the part the viewer's goals set aside."""
+    this_month = Month.of(today)
+    env = envelopes(db, viewer.household_id, this_month)
+    k = _at(env, this_month)
+    goals = [g for g in visible_goals(db, viewer) if g.closed_from is None]
+    lines = [
+        line for line in wealth.visible_lines(db, viewer) if line.category.kind is WealthKind.ASSET
+    ]
+    values = _values(db, {line.id for line in lines})
+    out = []
+    for line in lines:
+        worth = core.line_worth(
+            core.Line(
+                values.get(line.id, {}),
+                Month.of(line.closed_from) if line.closed_from else None,
+            ),
+            this_month,
+        )
+        set_aside = sum((env.held(g.id, line.id)[k] for g in goals), Decimal(0))
+        out.append(LineFree(line, worth, set_aside))
+    return out
 
 
 def capacity(db: Session, viewer: User, scope: Scope, this_month: Month) -> Decimal:
@@ -188,6 +291,7 @@ class Overview:
     capacity_set: bool
     precaution_share: Decimal
     plan: core.EffortPlan
+    envelopes: core.Envelopes
 
 
 def overview(db: Session, viewer: User, scope: Scope, today: date, band: Decimal) -> Overview:
@@ -197,8 +301,12 @@ def overview(db: Session, viewer: User, scope: Scope, today: date, band: Decimal
         for g in visible_goals(db, viewer)
         if in_scope(scope, owner_id=g.owner_id, visibility=g.visibility, viewer_id=viewer.id)
     ]
-    values = _values(db, {f.line_id for g in goals for f in g.fundings})
-    tracked = [(g, track(g, values, this_month, band)) for g in goals]
+    env = envelopes(db, viewer.household_id, this_month)
+    tracked = [(g, track(g, env, this_month, band)) for g in goals]
+    for g, t in tracked:
+        if g.closed_from is None and core.archives_itself(t, permanent=g.permanent):
+            # From next month: this month, when it got there, still counts.
+            g.closed_from, g.closed_as = this_month.next().first_day(), ClosedAs.ARCHIVED
     open_ = [(g, t) for g, t in tracked if g.closed_from is None]
     closed = [(g, t) for g, t in tracked if g.closed_from is not None]
 
@@ -211,22 +319,23 @@ def overview(db: Session, viewer: User, scope: Scope, today: date, band: Decimal
     plan = core.effort_plan(
         cap,
         household.precaution_share,
-        precaution={g.id: t.remaining for g, t in open_ if g.tier is core.Tier.PRECAUTION},
+        precaution={g.id: t.remaining for g, t in open_ if g.precaution},
         others={
             g.id: t.required
             for g, t in open_
-            if g.tier is not core.Tier.PRECAUTION and t.required is not None and t.remaining
+            if not g.precaution and t.required is not None and t.remaining
         },
     )
     return Overview(
         this_month,
         open_,
         closed,
-        core.pyramid(core.PyramidGoal(g.tier, t.value, g.target) for g, t in open_),
+        core.pyramid(core.PyramidGoal(tier(g, this_month), t.value, g.target) for g, t in open_),
         cap,
         household.goal_capacity is not None,
         household.precaution_share,
         plan,
+        env,
     )
 
 

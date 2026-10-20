@@ -114,6 +114,16 @@
   --color-wealth-equipment: rgb(140 137 205);
   --color-wealth-exotic: rgb(74 192 185);
   --color-wealth-debts: rgb(178 57 43);
+
+  /* Goal tiers (F-GOAL, spec §7): steps of one hue, darkest at the pyramid's base. Every tier
+     keeps its name and percentage beside the pyramid, so contrast is never the only cue. */
+  --color-goal-tier-1: var(--color-primary-700);
+  --color-goal-tier-2: var(--color-primary-500);
+  --color-goal-tier-3: var(--color-primary-300);
+  /* The pyramid's foundation: the emergency fund, in the precaution's ochre. */
+  --color-goal-foundation: var(--color-secondary-600);
+  /* "Fill first": the emergency fund short of its target. */
+  --color-goal-priority: var(--color-secondary-500);
 }
 
 @layer base {
@@ -165,6 +175,11 @@
     --color-wealth-equipment: rgb(138 135 207);
     --color-wealth-exotic: rgb(0 144 137);
     --color-wealth-debts: rgb(189 104 85);
+    --color-goal-tier-1: var(--color-primary-600);
+    --color-goal-tier-2: var(--color-primary-400);
+    --color-goal-tier-3: var(--color-primary-200);
+    --color-goal-foundation: var(--color-secondary-500);
+    --color-goal-priority: var(--color-secondary-400);
   }
 
   body {
