@@ -29,12 +29,21 @@ MIN_PRECAUTION_SHARE = Decimal("0.5")
 
 
 class Tier(enum.StrEnum):
+    """The pyramid's levels, from its foundation up."""
+
     PRECAUTION = "precaution"
-    """The emergency fund, filled first (F-GOAL-6)."""
+    """The foundation: the emergency fund, filled first (F-GOAL-6)."""
+    SHORT = "short"
+    """Up to a year."""
     MEDIUM = "medium"
-    """One to five years."""
+    """Over a year, up to five."""
     LONG = "long"
     """Beyond five years."""
+
+
+SHORT_MONTHS = 12
+MEDIUM_MONTHS = 60
+"""A deadline up to a year away is short term, up to five years medium term, then long term."""
 
 
 class GoalStatus(enum.StrEnum):
@@ -44,6 +53,8 @@ class GoalStatus(enum.StrEnum):
     BEHIND = "behind"
     FILL_FIRST = "fill_first"
     """A precaution goal short of its target."""
+    OPEN = "open"
+    """A permanent goal without a deadline, short of its target: no pace to keep."""
 
 
 class GoalError(ValueError):
@@ -68,28 +79,37 @@ def add_months(month: Month, n: int) -> Month:
 
 
 def check_goal(
-    tier: Tier, target: Decimal, *, deadline: Month | None, start: Month, this_month: Month
+    target: Decimal,
+    *,
+    precaution: bool = False,
+    permanent: bool = False,
+    deadline: Month | None,
+    start: Month,
+    this_month: Month,
 ) -> None:
     if target <= 0 or target != target.quantize(CENT):
         raise GoalError("a target is a positive amount in cents")
-    if deadline is None and tier is not Tier.PRECAUTION:
-        raise GoalError("a medium- or long-term goal needs a deadline")
+    if precaution and not permanent:
+        raise GoalError("the precaution is permanent")
+    if deadline is None and not permanent:
+        raise GoalError("a goal needs a deadline, unless it is permanent")
     if start > this_month:
         raise GoalError("a goal's start is never a month to come")
     if deadline is not None and deadline < this_month:
         raise GoalError("a deadline is never a past month")
 
 
-def horizon_flagged(tier: Tier, deadline: Month | None, *, this_month: Month) -> bool:
-    """A deadline outside the tier's horizon: shown as a warning, never refused."""
+def tier_of(deadline: Month | None, *, this_month: Month, precaution: bool = False) -> Tier:
+    """The tier is never chosen: it follows the deadline, so a goal moves down as it nears.
+    The precaution is the foundation, whatever its deadline."""
+    if precaution:
+        return Tier.PRECAUTION
     if deadline is None:
-        return False
+        return Tier.SHORT
     months = months_between(this_month, deadline)
-    if tier is Tier.PRECAUTION:
-        return months > 12
-    if tier is Tier.MEDIUM:
-        return not 12 <= months <= 60
-    return months <= 60
+    if months <= SHORT_MONTHS:
+        return Tier.SHORT
+    return Tier.MEDIUM if months <= MEDIUM_MONTHS else Tier.LONG
 
 
 def check_precaution_slot(
@@ -162,25 +182,133 @@ def check_line_shares(shares: Sequence[int]) -> None:
 
 
 @dataclass(frozen=True)
-class Funding:
+class Line:
     values: Mapping[Month, Decimal]
     """The line's monthly values, as entered (F-WLT-3)."""
-    share: int
-    """In %; 100 is the line in full."""
     closed_from: Month | None = None
 
 
-def goal_values(fundings: Sequence[Funding], months: Sequence[Month]) -> list[Decimal]:
-    """The goal's value in each month; shares hold for the whole history."""
-    out = []
+def line_worth(line: Line, month: Month) -> Decimal:
+    """What the line is worth in `month`: its value carried forward, never below zero."""
+    cell = line_cell(line.values, month, closed_from=line.closed_from)
+    return max(ZERO, cell.amount) if cell is not None else ZERO
+
+
+@dataclass(frozen=True)
+class Envelope:
+    """A goal's claim on a line."""
+
+    line: UUID
+    share: int
+    """Of the line's rises, in %."""
+    opening: Decimal = ZERO
+    """Taken from the line's free part in the goal's start month."""
+
+
+@dataclass(frozen=True)
+class FundedGoal:
+    id: UUID
+    target: Decimal
+    start: Month
+    envelopes: Sequence[Envelope]
+    deadline: Month | None = None
+    precaution: bool = False
+    closed_from: Month | None = None
+    """From this month, its envelopes are freed."""
+
+
+@dataclass(frozen=True)
+class Envelopes:
+    months: Sequence[Month]
+    _held: Mapping[tuple[UUID, UUID], list[Decimal]]
+    _free: Mapping[UUID, list[Decimal]]
+
+    def held(self, goal: UUID, line: UUID) -> list[Decimal]:
+        """What the goal holds on the line, month by month."""
+        return self._held.get((goal, line), [ZERO] * len(self.months))
+
+    def value(self, goal: UUID) -> list[Decimal]:
+        """The goal's value, month by month: the sum of its envelopes."""
+        out = [ZERO] * len(self.months)
+        for (g, _), amounts in self._held.items():
+            if g == goal:
+                out = [a + b for a, b in zip(out, amounts, strict=True)]
+        return out
+
+    def free(self, line: UUID) -> list[Decimal]:
+        """What the line holds beyond every goal's envelope, month by month."""
+        return list(self._free.get(line, [ZERO] * len(self.months)))
+
+
+def envelopes(
+    lines: Mapping[UUID, Line], goals: Sequence[FundedGoal], months: Sequence[Month]
+) -> Envelopes:
+    """Every goal's envelopes on its lines, month by month (F-GOAL-3, invariant §8.19).
+
+    `months` run without a gap from the earliest start. Each month: a line's rise is shared out
+    by the goals it funded the month before, never beyond their targets; goals starting take
+    their opening amounts from what is free; closed goals free theirs; then a line worth less
+    than its envelopes cuts them from the farthest deadline to the nearest, the precaution last.
+    """
+    if any(g.start < months[0] for g in goals):
+        raise ValueError("months must start no later than the earliest goal")
+    held: dict[tuple[UUID, UUID], Decimal] = {}
+    out: dict[tuple[UUID, UUID], list[Decimal]] = {
+        (g.id, e.line): [] for g in goals for e in g.envelopes
+    }
+    free: dict[UUID, list[Decimal]] = {line: [] for line in lines}
+    before = dict.fromkeys(lines, ZERO)
+
+    def total(goal: FundedGoal) -> Decimal:
+        return sum((held.get((goal.id, e.line), ZERO) for e in goal.envelopes), ZERO)
+
+    def on_line(line: UUID) -> Decimal:
+        return sum((a for (_, ln), a in held.items() if ln == line), ZERO)
+
     for month in months:
-        total = ZERO
-        for f in fundings:
-            cell = line_cell(f.values, month, closed_from=f.closed_from)
-            if cell is not None:
-                total += _floor(cell.amount * f.share / 100)
-        out.append(total)
-    return out
+        worth = {line: line_worth(lines[line], month) for line in lines}
+        active = [
+            g
+            for g in goals
+            if g.start <= month and (g.closed_from is None or month < g.closed_from)
+        ]
+        for g in active:
+            if g.start == month:
+                continue
+            for e in g.envelopes:
+                rise = worth[e.line] - before[e.line]
+                if rise > 0:
+                    gain = min(_floor(rise * e.share / 100), max(ZERO, g.target - total(g)))
+                    held[(g.id, e.line)] = held.get((g.id, e.line), ZERO) + gain
+        for g in active:
+            if g.start == month:
+                for e in g.envelopes:
+                    room = max(ZERO, worth[e.line] - on_line(e.line))
+                    take = min(e.opening, room, max(ZERO, g.target - total(g)))
+                    held[(g.id, e.line)] = take
+        for key in [k for k in held if k[0] not in {g.id for g in active}]:
+            del held[key]
+        for line in lines:
+            excess = on_line(line) - worth[line]
+            if excess <= 0:
+                continue
+            claims = sorted(
+                (g for g in active if (g.id, line) in held),
+                key=lambda g: (
+                    g.precaution,
+                    -months_between(month, g.deadline) if g.deadline is not None else 0,
+                ),
+            )
+            for g in claims:
+                cut = min(excess, held[(g.id, line)])
+                held[(g.id, line)] -= cut
+                excess -= cut
+        for key, amounts in out.items():
+            amounts.append(held.get(key, ZERO))
+        for line in lines:
+            free[line].append(worth[line] - on_line(line))
+        before = worth
+    return Envelopes(months, out, free)
 
 
 # F-GOAL-4 and 5
@@ -219,13 +347,13 @@ class Tracking:
 
 
 def track(
-    tier: Tier,
     target: Decimal,
     start: Month,
     deadline: Month | None,
     values: Sequence[Decimal],
     *,
     this_month: Month,
+    precaution: bool = False,
     band: Decimal = DEFAULT_BAND,
 ) -> Tracking:
     """`values` are the goal's values for every month from `start` to `this_month`."""
@@ -285,10 +413,10 @@ def track(
 
     if remaining == 0:
         status = GoalStatus.REACHED
-    elif tier is Tier.PRECAUTION:
+    elif precaution:
         status = GoalStatus.FILL_FIRST
     elif (exp := rows[-1].expected) is None:
-        raise GoalError("a medium- or long-term goal needs a deadline")
+        status = GoalStatus.OPEN
     else:
         status = _STATUS[budget_status(value, exp, band, minimum=True)]
     return Tracking(
@@ -305,6 +433,11 @@ def track(
         extra,
         status,
     )
+
+
+def archives_itself(tracking: Tracking, *, permanent: bool) -> bool:
+    """A goal that is not permanent is archived once it reaches its target (F-GOAL-8)."""
+    return not permanent and tracking.status is GoalStatus.REACHED
 
 
 _STATUS = {

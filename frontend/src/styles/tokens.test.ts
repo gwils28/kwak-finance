@@ -17,3 +17,12 @@ test("wealth colours survive the build in both themes", () => {
   expect(wealthKeys(block("@theme static {"))).toEqual([...WEALTH_KEYS].sort());
   expect(wealthKeys(block(':root[data-theme="dark"] {'))).toEqual([...WEALTH_KEYS].sort());
 });
+
+const goalKeys = (css: string) =>
+  [...css.matchAll(/--color-goal-([a-z0-9-]+):/g)].map((m) => m[1]).sort();
+
+test("goal colours survive the build in both themes", () => {
+  const keys = ["foundation", "priority", "tier-1", "tier-2", "tier-3"];
+  expect(goalKeys(block("@theme static {"))).toEqual(keys);
+  expect(goalKeys(block(':root[data-theme="dark"] {'))).toEqual(keys);
+});

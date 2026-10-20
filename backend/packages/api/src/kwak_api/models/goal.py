@@ -4,7 +4,6 @@ from decimal import Decimal
 from uuid import UUID
 
 from kwak_core.accounts import Visibility
-from kwak_core.goals import Tier
 from sqlalchemy import (
     CheckConstraint,
     Date,
@@ -14,6 +13,7 @@ from sqlalchemy import (
     Numeric,
     String,
     UniqueConstraint,
+    text,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -23,8 +23,10 @@ from kwak_api.models.wealth import WealthLine
 
 
 class ClosedAs(enum.StrEnum):
-    REACHED = "reached"
-    ABANDONED = "abandoned"
+    ARCHIVED = "archived"
+    """Done with: kept for the record."""
+    CANCELLED = "cancelled"
+    """No longer wanted."""
 
 
 def _string_enum(enum_type: type[enum.StrEnum], name: str) -> Enum:
@@ -40,12 +42,13 @@ def _string_enum(enum_type: type[enum.StrEnum], name: str) -> Enum:
 
 
 class Goal(UUIDPrimaryKey, Timestamps, Base):
-    """An amount to gather by a date, in one tier of the pyramid (F-GOAL-1)."""
+    """An amount to gather by a date; its tier of the pyramid follows the deadline (F-GOAL-1)."""
 
     __tablename__ = "goal"
     __table_args__ = (
         CheckConstraint("target > 0", name="target_positive"),
-        CheckConstraint("deadline IS NOT NULL OR tier = 'precaution'", name="deadline_needed"),
+        CheckConstraint("deadline IS NOT NULL OR permanent", name="deadline_needed"),
+        CheckConstraint("permanent OR NOT precaution", name="precaution_permanent"),
         CheckConstraint("extract(day from start) = 1", name="start_month"),
         CheckConstraint("extract(day from deadline) = 1", name="deadline_month"),
         CheckConstraint("extract(day from closed_from) = 1", name="closed_from_month"),
@@ -54,7 +57,10 @@ class Goal(UUIDPrimaryKey, Timestamps, Base):
 
     household_id: Mapped[UUID] = mapped_column(ForeignKey("household.id"), index=True)
     name: Mapped[str] = mapped_column(String(100))
-    tier: Mapped[Tier] = mapped_column(_string_enum(Tier, "goal_tier"))
+    precaution: Mapped[bool] = mapped_column(default=False, server_default=text("false"))
+    """The emergency fund, filled first (F-GOAL-6): a short-term goal."""
+    permanent: Mapped[bool] = mapped_column(default=False, server_default=text("false"))
+    """Kept in view once reached; any other goal archives itself then (F-GOAL-8)."""
     target: Mapped[Decimal] = mapped_column(Numeric(14, 2))
     start: Mapped[date] = mapped_column(Date)
     """The first month tracked (its first day)."""
@@ -72,12 +78,13 @@ class Goal(UUIDPrimaryKey, Timestamps, Base):
 
 
 class GoalFunding(UUIDPrimaryKey, Base):
-    """A share of a wealth line's value that counts towards a goal (F-GOAL-3)."""
+    """A goal's envelope on a wealth line: an opening amount and a share of its rises (F-GOAL-3)."""
 
     __tablename__ = "goal_funding"
     __table_args__ = (
         UniqueConstraint("goal_id", "line_id"),
         CheckConstraint("share BETWEEN 1 AND 100", name="share_range"),
+        CheckConstraint("opening >= 0", name="opening_positive"),
     )
 
     goal_id: Mapped[UUID] = mapped_column(ForeignKey("goal.id", ondelete="CASCADE"))
@@ -85,7 +92,9 @@ class GoalFunding(UUIDPrimaryKey, Base):
         ForeignKey("wealth_line.id", ondelete="CASCADE"), index=True
     )
     share: Mapped[int] = mapped_column(Integer)
-    """In %; 100 is the line in full."""
+    """Of the line's rises, in %."""
+    opening: Mapped[Decimal] = mapped_column(Numeric(14, 2), server_default=text("0"))
+    """Taken from the line's free part in the goal's start month."""
 
     goal: Mapped[Goal] = relationship(back_populates="fundings")
     line: Mapped[WealthLine] = relationship()

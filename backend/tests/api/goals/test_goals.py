@@ -23,7 +23,6 @@ def owner_client(client: TestClient, clock: Clock, owner: User) -> TestClient:
 def _post(client: TestClient, **fields: Any) -> Any:
     body = {
         "name": "Voyage au Japon",
-        "tier": "medium",
         "target": "6000.00",
         "deadline": "2027-08",
         "visibility": "shared",
@@ -55,8 +54,18 @@ def _livret(client: TestClient, visibility: str = "shared") -> str:
 
 def test_a_goal_follows_the_values_of_the_lines_that_fund_it(owner_client: TestClient) -> None:
     livret = _livret(owner_client)
-    created = _goal(owner_client, start="2026-08", fundings=[{"line_id": livret, "share": 50}])
-    assert created["fundings"] == [{"line_id": livret, "line_name": "Livret A", "share": 50}]
+    # 400 of the 800 there in August, then half of each rise
+    funding = {"line_id": livret, "share": 50, "opening": "400.00"}
+    created = _goal(owner_client, start="2026-08", fundings=[funding])
+    assert created["fundings"] == [
+        {
+            "line_id": livret,
+            "line_name": "Livret A",
+            "share": 50,
+            "opening": "400.00",
+            "held": "600.00",
+        }
+    ]
 
     [goal] = _goals(owner_client)["goals"]
     assert goal["start"] == "2026-08"
@@ -65,6 +74,7 @@ def test_a_goal_follows_the_values_of_the_lines_that_fund_it(owner_client: TestC
     assert (goal["actual"], goal["required"]) == ("100.00", "540.00")
     assert (goal["estimated"], goal["never"], goal["months_early"]) == ("2031-04", False, -44)
     assert goal["status"] == "behind"
+    assert goal["expected"] == "1333.33"  # 400 + 5600 x 2 / 12: where the gauge's marker sits
     assert goal["owner_name"] == "Owner"
 
     detail = owner_client.get(f"/api/goals/{goal['id']}").json()
@@ -97,9 +107,22 @@ def test_a_goal_breaking_a_rule_is_refused(
     assert message in response.text
 
 
-def test_a_deadline_outside_the_tiers_horizon_is_flagged(owner_client: TestClient) -> None:
-    assert _goal(owner_client, deadline="2027-03")["horizon_flagged"] is True
-    assert _goal(owner_client, name="Voiture", deadline="2028-10")["horizon_flagged"] is False
+def test_the_tier_follows_the_deadline(owner_client: TestClient, clock: Clock) -> None:
+    trip = _goal(owner_client, name="Été", deadline="2027-03")
+    assert (trip["tier"], trip["precaution"]) == ("short", False)
+    car = _goal(owner_client, name="Voiture", deadline="2028-10")
+    assert car["tier"] == "medium"
+    house = _goal(owner_client, name="Maison", deadline="2032-01")
+    assert house["tier"] == "long"
+    # a later deadline moves the goal up a tier
+    moved = owner_client.patch(
+        f"/api/goals/{car['id']}", json={"deadline": "2033-01"}, headers=csrf(owner_client)
+    )
+    assert moved.json()["tier"] == "long"
+    # and time brings it down
+    clock.now = TODAY.replace(year=2027, month=2)  # 59 months before the deadline
+    log_in(owner_client, clock)
+    assert owner_client.get(f"/api/goals/{house['id']}").json()["goal"]["tier"] == "medium"
 
 
 def test_a_lines_shares_never_exceed_100_percent(owner_client: TestClient) -> None:
@@ -107,10 +130,14 @@ def test_a_lines_shares_never_exceed_100_percent(owner_client: TestClient) -> No
     first = _goal(owner_client, fundings=[{"line_id": livret, "share": 60}])
     response = _post(owner_client, name="Été", fundings=[{"line_id": livret, "share": 41}])
     assert response.status_code == 409
+    # it says how much is left to share out
+    assert response.json()["detail"] == (
+        "Livret A would fund open goals beyond 100 %: 40 % of its rises left"
+    )
     # closing a goal frees its shares
     closed = owner_client.patch(
         f"/api/goals/{first['id']}",
-        json={"closed_from": "2026-10", "closed_as": "abandoned"},
+        json={"closed_from": "2026-10", "closed_as": "cancelled"},
         headers=csrf(owner_client),
     )
     assert closed.status_code == 200, closed.text
@@ -125,15 +152,87 @@ def test_closed_goals_leave_the_pyramid(owner_client: TestClient) -> None:
     goal = _goal(owner_client)
     owner_client.patch(
         f"/api/goals/{goal['id']}",
-        json={"closed_from": "2026-10", "closed_as": "reached"},
+        json={"closed_from": "2026-10", "closed_as": "archived"},
         headers=csrf(owner_client),
     )
     goals = _goals(owner_client)
     assert goals["goals"] == []
     [closed] = goals["closed"]
-    assert (closed["closed_from"], closed["closed_as"]) == ("2026-10", "reached")
+    assert (closed["closed_from"], closed["closed_as"]) == ("2026-10", "archived")
     medium = next(t for t in goals["pyramid"] if t["tier"] == "medium")
     assert (medium["target"], medium["progress"]) == ("0.00", None)
+
+
+def test_a_goal_archives_itself_once_reached_unless_permanent(owner_client: TestClient) -> None:
+    livret = _livret(owner_client)  # 1200 in October
+    trip = _goal(owner_client, name="Été", target="500.00", deadline="2027-06")
+    fund = _goal(
+        owner_client, name="Fonds travaux", target="1000.00", permanent=True, deadline=None
+    )
+    for goal in (trip, fund):
+        owner_client.patch(
+            f"/api/goals/{goal['id']}",
+            json={"fundings": [{"line_id": livret, "share": 50, "opening": "600.00"}]},
+            headers=csrf(owner_client),
+        )
+    assert [g["name"] for g in _goals(owner_client)["goals"]] == ["Fonds travaux"]
+    owner_client.patch(
+        f"/api/goals/{fund['id']}", json={"target": "600.00"}, headers=csrf(owner_client)
+    )
+    goals = _goals(owner_client)
+    # the permanent goal stays in view at 100 %
+    [kept] = goals["goals"]
+    assert (kept["name"], kept["permanent"], kept["status"]) == ("Fonds travaux", True, "reached")
+    # the other is archived from next month, so this month still counts
+    [archived] = goals["closed"]
+    assert (archived["name"], archived["closed_as"], archived["closed_from"]) == (
+        "Été",
+        "archived",
+        "2026-11",
+    )
+    assert archived["value"] == "500.00"  # never beyond its target
+    # reopened as it is, it would archive itself again
+    url = f"/api/goals/{archived['id']}"
+    refused = owner_client.patch(url, json={"closed_from": None}, headers=csrf(owner_client))
+    assert refused.status_code == 422
+    assert "target" in refused.text
+    reopened = owner_client.patch(
+        url, json={"closed_from": None, "target": "2000.00"}, headers=csrf(owner_client)
+    )
+    assert reopened.status_code == 200, reopened.text
+    assert reopened.json()["closed_as"] is None
+
+
+def test_each_line_shows_what_the_goals_set_aside(owner_client: TestClient) -> None:
+    livret = _livret(owner_client)  # 1200 in October
+    _goal(owner_client, fundings=[{"line_id": livret, "share": 100, "opening": "300.00"}])
+    response = owner_client.get("/api/goals/lines")
+    assert response.status_code == 200, response.text
+    assert response.json() == [
+        {
+            "line_id": livret,
+            "line_name": "Livret A",
+            "worth": "1200.00",
+            "set_aside": "300.00",
+            "free": "900.00",
+        }
+    ]
+
+
+def test_a_permanent_goal_needs_no_deadline_and_the_precaution_is_one(
+    owner_client: TestClient,
+) -> None:
+    fund = _goal(owner_client, name="Fonds travaux", permanent=True, deadline=None)
+    assert (fund["tier"], fund["status"], fund["deadline"]) == ("short", "open", None)
+    precaution = _goal(owner_client, name="Précaution", precaution=True, deadline=None)
+    assert (precaution["permanent"], precaution["tier"]) == (True, "precaution")
+    # the foundation of the pyramid, under its three tiers
+    tiers = [t["tier"] for t in _goals(owner_client)["pyramid"]]
+    assert tiers == ["precaution", "short", "medium", "long"]
+    response = owner_client.patch(
+        f"/api/goals/{precaution['id']}", json={"permanent": False}, headers=csrf(owner_client)
+    )
+    assert response.status_code == 422
 
 
 def test_a_goal_is_closed_with_how_it_ended(owner_client: TestClient) -> None:
@@ -177,9 +276,11 @@ def test_a_line_funding_a_visible_goal_cannot_turn_private(owner_client: TestCli
 
 
 def test_one_open_precaution_per_member(owner_client: TestClient) -> None:
-    body = {"name": "Précaution", "tier": "precaution", "deadline": None}
+    body = {"name": "Précaution", "precaution": True, "deadline": None}
     assert _post(owner_client, **body).status_code == 201
     assert _post(owner_client, **body).status_code == 409
+    # other short-term goals are not the precaution
+    assert _post(owner_client, name="Été", deadline="2027-06").status_code == 201
     assert _post(owner_client, **body | {"visibility": "joint"}).status_code == 201
 
 
@@ -222,7 +323,13 @@ def test_the_effort_plan_fills_the_precaution_first(owner_client: TestClient) ->
         headers=csrf(owner_client),
     )
     assert settings.status_code == 200, settings.text
-    precaution = _goal(owner_client, name="Précaution", tier="precaution", target="2300.00")
+    precaution = _goal(
+        owner_client,
+        name="Précaution",
+        precaution=True,
+        deadline=None,
+        target="2300.00",
+    )
     japan = _goal(owner_client, target="2900.00")  # 290 a month over 10 months
     plan = _goals(owner_client)["plan"]
     assert (plan["capacity"], plan["capacity_set"], plan["precaution_share"]) == (

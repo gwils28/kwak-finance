@@ -25,14 +25,15 @@ test("the main tabs lead to the everyday pages, the current one marked", async (
     "aria-current",
     "page",
   );
-  // Spending is the space shown; wealth is one click away.
+  // Spending is the space shown; wealth and goals are one click away.
   const spaces = screen.getByRole("navigation", { name: "Spaces" });
   expect(
     within(spaces)
       .getAllByRole("link")
       .map((link) => link.textContent),
-  ).toEqual(["Spending", "Wealth"]);
+  ).toEqual(["Spending", "Wealth", "Goals"]);
   expect(within(spaces).getByRole("link", { name: "Wealth" })).toHaveAttribute("href", "/wealth");
+  expect(within(spaces).getByRole("link", { name: "Goals" })).toHaveAttribute("href", "/goals");
 });
 
 test("the guide stands apart from the main tabs", async () => {
@@ -130,7 +131,19 @@ test("the wealth space has its own tabs: monthly tracking and analysis", async (
   );
 });
 
-test("the overview is the app's name, apart from both spaces", async () => {
+test("the goals space has no tabs", async () => {
+  fakeApi({
+    "GET /api/auth/me": () => Response.json(owner),
+    "PATCH /api/auth/me": (body) => Response.json({ ...owner, ...(body as object) }),
+  });
+  render(<TestApp path="/goals" />);
+
+  const spaces = await screen.findByRole("navigation", { name: "Spaces" });
+  expect(within(spaces).getByRole("link", { name: "Goals" })).toHaveAttribute("aria-current");
+  expect(screen.queryByRole("navigation", { name: "Main" })).toBeNull();
+});
+
+test("the overview is the app's name, apart from every space", async () => {
   api();
   render(<TestApp path="/accounts" />);
 

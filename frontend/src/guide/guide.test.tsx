@@ -42,6 +42,7 @@ type Progress = {
   uncategorised?: number;
   plan?: boolean;
   members?: number;
+  goal?: boolean;
 };
 
 function api({
@@ -50,6 +51,7 @@ function api({
   uncategorised = 0,
   plan = false,
   members = 1,
+  goal = false,
 }: Progress) {
   return fakeApi({
     "GET /api/auth/me": () => Response.json(owner),
@@ -63,6 +65,12 @@ function api({
     "GET /api/budget/plans": () => Response.json(plan ? [current()] : []),
     "GET /api/household/members": () =>
       Response.json(Array.from({ length: members }, (_, i) => ({ id: `m${i}` }))),
+    "GET /api/goals": () =>
+      Response.json({
+        goals: [],
+        closed: goal ? [{ tier: "short", precaution: true }] : [],
+        pyramid: [],
+      }),
   });
 }
 
@@ -80,14 +88,15 @@ test("the overview's checklist ticks itself from the household's data", async ()
   expect(step(region, /Import a statement/)).toHaveAttribute("data-done", "true");
   expect(step(region, /Categorise your transactions/)).toHaveAttribute("data-done", "false");
   expect(step(region, /Set your monthly targets/)).toHaveAttribute("data-done", "false");
-  expect(region).toHaveTextContent("2 of 5 done");
+  expect(step(region, /Set your emergency fund/)).toHaveAttribute("data-done", "false");
+  expect(region).toHaveTextContent("2 of 6 done");
   expect(
     within(region).getByRole("link", { name: "Categorise your transactions" }),
   ).toHaveAttribute("href", "/transactions?category=none");
 });
 
 test("a plan with targets and a second member complete the checklist, which then disappears", async () => {
-  api({ accounts: 1, transactions: 40, uncategorised: 0, plan: true, members: 2 });
+  api({ accounts: 1, transactions: 40, uncategorised: 0, plan: true, members: 2, goal: true });
   render(<TestApp path="/" />);
 
   expect(await screen.findByRole("heading", { name: "Overview" })).toBeInTheDocument();
@@ -135,6 +144,7 @@ test("the guide is in the header and has a section per feature", async () => {
     "Plan review",
     "Overview",
     "Wealth",
+    "Goals",
     "Reports",
     "Members and security",
   ]);

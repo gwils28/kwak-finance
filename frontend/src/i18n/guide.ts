@@ -12,6 +12,7 @@ export type GuidePage =
   | "/budget"
   | "/budget/review"
   | "/wealth"
+  | "/goals"
   | "/reports"
   | "/categories"
   | "/members"
@@ -26,7 +27,7 @@ export type GuideSection = {
 export const guideEn = {
   title: "Using Kwak Finance",
   intro:
-    "Kwak Finance keeps your household's accounts, spending, budget and wealth in one place, on your own computer. This guide walks through each page. The app's name, at the top left, leads to the overview, the summary of the whole app. Next to it, “Spending” and “Wealth” switch between two spaces, each with its tabs: the everyday pages (transactions, budget, reports) and the wealth (monthly tracking, analysis). Categories, members, accounts, the activity log, language and theme are in the menu under your name, next to this guide. To install, start or update the app, see “How to run the app” at the bottom of every page.",
+    "Kwak Finance keeps your household's accounts, spending, budget, wealth and goals in one place, on your own computer. This guide walks through each page. The app's name, at the top left, leads to the overview, the summary of the whole app. Next to it, “Spending”, “Wealth” and “Goals” switch between three spaces: the everyday pages (transactions, budget, reports) and the wealth (monthly tracking, analysis), each with its tabs, and your financial goals. Categories, members, accounts, the activity log, language and theme are in the menu under your name, next to this guide. To install, start or update the app, see “How to run the app” at the bottom of every page.",
   contents: "Contents",
   sections: [
     {
@@ -129,7 +130,7 @@ export const guideEn = {
       title: "Overview",
       paragraphs: [
         "The overview sums up a month: spending, income, net (with the part put in savings categories) and savings rate, compared with the previous month and the 12-month average, then the month's top categories and its spending against your budget. The overview stays on one month: “See the month's report” opens its report, and the reports tab looks back over longer periods.",
-        "Once your wealth has a line, the overview opens with your net worth at the end of the month and how it moved since the month before, in the same scope; “Open your wealth” leads to the details.",
+        "Once your wealth has a line, the overview opens with your net worth at the end of the month and how it moved since the month before, in the same scope; “Open your wealth” leads to the details. Once you have a goal, the pyramid of your goals follows, its foundation and three tiers, with a warning while your emergency fund falls short.",
         "“Targets this month” lists each category with a monthly target in the plan covering the month, the most used first: what it spent, what is left (or the overrun) and a bar. It says “Watch” from the warning threshold (80 % of the target by default; the household owner can change it there) and “Over” beyond the target. For the current month, a line on the bar marks how much of the month has gone by: spending ahead of that line is going faster than the calendar. One-off categories, paid once in the month, have no line and no “Watch”: paid as planned, they stay on track. Click a category to see its transactions.",
         "“Still expected this month” lists the recurring items still to come by the end of the month, late ones (up to a month back) first, each with “Enter it” and “Skip”, and the projected balance at the end of the month: today's balance of the cash accounts in view plus everything listed. It uses real dates, not budget months: a salary expected on the 28th counts this month. A recurring transfer counts as money leaving one account and reaching the other: in a view holding both, it changes nothing.",
         "“Household” counts every account you can see, “Joint accounts” only the household's joint accounts (offered once there is one), “Only mine” your own accounts without the joint ones. In those two, a transfer with an account left out shows in the net: what you pay into the joint account is paid out of yours and paid into it, so each view's savings stay right.",
@@ -146,6 +147,17 @@ export const guideEn = {
         "The “Analysis” tab charts the months and the scope you choose there, below the same tiles: net worth over time by category; the allocation of a month you choose (the last one by default) as rings (categories inside, their lines outside) and as a mosaic, each category a tile as large as its value; and what moved net worth from the first month to the last, category by category. Point at a ring or a tile to read it, or open “Show the data” under each chart. The net worth tile also gives the change over the months shown, the debts tile the share of your gross assets they weigh.",
       ],
       link: { to: "/wealth", label: "Open your wealth" },
+    },
+    {
+      id: "goals",
+      title: "Goals",
+      paragraphs: [
+        "The goals space follows amounts you want to gather by a date, in a pyramid: its foundation is your emergency fund, filled first; above it, three tiers given by how far the deadline is: first the short term (up to a year: holidays, a repair); then the medium term (over a year, up to five: a trip, a car, a large purchase); at the top the long term (beyond five years: a home deposit, the children's studies). You never pick the tier: a goal changes tier by itself when you move its deadline, and comes down a tier as the deadline nears. A goal can be “Permanent”: it stays in view once reached and needs no deadline (a fund for repairs, say); any other goal is archived by itself once it reaches its target. A goal can be your emergency fund (“This is the emergency fund” in the form): kept apart for the unexpected, filled first, always permanent, the pyramid's foundation. Each member can have one emergency fund, and the household one joint.",
+        "A goal is funded by your wealth lines, each holding an envelope for it; the rest of the line stays free for anything else. For each line, set an opening amount, taken from what is free (0 to start from nothing), and the share of its rises that goes to the goal (100 % when the line only serves it). The goal then moves when you update your wealth each month, with nothing more to enter: a rise (a deposit, interest) fills its envelope up to its target; a withdrawal or a loss comes out of the free part first, and the goal only loses once the line is worth less than its goals hold, the farthest deadlines first and the emergency fund last. The form shows what is free on each line, the Wealth page what goals set aside on it. A line's shares of the rises never exceed 100 %, and a private line only funds a goal only you see. For the emergency fund, “Propose from my fixed expenses” multiplies the monthly total of your recurring expenses by the number of months you choose (6 by default); the amount stays fixed once saved.",
+        "Each goal has a gauge with a marker where it should stand by now, on a straight line from its start to its target at its deadline, and a status: ahead, on track or behind (with a 5 % margin), reached, or “Fill first” for an emergency fund short of its target. It shows the effort it requires each month, your actual effort (the average gain of the last 6 months) and the date it should be reached at that pace, early or late. Its page draws the trajectory and lists each month.",
+        "“This month's effort” shares out what you can save (your average net cash flow over the last 6 months, or an amount the household owner sets in the effort settings): while the emergency fund falls short, it gets a share first (70 % by default, from 50 % to 100 %), the other goals the rest in proportion to the effort they require, and what they leave goes back to the emergency fund. It is a recommendation: nothing is moved. Each card has its actions: “Edit”, “Archive” once you are done with it (never for a permanent goal), “Cancel the goal” when it no longer matters. An archived or cancelled goal leaves the pyramid, frees its lines and is hidden from the page: “Show archived and cancelled goals” lists them, and a goal's page reopens it (a reached goal asks for a higher target, or to become permanent).",
+      ],
+      link: { to: "/goals", label: "Open your goals" },
     },
     {
       id: "reports",
@@ -178,6 +190,7 @@ export const guideEn = {
       import: "Import a statement",
       categorise: "Categorise your transactions",
       plan: "Set your monthly targets",
+      goal: "Set your emergency fund",
       invite: "Invite your household (optional)",
     },
     done: "Done",
@@ -187,7 +200,7 @@ export const guideEn = {
 export const guideFr: typeof guideEn = {
   title: "Utiliser Kwak Finance",
   intro:
-    "Kwak Finance réunit les comptes, les dépenses, le budget et le patrimoine de votre foyer, sur votre propre ordinateur. Ce guide parcourt chaque page. Le nom de l'application, en haut à gauche, mène à la vue d'ensemble, le résumé de toute l'application. À côté, « Dépenses » et « Patrimoine » passent d'un espace à l'autre, chacun avec ses onglets : les pages du quotidien (opérations, budget, rapports) et le patrimoine (suivi mensuel, analyse). Les catégories, les membres, les comptes, le journal d'activité, la langue et le thème sont dans le menu à votre nom, à côté de ce guide. Pour installer, lancer ou mettre à jour l'application, voyez « Lancer et arrêter l'application » en bas de chaque page.",
+    "Kwak Finance réunit les comptes, les dépenses, le budget, le patrimoine et les objectifs de votre foyer, sur votre propre ordinateur. Ce guide parcourt chaque page. Le nom de l'application, en haut à gauche, mène à la vue d'ensemble, le résumé de toute l'application. À côté, « Dépenses », « Patrimoine » et « Objectifs » passent d'un espace à l'autre : les pages du quotidien (opérations, budget, rapports) et le patrimoine (suivi mensuel, analyse), chacun avec ses onglets, et vos objectifs financiers. Les catégories, les membres, les comptes, le journal d'activité, la langue et le thème sont dans le menu à votre nom, à côté de ce guide. Pour installer, lancer ou mettre à jour l'application, voyez « Lancer et arrêter l'application » en bas de chaque page.",
   contents: "Sommaire",
   sections: [
     {
@@ -290,7 +303,7 @@ export const guideFr: typeof guideEn = {
       title: "Vue d'ensemble",
       paragraphs: [
         "La vue d'ensemble résume un mois : dépenses, revenus, solde (avec la part mise en épargne et placements) et taux d'épargne, comparés au mois précédent et à la moyenne sur 12 mois, puis les principales catégories du mois et ses dépenses face à votre budget. La vue d'ensemble reste sur un mois : « Voir le rapport du mois » ouvre son rapport, et l'onglet Rapports revient sur des périodes plus longues.",
-        "Dès que votre patrimoine a une ligne, la vue d'ensemble s'ouvre sur votre patrimoine net à la fin du mois et sa variation depuis le mois précédent, dans le même périmètre ; « Ouvrir votre patrimoine » mène au détail.",
+        "Dès que votre patrimoine a une ligne, la vue d'ensemble s'ouvre sur votre patrimoine net à la fin du mois et sa variation depuis le mois précédent, dans le même périmètre ; « Ouvrir votre patrimoine » mène au détail. Dès que vous avez un objectif, la pyramide de vos objectifs suit, son socle et ses trois étages, avec une alerte tant que votre épargne de précaution n'est pas complète.",
         "« Objectifs du mois » liste chaque catégorie qui a un objectif mensuel dans le plan du mois, la plus avancée d'abord : ce qu'elle a dépensé, ce qui reste (ou le dépassement) et une barre. Elle indique « Attention » à partir du seuil d'alerte (80 % de l'objectif par défaut ; le propriétaire du foyer peut le changer ici) et « Dépassé » au-delà de l'objectif. Pour le mois en cours, un trait sur la barre marque la part du mois écoulée : une dépense en avance sur ce trait va plus vite que le calendrier. Les catégories ponctuelles, payées une fois dans le mois, n'ont ni trait ni « Attention » : payées comme prévu, elles restent dans les clous. Cliquez sur une catégorie pour voir ses opérations.",
         "« Encore attendu ce mois-ci » liste les récurrences encore à venir d'ici la fin du mois, les retards (jusqu'à un mois en arrière) d'abord, chacune avec « La saisir » et « Sauter », et le solde prévu en fin de mois : le solde d'aujourd'hui des comptes courants et d'épargne de la vue, plus tout ce qui est listé. Il suit les vraies dates, pas les mois budgétaires : un salaire attendu le 28 compte ce mois-ci. Un virement récurrent compte comme de l'argent qui quitte un compte et en rejoint un autre : dans une vue qui contient les deux, il ne change rien.",
         "« Foyer » compte tous les comptes que vous voyez, « Comptes communs » seulement les comptes communs du foyer (proposé dès qu'il y en a un), « Seulement les miens » vos propres comptes, sans les comptes communs. Dans ces deux vues, un virement avec un compte laissé de côté compte dans le solde net : ce que vous versez au compte commun sort de vos comptes et y entre, donc l'épargne de chaque vue reste juste.",
@@ -307,6 +320,17 @@ export const guideFr: typeof guideEn = {
         "L'onglet « Analyse » présente en graphiques les mois et le périmètre que vous y choisissez, sous les mêmes tuiles : le patrimoine dans le temps par catégorie ; la répartition d'un mois au choix (le dernier par défaut) en anneaux (les catégories au centre, leurs lignes autour) et en mosaïque, chaque catégorie en tuile aussi grande que sa valeur ; et ce qui a fait bouger le patrimoine du premier mois au dernier, catégorie par catégorie. Pointez un anneau ou une tuile pour le lire, ou ouvrez « Afficher les données » sous chaque graphique. La tuile du patrimoine net donne aussi la variation sur les mois affichés, celle des dettes leur poids dans votre actif brut.",
       ],
       link: { to: "/wealth", label: "Ouvrir votre patrimoine" },
+    },
+    {
+      id: "goals",
+      title: "Objectifs",
+      paragraphs: [
+        "L'espace Objectifs suit les montants que vous voulez réunir pour une date, en pyramide : son socle est votre épargne de précaution, servie en premier ; au-dessus, trois étages donnés par l'éloignement de l'échéance : d'abord le court terme (jusqu'à un an : des vacances, une réparation) ; puis le moyen terme (plus d'un an, jusqu'à cinq : un voyage, une voiture, un gros achat) ; au sommet le long terme (au-delà de cinq ans : un apport immobilier, les études des enfants). Vous ne choisissez jamais l'étage : un objectif change d'étage tout seul quand vous déplacez son échéance, et descend d'un étage à mesure qu'elle approche. Un objectif peut être « Permanent » : il reste affiché une fois atteint et n'a pas besoin d'échéance (un fonds travaux, par exemple) ; tout autre objectif s'archive de lui-même quand il atteint sa cible. Un objectif peut être votre épargne de précaution (« C'est l'épargne de précaution » dans le formulaire) : mise de côté pour les imprévus, servie en premier, toujours permanente, le socle de la pyramide. Chaque membre peut avoir une épargne de précaution, et le foyer une commune.",
+        "Un objectif est financé par vos lignes de patrimoine, chacune lui réservant une enveloppe ; le reste de la ligne reste libre pour autre chose. Pour chaque ligne, indiquez un montant de départ, pris sur ce qui est libre (0 pour partir de rien), et la part de ses hausses qui revient à l'objectif (100 % si la ligne ne sert qu'à lui). L'objectif avance ensuite quand vous mettez votre patrimoine à jour chaque mois, sans autre saisie : une hausse (un versement, des intérêts) remplit son enveloppe jusqu'à sa cible ; un retrait ou une perte est d'abord pris sur la partie libre, et l'objectif ne baisse que si la ligne vaut moins que ce que ses objectifs y réservent, les échéances les plus lointaines d'abord et l'épargne de précaution en dernier. Le formulaire montre ce qui est libre sur chaque ligne, la page Patrimoine ce que les objectifs y réservent. Les parts des hausses d'une ligne ne dépassent jamais 100 %, et une ligne privée ne finance qu'un objectif que vous seul voyez. Pour l'épargne de précaution, « Proposer à partir de mes dépenses fixes » multiplie le total mensuel de vos dépenses récurrentes par le nombre de mois choisi (6 par défaut) ; le montant reste fixe une fois enregistré.",
+        "Chaque objectif a une jauge avec un repère là où il devrait en être, sur une ligne droite de son début à sa cible à l'échéance, et un statut : en avance, dans les temps ou en retard (à 5 % près), atteint, ou « À combler en priorité » pour une épargne de précaution incomplète. Il donne l'effort requis chaque mois, votre effort réel (le gain moyen des 6 derniers mois) et la date à laquelle il serait atteint à ce rythme, en avance ou en retard. Sa page trace la trajectoire et détaille chaque mois.",
+        "« L'effort du mois » répartit ce que vous pouvez épargner (votre solde net moyen des 6 derniers mois, ou un montant que le propriétaire du foyer fixe dans les réglages de l'effort) : tant que l'épargne de précaution n'est pas complète, elle reçoit d'abord une part (70 % par défaut, de 50 % à 100 %), les autres objectifs le reste au prorata de l'effort qu'ils demandent, et ce qu'ils laissent revient à la précaution. C'est une recommandation : rien n'est déplacé. Chaque carte a ses actions : « Modifier », « Archiver » quand vous en avez terminé (jamais pour un objectif permanent), « Annuler l'objectif » quand il n'est plus d'actualité. Un objectif archivé ou annulé quitte la pyramide, libère ses lignes et n'apparaît plus sur la page : « Afficher les objectifs archivés et annulés » les liste, et la page d'un objectif permet de le rouvrir (un objectif atteint demande une cible plus haute, ou de devenir permanent).",
+      ],
+      link: { to: "/goals", label: "Ouvrir vos objectifs" },
     },
     {
       id: "reports",
@@ -339,6 +363,7 @@ export const guideFr: typeof guideEn = {
       import: "Importer un relevé",
       categorise: "Catégoriser vos opérations",
       plan: "Fixer vos objectifs mensuels",
+      goal: "Constituer votre épargne de précaution",
       invite: "Inviter votre foyer (facultatif)",
     },
     done: "Fait",

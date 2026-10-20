@@ -896,8 +896,8 @@
       },
       "ClosedAs": {
         "enum": [
-          "reached",
-          "abandoned"
+          "archived",
+          "cancelled"
         ],
         "title": "ClosedAs",
         "type": "string"
@@ -1406,7 +1406,23 @@
             "title": "Line Id",
             "type": "string"
           },
+          "opening": {
+            "anyOf": [
+              {
+                "exclusiveMaximum": 1000000000000.0,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              }
+            ],
+            "default": "0",
+            "title": "Opening"
+          },
           "share": {
+            "default": 100,
             "maximum": 100.0,
             "minimum": 1.0,
             "title": "Share",
@@ -1414,14 +1430,18 @@
           }
         },
         "required": [
-          "line_id",
-          "share"
+          "line_id"
         ],
         "title": "GoalFundingIn",
         "type": "object"
       },
       "GoalFundingOut": {
         "properties": {
+          "held": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Held",
+            "type": "string"
+          },
           "line_id": {
             "format": "uuid",
             "title": "Line Id",
@@ -1429,6 +1449,11 @@
           },
           "line_name": {
             "title": "Line Name",
+            "type": "string"
+          },
+          "opening": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Opening",
             "type": "string"
           },
           "share": {
@@ -1439,7 +1464,9 @@
         "required": [
           "line_id",
           "line_name",
-          "share"
+          "share",
+          "opening",
+          "held"
         ],
         "title": "GoalFundingOut",
         "type": "object"
@@ -1473,6 +1500,16 @@
             "title": "Name",
             "type": "string"
           },
+          "permanent": {
+            "default": false,
+            "title": "Permanent",
+            "type": "boolean"
+          },
+          "precaution": {
+            "default": false,
+            "title": "Precaution",
+            "type": "boolean"
+          },
           "start": {
             "anyOf": [
               {
@@ -1499,9 +1536,6 @@
             ],
             "title": "Target"
           },
-          "tier": {
-            "$ref": "#/components/schemas/Tier"
-          },
           "visibility": {
             "$ref": "#/components/schemas/Visibility",
             "default": "shared"
@@ -1509,10 +1543,47 @@
         },
         "required": [
           "name",
-          "tier",
           "target"
         ],
         "title": "GoalIn",
+        "type": "object"
+      },
+      "GoalLineOut": {
+        "description": "A visible asset line this month, and what the viewer's goals set aside on it.",
+        "properties": {
+          "free": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Free",
+            "type": "string"
+          },
+          "line_id": {
+            "format": "uuid",
+            "title": "Line Id",
+            "type": "string"
+          },
+          "line_name": {
+            "title": "Line Name",
+            "type": "string"
+          },
+          "set_aside": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Set Aside",
+            "type": "string"
+          },
+          "worth": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Worth",
+            "type": "string"
+          }
+        },
+        "required": [
+          "line_id",
+          "line_name",
+          "worth",
+          "set_aside",
+          "free"
+        ],
+        "title": "GoalLineOut",
         "type": "object"
       },
       "GoalMonthOut": {
@@ -1642,6 +1713,18 @@
             ],
             "title": "Estimated"
           },
+          "expected": {
+            "anyOf": [
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expected"
+          },
           "extra": {
             "anyOf": [
               {
@@ -1660,10 +1743,6 @@
             },
             "title": "Fundings",
             "type": "array"
-          },
-          "horizon_flagged": {
-            "title": "Horizon Flagged",
-            "type": "boolean"
           },
           "id": {
             "format": "uuid",
@@ -1708,6 +1787,14 @@
           "owner_name": {
             "title": "Owner Name",
             "type": "string"
+          },
+          "permanent": {
+            "title": "Permanent",
+            "type": "boolean"
+          },
+          "precaution": {
+            "title": "Precaution",
+            "type": "boolean"
           },
           "progress": {
             "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
@@ -1759,6 +1846,8 @@
           "id",
           "name",
           "tier",
+          "precaution",
+          "permanent",
           "target",
           "start",
           "deadline",
@@ -1768,10 +1857,10 @@
           "closed_from",
           "closed_as",
           "fundings",
-          "horizon_flagged",
           "value",
           "progress",
           "remaining",
+          "expected",
           "months_left",
           "required",
           "actual",
@@ -1850,6 +1939,28 @@
             ],
             "title": "Name"
           },
+          "permanent": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Permanent"
+          },
+          "precaution": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Precaution"
+          },
           "start": {
             "anyOf": [
               {
@@ -1878,16 +1989,6 @@
               }
             ],
             "title": "Target"
-          },
-          "tier": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/Tier"
-              },
-              {
-                "type": "null"
-              }
-            ]
           },
           "visibility": {
             "anyOf": [
@@ -1958,7 +2059,8 @@
           "ahead",
           "on",
           "behind",
-          "fill_first"
+          "fill_first",
+          "open"
         ],
         "title": "GoalStatus",
         "type": "string"
@@ -5027,8 +5129,10 @@
         "type": "object"
       },
       "Tier": {
+        "description": "The pyramid's levels, from its foundation up.",
         "enum": [
           "precaution",
+          "short",
           "medium",
           "long"
         ],
@@ -9030,6 +9134,60 @@
           }
         },
         "summary": "Create Goal",
+        "tags": [
+          "goals"
+        ]
+      }
+    },
+    "/api/goals/lines": {
+      "get": {
+        "description": "Each visible asset line this month: its worth, the part the viewer's goals set aside on\nit and the rest, free (F-GOAL-3).",
+        "operationId": "goalLines",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "kwak_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Kwak Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/GoalLineOut"
+                  },
+                  "title": "Response Goallines",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Goal Lines",
         "tags": [
           "goals"
         ]
