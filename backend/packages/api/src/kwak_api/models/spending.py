@@ -167,3 +167,23 @@ class MonthlyIncome(UUIDPrimaryKey, Timestamps, Base):
     household_id: Mapped[UUID] = mapped_column(ForeignKey("household.id"))
     month: Mapped[date] = mapped_column(Date)
     amount: Mapped[Decimal] = mapped_column(Numeric(14, 2))
+
+
+class SpendingTarget(UUIDPrimaryKey, Timestamps, Base):
+    """F-BUD-1, 9: a category's monthly target (an objective for savings) from a month on.
+
+    A NULL amount: no target from that month.
+    """
+
+    __tablename__ = "spending_target"
+    __table_args__ = (
+        UniqueConstraint("category_id", "from_month"),
+        CheckConstraint("amount IS NULL OR amount >= 0", name="amount_not_negative"),
+        CheckConstraint("extract(day FROM from_month) = 1", name="from_month_start"),
+    )
+
+    category_id: Mapped[UUID] = mapped_column(
+        ForeignKey("spending_category.id", ondelete="CASCADE")
+    )
+    from_month: Mapped[date] = mapped_column(Date)
+    amount: Mapped[Decimal | None] = mapped_column(Numeric(14, 2))

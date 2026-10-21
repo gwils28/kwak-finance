@@ -8,8 +8,8 @@ from kwak_core import goals as core
 from kwak_core.accounts import Scope, Visibility
 from kwak_core.audit import AuditAction
 from kwak_core.budget import DEFAULT_BAND, Month
+from kwak_core.fixed import FixedFrequency
 from kwak_core.money import quantize, require_cents
-from kwak_core.recurring import Frequency
 from pydantic import AfterValidator, BaseModel, Field, StringConstraints
 
 from kwak_api.auth.routes import CurrentSession, Db, Now
@@ -301,7 +301,7 @@ def list_goals(
 
 class GoalFixedItemOut(BaseModel):
     label: str
-    frequency: Frequency
+    frequency: FixedFrequency
     amount: Decimal
     """The expected outflow, positive."""
     monthly: Decimal
@@ -337,10 +337,12 @@ def precaution_proposal(
     db: Db,
     now: Now,
     months: Annotated[int, Query(description="1 to 12")] = core.DEFAULT_PROPOSAL_MONTHS,
-    scope: Scope = Scope.HOUSEHOLD,
+    scope: Annotated[Scope, Query(description="Ignored: the spending is the household's")] = (
+        Scope.HOUSEHOLD
+    ),
 ) -> PrecautionProposalOut:
     """A target for the precaution: months of fixed expenses (F-GOAL-2)."""
-    items = service.fixed_items(db, user_session.user, scope, now.date())
+    items = service.fixed_items(db, user_session.user, now.date())
     monthly = core.fixed_expenses((i.frequency, -i.amount) for i in items)
     try:
         amount = core.precaution_proposal(monthly, months)

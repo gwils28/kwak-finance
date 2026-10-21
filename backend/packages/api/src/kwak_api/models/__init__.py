@@ -19,6 +19,7 @@ from kwak_api.models.spending import (
     SpendingCategory,
     SpendingLine,
     SpendingLinePart,
+    SpendingTarget,
 )
 from kwak_api.models.transaction import ImportBatch, Transaction, TransactionPart
 from kwak_api.models.wealth import WealthCategory, WealthLine, WealthValue
@@ -50,6 +51,7 @@ __all__ = [
     "SpendingCategory",
     "SpendingLine",
     "SpendingLinePart",
+    "SpendingTarget",
     "Transaction",
     "TransactionPart",
     "User",

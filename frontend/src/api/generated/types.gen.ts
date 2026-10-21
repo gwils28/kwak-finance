@@ -837,7 +837,7 @@ export type GoalFixedItemOut = {
      * Amount
      */
     amount: string;
-    frequency: Frequency;
+    frequency: FixedFrequency;
     /**
      * Label
      */
@@ -2917,6 +2917,217 @@ export type SpendingCategoryPatch = {
 };
 
 /**
+ * SpendingCellOut
+ */
+export type SpendingCellOut = {
+    /**
+     * Gap
+     */
+    gap: string | null;
+    /**
+     * Gap Ratio
+     */
+    gap_ratio: string | null;
+    /**
+     * Month
+     */
+    month: string;
+    /**
+     * Spent
+     */
+    spent: string;
+    status: BudgetStatus;
+    /**
+     * Target
+     */
+    target: string | null;
+};
+
+/**
+ * SpendingChangesOut
+ *
+ * Relative changes, None from a zero reference.
+ */
+export type SpendingChangesOut = {
+    /**
+     * Income
+     */
+    income: string | null;
+    /**
+     * Rest
+     */
+    rest: string | null;
+    /**
+     * Saved
+     */
+    saved: string | null;
+    /**
+     * Spent
+     */
+    spent: string | null;
+};
+
+/**
+ * SpendingFiguresOut
+ */
+export type SpendingFiguresOut = {
+    /**
+     * Income
+     */
+    income: string;
+    /**
+     * Rest
+     */
+    rest: string;
+    /**
+     * Saved
+     */
+    saved: string;
+    /**
+     * Savings Rate
+     */
+    savings_rate: string | null;
+    /**
+     * Spent
+     */
+    spent: string;
+};
+
+/**
+ * SpendingMatrixOut
+ */
+export type SpendingMatrixOut = {
+    /**
+     * Figures
+     */
+    figures: Array<SpendingFiguresOut>;
+    /**
+     * Months
+     */
+    months: Array<string>;
+    /**
+     * Rows
+     */
+    rows: Array<SpendingMatrixRowOut>;
+    /**
+     * Savings
+     */
+    savings: Array<SpendingMatrixRowOut>;
+    savings_total: SpendingMatrixRowOut;
+    total: SpendingMatrixRowOut;
+};
+
+/**
+ * SpendingMatrixRowOut
+ */
+export type SpendingMatrixRowOut = {
+    /**
+     * Category Id
+     */
+    category_id: string | null;
+    /**
+     * Cells
+     */
+    cells: Array<SpendingCellOut>;
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Target
+     */
+    target: string | null;
+};
+
+/**
+ * SpendingMonthChangesOut
+ */
+export type SpendingMonthChangesOut = {
+    vs_average: SpendingChangesOut | null;
+    vs_previous: SpendingChangesOut;
+};
+
+/**
+ * SpendingMonthOut
+ */
+export type SpendingMonthOut = {
+    average: SpendingFiguresOut | null;
+    changes: SpendingMonthChangesOut;
+    figures: SpendingFiguresOut;
+    /**
+     * Income Carried
+     */
+    income_carried: boolean;
+    /**
+     * Month
+     */
+    month: string;
+    previous: SpendingFiguresOut;
+    progress: SpendingProgressOut;
+    /**
+     * Projected Rest
+     */
+    projected_rest: string;
+    /**
+     * To Confirm
+     */
+    to_confirm: number;
+    /**
+     * Top
+     */
+    top: Array<SpendingTopOut>;
+};
+
+/**
+ * SpendingProgressLineOut
+ */
+export type SpendingProgressLineOut = {
+    /**
+     * Category Id
+     */
+    category_id: string;
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Pace
+     */
+    pace: string | null;
+    /**
+     * Remaining
+     */
+    remaining: string;
+    /**
+     * Share
+     */
+    share: string | null;
+    /**
+     * Spent
+     */
+    spent: string;
+    status: ProgressStatus;
+    /**
+     * Target
+     */
+    target: string;
+};
+
+/**
+ * SpendingProgressOut
+ */
+export type SpendingProgressOut = {
+    /**
+     * Lines
+     */
+    lines: Array<SpendingProgressLineOut>;
+    /**
+     * Warn At
+     */
+    warn_at: string;
+};
+
+/**
  * SpendingRestoreOut
  */
 export type SpendingRestoreOut = {
@@ -2924,6 +3135,122 @@ export type SpendingRestoreOut = {
      * Added
      */
     added: number;
+};
+
+/**
+ * SpendingTargetIn
+ */
+export type SpendingTargetIn = {
+    /**
+     * Amount
+     */
+    amount: number | string | null;
+};
+
+/**
+ * SpendingTargetOut
+ */
+export type SpendingTargetOut = {
+    /**
+     * Amount
+     */
+    amount: string | null;
+    /**
+     * Category Id
+     */
+    category_id: string;
+    /**
+     * From Month
+     */
+    from_month: string;
+};
+
+/**
+ * SpendingTopOut
+ */
+export type SpendingTopOut = {
+    /**
+     * Category Id
+     */
+    category_id: string;
+    /**
+     * Share
+     */
+    share: string | null;
+    /**
+     * Spent
+     */
+    spent: string;
+};
+
+/**
+ * SpendingYearLineOut
+ */
+export type SpendingYearLineOut = {
+    /**
+     * Above
+     */
+    above: number;
+    /**
+     * Below
+     */
+    below: number;
+    /**
+     * Category Id
+     */
+    category_id: string;
+    /**
+     * Gap
+     */
+    gap: string | null;
+    /**
+     * Gap Ratio
+     */
+    gap_ratio: string | null;
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * On
+     */
+    on: number;
+    /**
+     * Spent To Date
+     */
+    spent_to_date: string;
+    status: BudgetStatus;
+    /**
+     * Target Full
+     */
+    target_full: string | null;
+    /**
+     * Target To Date
+     */
+    target_to_date: string | null;
+};
+
+/**
+ * SpendingYearOut
+ */
+export type SpendingYearOut = {
+    /**
+     * Expenses
+     */
+    expenses: Array<SpendingYearLineOut>;
+    /**
+     * Months
+     */
+    months: Array<string>;
+    /**
+     * Savings
+     */
+    savings: Array<SpendingYearLineOut>;
+    totals: SpendingFiguresOut;
+    /**
+     * Year
+     */
+    year: number;
 };
 
 /**
@@ -5026,6 +5353,9 @@ export type PrecautionProposalData = {
          * 1 to 12
          */
         months?: number;
+        /**
+         * Ignored: the spending is the household's
+         */
         scope?: Scope;
     };
     url: '/api/goals/precaution-proposal';
@@ -6564,6 +6894,76 @@ export type ReplaceLineResponses = {
 
 export type ReplaceLineResponse = ReplaceLineResponses[keyof ReplaceLineResponses];
 
+export type SpendingMatrixData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * First
+         *
+         * YYYY-MM
+         */
+        first?: string | null;
+        /**
+         * Last
+         *
+         * YYYY-MM
+         */
+        last?: string | null;
+    };
+    url: '/api/spending/matrix';
+};
+
+export type SpendingMatrixErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type SpendingMatrixError = SpendingMatrixErrors[keyof SpendingMatrixErrors];
+
+export type SpendingMatrixResponses = {
+    /**
+     * Successful Response
+     */
+    200: SpendingMatrixOut;
+};
+
+export type SpendingMatrixResponse = SpendingMatrixResponses[keyof SpendingMatrixResponses];
+
+export type MonthSummaryData = {
+    body?: never;
+    path?: never;
+    query: {
+        /**
+         * Month
+         *
+         * YYYY-MM
+         */
+        month: string;
+    };
+    url: '/api/spending/month';
+};
+
+export type MonthSummaryErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type MonthSummaryError = MonthSummaryErrors[keyof MonthSummaryErrors];
+
+export type MonthSummaryResponses = {
+    /**
+     * Successful Response
+     */
+    200: SpendingMonthOut;
+};
+
+export type MonthSummaryResponse = MonthSummaryResponses[keyof MonthSummaryResponses];
+
 export type UnderstandQuickLineData = {
     body: QuickIn;
     path?: never;
@@ -6588,6 +6988,131 @@ export type UnderstandQuickLineResponses = {
 };
 
 export type UnderstandQuickLineResponse = UnderstandQuickLineResponses[keyof UnderstandQuickLineResponses];
+
+export type ListTargetsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/spending/targets';
+};
+
+export type ListTargetsErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ListTargetsError = ListTargetsErrors[keyof ListTargetsErrors];
+
+export type ListTargetsResponses = {
+    /**
+     * Response Listtargets
+     *
+     * Successful Response
+     */
+    200: Array<SpendingTargetOut>;
+};
+
+export type ListTargetsResponse = ListTargetsResponses[keyof ListTargetsResponses];
+
+export type RemoveTargetData = {
+    body?: never;
+    path: {
+        /**
+         * Category Id
+         */
+        category_id: string;
+        /**
+         * Month
+         */
+        month: string;
+    };
+    query?: never;
+    url: '/api/spending/targets/{category_id}/{month}';
+};
+
+export type RemoveTargetErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type RemoveTargetError = RemoveTargetErrors[keyof RemoveTargetErrors];
+
+export type RemoveTargetResponses = {
+    /**
+     * Successful Response
+     */
+    204: void;
+};
+
+export type RemoveTargetResponse = RemoveTargetResponses[keyof RemoveTargetResponses];
+
+export type SetTargetData = {
+    body: SpendingTargetIn;
+    path: {
+        /**
+         * Category Id
+         */
+        category_id: string;
+        /**
+         * Month
+         */
+        month: string;
+    };
+    query?: never;
+    url: '/api/spending/targets/{category_id}/{month}';
+};
+
+export type SetTargetErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type SetTargetError = SetTargetErrors[keyof SetTargetErrors];
+
+export type SetTargetResponses = {
+    /**
+     * Successful Response
+     */
+    200: SpendingTargetOut;
+};
+
+export type SetTargetResponse = SetTargetResponses[keyof SetTargetResponses];
+
+export type SpendingYearData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Year
+         */
+        year?: number | null;
+    };
+    url: '/api/spending/year';
+};
+
+export type SpendingYearErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type SpendingYearError = SpendingYearErrors[keyof SpendingYearErrors];
+
+export type SpendingYearResponses = {
+    /**
+     * Successful Response
+     */
+    200: SpendingYearOut;
+};
+
+export type SpendingYearResponse = SpendingYearResponses[keyof SpendingYearResponses];
 
 export type ListTransactionsData = {
     body?: never;

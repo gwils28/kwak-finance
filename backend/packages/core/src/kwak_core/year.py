@@ -56,7 +56,7 @@ def year_lines(
     today: date,
     category_ids: Sequence[UUID],
     targets: Mapping[UUID, Sequence[tuple[Month, Decimal | None]]],
-    spending: Mapping[tuple[UUID, Month], Decimal],
+    spending: Mapping[tuple[UUID | None, Month], Decimal],
     band: Decimal = DEFAULT_BAND,
     *,
     minimum: bool = False,
