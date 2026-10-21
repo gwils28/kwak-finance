@@ -137,7 +137,7 @@ export type ApplyRules = {
 /**
  * AuditAction
  */
-export type AuditAction = 'signed_in' | 'sign_in_failed' | 'signed_out' | 'recovery_codes_renewed' | 'invite_created' | 'invite_revoked' | 'member_joined' | 'settings_changed' | 'imported' | 'import_rolled_back' | 'transaction_deleted' | 'category_deleted' | 'plan_deleted' | 'recurring_deleted' | 'wealth_line_deleted' | 'wealth_category_deleted' | 'goal_deleted' | 'rule_created' | 'rule_updated' | 'rule_deleted' | 'rules_applied' | 'categories_restored';
+export type AuditAction = 'signed_in' | 'sign_in_failed' | 'signed_out' | 'recovery_codes_renewed' | 'invite_created' | 'invite_revoked' | 'member_joined' | 'settings_changed' | 'imported' | 'import_rolled_back' | 'transaction_deleted' | 'category_deleted' | 'plan_deleted' | 'recurring_deleted' | 'wealth_line_deleted' | 'wealth_category_deleted' | 'goal_deleted' | 'spending_line_deleted' | 'spending_category_deleted' | 'fixed_expense_deleted' | 'rule_created' | 'rule_updated' | 'rule_deleted' | 'rules_applied' | 'categories_restored';
 
 /**
  * AuditEntryOut
@@ -630,6 +630,121 @@ export type EnteredOut = {
      */
     label: string;
 };
+
+/**
+ * FixedFrequency
+ */
+export type FixedFrequency = 'monthly' | 'quarterly' | 'yearly';
+
+/**
+ * FixedIn
+ */
+export type FixedIn = {
+    /**
+     * Amount
+     */
+    amount: number | string;
+    /**
+     * Category Id
+     */
+    category_id: string;
+    /**
+     * Day
+     */
+    day: number;
+    /**
+     * First Month
+     */
+    first_month: string;
+    frequency: FixedFrequency;
+    /**
+     * Label
+     */
+    label: string;
+    /**
+     * Last Month
+     */
+    last_month?: string | null;
+    /**
+     * Paused
+     */
+    paused?: boolean;
+};
+
+/**
+ * FixedOccurrenceOut
+ */
+export type FixedOccurrenceOut = {
+    /**
+     * Amount
+     */
+    amount: string;
+    /**
+     * Category Id
+     */
+    category_id: string;
+    /**
+     * Due
+     */
+    due: string;
+    /**
+     * Fixed Expense Id
+     */
+    fixed_expense_id: string;
+    /**
+     * Label
+     */
+    label: string;
+    /**
+     * Line Id
+     */
+    line_id: string | null;
+    status: FixedStatus;
+};
+
+/**
+ * FixedOut
+ */
+export type FixedOut = {
+    /**
+     * Amount
+     */
+    amount: string;
+    /**
+     * Category Id
+     */
+    category_id: string;
+    /**
+     * Day
+     */
+    day: number;
+    /**
+     * First Month
+     */
+    first_month: string;
+    frequency: FixedFrequency;
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Label
+     */
+    label: string;
+    /**
+     * Last Month
+     */
+    last_month: string | null;
+    /**
+     * Paused
+     */
+    paused: boolean;
+};
+
+/**
+ * FixedStatus
+ */
+export type FixedStatus = 'to_confirm' | 'confirmed' | 'skipped';
 
 /**
  * FlowKind
@@ -1197,6 +1312,34 @@ export type ImportPreview = {
 };
 
 /**
+ * IncomeIn
+ */
+export type IncomeIn = {
+    /**
+     * Amount
+     */
+    amount: number | string;
+};
+
+/**
+ * IncomeOut
+ */
+export type IncomeOut = {
+    /**
+     * Amount
+     */
+    amount: string | null;
+    /**
+     * Carried
+     */
+    carried: boolean;
+    /**
+     * Month
+     */
+    month: string;
+};
+
+/**
  * InviteAccept
  */
 export type InviteAccept = {
@@ -1328,11 +1471,112 @@ export type Kpis = {
 };
 
 /**
+ * LabelOut
+ */
+export type LabelOut = {
+    /**
+     * Category Id
+     */
+    category_id: string | null;
+    /**
+     * Label
+     */
+    label: string;
+};
+
+/**
  * Language
  *
  * Languages of the interface.
  */
 export type Language = 'en' | 'fr';
+
+/**
+ * LastEntryOut
+ */
+export type LastEntryOut = {
+    /**
+     * Day
+     */
+    day: string;
+    /**
+     * Entered At
+     */
+    entered_at: string;
+    /**
+     * Id
+     */
+    id: string;
+};
+
+/**
+ * LineIn
+ */
+export type LineIn = {
+    /**
+     * Amount
+     */
+    amount: number | string;
+    /**
+     * Category Id
+     */
+    category_id?: string | null;
+    /**
+     * Day
+     */
+    day: string;
+    /**
+     * Fixed Expense Id
+     */
+    fixed_expense_id?: string | null;
+    /**
+     * Label
+     */
+    label: string;
+    split?: KwakApiSpendingRoutesSplitIn | null;
+};
+
+/**
+ * LineOut
+ */
+export type LineOut = {
+    /**
+     * Amount
+     */
+    amount: string;
+    /**
+     * Category Id
+     */
+    category_id: string | null;
+    /**
+     * Day
+     */
+    day: string;
+    /**
+     * Entered At
+     */
+    entered_at: string;
+    /**
+     * Entered By
+     */
+    entered_by: string;
+    /**
+     * Fixed Expense Id
+     */
+    fixed_expense_id: string | null;
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Label
+     */
+    label: string;
+    /**
+     * Parts
+     */
+    parts: Array<KwakApiSpendingRoutesPartOut>;
+};
 
 /**
  * Linked
@@ -1386,6 +1630,21 @@ export type MemberOut = {
      */
     id: string;
     role: Role;
+};
+
+/**
+ * MonthLinesOut
+ */
+export type MonthLinesOut = {
+    last_entry: LastEntryOut | null;
+    /**
+     * Lines
+     */
+    lines: Array<LineOut>;
+    /**
+     * Month
+     */
+    month: string;
 };
 
 /**
@@ -1476,38 +1735,6 @@ export type PaidFrom = 'joint' | 'personal';
  */
 export type PaidFromIn = {
     paid_from: PaidFrom | null;
-};
-
-/**
- * PartIn
- */
-export type PartIn = {
-    /**
-     * Amount
-     */
-    amount: number | string;
-    /**
-     * Category Id
-     */
-    category_id: string | null;
-};
-
-/**
- * PartOut
- */
-export type PartOut = {
-    /**
-     * Amount
-     */
-    amount: string;
-    /**
-     * Category Id
-     */
-    category_id: string | null;
-    /**
-     * Category Name
-     */
-    category_name: string | null;
 };
 
 /**
@@ -1837,6 +2064,42 @@ export type ProgressOut = {
  * ProgressStatus
  */
 export type ProgressStatus = 'on_track' | 'watch' | 'over';
+
+/**
+ * QuickIn
+ */
+export type QuickIn = {
+    /**
+     * Text
+     */
+    text: string;
+};
+
+/**
+ * QuickOut
+ */
+export type QuickOut = {
+    /**
+     * Amount
+     */
+    amount: string | null;
+    /**
+     * Category Id
+     */
+    category_id: string | null;
+    /**
+     * Category Word
+     */
+    category_word: string | null;
+    /**
+     * Day
+     */
+    day: string | null;
+    /**
+     * Label
+     */
+    label: string;
+};
 
 /**
  * RecoveryCodeIn
@@ -2606,17 +2869,61 @@ export type ShiftPreviewOut = {
 export type Side = 'in' | 'out';
 
 /**
- * SplitIn
+ * SpendingCategoryIn
  */
-export type SplitIn = {
+export type SpendingCategoryIn = {
+    kind: CategoryKind;
     /**
-     * Parts
+     * Name
      */
-    parts: Array<PartIn>;
+    name: string;
+};
+
+/**
+ * SpendingCategoryOut
+ */
+export type SpendingCategoryOut = {
     /**
-     * Rest Category Id
+     * Id
      */
-    rest_category_id: string | null;
+    id: string;
+    kind: CategoryKind;
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * One Off
+     */
+    one_off: boolean;
+    /**
+     * Position
+     */
+    position: number;
+};
+
+/**
+ * SpendingCategoryPatch
+ */
+export type SpendingCategoryPatch = {
+    /**
+     * Name
+     */
+    name?: string | null;
+    /**
+     * One Off
+     */
+    one_off?: boolean | null;
+};
+
+/**
+ * SpendingRestoreOut
+ */
+export type SpendingRestoreOut = {
+    /**
+     * Added
+     */
+    added: number;
 };
 
 /**
@@ -2827,7 +3134,7 @@ export type TransactionOut = {
     /**
      * Parts
      */
-    parts: Array<PartOut>;
+    parts: Array<KwakApiTransactionsRoutesPartOut>;
     /**
      * Source
      */
@@ -3430,6 +3737,94 @@ export type WealthValueIn = {
      * Amount
      */
     amount: number | string;
+};
+
+/**
+ * PartIn
+ */
+export type KwakApiSpendingRoutesPartIn = {
+    /**
+     * Amount
+     */
+    amount: number | string;
+    /**
+     * Category Id
+     */
+    category_id: string;
+};
+
+/**
+ * PartOut
+ */
+export type KwakApiSpendingRoutesPartOut = {
+    /**
+     * Amount
+     */
+    amount: string;
+    /**
+     * Category Id
+     */
+    category_id: string;
+};
+
+/**
+ * SplitIn
+ */
+export type KwakApiSpendingRoutesSplitIn = {
+    /**
+     * Parts
+     */
+    parts: Array<KwakApiSpendingRoutesPartIn>;
+    /**
+     * Rest Category Id
+     */
+    rest_category_id: string;
+};
+
+/**
+ * PartIn
+ */
+export type KwakApiTransactionsRoutesPartIn = {
+    /**
+     * Amount
+     */
+    amount: number | string;
+    /**
+     * Category Id
+     */
+    category_id: string | null;
+};
+
+/**
+ * PartOut
+ */
+export type KwakApiTransactionsRoutesPartOut = {
+    /**
+     * Amount
+     */
+    amount: string;
+    /**
+     * Category Id
+     */
+    category_id: string | null;
+    /**
+     * Category Name
+     */
+    category_name: string | null;
+};
+
+/**
+ * SplitIn
+ */
+export type KwakApiTransactionsRoutesSplitIn = {
+    /**
+     * Parts
+     */
+    parts: Array<KwakApiTransactionsRoutesPartIn>;
+    /**
+     * Rest Category Id
+     */
+    rest_category_id: string | null;
 };
 
 export type ListAccountsData = {
@@ -5572,6 +5967,628 @@ export type UpdateRuleResponses = {
 
 export type UpdateRuleResponse = UpdateRuleResponses[keyof UpdateRuleResponses];
 
+export type ListSpendingCategoriesData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/spending/categories';
+};
+
+export type ListSpendingCategoriesErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ListSpendingCategoriesError = ListSpendingCategoriesErrors[keyof ListSpendingCategoriesErrors];
+
+export type ListSpendingCategoriesResponses = {
+    /**
+     * Response Listspendingcategories
+     *
+     * Successful Response
+     */
+    200: Array<SpendingCategoryOut>;
+};
+
+export type ListSpendingCategoriesResponse = ListSpendingCategoriesResponses[keyof ListSpendingCategoriesResponses];
+
+export type CreateSpendingCategoryData = {
+    body: SpendingCategoryIn;
+    path?: never;
+    query?: never;
+    url: '/api/spending/categories';
+};
+
+export type CreateSpendingCategoryErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type CreateSpendingCategoryError = CreateSpendingCategoryErrors[keyof CreateSpendingCategoryErrors];
+
+export type CreateSpendingCategoryResponses = {
+    /**
+     * Successful Response
+     */
+    201: SpendingCategoryOut;
+};
+
+export type CreateSpendingCategoryResponse = CreateSpendingCategoryResponses[keyof CreateSpendingCategoryResponses];
+
+export type RestoreSpendingCategoriesData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/spending/categories/restore';
+};
+
+export type RestoreSpendingCategoriesErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type RestoreSpendingCategoriesError = RestoreSpendingCategoriesErrors[keyof RestoreSpendingCategoriesErrors];
+
+export type RestoreSpendingCategoriesResponses = {
+    /**
+     * Successful Response
+     */
+    200: SpendingRestoreOut;
+};
+
+export type RestoreSpendingCategoriesResponse = RestoreSpendingCategoriesResponses[keyof RestoreSpendingCategoriesResponses];
+
+export type DeleteSpendingCategoryData = {
+    body?: never;
+    path: {
+        /**
+         * Category Id
+         */
+        category_id: string;
+    };
+    query?: {
+        /**
+         * Move To
+         *
+         * Where its lines and fixed expenses go
+         */
+        move_to?: string | null;
+    };
+    url: '/api/spending/categories/{category_id}';
+};
+
+export type DeleteSpendingCategoryErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type DeleteSpendingCategoryError = DeleteSpendingCategoryErrors[keyof DeleteSpendingCategoryErrors];
+
+export type DeleteSpendingCategoryResponses = {
+    /**
+     * Successful Response
+     */
+    204: void;
+};
+
+export type DeleteSpendingCategoryResponse = DeleteSpendingCategoryResponses[keyof DeleteSpendingCategoryResponses];
+
+export type UpdateSpendingCategoryData = {
+    body: SpendingCategoryPatch;
+    path: {
+        /**
+         * Category Id
+         */
+        category_id: string;
+    };
+    query?: never;
+    url: '/api/spending/categories/{category_id}';
+};
+
+export type UpdateSpendingCategoryErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type UpdateSpendingCategoryError = UpdateSpendingCategoryErrors[keyof UpdateSpendingCategoryErrors];
+
+export type UpdateSpendingCategoryResponses = {
+    /**
+     * Successful Response
+     */
+    200: SpendingCategoryOut;
+};
+
+export type UpdateSpendingCategoryResponse = UpdateSpendingCategoryResponses[keyof UpdateSpendingCategoryResponses];
+
+export type ListFixedData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/spending/fixed';
+};
+
+export type ListFixedErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ListFixedError = ListFixedErrors[keyof ListFixedErrors];
+
+export type ListFixedResponses = {
+    /**
+     * Response Listfixed
+     *
+     * Successful Response
+     */
+    200: Array<FixedOut>;
+};
+
+export type ListFixedResponse = ListFixedResponses[keyof ListFixedResponses];
+
+export type CreateFixedData = {
+    body: FixedIn;
+    path?: never;
+    query?: never;
+    url: '/api/spending/fixed';
+};
+
+export type CreateFixedErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type CreateFixedError = CreateFixedErrors[keyof CreateFixedErrors];
+
+export type CreateFixedResponses = {
+    /**
+     * Successful Response
+     */
+    201: FixedOut;
+};
+
+export type CreateFixedResponse = CreateFixedResponses[keyof CreateFixedResponses];
+
+export type MonthOccurrencesData = {
+    body?: never;
+    path?: never;
+    query: {
+        /**
+         * Month
+         *
+         * YYYY-MM
+         */
+        month: string;
+    };
+    url: '/api/spending/fixed/occurrences';
+};
+
+export type MonthOccurrencesErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type MonthOccurrencesError = MonthOccurrencesErrors[keyof MonthOccurrencesErrors];
+
+export type MonthOccurrencesResponses = {
+    /**
+     * Response Monthoccurrences
+     *
+     * Successful Response
+     */
+    200: Array<FixedOccurrenceOut>;
+};
+
+export type MonthOccurrencesResponse = MonthOccurrencesResponses[keyof MonthOccurrencesResponses];
+
+export type DeleteFixedData = {
+    body?: never;
+    path: {
+        /**
+         * Fixed Id
+         */
+        fixed_id: string;
+    };
+    query?: never;
+    url: '/api/spending/fixed/{fixed_id}';
+};
+
+export type DeleteFixedErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type DeleteFixedError = DeleteFixedErrors[keyof DeleteFixedErrors];
+
+export type DeleteFixedResponses = {
+    /**
+     * Successful Response
+     */
+    204: void;
+};
+
+export type DeleteFixedResponse = DeleteFixedResponses[keyof DeleteFixedResponses];
+
+export type ReplaceFixedData = {
+    body: FixedIn;
+    path: {
+        /**
+         * Fixed Id
+         */
+        fixed_id: string;
+    };
+    query?: never;
+    url: '/api/spending/fixed/{fixed_id}';
+};
+
+export type ReplaceFixedErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ReplaceFixedError = ReplaceFixedErrors[keyof ReplaceFixedErrors];
+
+export type ReplaceFixedResponses = {
+    /**
+     * Successful Response
+     */
+    200: FixedOut;
+};
+
+export type ReplaceFixedResponse = ReplaceFixedResponses[keyof ReplaceFixedResponses];
+
+export type UnskipOccurrence2Data = {
+    body?: never;
+    path: {
+        /**
+         * Fixed Id
+         */
+        fixed_id: string;
+        /**
+         * Month
+         */
+        month: string;
+    };
+    query?: never;
+    url: '/api/spending/fixed/{fixed_id}/skips/{month}';
+};
+
+export type UnskipOccurrence2Errors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type UnskipOccurrence2Error = UnskipOccurrence2Errors[keyof UnskipOccurrence2Errors];
+
+export type UnskipOccurrence2Responses = {
+    /**
+     * Successful Response
+     */
+    204: void;
+};
+
+export type UnskipOccurrence2Response = UnskipOccurrence2Responses[keyof UnskipOccurrence2Responses];
+
+export type SkipOccurrence2Data = {
+    body?: never;
+    path: {
+        /**
+         * Fixed Id
+         */
+        fixed_id: string;
+        /**
+         * Month
+         */
+        month: string;
+    };
+    query?: never;
+    url: '/api/spending/fixed/{fixed_id}/skips/{month}';
+};
+
+export type SkipOccurrence2Errors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type SkipOccurrence2Error = SkipOccurrence2Errors[keyof SkipOccurrence2Errors];
+
+export type SkipOccurrence2Responses = {
+    /**
+     * Successful Response
+     */
+    204: void;
+};
+
+export type SkipOccurrence2Response = SkipOccurrence2Responses[keyof SkipOccurrence2Responses];
+
+export type RemoveMonthIncomeData = {
+    body?: never;
+    path: {
+        /**
+         * Month
+         */
+        month: string;
+    };
+    query?: never;
+    url: '/api/spending/income/{month}';
+};
+
+export type RemoveMonthIncomeErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type RemoveMonthIncomeError = RemoveMonthIncomeErrors[keyof RemoveMonthIncomeErrors];
+
+export type RemoveMonthIncomeResponses = {
+    /**
+     * Successful Response
+     */
+    204: void;
+};
+
+export type RemoveMonthIncomeResponse = RemoveMonthIncomeResponses[keyof RemoveMonthIncomeResponses];
+
+export type MonthIncomeData = {
+    body?: never;
+    path: {
+        /**
+         * Month
+         */
+        month: string;
+    };
+    query?: never;
+    url: '/api/spending/income/{month}';
+};
+
+export type MonthIncomeErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type MonthIncomeError = MonthIncomeErrors[keyof MonthIncomeErrors];
+
+export type MonthIncomeResponses = {
+    /**
+     * Successful Response
+     */
+    200: IncomeOut;
+};
+
+export type MonthIncomeResponse = MonthIncomeResponses[keyof MonthIncomeResponses];
+
+export type SetMonthIncomeData = {
+    body: IncomeIn;
+    path: {
+        /**
+         * Month
+         */
+        month: string;
+    };
+    query?: never;
+    url: '/api/spending/income/{month}';
+};
+
+export type SetMonthIncomeErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type SetMonthIncomeError = SetMonthIncomeErrors[keyof SetMonthIncomeErrors];
+
+export type SetMonthIncomeResponses = {
+    /**
+     * Successful Response
+     */
+    200: IncomeOut;
+};
+
+export type SetMonthIncomeResponse = SetMonthIncomeResponses[keyof SetMonthIncomeResponses];
+
+export type LabelSuggestionsData = {
+    body?: never;
+    path?: never;
+    query: {
+        /**
+         * Q
+         */
+        q: string;
+    };
+    url: '/api/spending/labels';
+};
+
+export type LabelSuggestionsErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type LabelSuggestionsError = LabelSuggestionsErrors[keyof LabelSuggestionsErrors];
+
+export type LabelSuggestionsResponses = {
+    /**
+     * Response Labelsuggestions
+     *
+     * Successful Response
+     */
+    200: Array<LabelOut>;
+};
+
+export type LabelSuggestionsResponse = LabelSuggestionsResponses[keyof LabelSuggestionsResponses];
+
+export type MonthLinesData = {
+    body?: never;
+    path?: never;
+    query: {
+        /**
+         * Month
+         *
+         * YYYY-MM
+         */
+        month: string;
+    };
+    url: '/api/spending/lines';
+};
+
+export type MonthLinesErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type MonthLinesError = MonthLinesErrors[keyof MonthLinesErrors];
+
+export type MonthLinesResponses = {
+    /**
+     * Successful Response
+     */
+    200: MonthLinesOut;
+};
+
+export type MonthLinesResponse = MonthLinesResponses[keyof MonthLinesResponses];
+
+export type CreateLineData = {
+    body: LineIn;
+    path?: never;
+    query?: never;
+    url: '/api/spending/lines';
+};
+
+export type CreateLineErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type CreateLineError = CreateLineErrors[keyof CreateLineErrors];
+
+export type CreateLineResponses = {
+    /**
+     * Successful Response
+     */
+    201: LineOut;
+};
+
+export type CreateLineResponse = CreateLineResponses[keyof CreateLineResponses];
+
+export type DeleteLineData = {
+    body?: never;
+    path: {
+        /**
+         * Line Id
+         */
+        line_id: string;
+    };
+    query?: never;
+    url: '/api/spending/lines/{line_id}';
+};
+
+export type DeleteLineErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type DeleteLineError = DeleteLineErrors[keyof DeleteLineErrors];
+
+export type DeleteLineResponses = {
+    /**
+     * Successful Response
+     */
+    204: void;
+};
+
+export type DeleteLineResponse = DeleteLineResponses[keyof DeleteLineResponses];
+
+export type ReplaceLineData = {
+    body: LineIn;
+    path: {
+        /**
+         * Line Id
+         */
+        line_id: string;
+    };
+    query?: never;
+    url: '/api/spending/lines/{line_id}';
+};
+
+export type ReplaceLineErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ReplaceLineError = ReplaceLineErrors[keyof ReplaceLineErrors];
+
+export type ReplaceLineResponses = {
+    /**
+     * Successful Response
+     */
+    200: LineOut;
+};
+
+export type ReplaceLineResponse = ReplaceLineResponses[keyof ReplaceLineResponses];
+
+export type UnderstandQuickLineData = {
+    body: QuickIn;
+    path?: never;
+    query?: never;
+    url: '/api/spending/quick';
+};
+
+export type UnderstandQuickLineErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type UnderstandQuickLineError = UnderstandQuickLineErrors[keyof UnderstandQuickLineErrors];
+
+export type UnderstandQuickLineResponses = {
+    /**
+     * Successful Response
+     */
+    200: QuickOut;
+};
+
+export type UnderstandQuickLineResponse = UnderstandQuickLineResponses[keyof UnderstandQuickLineResponses];
+
 export type ListTransactionsData = {
     body?: never;
     path?: never;
@@ -5781,7 +6798,7 @@ export type UnsplitTransactionResponses = {
 export type UnsplitTransactionResponse = UnsplitTransactionResponses[keyof UnsplitTransactionResponses];
 
 export type SplitTransactionData = {
-    body: SplitIn;
+    body: KwakApiTransactionsRoutesSplitIn;
     path: {
         /**
          * Transaction Id

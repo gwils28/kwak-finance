@@ -280,6 +280,9 @@
           "wealth_line_deleted",
           "wealth_category_deleted",
           "goal_deleted",
+          "spending_line_deleted",
+          "spending_category_deleted",
+          "fixed_expense_deleted",
           "rule_created",
           "rule_updated",
           "rule_deleted",
@@ -1236,6 +1239,210 @@
         ],
         "title": "EnteredOut",
         "type": "object"
+      },
+      "FixedFrequency": {
+        "enum": [
+          "monthly",
+          "quarterly",
+          "yearly"
+        ],
+        "title": "FixedFrequency",
+        "type": "string"
+      },
+      "FixedIn": {
+        "properties": {
+          "amount": {
+            "anyOf": [
+              {
+                "exclusiveMaximum": 1000000000000.0,
+                "exclusiveMinimum": -1000000000000.0,
+                "type": "number"
+              },
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              }
+            ],
+            "title": "Amount"
+          },
+          "category_id": {
+            "format": "uuid",
+            "title": "Category Id",
+            "type": "string"
+          },
+          "day": {
+            "maximum": 31.0,
+            "minimum": 1.0,
+            "title": "Day",
+            "type": "integer"
+          },
+          "first_month": {
+            "maxLength": 7,
+            "title": "First Month",
+            "type": "string"
+          },
+          "frequency": {
+            "$ref": "#/components/schemas/FixedFrequency"
+          },
+          "label": {
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Label",
+            "type": "string"
+          },
+          "last_month": {
+            "anyOf": [
+              {
+                "maxLength": 7,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Month"
+          },
+          "paused": {
+            "default": false,
+            "title": "Paused",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "label",
+          "category_id",
+          "amount",
+          "frequency",
+          "day",
+          "first_month"
+        ],
+        "title": "FixedIn",
+        "type": "object"
+      },
+      "FixedOccurrenceOut": {
+        "properties": {
+          "amount": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Amount",
+            "type": "string"
+          },
+          "category_id": {
+            "format": "uuid",
+            "title": "Category Id",
+            "type": "string"
+          },
+          "due": {
+            "format": "date",
+            "title": "Due",
+            "type": "string"
+          },
+          "fixed_expense_id": {
+            "format": "uuid",
+            "title": "Fixed Expense Id",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "line_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Line Id"
+          },
+          "status": {
+            "$ref": "#/components/schemas/FixedStatus"
+          }
+        },
+        "required": [
+          "fixed_expense_id",
+          "label",
+          "category_id",
+          "due",
+          "amount",
+          "status",
+          "line_id"
+        ],
+        "title": "FixedOccurrenceOut",
+        "type": "object"
+      },
+      "FixedOut": {
+        "properties": {
+          "amount": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Amount",
+            "type": "string"
+          },
+          "category_id": {
+            "format": "uuid",
+            "title": "Category Id",
+            "type": "string"
+          },
+          "day": {
+            "title": "Day",
+            "type": "integer"
+          },
+          "first_month": {
+            "title": "First Month",
+            "type": "string"
+          },
+          "frequency": {
+            "$ref": "#/components/schemas/FixedFrequency"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "last_month": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Month"
+          },
+          "paused": {
+            "title": "Paused",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "label",
+          "category_id",
+          "amount",
+          "frequency",
+          "day",
+          "first_month",
+          "last_month",
+          "paused"
+        ],
+        "title": "FixedOut",
+        "type": "object"
+      },
+      "FixedStatus": {
+        "enum": [
+          "to_confirm",
+          "confirmed",
+          "skipped"
+        ],
+        "title": "FixedStatus",
+        "type": "string"
       },
       "FlowKind": {
         "enum": [
@@ -2394,6 +2601,60 @@
         "title": "ImportPreview",
         "type": "object"
       },
+      "IncomeIn": {
+        "properties": {
+          "amount": {
+            "anyOf": [
+              {
+                "exclusiveMaximum": 1000000000000.0,
+                "exclusiveMinimum": -1000000000000.0,
+                "type": "number"
+              },
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              }
+            ],
+            "title": "Amount"
+          }
+        },
+        "required": [
+          "amount"
+        ],
+        "title": "IncomeIn",
+        "type": "object"
+      },
+      "IncomeOut": {
+        "properties": {
+          "amount": {
+            "anyOf": [
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Amount"
+          },
+          "carried": {
+            "title": "Carried",
+            "type": "boolean"
+          },
+          "month": {
+            "title": "Month",
+            "type": "string"
+          }
+        },
+        "required": [
+          "month",
+          "amount",
+          "carried"
+        ],
+        "title": "IncomeOut",
+        "type": "object"
+      },
       "InviteAccept": {
         "properties": {
           "display_name": {
@@ -2606,6 +2867,32 @@
         "title": "Kpis",
         "type": "object"
       },
+      "LabelOut": {
+        "properties": {
+          "category_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category Id"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          }
+        },
+        "required": [
+          "label",
+          "category_id"
+        ],
+        "title": "LabelOut",
+        "type": "object"
+      },
       "Language": {
         "description": "Languages of the interface.",
         "enum": [
@@ -2614,6 +2901,178 @@
         ],
         "title": "Language",
         "type": "string"
+      },
+      "LastEntryOut": {
+        "properties": {
+          "day": {
+            "format": "date",
+            "title": "Day",
+            "type": "string"
+          },
+          "entered_at": {
+            "format": "date-time",
+            "title": "Entered At",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "day",
+          "entered_at"
+        ],
+        "title": "LastEntryOut",
+        "type": "object"
+      },
+      "LineIn": {
+        "properties": {
+          "amount": {
+            "anyOf": [
+              {
+                "exclusiveMaximum": 1000000000000.0,
+                "exclusiveMinimum": -1000000000000.0,
+                "type": "number"
+              },
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              }
+            ],
+            "title": "Amount"
+          },
+          "category_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category Id"
+          },
+          "day": {
+            "format": "date",
+            "title": "Day",
+            "type": "string"
+          },
+          "fixed_expense_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fixed Expense Id"
+          },
+          "label": {
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Label",
+            "type": "string"
+          },
+          "split": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/kwak_api__spending__routes__SplitIn"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "day",
+          "label",
+          "amount"
+        ],
+        "title": "LineIn",
+        "type": "object"
+      },
+      "LineOut": {
+        "properties": {
+          "amount": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Amount",
+            "type": "string"
+          },
+          "category_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category Id"
+          },
+          "day": {
+            "format": "date",
+            "title": "Day",
+            "type": "string"
+          },
+          "entered_at": {
+            "format": "date-time",
+            "title": "Entered At",
+            "type": "string"
+          },
+          "entered_by": {
+            "title": "Entered By",
+            "type": "string"
+          },
+          "fixed_expense_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fixed Expense Id"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "parts": {
+            "items": {
+              "$ref": "#/components/schemas/kwak_api__spending__routes__PartOut"
+            },
+            "title": "Parts",
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "day",
+          "label",
+          "amount",
+          "category_id",
+          "parts",
+          "fixed_expense_id",
+          "entered_by",
+          "entered_at"
+        ],
+        "title": "LineOut",
+        "type": "object"
       },
       "Linked": {
         "properties": {
@@ -2693,6 +3152,38 @@
           "role"
         ],
         "title": "MemberOut",
+        "type": "object"
+      },
+      "MonthLinesOut": {
+        "properties": {
+          "last_entry": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LastEntryOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/LineOut"
+            },
+            "title": "Lines",
+            "type": "array"
+          },
+          "month": {
+            "title": "Month",
+            "type": "string"
+          }
+        },
+        "required": [
+          "month",
+          "lines",
+          "last_entry"
+        ],
+        "title": "MonthLinesOut",
         "type": "object"
       },
       "MonthPoint": {
@@ -2844,79 +3335,6 @@
           "paid_from"
         ],
         "title": "PaidFromIn",
-        "type": "object"
-      },
-      "PartIn": {
-        "properties": {
-          "amount": {
-            "anyOf": [
-              {
-                "type": "number"
-              },
-              {
-                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
-                "type": "string"
-              }
-            ],
-            "title": "Amount"
-          },
-          "category_id": {
-            "anyOf": [
-              {
-                "format": "uuid",
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Category Id"
-          }
-        },
-        "required": [
-          "category_id",
-          "amount"
-        ],
-        "title": "PartIn",
-        "type": "object"
-      },
-      "PartOut": {
-        "properties": {
-          "amount": {
-            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
-            "title": "Amount",
-            "type": "string"
-          },
-          "category_id": {
-            "anyOf": [
-              {
-                "format": "uuid",
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Category Id"
-          },
-          "category_name": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Category Name"
-          }
-        },
-        "required": [
-          "category_id",
-          "category_name",
-          "amount"
-        ],
-        "title": "PartOut",
         "type": "object"
       },
       "PasswordConfirmation": {
@@ -3488,6 +3906,84 @@
         ],
         "title": "ProgressStatus",
         "type": "string"
+      },
+      "QuickIn": {
+        "properties": {
+          "text": {
+            "maxLength": 200,
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "text"
+        ],
+        "title": "QuickIn",
+        "type": "object"
+      },
+      "QuickOut": {
+        "properties": {
+          "amount": {
+            "anyOf": [
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Amount"
+          },
+          "category_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category Id"
+          },
+          "category_word": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category Word"
+          },
+          "day": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Day"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          }
+        },
+        "required": [
+          "day",
+          "amount",
+          "label",
+          "category_id",
+          "category_word"
+        ],
+        "title": "QuickOut",
+        "type": "object"
       },
       "RecoveryCodeIn": {
         "properties": {
@@ -5079,35 +5575,99 @@
         "title": "Side",
         "type": "string"
       },
-      "SplitIn": {
+      "SpendingCategoryIn": {
         "properties": {
-          "parts": {
-            "items": {
-              "$ref": "#/components/schemas/PartIn"
-            },
-            "maxItems": 19,
-            "minItems": 1,
-            "title": "Parts",
-            "type": "array"
+          "kind": {
+            "$ref": "#/components/schemas/CategoryKind"
           },
-          "rest_category_id": {
+          "name": {
+            "maxLength": 60,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "kind"
+        ],
+        "title": "SpendingCategoryIn",
+        "type": "object"
+      },
+      "SpendingCategoryOut": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/CategoryKind"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "one_off": {
+            "title": "One Off",
+            "type": "boolean"
+          },
+          "position": {
+            "title": "Position",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "kind",
+          "one_off",
+          "position"
+        ],
+        "title": "SpendingCategoryOut",
+        "type": "object"
+      },
+      "SpendingCategoryPatch": {
+        "properties": {
+          "name": {
             "anyOf": [
               {
-                "format": "uuid",
+                "maxLength": 60,
+                "minLength": 1,
                 "type": "string"
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Rest Category Id"
+            "title": "Name"
+          },
+          "one_off": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "One Off"
+          }
+        },
+        "title": "SpendingCategoryPatch",
+        "type": "object"
+      },
+      "SpendingRestoreOut": {
+        "properties": {
+          "added": {
+            "title": "Added",
+            "type": "integer"
           }
         },
         "required": [
-          "parts",
-          "rest_category_id"
+          "added"
         ],
-        "title": "SplitIn",
+        "title": "SpendingRestoreOut",
         "type": "object"
       },
       "SuggestionOut": {
@@ -5467,7 +6027,7 @@
           },
           "parts": {
             "items": {
-              "$ref": "#/components/schemas/PartOut"
+              "$ref": "#/components/schemas/kwak_api__transactions__routes__PartOut"
             },
             "title": "Parts",
             "type": "array"
@@ -6612,6 +7172,183 @@
           "amount"
         ],
         "title": "WealthValueIn",
+        "type": "object"
+      },
+      "kwak_api__spending__routes__PartIn": {
+        "properties": {
+          "amount": {
+            "anyOf": [
+              {
+                "exclusiveMaximum": 1000000000000.0,
+                "exclusiveMinimum": -1000000000000.0,
+                "type": "number"
+              },
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              }
+            ],
+            "title": "Amount"
+          },
+          "category_id": {
+            "format": "uuid",
+            "title": "Category Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "category_id",
+          "amount"
+        ],
+        "title": "PartIn",
+        "type": "object"
+      },
+      "kwak_api__spending__routes__PartOut": {
+        "properties": {
+          "amount": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Amount",
+            "type": "string"
+          },
+          "category_id": {
+            "format": "uuid",
+            "title": "Category Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "category_id",
+          "amount"
+        ],
+        "title": "PartOut",
+        "type": "object"
+      },
+      "kwak_api__spending__routes__SplitIn": {
+        "properties": {
+          "parts": {
+            "items": {
+              "$ref": "#/components/schemas/kwak_api__spending__routes__PartIn"
+            },
+            "maxItems": 20,
+            "minItems": 1,
+            "title": "Parts",
+            "type": "array"
+          },
+          "rest_category_id": {
+            "format": "uuid",
+            "title": "Rest Category Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "parts",
+          "rest_category_id"
+        ],
+        "title": "SplitIn",
+        "type": "object"
+      },
+      "kwak_api__transactions__routes__PartIn": {
+        "properties": {
+          "amount": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              }
+            ],
+            "title": "Amount"
+          },
+          "category_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category Id"
+          }
+        },
+        "required": [
+          "category_id",
+          "amount"
+        ],
+        "title": "PartIn",
+        "type": "object"
+      },
+      "kwak_api__transactions__routes__PartOut": {
+        "properties": {
+          "amount": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Amount",
+            "type": "string"
+          },
+          "category_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category Id"
+          },
+          "category_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category Name"
+          }
+        },
+        "required": [
+          "category_id",
+          "category_name",
+          "amount"
+        ],
+        "title": "PartOut",
+        "type": "object"
+      },
+      "kwak_api__transactions__routes__SplitIn": {
+        "properties": {
+          "parts": {
+            "items": {
+              "$ref": "#/components/schemas/kwak_api__transactions__routes__PartIn"
+            },
+            "maxItems": 19,
+            "minItems": 1,
+            "title": "Parts",
+            "type": "array"
+          },
+          "rest_category_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rest Category Id"
+          }
+        },
+        "required": [
+          "parts",
+          "rest_category_id"
+        ],
+        "title": "SplitIn",
         "type": "object"
       }
     }
@@ -11144,6 +11881,1254 @@
         ]
       }
     },
+    "/api/spending/categories": {
+      "get": {
+        "operationId": "listSpendingCategories",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "kwak_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Kwak Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/SpendingCategoryOut"
+                  },
+                  "title": "Response Listspendingcategories",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Spending Categories",
+        "tags": [
+          "spending"
+        ]
+      },
+      "post": {
+        "operationId": "createSpendingCategory",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "kwak_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Kwak Session"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SpendingCategoryIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SpendingCategoryOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Spending Category",
+        "tags": [
+          "spending"
+        ]
+      }
+    },
+    "/api/spending/categories/restore": {
+      "post": {
+        "description": "Add back the default categories missing by name.",
+        "operationId": "restoreSpendingCategories",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "kwak_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Kwak Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SpendingRestoreOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Restore Spending Categories",
+        "tags": [
+          "spending"
+        ]
+      }
+    },
+    "/api/spending/categories/{category_id}": {
+      "delete": {
+        "operationId": "deleteSpendingCategory",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "category_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Category Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Where its lines and fixed expenses go",
+            "in": "query",
+            "name": "move_to",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Where its lines and fixed expenses go",
+              "title": "Move To"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "kwak_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Kwak Session"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Spending Category",
+        "tags": [
+          "spending"
+        ]
+      },
+      "patch": {
+        "operationId": "updateSpendingCategory",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "category_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Category Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "kwak_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Kwak Session"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SpendingCategoryPatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SpendingCategoryOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Update Spending Category",
+        "tags": [
+          "spending"
+        ]
+      }
+    },
+    "/api/spending/fixed": {
+      "get": {
+        "operationId": "listFixed",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "kwak_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Kwak Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/FixedOut"
+                  },
+                  "title": "Response Listfixed",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Fixed",
+        "tags": [
+          "spending"
+        ]
+      },
+      "post": {
+        "operationId": "createFixed",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "kwak_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Kwak Session"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FixedIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FixedOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Fixed",
+        "tags": [
+          "spending"
+        ]
+      }
+    },
+    "/api/spending/fixed/occurrences": {
+      "get": {
+        "description": "The month's occurrences by due date: confirmed, skipped or still to confirm.",
+        "operationId": "monthOccurrences",
+        "parameters": [
+          {
+            "description": "YYYY-MM",
+            "in": "query",
+            "name": "month",
+            "required": true,
+            "schema": {
+              "description": "YYYY-MM",
+              "maxLength": 7,
+              "title": "Month",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "kwak_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Kwak Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/FixedOccurrenceOut"
+                  },
+                  "title": "Response Monthoccurrences",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Month Occurrences",
+        "tags": [
+          "spending"
+        ]
+      }
+    },
+    "/api/spending/fixed/{fixed_id}": {
+      "delete": {
+        "description": "The lines confirmed from it stay.",
+        "operationId": "deleteFixed",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "fixed_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Fixed Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "kwak_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Kwak Session"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Fixed",
+        "tags": [
+          "spending"
+        ]
+      },
+      "put": {
+        "operationId": "replaceFixed",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "fixed_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Fixed Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "kwak_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Kwak Session"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FixedIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FixedOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Replace Fixed",
+        "tags": [
+          "spending"
+        ]
+      }
+    },
+    "/api/spending/fixed/{fixed_id}/skips/{month}": {
+      "delete": {
+        "operationId": "unskipOccurrence",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "fixed_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Fixed Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "month",
+            "required": true,
+            "schema": {
+              "title": "Month",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "kwak_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Kwak Session"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Unskip Occurrence",
+        "tags": [
+          "spending"
+        ]
+      },
+      "put": {
+        "operationId": "skipOccurrence",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "fixed_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Fixed Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "month",
+            "required": true,
+            "schema": {
+              "title": "Month",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "kwak_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Kwak Session"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Skip Occurrence",
+        "tags": [
+          "spending"
+        ]
+      }
+    },
+    "/api/spending/income/{month}": {
+      "delete": {
+        "description": "The month carries the previous income forward again.",
+        "operationId": "removeMonthIncome",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "month",
+            "required": true,
+            "schema": {
+              "title": "Month",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "kwak_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Kwak Session"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Remove Month Income",
+        "tags": [
+          "spending"
+        ]
+      },
+      "get": {
+        "operationId": "monthIncome",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "month",
+            "required": true,
+            "schema": {
+              "title": "Month",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "kwak_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Kwak Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IncomeOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Month Income",
+        "tags": [
+          "spending"
+        ]
+      },
+      "put": {
+        "operationId": "setMonthIncome",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "month",
+            "required": true,
+            "schema": {
+              "title": "Month",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "kwak_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Kwak Session"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IncomeIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IncomeOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Set Month Income",
+        "tags": [
+          "spending"
+        ]
+      }
+    },
+    "/api/spending/labels": {
+      "get": {
+        "operationId": "labelSuggestions",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "q",
+            "required": true,
+            "schema": {
+              "maxLength": 100,
+              "title": "Q",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "kwak_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Kwak Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/LabelOut"
+                  },
+                  "title": "Response Labelsuggestions",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Label Suggestions",
+        "tags": [
+          "spending"
+        ]
+      }
+    },
+    "/api/spending/lines": {
+      "get": {
+        "operationId": "monthLines",
+        "parameters": [
+          {
+            "description": "YYYY-MM",
+            "in": "query",
+            "name": "month",
+            "required": true,
+            "schema": {
+              "description": "YYYY-MM",
+              "maxLength": 7,
+              "title": "Month",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "kwak_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Kwak Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MonthLinesOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Month Lines",
+        "tags": [
+          "spending"
+        ]
+      },
+      "post": {
+        "operationId": "createLine",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "kwak_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Kwak Session"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LineIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LineOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Line",
+        "tags": [
+          "spending"
+        ]
+      }
+    },
+    "/api/spending/lines/{line_id}": {
+      "delete": {
+        "operationId": "deleteLine",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "line_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Line Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "kwak_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Kwak Session"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Line",
+        "tags": [
+          "spending"
+        ]
+      },
+      "put": {
+        "operationId": "replaceLine",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "line_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Line Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "kwak_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Kwak Session"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LineIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LineOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Replace Line",
+        "tags": [
+          "spending"
+        ]
+      }
+    },
+    "/api/spending/quick": {
+      "post": {
+        "description": "How the quick line is understood (F-ENT-2); nothing is saved.",
+        "operationId": "understandQuickLine",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "kwak_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Kwak Session"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QuickIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuickOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Understand Quick Line",
+        "tags": [
+          "spending"
+        ]
+      }
+    },
     "/api/transactions": {
       "get": {
         "operationId": "listTransactions",
@@ -11664,7 +13649,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/SplitIn"
+                "$ref": "#/components/schemas/kwak_api__transactions__routes__SplitIn"
               }
             }
           },

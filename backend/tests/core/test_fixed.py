@@ -8,9 +8,9 @@ from hypothesis import strategies as st
 from kwak_core.budget import Month
 from kwak_core.fixed import (
     FixedExpense,
-    Frequency,
+    FixedFrequency,
+    FixedStatus,
     LineRef,
-    OccurrenceStatus,
     due_date,
     is_due,
     monthly_equivalent,
@@ -27,7 +27,7 @@ def fixed(
     label: str = "Loyer",
     category: UUID = HOUSING,
     amount: str = "-950.00",
-    frequency: Frequency = Frequency.MONTHLY,
+    frequency: FixedFrequency = FixedFrequency.MONTHLY,
     day: int = 1,
     first: Month = JANUARY,
     last: Month | None = None,
@@ -43,17 +43,17 @@ def line(label: str, category: UUID, day: int, item: UUID | None = None) -> Line
 @pytest.mark.parametrize(
     ("frequency", "first", "month", "due"),
     [
-        (Frequency.MONTHLY, Month(2026, 1), OCT, True),
-        (Frequency.MONTHLY, Month(2026, 11), OCT, False),
-        (Frequency.QUARTERLY, Month(2026, 1), OCT, True),
-        (Frequency.QUARTERLY, Month(2026, 2), OCT, False),
-        (Frequency.QUARTERLY, Month(2025, 10), OCT, True),
-        (Frequency.YEARLY, Month(2024, 10), OCT, True),
-        (Frequency.YEARLY, Month(2026, 9), OCT, False),
+        (FixedFrequency.MONTHLY, Month(2026, 1), OCT, True),
+        (FixedFrequency.MONTHLY, Month(2026, 11), OCT, False),
+        (FixedFrequency.QUARTERLY, Month(2026, 1), OCT, True),
+        (FixedFrequency.QUARTERLY, Month(2026, 2), OCT, False),
+        (FixedFrequency.QUARTERLY, Month(2025, 10), OCT, True),
+        (FixedFrequency.YEARLY, Month(2024, 10), OCT, True),
+        (FixedFrequency.YEARLY, Month(2026, 9), OCT, False),
     ],
 )
 def test_due_every_period_from_the_first_month(
-    frequency: Frequency, first: Month, month: Month, due: bool
+    frequency: FixedFrequency, first: Month, month: Month, due: bool
 ) -> None:
     assert is_due(fixed(frequency=frequency, first=first), month) is due
 
@@ -70,9 +70,9 @@ def test_the_last_day_stands_in_for_a_missing_one() -> None:
 
 
 def test_monthly_equivalent() -> None:
-    assert monthly_equivalent(D("-90.00"), Frequency.MONTHLY) == D("-90.00")
-    assert monthly_equivalent(D("-90.00"), Frequency.QUARTERLY) == D("-30.00")
-    assert monthly_equivalent(D("-120.00"), Frequency.YEARLY) == D("-10.00")
+    assert monthly_equivalent(D("-90.00"), FixedFrequency.MONTHLY) == D("-90.00")
+    assert monthly_equivalent(D("-90.00"), FixedFrequency.QUARTERLY) == D("-30.00")
+    assert monthly_equivalent(D("-120.00"), FixedFrequency.YEARLY) == D("-10.00")
 
 
 def test_occurrences_to_confirm_confirmed_or_skipped() -> None:
@@ -80,9 +80,9 @@ def test_occurrences_to_confirm_confirmed_or_skipped() -> None:
     created = line("Loyer (oct.)", HOUSING, 2, rent.id)  # label changed when confirming
     occ = occurrences([rent, nanny, netflix], OCT, [created], skipped={netflix.id})
     assert [(o.item_id, o.status, o.line_id) for o in occ] == [
-        (rent.id, OccurrenceStatus.CONFIRMED, created.id),
-        (netflix.id, OccurrenceStatus.SKIPPED, None),
-        (nanny.id, OccurrenceStatus.TO_CONFIRM, None),
+        (rent.id, FixedStatus.CONFIRMED, created.id),
+        (netflix.id, FixedStatus.SKIPPED, None),
+        (nanny.id, FixedStatus.TO_CONFIRM, None),
     ]
     assert occ[2].due == date(2026, 10, 5)
 
@@ -92,7 +92,7 @@ def test_a_line_typed_by_hand_with_the_same_label_and_category_confirms() -> Non
     typed = line("  creche ", KIDS, 6)
     other_category = line("Crèche", HOUSING, 5)
     (occ,) = occurrences([nanny], OCT, [other_category, typed], skipped=set())
-    assert (occ.status, occ.line_id) == (OccurrenceStatus.CONFIRMED, typed.id)
+    assert (occ.status, occ.line_id) == (FixedStatus.CONFIRMED, typed.id)
 
 
 def test_a_line_created_from_another_item_is_not_taken_by_hand_matching() -> None:
@@ -100,7 +100,7 @@ def test_a_line_created_from_another_item_is_not_taken_by_hand_matching() -> Non
     from_a = line("Assurance", HOUSING, 3, a.id)
     occ = {o.item_id: o for o in occurrences([a, b], OCT, [from_a], skipped=set())}
     assert occ[a.id].line_id == from_a.id
-    assert occ[b.id].status is OccurrenceStatus.TO_CONFIRM
+    assert occ[b.id].status is FixedStatus.TO_CONFIRM
 
 
 def test_the_closest_hand_line_confirms() -> None:
@@ -140,5 +140,5 @@ def test_invariant_16_one_to_one_and_projection(
     taken = [o.line_id for o in occ if o.line_id is not None]
     assert len(taken) == len(set(taken))
     assert len(occ) == len({o.item_id for o in occ}) == len(items)
-    open_ = [o for o in occ if o.status is OccurrenceStatus.TO_CONFIRM]
+    open_ = [o for o in occ if o.status is FixedStatus.TO_CONFIRM]
     assert projected_rest(D(0), occ) == sum((o.amount for o in open_), D(0))

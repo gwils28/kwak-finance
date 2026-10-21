@@ -168,6 +168,24 @@ DEFAULT_CATEGORIES: tuple[DefaultCategory, ...] = (
 )
 
 
+# The spending's categories since v1.0 (F-CAT-1): one level, seeded for every household.
+DEFAULT_SPENDING_CATEGORIES: tuple[DefaultCategory, ...] = (
+    DefaultCategory(N("Housing", "Logement"), _E, one_off=True),
+    DefaultCategory(N("Groceries", "Courses"), _E),
+    DefaultCategory(N("Transport", "Transport"), _E),
+    DefaultCategory(N("Children", "Enfants"), _E),
+    DefaultCategory(N("Health", "Santé"), _E),
+    DefaultCategory(N("Subscriptions", "Abonnements"), _E, one_off=True),
+    DefaultCategory(N("Home", "Foyer"), _E),
+    DefaultCategory(N("Leisure", "Loisirs"), _E),
+    DefaultCategory(N("Shopping", "Shopping"), _E),
+    DefaultCategory(N("Gifts", "Cadeaux"), _E),
+    DefaultCategory(N("Miscellaneous", "Divers"), _E),
+    DefaultCategory(N("Savings", "Épargne"), _S),
+)
+SPENDING_KINDS = frozenset({CategoryKind.EXPENSE, CategoryKind.SAVINGS})
+
+
 @dataclass(frozen=True)
 class Existing:
     """A household category, as the restore sees it."""
