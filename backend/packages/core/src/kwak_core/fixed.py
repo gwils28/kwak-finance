@@ -17,13 +17,13 @@ from kwak_core.labels import normalise
 from kwak_core.money import quantize
 
 
-class Frequency(enum.StrEnum):
+class FixedFrequency(enum.StrEnum):
     MONTHLY = "monthly"
     QUARTERLY = "quarterly"
     YEARLY = "yearly"
 
 
-STEP = {Frequency.MONTHLY: 1, Frequency.QUARTERLY: 3, Frequency.YEARLY: 12}
+STEP = {FixedFrequency.MONTHLY: 1, FixedFrequency.QUARTERLY: 3, FixedFrequency.YEARLY: 12}
 
 
 @dataclass(frozen=True)
@@ -33,7 +33,7 @@ class FixedExpense:
     category_id: UUID
     amount: Decimal
     """Signed as a line: negative is spent or put aside."""
-    frequency: Frequency
+    frequency: FixedFrequency
     day: int
     first: Month
     last: Month | None = None
@@ -53,7 +53,7 @@ class LineRef:
     """The fixed expense it was created from, when confirmed from the grid."""
 
 
-class OccurrenceStatus(enum.StrEnum):
+class FixedStatus(enum.StrEnum):
     TO_CONFIRM = "to_confirm"
     CONFIRMED = "confirmed"
     SKIPPED = "skipped"
@@ -64,7 +64,7 @@ class Occurrence:
     item_id: UUID
     due: date
     amount: Decimal
-    status: OccurrenceStatus
+    status: FixedStatus
     line_id: UUID | None = None
 
 
@@ -83,7 +83,7 @@ def due_date(item: FixedExpense, month: Month) -> date:
     return date(month.year, month.month, min(item.day, last_day))
 
 
-def monthly_equivalent(amount: Decimal, frequency: Frequency) -> Decimal:
+def monthly_equivalent(amount: Decimal, frequency: FixedFrequency) -> Decimal:
     return quantize(amount / STEP[frequency])
 
 
@@ -106,11 +106,9 @@ def occurrences(
         line = next((ln for ln in lines if ln.from_item == item.id and ln.id not in taken), None)
         if line is not None:
             taken.add(line.id)
-            found[item.id] = Occurrence(
-                item.id, day, item.amount, OccurrenceStatus.CONFIRMED, line.id
-            )
+            found[item.id] = Occurrence(item.id, day, item.amount, FixedStatus.CONFIRMED, line.id)
         elif item.id in skipped:
-            found[item.id] = Occurrence(item.id, day, item.amount, OccurrenceStatus.SKIPPED)
+            found[item.id] = Occurrence(item.id, day, item.amount, FixedStatus.SKIPPED)
     for day, item in due:
         if item.id in found:
             continue
@@ -126,15 +124,13 @@ def occurrences(
         if candidates:
             line = min(candidates, key=lambda ln: (abs(ln.day - day), ln.day))
             taken.add(line.id)
-            found[item.id] = Occurrence(
-                item.id, day, item.amount, OccurrenceStatus.CONFIRMED, line.id
-            )
+            found[item.id] = Occurrence(item.id, day, item.amount, FixedStatus.CONFIRMED, line.id)
         else:
-            found[item.id] = Occurrence(item.id, day, item.amount, OccurrenceStatus.TO_CONFIRM)
+            found[item.id] = Occurrence(item.id, day, item.amount, FixedStatus.TO_CONFIRM)
     return [found[item.id] for _, item in due]
 
 
 def projected_rest(rest: Decimal, occurrences: Sequence[Occurrence]) -> Decimal:
     """The month's rest once the occurrences still to confirm are paid (F-FIX-4)."""
-    still = [o.amount for o in occurrences if o.status is OccurrenceStatus.TO_CONFIRM]
+    still = [o.amount for o in occurrences if o.status is FixedStatus.TO_CONFIRM]
     return rest + sum(still, Decimal(0))

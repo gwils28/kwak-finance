@@ -43,6 +43,18 @@ const entries = [
   entry("goal_deleted", "deletion", { name: "Voyage", tier: "medium" }, { id: "e-goal" }),
   entry("settings_changed", "household", { precaution_share: "0.70" }, { id: "e-share" }),
   entry("settings_changed", "household", { goal_capacity: "1350.00" }, { id: "e-cap" }),
+  entry(
+    "spending_line_deleted",
+    "deletion",
+    { label: "Cinéma", amount: "-12.00", date: "2026-10-14" },
+    { id: "e-line" },
+  ),
+  entry(
+    "spending_category_deleted",
+    "deletion",
+    { name: "Loisirs", moved_to: "Divers" },
+    { id: "e-cat" },
+  ),
 ];
 const members = [
   { id: owner.id, display_name: "Wilson", email: owner.email, role: "owner" },
@@ -87,6 +99,8 @@ test("the account menu leads to the activity log, each entry in words", async ()
   expect(rows[10]).toContain("Deleted the goal Voyage");
   expect(rows[11]).toContain("Set the precaution share of the goals' effort to 70%");
   expect(rows[12]).toContain("Set the goals' monthly capacity to €1,350.00");
+  expect(rows[13]).toContain("Deleted the line “Cinéma” (-€12.00, 14 Oct 2026)");
+  expect(rows[14]).toContain("Deleted the category Loisirs, its lines moved to Divers");
 });
 
 test("the owner filters by kind and by member", async () => {

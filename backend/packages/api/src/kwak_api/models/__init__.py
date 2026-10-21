@@ -12,6 +12,14 @@ from kwak_api.models.recovery_code import RecoveryCode
 from kwak_api.models.recurring import DismissedSuggestion, RecurringItem, RecurringSkip
 from kwak_api.models.rule import CategorizationRule
 from kwak_api.models.session import UserSession
+from kwak_api.models.spending import (
+    FixedExpense,
+    FixedSkip,
+    MonthlyIncome,
+    SpendingCategory,
+    SpendingLine,
+    SpendingLinePart,
+)
 from kwak_api.models.transaction import ImportBatch, Transaction, TransactionPart
 from kwak_api.models.wealth import WealthCategory, WealthLine, WealthValue
 
@@ -25,6 +33,8 @@ __all__ = [
     "Category",
     "ClosedAs",
     "DismissedSuggestion",
+    "FixedExpense",
+    "FixedSkip",
     "Goal",
     "GoalAdjustment",
     "GoalFunding",
@@ -32,10 +42,14 @@ __all__ = [
     "ImportBatch",
     "Institution",
     "Invite",
+    "MonthlyIncome",
     "RecoveryCode",
     "RecurringItem",
     "RecurringSkip",
     "Role",
+    "SpendingCategory",
+    "SpendingLine",
+    "SpendingLinePart",
     "Transaction",
     "TransactionPart",
     "User",

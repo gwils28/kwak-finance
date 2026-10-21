@@ -4,6 +4,7 @@ from hypothesis import given
 from hypothesis import strategies as st
 from kwak_core.categories import (
     DEFAULT_CATEGORIES,
+    DEFAULT_SPENDING_CATEGORIES,
     CategoryKind,
     Existing,
     RestorePlan,
@@ -198,3 +199,12 @@ def test_the_defaults_have_a_savings_category() -> None:
     assert [d.name(Language.EN) for d in savings] == ["Savings & investments"]
     assert [d.name(Language.FR) for d in savings] == ["Épargne et placements"]
     assert [c.fr for c in savings[0].children] == ["Livrets", "Placements", "Retraite"]
+
+
+def test_the_spending_defaults_are_flat_with_one_savings_category() -> None:
+    assert all(not d.children for d in DEFAULT_SPENDING_CATEGORIES)
+    savings = [d for d in DEFAULT_SPENDING_CATEGORIES if d.kind is CategoryKind.SAVINGS]
+    assert [d.name(Language.FR) for d in savings] == ["Épargne"]
+    one_off = [d.name(Language.FR) for d in DEFAULT_SPENDING_CATEGORIES if d.one_off]
+    assert one_off == ["Logement", "Abonnements"]
+    assert "Foyer" in [d.name(Language.FR) for d in DEFAULT_SPENDING_CATEGORIES]

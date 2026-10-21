@@ -84,6 +84,12 @@ export const activityEn = {
     wealth_line_deleted: (d) => `Deleted the wealth line ${d.name} (${d.category})`,
     wealth_category_deleted: (d) => `Deleted the wealth category ${d.name}`,
     goal_deleted: (d) => `Deleted the goal ${d.name}`,
+    spending_line_deleted: (d) => `Deleted the line “${d.label}” (${d.amount}, ${d.date})`,
+    spending_category_deleted: (d) =>
+      d.moved_to
+        ? `Deleted the category ${d.name}, its lines moved to ${d.moved_to}`
+        : `Deleted the category ${d.name}`,
+    fixed_expense_deleted: (d) => `Deleted the fixed expense “${d.label}” (${d.amount})`,
     recurring_deleted: (d) =>
       `Deleted the recurring item ${d.label ? `“${d.label}” ` : ""}(${d.amount}) on ${d.account}`,
     rule_created: (d) => `Created a rule: ${ruleEn(d)} → ${d.category}`,
@@ -159,6 +165,12 @@ export const activityFr: typeof activityEn = {
     wealth_line_deleted: (d) => `Ligne de patrimoine ${d.name} (${d.category}) supprimée`,
     wealth_category_deleted: (d) => `Catégorie de patrimoine ${d.name} supprimée`,
     goal_deleted: (d) => `Objectif ${d.name} supprimé`,
+    spending_line_deleted: (d) => `Ligne « ${d.label} » supprimée (${d.amount}, ${d.date})`,
+    spending_category_deleted: (d) =>
+      d.moved_to
+        ? `Catégorie ${d.name} supprimée, ses lignes déplacées vers ${d.moved_to}`
+        : `Catégorie ${d.name} supprimée`,
+    fixed_expense_deleted: (d) => `Dépense fixe « ${d.label} » supprimée (${d.amount})`,
     recurring_deleted: (d) =>
       `Échéance ${d.label ? `« ${d.label} » ` : ""}(${d.amount}) supprimée sur ${d.account}`,
     rule_created: (d) => `Règle créée : ${ruleFr(d)} → ${d.category}`,
