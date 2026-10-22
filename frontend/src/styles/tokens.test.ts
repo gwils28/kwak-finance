@@ -24,6 +24,8 @@ const goalKeys = (css: string) =>
 test("goal colours survive the build in both themes", () => {
   const keys = [
     "foundation",
+    "gold",
+    "gold-shine",
     "priority",
     "stone",
     "stone-edge",

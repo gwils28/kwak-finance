@@ -2,11 +2,12 @@ import { type GoalOut, type GoalStatus, goalLines, type Tier } from "../api/gene
 import { useI18n } from "../i18n";
 import { formatEurWhole, formatPercent } from "../lib/money";
 
-/** The tiers by priority: the foundation, then the nearest deadlines first. */
-export const TIERS: Tier[] = ["precaution", "short", "medium", "long"];
+/** The tiers by priority: the foundation, then the nearest deadlines first, pleasure last. */
+export const TIERS: Tier[] = ["precaution", "short", "medium", "long", "pleasure"];
 
-/** The order of the pyramid, from its foundation up: the long term at the base, the short term at the top. */
-export const PYRAMID: Tier[] = ["precaution", "long", "medium", "short"];
+/** The order of the pyramid, from its foundation up: the long term at the base, the short term
+ * at the top, under the golden capstone. */
+export const PYRAMID: Tier[] = ["precaution", "long", "medium", "short", "pleasure"];
 
 export const GOALS_KEY = ["goals"];
 
@@ -22,19 +23,28 @@ const monthIndex = (month: string) => {
 };
 
 /** The tier a deadline gives, as the API computes it (F-GOAL-1): a preview in the form. */
-export function tierOf(deadline: string | null, month: string, precaution: boolean): Tier {
+export function tierOf(
+  deadline: string | null,
+  month: string,
+  precaution: boolean,
+  pleasure = false,
+): Tier {
   if (precaution) return "precaution";
+  if (pleasure) return "pleasure";
   if (!deadline) return "short";
   const months = monthIndex(deadline) - monthIndex(month);
   if (months <= 12) return "short";
   return months <= 60 ? "medium" : "long";
 }
 
-/** A tier's colour: `goal-foundation` for the precaution, then its `goal-tier-*` token, darkest at the base (§7). */
+/** A tier's colour: `goal-foundation` for the precaution, `goal-gold` for the capstone, then
+ * its `goal-tier-*` token, darkest at the base (§7). */
 export const tierColour = (tier: Tier) =>
   tier === "precaution"
     ? "var(--color-goal-foundation)"
-    : `var(--color-goal-tier-${PYRAMID.indexOf(tier)})`;
+    : tier === "pleasure"
+      ? "var(--color-goal-gold)"
+      : `var(--color-goal-tier-${PYRAMID.indexOf(tier)})`;
 
 const STATUS_CLASS: Record<GoalStatus, string> = {
   reached: "bg-budget-under-bg text-budget-under-fg",

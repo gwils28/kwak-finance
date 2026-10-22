@@ -168,10 +168,40 @@ const detail: GoalDetailOut = {
   ],
 };
 
-function api(me: object = owner) {
+const rum = goal({
+  id: "g-rum",
+  name: "Rhum hors d'âge",
+  tier: "pleasure",
+  pleasure: true,
+  target: "180.00",
+  start: "2026-09",
+  deadline: null,
+  value: "60.00",
+  progress: "0.3333",
+  remaining: "120.00",
+  expected: null,
+  months_left: null,
+  required: null,
+  actual: "60.00",
+  estimated: "2026-12",
+  months_early: null,
+  status: "locked",
+  effort: null,
+});
+
+const withRum: GoalsOut = {
+  ...goals,
+  pyramid: goals.pyramid.map((p) =>
+    p.tier === "pleasure" ? { ...p, value: "60.00", target: "180.00", progress: "0.3333" } : p,
+  ),
+  capstone: { ...goals.capstone, ahead: 2, counted: 4, needed: 3 },
+  goals: [...goals.goals, rum],
+};
+
+function api(me: object = owner, data: GoalsOut = goals) {
   return fakeApi({
     "GET /api/auth/me": () => Response.json(me),
-    "GET /api/goals": () => Response.json(goals),
+    "GET /api/goals": () => Response.json(data),
     "GET /api/goals/g-summer": () => Response.json(detail),
     "GET /api/goals/lines": () =>
       Response.json([
@@ -233,7 +263,7 @@ test("the goals page shows the pyramid, the month's effort and each goal by tier
   );
   expect(
     screen.getByRole("img", {
-      name: "Emergency fund: 84%, Short term: No goal, Medium term: 47%, Long term: No goal",
+      name: "Emergency fund: 84%, Short term: No goal, Medium term: 47%, Long term: No goal, Pleasure: No goal",
     }),
   ).toBeInTheDocument();
   // the long term is the pyramid's base and the short term its top, as the legend reads
@@ -242,7 +272,7 @@ test("the goals page shows the pyramid, the month's effort and each goal by tier
     within(pyramid)
       .getAllByRole("listitem")
       .map((li) => plain(li.textContent)?.split(" · ")[0]),
-  ).toEqual(["Short term", "Medium term", "Long term", "Emergency fund"]);
+  ).toEqual(["Pleasure", "Short term", "Medium term", "Long term", "Emergency fund"]);
 
   const effort = screen.getByRole("table", { name: "Effort by goal" });
   const rows = within(effort)
@@ -308,6 +338,9 @@ test("the goals page reads in French", async () => {
   expect(await screen.findByRole("heading", { level: 1, name: "Objectifs" })).toBeInTheDocument();
   expect(plain((await screen.findByRole("status")).textContent)).toContain(
     "Il manque 2 300 € à votre épargne de précaution.",
+  );
+  expect(plain(screen.getByRole("region", { name: "La pyramide" }).textContent)).toContain(
+    "Il manque encore : épargne de précaution à 84 %.",
   );
   const late = screen.getByRole("article", { name: "Vacances été 2027" });
   expect(within(late).getByText("En retard")).toBeInTheDocument();
@@ -384,10 +417,77 @@ test("a new emergency fund takes the proposal and its wealth lines, never a debt
     precaution: true,
     permanent: true,
     target: "3800.00",
+    pleasure: false,
     deadline: null,
     start: "2026-10",
     visibility: "shared",
     fundings: [{ line_id: "l-livret", share: 80, opening: "1000.00" }],
+  });
+});
+
+test("the golden capstone holds the pleasure goals, locked until the rest is in order", async () => {
+  api(owner, withRum);
+  render(<TestApp path="/goals" />);
+
+  const pyramid = await screen.findByRole("region", { name: "The pyramid" });
+  expect(
+    within(pyramid).getByRole("img", { name: /, Pleasure: Locked · 33%$/ }),
+  ).toBeInTheDocument();
+  expect(plain(pyramid.textContent)).toContain(
+    "Pleasure goals unlock once the emergency fund is full and at least 3 in 4 goals with a deadline are ahead. Still missing: emergency fund at 84%, 2 of 4 goals ahead (3 needed).",
+  );
+  const section = screen.getByRole("region", { name: "Pleasure" });
+  const card = within(section).getByRole("article", { name: "Rhum hors d'âge" });
+  expect(within(card).getByText("Locked")).toBeInTheDocument();
+  expect(plain(card.textContent)).toContain("€60 / €180");
+});
+
+test("an unlocked capstone says so", async () => {
+  api(owner, {
+    ...withRum,
+    capstone: {
+      month: "2026-09",
+      precaution: "1.0000",
+      ahead: 3,
+      counted: 4,
+      needed: 3,
+      unlocked: true,
+    },
+    goals: [...goals.goals, { ...rum, status: "open", effort: "120.00" }],
+  });
+  render(<TestApp path="/goals" />);
+  const pyramid = await screen.findByRole("region", { name: "The pyramid" });
+  expect(within(pyramid).getByRole("img", { name: /, Pleasure: 33%$/ })).toBeInTheDocument();
+  expect(pyramid).toHaveTextContent(
+    "Pleasure goals are unlocked: they take what the other goals leave of this month's effort.",
+  );
+  const effort = screen.getByRole("table", { name: "Effort by goal" });
+  expect(plain(within(effort).getAllByRole("row").at(-1)?.textContent)).toBe(
+    "Rhum hors d'âge€120 missing€120",
+  );
+});
+
+test("a pleasure goal has no deadline and is neither permanent nor the emergency fund", async () => {
+  const calls = api();
+  render(<TestApp path="/goals" />);
+  const user = userEvent.setup();
+  await user.click(await screen.findByRole("button", { name: "New goal" }));
+  const form = screen.getByRole("form", { name: "New goal" });
+  await user.click(within(form).getByRole("checkbox", { name: "This is a pleasure goal" }));
+  expect(within(form).queryByLabelText("Deadline")).toBeNull();
+  expect(within(form).getByRole("checkbox", { name: "Permanent" })).toBeDisabled();
+  expect(within(form).getByRole("checkbox", { name: "This is the emergency fund" })).toBeDisabled();
+  await user.type(within(form).getByLabelText("Name"), "Gants de boxe");
+  await user.type(within(form).getByLabelText("Target"), "180");
+  await user.click(within(form).getByRole("button", { name: "Create the goal" }));
+  await vi.waitFor(() => expect(calls.some((c) => c.route === "POST /api/goals")).toBe(true));
+  expect(calls.find((c) => c.route === "POST /api/goals")?.body).toMatchObject({
+    name: "Gants de boxe",
+    precaution: false,
+    permanent: false,
+    pleasure: true,
+    target: "180.00",
+    deadline: null,
   });
 });
 
