@@ -206,6 +206,8 @@ test("a past month's targets show no pace, and no one-off note either", async ()
   expect(section).toHaveTextContent("Groceries");
   expect(section).not.toHaveTextContent("Paid once in the month");
   expect(section).not.toHaveTextContent("Pace:");
+  // A past month is not "this month so far".
+  expect(screen.getByRole("region", { name: "Jan 2026 day by day" })).toBeInTheDocument();
 });
 
 test("the owner changes the warning threshold", async () => {
@@ -239,4 +241,16 @@ test("without any wealth line, the overview shows no net worth", async () => {
   render(<TestApp path="/" />);
   await screen.findByRole("region", { name: "Spent" });
   expect(screen.queryByRole("region", { name: "Net worth" })).toBeNull();
+});
+
+test("the month's spending day by day is drawn against its targets, with its table", async () => {
+  api();
+  render(<TestApp path="/" />);
+
+  const pace = await screen.findByRole("region", { name: "This month so far" });
+  expect(pace).toHaveTextContent("Against a budget of €50 spread evenly over the month");
+  const table = within(pace).getByRole("table", {
+    name: "Spending so far against the budget pace",
+  });
+  expect(within(table).getAllByRole("row")).toHaveLength(4);
 });

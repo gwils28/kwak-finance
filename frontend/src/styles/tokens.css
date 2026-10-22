@@ -115,6 +115,19 @@
   --color-wealth-exotic: rgb(74 192 185);
   --color-wealth-debts: rgb(178 57 43);
 
+  /* Spending categories in the reports' monthly chart (F-DSH-5, spec §7): the six largest
+     categories of the period, in this order, the rest in grey. Hues from the wealth set, its
+     greens, ochre and rusts left out since they mean a budget status here. Validated (dataviz):
+     CVD dE 9.7, normal 15.4 on white; the three lighter hues are under 3:1, so every series has
+     its legend entry and its table column. */
+  --color-spend-1: rgb(23 98 151);
+  --color-spend-2: rgb(204 139 197);
+  --color-spend-3: rgb(0 128 167);
+  --color-spend-4: rgb(218 129 136);
+  --color-spend-5: rgb(140 137 205);
+  --color-spend-6: rgb(74 192 185);
+  --color-spend-other: var(--color-neutral-400);
+
   /* Goal tiers (F-GOAL, spec §7): steps of one hue, darkest at the pyramid's base. Every tier
      keeps its name and percentage beside the pyramid, so contrast is never the only cue. */
   --color-goal-tier-1: var(--color-primary-700);
@@ -175,6 +188,13 @@
     --color-wealth-equipment: rgb(138 135 207);
     --color-wealth-exotic: rgb(0 144 137);
     --color-wealth-debts: rgb(189 104 85);
+    /* CVD dE 8.6, normal 16.9 on the dark surface, every hue >= 3:1. */
+    --color-spend-1: rgb(58 109 172);
+    --color-spend-2: rgb(190 123 169);
+    --color-spend-3: rgb(17 114 154);
+    --color-spend-4: rgb(193 83 86);
+    --color-spend-5: rgb(138 135 207);
+    --color-spend-6: rgb(0 144 137);
     --color-goal-tier-1: var(--color-primary-600);
     --color-goal-tier-2: var(--color-primary-400);
     --color-goal-tier-3: var(--color-primary-200);

@@ -1,4 +1,6 @@
+from datetime import date
 from decimal import Decimal
+from itertools import pairwise
 from uuid import uuid4
 
 from hypothesis import given
@@ -50,3 +52,36 @@ def test_invariant_14_savings_are_never_spending(
     assert figures.rest == income + sum((p.amount for p in pieces), D(0))
     expenses = [p.amount for p in pieces if KINDS[p.category_id] is CategoryKind.EXPENSE]
     assert figures.spent == -sum(expenses, D(0))
+
+
+def test_spending_adds_up_day_by_day_over_the_whole_month() -> None:
+    from datetime import date
+
+    from kwak_core.budget import Month
+    from kwak_core.spending import cumulative_by_day
+
+    days = cumulative_by_day(
+        {date(2026, 2, 3): D("10.00"), date(2026, 2, 10): D("5.50")}, Month(2026, 2)
+    )
+    assert len(days) == 28
+    assert days[0] == (date(2026, 2, 1), D(0))
+    assert days[2] == (date(2026, 2, 3), D("10.00"))
+    assert days[9] == (date(2026, 2, 10), D("15.50"))
+    assert days[-1] == (date(2026, 2, 28), D("15.50"))
+
+
+@given(
+    st.dictionaries(
+        st.integers(min_value=1, max_value=30).map(lambda d: date(2026, 4, d)),
+        st.decimals(min_value=0, max_value=5000, places=2),
+        max_size=10,
+    )
+)
+def test_every_day_of_the_month_once_ending_on_the_month_total(spent: dict[date, Decimal]) -> None:
+    from kwak_core.budget import Month
+    from kwak_core.spending import cumulative_by_day
+
+    days = cumulative_by_day(spent, Month(2026, 4))
+    assert [d for d, _ in days] == [date(2026, 4, n) for n in range(1, 31)]
+    assert days[-1][1] == sum(spent.values(), D(0))
+    assert all(a[1] <= b[1] for a, b in pairwise(days))

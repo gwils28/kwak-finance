@@ -5773,6 +5773,26 @@
         "title": "SpendingChangesOut",
         "type": "object"
       },
+      "SpendingDayOut": {
+        "properties": {
+          "day": {
+            "format": "date",
+            "title": "Day",
+            "type": "string"
+          },
+          "spent": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Spent",
+            "type": "string"
+          }
+        },
+        "required": [
+          "day",
+          "spent"
+        ],
+        "title": "SpendingDayOut",
+        "type": "object"
+      },
       "SpendingFiguresOut": {
         "properties": {
           "income": {
@@ -6003,6 +6023,13 @@
           "changes": {
             "$ref": "#/components/schemas/SpendingMonthChangesOut"
           },
+          "cumulative": {
+            "items": {
+              "$ref": "#/components/schemas/SpendingDayOut"
+            },
+            "title": "Cumulative",
+            "type": "array"
+          },
           "figures": {
             "$ref": "#/components/schemas/SpendingFiguresOut"
           },
@@ -6024,6 +6051,18 @@
             "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Projected Rest",
             "type": "string"
+          },
+          "target_total": {
+            "anyOf": [
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Total"
           },
           "to_confirm": {
             "title": "To Confirm",
@@ -6047,7 +6086,9 @@
           "top",
           "projected_rest",
           "to_confirm",
-          "progress"
+          "progress",
+          "cumulative",
+          "target_total"
         ],
         "title": "SpendingMonthOut",
         "type": "object"

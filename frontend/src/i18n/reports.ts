@@ -47,7 +47,9 @@ export const reportsEn = {
   spendingChartHelp: "Over the whole period, the largest first.",
   spendingChartTable: "Spending by category over the period",
   overMonths: "Month by month",
-  overMonthsHelp: "Spending against income, each month of the period.",
+  overMonthsHelp:
+    "Each month's spending by category, the six largest of the period in colour and the rest in grey, against the income line.",
+  otherCategories: "Other categories",
   overMonthsTable: "Income, spending, savings and rest by month",
   month: "Month",
   flows: {
@@ -130,7 +132,9 @@ export const reportsFr: typeof reportsEn = {
   spendingChartHelp: "Sur toute la période, la plus grosse d'abord.",
   spendingChartTable: "Dépenses par catégorie sur la période",
   overMonths: "Mois par mois",
-  overMonthsHelp: "Les dépenses face aux revenus, pour chaque mois de la période.",
+  overMonthsHelp:
+    "Les dépenses de chaque mois par catégorie, les six plus grosses de la période en couleur et les autres en gris, face à la courbe des revenus.",
+  otherCategories: "Autres catégories",
   overMonthsTable: "Revenus, dépenses, épargne et reste par mois",
   month: "Mois",
   flows: {

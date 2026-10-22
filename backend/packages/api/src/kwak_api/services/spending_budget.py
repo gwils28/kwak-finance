@@ -5,7 +5,8 @@ of its parts' categories (F-LIN-4).
 """
 
 from collections import defaultdict
-from collections.abc import Sequence
+from collections.abc import Collection, Sequence
+from datetime import date
 from decimal import Decimal
 from uuid import UUID
 
@@ -104,6 +105,29 @@ def spending_by_month(db: Session, household_id: UUID, first: Month, last: Month
         )
     )
     return {(category, Month.of(m)): total for category, m, total in rows}
+
+
+def expense_by_day(
+    db: Session, household_id: UUID, month: Month, expenses: Collection[UUID]
+) -> dict[date, Decimal]:
+    """What the expense categories spent each day of the month, split parts included."""
+    start, end = month.first_day(), month.next().first_day()
+    in_month = (
+        SpendingLine.household_id == household_id,
+        SpendingLine.day >= start,
+        SpendingLine.day < end,
+    )
+    own = select(SpendingLine.day.label("day"), SpendingLine.amount.label("amount")).where(
+        *in_month, SpendingLine.category_id.in_(expenses)
+    )
+    parts = (
+        select(SpendingLine.day.label("day"), SpendingLinePart.amount.label("amount"))
+        .join(SpendingLine, SpendingLine.id == SpendingLinePart.line_id)
+        .where(*in_month, SpendingLinePart.category_id.in_(expenses))
+    )
+    pieces = union_all(own, parts).subquery()
+    rows = db.execute(select(pieces.c.day, -func.sum(pieces.c.amount)).group_by(pieces.c.day))
+    return {day: total for day, total in rows}
 
 
 def first_month(db: Session, household_id: UUID) -> Month | None:

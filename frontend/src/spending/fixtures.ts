@@ -94,6 +94,12 @@ export const summaryOf = (month: string): SpendingMonthOut => ({
       },
     ],
   },
+  cumulative: [
+    { day: `${month}-01`, spent: "0.00" },
+    { day: `${month}-02`, spent: "42.50" },
+    { day: `${month}-03`, spent: "99.90" },
+  ],
+  target_total: "50.00",
   projected_rest: "1750.10",
   to_confirm: 1,
   top: [{ category_id: "c-home", spent: "57.40", share: "0.5746" }],

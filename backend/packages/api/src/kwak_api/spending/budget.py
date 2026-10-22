@@ -15,7 +15,7 @@ from kwak_core.fixed import FixedStatus, projected_rest
 from kwak_core.kpis import top_categories
 from kwak_core.money import quantize, require_cents
 from kwak_core.progress import ProgressStatus, month_progress
-from kwak_core.spending import MonthFigures
+from kwak_core.spending import MonthFigures, cumulative_by_day
 from kwak_core.year import YearLine, months_to_date, year_lines
 from pydantic import AfterValidator, BaseModel, Field
 
@@ -166,6 +166,12 @@ class SpendingProgressOut(BaseModel):
     lines: list[SpendingProgressLineOut]
 
 
+class SpendingDayOut(BaseModel):
+    day: date
+    spent: Decimal
+    """Spent from the first of the month to this day included."""
+
+
 class SpendingMonthOut(BaseModel):
     month: str
     figures: SpendingFiguresOut
@@ -180,6 +186,10 @@ class SpendingMonthOut(BaseModel):
     """The rest once the fixed expenses still to confirm are paid (F-FIX-4)."""
     to_confirm: int
     progress: SpendingProgressOut
+    cumulative: list[SpendingDayOut]
+    """The spending added up day by day, every day of the month (F-DSH-5)."""
+    target_total: Decimal | None
+    """The month's expense targets added up; None without any."""
 
 
 def _sections(
@@ -240,6 +250,14 @@ def month_summary(
         ],
         projected_rest=quantize(projected_rest(current.rest, occurrences)),
         to_confirm=sum(o.status is FixedStatus.TO_CONFIRM for o in occurrences),
+        cumulative=[
+            SpendingDayOut(day=day, spent=quantize(total))
+            for day, total in cumulative_by_day(
+                service.expense_by_day(db, household_id, wanted, [c for c, _, _ in expenses]),
+                wanted,
+            )
+        ],
+        target_total=matrix.total.cells[0].target,
         progress=SpendingProgressOut(
             warn_at=household.warn_at,
             lines=[
