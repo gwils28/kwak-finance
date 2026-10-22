@@ -2,7 +2,7 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-Kwak Finance — self-hosted household budget and net-worth web app. FastAPI + PostgreSQL backend (uv workspace), React + TypeScript frontend, DuckDB analytics later. Phases 1 to 4 are done: spending entered by hand (lines, budget, reports, since v1.0), wealth and goals; phase 5 (analytics) is next.
+Kwak Finance — self-hosted household budget and net-worth web app. FastAPI + PostgreSQL backend (uv workspace), React + TypeScript frontend, DuckDB analytics later. Phases 1 to 4 are done: spending entered by hand (lines, budget, reports, since v1.0), wealth and goals; phase 5 (analytics) has started with the wealth projection (spec §4.11).
 
 - Specs and roadmap: `docs/SPECIFICATIONS.md`
 - Architecture, stack, repo layout: `docs/ARCHITECTURE.md`
@@ -20,8 +20,8 @@ Kwak Finance — self-hosted household budget and net-worth web app. FastAPI + P
 ## Rules
 
 - **Never commit or push.** The maintainer must be the sole GitHub contributor. Prepare the change and propose a Conventional Commit message (`feat:`, `fix:`, `chore:`…). One topic per commit. Never add a `Co-Authored-By` trailer.
-- Code, docs and commit messages in English. The UI is in English and French: every user-visible string lives in `frontend/src/i18n/` (one section file per page, `xxxEn` plus `xxxFr: typeof xxxEn`), never inline. Dates and amounts go through `lib/money.ts` / `lib/dates.ts`, which follow the language.
-- Money is `Decimal` / `NUMERIC`, never float. Negative = outflow. EUR only.
+- Code, docs and commit messages in English. The UI is in English and French: every user-visible string lives in `frontend/src/i18n/` (one section file per page, `xxxEn` plus `xxxFr: typeof xxxEn`), never inline. The one exception is the Dash pages (phase 5, `/dash`), whose strings live in `backend/packages/api/src/kwak_api/dash/i18n.py` (`EN` plus `FR` with the same keys). Dates and amounts go through `lib/money.ts` / `lib/dates.ts`, which follow the language.
+- Money is `Decimal` / `NUMERIC`, never float (the one exception: the Monte Carlo engine in `kwak_analytics` draws in floats, from `Decimal` inputs back to `Decimal` cents). Negative = outflow. EUR only.
 - Business rules go in `backend/packages/core` (pure, no I/O) and are tested there, including hypothesis property tests for the invariants in `docs/SPECIFICATIONS.md` §8.
 - Write the failing test first, check it fails for the right reason, then implement.
 - `data/` holds real financial data: never read it into the conversation unless asked, and never write to it. Test fixtures must be synthetic.
