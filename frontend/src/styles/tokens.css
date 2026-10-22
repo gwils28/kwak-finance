@@ -137,6 +137,11 @@
   --color-goal-foundation: var(--color-secondary-600);
   /* "Fill first": the emergency fund short of its target. */
   --color-goal-priority: var(--color-secondary-500);
+  /* The pyramid's stone (F-GOAL-7): its unfilled blocks and column, their lit tops and their
+     carved edges. Shade and light come from neutral-900 / neutral-50 at low opacity. */
+  --color-goal-stone: var(--color-neutral-100);
+  --color-goal-stone-top: var(--color-neutral-50);
+  --color-goal-stone-edge: var(--color-neutral-300);
 }
 
 @layer base {
@@ -200,6 +205,9 @@
     --color-goal-tier-3: var(--color-primary-200);
     --color-goal-foundation: var(--color-secondary-500);
     --color-goal-priority: var(--color-secondary-400);
+    --color-goal-stone: var(--color-neutral-700);
+    --color-goal-stone-top: var(--color-neutral-600);
+    --color-goal-stone-edge: var(--color-neutral-500);
   }
 
   body {
