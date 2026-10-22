@@ -57,7 +57,9 @@ Everything runs from a single `docker compose up`. The front end is served from 
 
 ### Dash integration (phase 5)
 
-The React app is the product. Dash is used only for **exploratory analytics pages** (forecast diagnostics, Monte Carlo explorers), where Python-side interactivity saves a lot of front-end work. Dash is mounted inside FastAPI at `/dash` (WSGI middleware). It reuses the session cookie for auth and the same Plotly theme, and is embedded in React through a full-height route. If a Dash page becomes a core feature, it is rewritten in React on top of a dedicated API endpoint.
+The React app is the product. Dash is used only for **exploratory analytics pages** (forecast diagnostics, Monte Carlo explorers), where Python-side interactivity saves a lot of front-end work. Dash is mounted inside FastAPI at `/dash` (WSGI middleware). It reuses the session cookie for auth and the same Plotly theme, and is embedded in React through a full-height route. The Dash app lives in `kwak_api.dash` (it needs the session and the same scope and visibility rules as the API's services); the engines it calls live in `kwak_analytics`. Its user-visible strings live in `kwak_api/dash/i18n.py`, one `EN` mapping and an `FR` mapping of the same keys (a test checks they match), and follow the user's language; its colours come from a Python copy of the design tokens kept equal to `frontend/src/styles/tokens.css` by a test. The theme (light or dark) is passed by the React route.
+
+The first Dash page is the **wealth projection** (spec §4.11): `kwak_core.projection` holds the assumptions, their defaults, the starting point and the allocation, in `Decimal`; `kwak_analytics.montecarlo` draws the paths with numpy (`numpy.random.Generator` from a fixed seed), in floating point, and returns percentiles rounded back to `Decimal` cents. If a Dash page becomes a core feature, it is rewritten in React on top of a dedicated API endpoint.
 
 ### Infrastructure
 
@@ -110,7 +112,7 @@ Conventions: UUIDv7 primary keys, `created_at` / `updated_at` in UTC (`timestamp
 ## 5. Analytics path
 
 1. **Phases 1–3**: dashboards query Postgres (SQL views / materialised views refreshed by the worker).
-2. **Phase 5**: `kwak_analytics` opens DuckDB, attaches Postgres **read-only** (a dedicated read-only role), and writes dated Parquet snapshots to `data/snapshots/` for reproducible experiments. Forecasting follows a written protocol: temporal split only, a naive baseline first (seasonal naive / moving average), metrics with dispersion across rolling origins, and fixed seeds.
+2. **Phase 5**: the wealth projection needs no DuckDB: it starts from the current month of the wealth matrix, read through the API's services. For the forecasting that follows, `kwak_analytics` opens DuckDB, attaches Postgres **read-only** (a dedicated read-only role), and writes dated Parquet snapshots to `data/snapshots/` for reproducible experiments. Forecasting follows a written protocol: temporal split only, a naive baseline first (seasonal naive / moving average), metrics with dispersion across rolling origins, and fixed seeds.
 3. **Phase 6**: an Ollama service. The LLM only sees a curated read-only analytics schema (text-to-SQL validated against an allow-list, executed under the read-only role). pgvector is added if RAG over documents is needed.
 
 ## 6. Decisions
