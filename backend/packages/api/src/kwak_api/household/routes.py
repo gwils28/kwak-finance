@@ -86,14 +86,13 @@ class InviteAccept(BaseModel):
 class SettingsOut(BaseModel):
     warn_at: Decimal
     """The share of a monthly target from which a category is to watch (F-BUD-2)."""
-    analysis_start: str | None
-    """YYYY-MM: the first month analyses count (F-ADM-4); null: every month."""
     wealth_start: str | None
-    """YYYY-MM: the first month the wealth matrix shows (F-WLT-5); null: the analyses start."""
+    """YYYY-MM: the first month the wealth matrix shows (F-WLT-5); null: no limit."""
     precaution_share: Decimal
     """The share of the capacity kept for the precaution while it falls short (F-GOAL-6)."""
     goal_capacity: Decimal | None
-    """The monthly capacity of the effort plan set by hand; null: the average net cash flow."""
+    """The monthly capacity of the effort plan set by hand; null: the average income minus
+    spending."""
 
     @classmethod
     def of(cls, household: Household) -> "SettingsOut":
@@ -102,7 +101,6 @@ class SettingsOut(BaseModel):
 
         return cls(
             warn_at=household.warn_at,
-            analysis_start=text(household.analysis_start),
             wealth_start=text(household.wealth_start),
             precaution_share=household.precaution_share,
             goal_capacity=household.goal_capacity,
@@ -129,10 +127,8 @@ def _precaution_share(value: Decimal) -> Decimal:
 class SettingsPatch(BaseModel):
     warn_at: Annotated[Decimal, Field(decimal_places=2), AfterValidator(_warn_at)] | None = None
     """From 0.50 to 1, in whole percents. Leave it out to keep it."""
-    analysis_start: Annotated[str, AfterValidator(_month)] | None = None
-    """YYYY-MM; null to count every month. Leave it out to keep it."""
     wealth_start: Annotated[str, AfterValidator(_month)] | None = None
-    """YYYY-MM; null to follow the analyses start. Leave it out to keep it."""
+    """YYYY-MM; null for no limit. Leave it out to keep it."""
     precaution_share: (
         Annotated[Decimal, Field(decimal_places=2), AfterValidator(_precaution_share)] | None
     ) = None
@@ -140,7 +136,7 @@ class SettingsPatch(BaseModel):
     goal_capacity: (
         Annotated[Decimal, Field(ge=0, lt=Decimal("1e12")), AfterValidator(require_cents)] | None
     ) = None
-    """Null to use the average net cash flow. Leave it out to keep it."""
+    """Null to use the average income minus spending. Leave it out to keep it."""
 
 
 def _start(month: str | None, now: datetime, future: str) -> date | None:
@@ -166,17 +162,6 @@ def update_settings(
         household.warn_at = body.warn_at
         audit.record(db, user_session.user, AuditAction.SETTINGS_CHANGED, now, warn_at=body.warn_at)
     given = body.model_fields_set
-    if "analysis_start" in given:
-        start = _start(body.analysis_start, now, "the analyses cannot start in the future")
-        if start != household.analysis_start:
-            household.analysis_start = start
-            audit.record(
-                db,
-                user_session.user,
-                AuditAction.SETTINGS_CHANGED,
-                now,
-                analysis_start=body.analysis_start or "",
-            )
     if "wealth_start" in given:
         start = _start(body.wealth_start, now, "the wealth cannot start in the future")
         if start != household.wealth_start:

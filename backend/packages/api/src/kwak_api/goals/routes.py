@@ -5,11 +5,11 @@ from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Query, status
 from kwak_core import goals as core
-from kwak_core.accounts import Scope, Visibility
 from kwak_core.audit import AuditAction
 from kwak_core.budget import DEFAULT_BAND, Month
 from kwak_core.fixed import FixedFrequency
 from kwak_core.money import quantize, require_cents
+from kwak_core.visibility import Scope, Visibility
 from pydantic import AfterValidator, BaseModel, Field, StringConstraints
 
 from kwak_api.auth.routes import CurrentSession, Db, Now

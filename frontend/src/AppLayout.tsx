@@ -36,7 +36,7 @@ const SWITCH = [
   { key: "goals", to: "/goals", label: "goals" },
 ] as const;
 
-const SPENDING_PAGES = ["/spending", "/transactions", "/recurring", "/budget", "/reports"];
+const SPENDING_PAGES = ["/spending", "/budget", "/reports"];
 
 /** The space a page belongs to; none for the overview and the account menu's pages. */
 function placeOf(pathname: string): Space | null {

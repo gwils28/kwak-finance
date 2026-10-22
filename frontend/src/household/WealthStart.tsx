@@ -7,8 +7,6 @@ import { isMonth, monthLabel, thisMonth } from "../lib/months";
 
 const SETTINGS_KEY = ["household", "settings"];
 
-type Field = "analysis_start" | "wealth_start";
-
 type Text = {
   title: string;
   help: string;
@@ -20,7 +18,15 @@ type Text = {
 };
 
 /** A first month set by the owner and shown to everyone; null clears it. */
-function MonthSetting({ field, isOwner, text }: { field: Field; isOwner: boolean; text: Text }) {
+function MonthSetting({
+  field,
+  isOwner,
+  text,
+}: {
+  field: "wealth_start";
+  isOwner: boolean;
+  text: Text;
+}) {
   const { t } = useI18n();
   const queryClient = useQueryClient();
   const ids = { title: useId(), month: useId() };
@@ -36,7 +42,7 @@ function MonthSetting({ field, isOwner, text }: { field: Field; isOwner: boolean
     },
     onSuccess: async () => {
       setMonth("");
-      // Every analysis may change: the overview, the reports, the suggestions, the wealth.
+      // The wealth page opens on other months.
       await queryClient.invalidateQueries();
     },
   });
@@ -81,29 +87,7 @@ function MonthSetting({ field, isOwner, text }: { field: Field; isOwner: boolean
   );
 }
 
-/** The first month analyses count (F-ADM-4). */
-export function AnalysisStart({ isOwner }: { isOwner: boolean }) {
-  const { t } = useI18n();
-  const h = t.household;
-  return (
-    <MonthSetting
-      field="analysis_start"
-      isOwner={isOwner}
-      text={{
-        title: h.analysisStart,
-        help: h.analysisStartHelp,
-        month: h.analysisStartMonth,
-        current: (s) =>
-          s.analysis_start ? h.startsIn(monthLabel(s.analysis_start)) : h.everyMonth,
-        clear: h.countEveryMonth,
-        failed: h.analysisStartFailed,
-        loadFailed: h.analysisStartLoadFailed,
-      }}
-    />
-  );
-}
-
-/** The first month the wealth page shows (F-WLT-5), apart from the analyses start. */
+/** The first month the wealth page shows (F-WLT-5). */
 export function WealthStart({ isOwner }: { isOwner: boolean }) {
   const { t } = useI18n();
   const h = t.household;
@@ -116,10 +100,8 @@ export function WealthStart({ isOwner }: { isOwner: boolean }) {
         help: h.wealthStartHelp,
         month: h.wealthStartMonth,
         current: (s) =>
-          s.wealth_start
-            ? h.wealthStartsIn(monthLabel(s.wealth_start))
-            : h.wealthFollows(s.analysis_start && monthLabel(s.analysis_start)),
-        clear: h.followAnalyses,
+          s.wealth_start ? h.wealthStartsIn(monthLabel(s.wealth_start)) : h.wealthNoStart,
+        clear: h.clearWealthStart,
         failed: h.wealthStartFailed,
         loadFailed: h.wealthStartLoadFailed,
       }}

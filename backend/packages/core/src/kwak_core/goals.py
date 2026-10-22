@@ -12,10 +12,10 @@ from dataclasses import dataclass, field
 from decimal import ROUND_DOWN, Decimal
 from uuid import UUID
 
-from kwak_core.accounts import Visibility
 from kwak_core.budget import DEFAULT_BAND, BudgetStatus, Month, budget_status, month_range
 from kwak_core.fixed import STEP, FixedFrequency
 from kwak_core.money import quantize
+from kwak_core.visibility import Visibility
 from kwak_core.wealth import WealthKind, line_cell
 
 ZERO = Decimal(0)

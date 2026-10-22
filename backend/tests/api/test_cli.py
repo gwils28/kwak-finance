@@ -3,7 +3,7 @@ from collections.abc import Iterator
 
 import pytest
 from kwak_api.cli import main
-from kwak_api.models import Category, User
+from kwak_api.models import SpendingCategory, User
 from kwak_api.settings import Settings
 from kwak_core.users import Language
 from sqlalchemy import select
@@ -42,8 +42,8 @@ def test_create_owner_in_french_names_the_default_categories_in_french(
     assert code == 0
     owner = session.scalars(select(User)).one()
     assert owner.language == Language.FR
-    names = set(session.scalars(select(Category.name)))
-    assert {"Alimentation", "Courses", "Revenus"} <= names
+    names = set(session.scalars(select(SpendingCategory.name)))
+    assert {"Logement", "Courses", "Salaires"} <= names
     assert "Groceries" not in names
 
 

@@ -2,7 +2,7 @@ from datetime import date
 from decimal import Decimal
 from uuid import UUID
 
-from kwak_core.accounts import Visibility
+from kwak_core.visibility import Visibility
 from kwak_core.wealth import WealthKind
 from sqlalchemy import (
     CheckConstraint,

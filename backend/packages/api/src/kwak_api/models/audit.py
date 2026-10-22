@@ -33,7 +33,7 @@ class AuditEvent(UUIDPrimaryKey, Base):
             values_callable=lambda actions: [a.value for a in actions],
         )
     )
-    # About a private account: only its owner sees the entry. Gone with that owner.
+    # About a private wealth line or goal: only its owner sees the entry. Gone with that owner.
     private_to: Mapped[UUID | None] = mapped_column(
         ForeignKey("app_user.id", ondelete="CASCADE"), index=True
     )

@@ -20,7 +20,7 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
 }
 
 /**
- * The signed-in user's menu: household settings (categories, members, accounts, activity log),
+ * The signed-in user's menu: household settings (categories, members, activity log),
  * language, theme and sign-out, so the header keeps its tabs for the everyday pages.
  */
 export function AccountMenu({
@@ -109,10 +109,6 @@ export function AccountMenu({
             <Link to="/members" className={ITEM} onClick={close}>
               <Icon name="users" className="size-4 text-muted" />
               {t.nav.members}
-            </Link>
-            <Link to="/accounts" className={ITEM} onClick={close}>
-              <Icon name="bank" className="size-4 text-muted" />
-              {t.nav.accounts}
             </Link>
             <Link to="/activity" className={ITEM} onClick={close}>
               <Icon name="history" className="size-4 text-muted" />

@@ -438,7 +438,8 @@ test("a closed line can be reopened, and its closed months take no value", async
 test("the view follows the scope", async () => {
   const asked: URL[] = [];
   api({
-    "GET /api/accounts": () => Response.json([{ id: "a9", type: "checking", visibility: "joint" }]),
+    // Two members: something may be held jointly.
+    "GET /api/household/members": () => Response.json([{ id: "u1" }, { id: "u2" }]),
     "GET /api/wealth/matrix": (_, url) => {
       asked.push(url);
       return Response.json(matrix);
@@ -446,9 +447,18 @@ test("the view follows the scope", async () => {
   });
   render(<TestApp path="/wealth" />);
   const user = userEvent.setup();
-  await screen.findByRole("option", { name: "Joint accounts" });
-  await user.selectOptions(screen.getByLabelText("Accounts"), "joint");
+  await screen.findByRole("option", { name: "Joint" });
+  await user.selectOptions(screen.getByLabelText("Scope"), "joint");
   await vi.waitFor(() => expect(asked.at(-1)?.searchParams.get("scope")).toBe("joint"));
+});
+
+test("a one-member household is not offered the joint scope", async () => {
+  api({ "GET /api/household/members": () => Response.json([{ id: "u1" }]) });
+  render(<TestApp path="/wealth" />);
+  const scope = await screen.findByLabelText("Scope");
+  await screen.findByRole("table", { name: "Wealth by month" });
+  expect(within(scope).queryByRole("option", { name: "Joint" })).toBeNull();
+  expect(within(scope).getByRole("option", { name: "Only mine" })).toBeInTheDocument();
 });
 
 test("in French, amounts and months read French", async () => {

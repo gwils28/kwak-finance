@@ -6,10 +6,10 @@ from dataclasses import dataclass
 from decimal import Decimal
 from uuid import UUID
 
-from kwak_core.accounts import Scope, can_view
 from kwak_core.budget import Month
 from kwak_core.ids import uuid7
 from kwak_core.users import Language
+from kwak_core.visibility import Scope, can_view
 from kwak_core.wealth import (
     DEFAULT_WEALTH_CATEGORIES,
     CategoryInput,

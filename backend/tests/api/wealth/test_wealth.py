@@ -45,23 +45,6 @@ def _matrix(client: TestClient, **params: str) -> Any:
     return response.json()
 
 
-def _account(
-    client: TestClient, name: str, type_: str, opening: str, visibility: str = "shared"
-) -> str:
-    body = {
-        "name": name,
-        "institution_name": "SG",
-        "type": type_,
-        "visibility": visibility,
-        "opening_balance": opening,
-        "opening_date": "2026-10-01",
-    }
-    response = client.post("/api/accounts", json=body, headers=csrf(client))
-    assert response.status_code == 201, response.text
-    account: str = response.json()["id"]
-    return account
-
-
 def test_a_new_household_has_the_default_categories(owner_client: TestClient) -> None:
     categories = owner_client.get("/api/wealth/categories").json()
     assert [c["name"] for c in categories][:3] == ["Savings accounts", "Current accounts", "Stocks"]
@@ -110,12 +93,9 @@ def test_values_carry_forward_into_the_matrix(owner_client: TestClient) -> None:
 def test_bank_accounts_are_lines_entered_by_hand_like_any_other(
     owner_client: TestClient,
 ) -> None:
-    checking = _account(owner_client, "Compte courant", "checking", "1000.00")
-    _account(owner_client, "Livret A", "savings", "5000.00")
-    # An account is not a line: the categories stay empty until lines are added.
+    # The categories stay empty until lines are added.
     m = _matrix(owner_client, start="2026-11", end="2026-11")
     assert m["gross"] == ["0.00"]
-    assert _value(owner_client, checking, "2026-11", "1.00").status_code == 404
 
     livret = _line(owner_client, "Savings accounts", "Livret A")
     _value(owner_client, livret, "2026-11", "5200.00")
@@ -184,42 +164,32 @@ def test_update_this_month_lists_the_open_lines_and_saves_them_at_once(
     assert _matrix(owner_client, start="2026-12", end="2026-12")["gross"] == ["1350.00"]
 
 
-def test_the_default_window_is_the_last_12_months_from_the_analyses_start(
-    owner_client: TestClient,
-) -> None:
-    assert len(_matrix(owner_client)["months"]) == 12
-    owner_client.patch(
-        "/api/household/settings", json={"analysis_start": "2026-10"}, headers=csrf(owner_client)
-    )
-    assert _matrix(owner_client)["months"] == ["2026-10", "2026-11", "2026-12"]
-
-
 def _wealth_start(client: TestClient, month: str | None) -> Any:
     return client.patch(
         "/api/household/settings", json={"wealth_start": month}, headers=csrf(client)
     )
 
 
-def test_the_wealth_has_its_own_start_apart_from_the_analyses(owner_client: TestClient) -> None:
-    h = csrf(owner_client)
-    owner_client.patch("/api/household/settings", json={"analysis_start": "2026-10"}, headers=h)
+def test_the_default_window_is_the_last_12_months_from_the_wealth_start(
+    owner_client: TestClient,
+) -> None:
+    assert len(_matrix(owner_client)["months"]) == 12
+    _wealth_start(owner_client, "2026-10")
+    assert _matrix(owner_client)["months"] == ["2026-10", "2026-11", "2026-12"]
+
+
+def test_the_wealth_start_is_set_logged_and_cleared(owner_client: TestClient) -> None:
     response = _wealth_start(owner_client, "2026-01")
     assert response.status_code == 200, response.text
-    assert (response.json()["analysis_start"], response.json()["wealth_start"]) == (
-        "2026-10",
-        "2026-01",
-    )
+    assert response.json()["wealth_start"] == "2026-01"
     months = _matrix(owner_client)["months"]
     assert (months[0], months[-1], len(months)) == ("2026-01", "2026-12", 12)
-    # Changing the analyses start alone keeps the wealth's.
-    owner_client.patch("/api/household/settings", json={"analysis_start": "2026-11"}, headers=h)
-    assert owner_client.get("/api/household/settings").json()["wealth_start"] == "2026-01"
     entry = owner_client.get("/api/audit", params={"kind": "household"}).json()["items"]
     assert {"wealth_start": "2026-01"} in [e["details"] for e in entry]
 
-    # Without its own start, the wealth follows the analyses.
+    # Without a start, the last 12 months.
     assert _wealth_start(owner_client, None).json()["wealth_start"] is None
-    assert _matrix(owner_client)["months"] == ["2026-11", "2026-12"]
+    assert len(_matrix(owner_client)["months"]) == 12
     # Any window can still be asked for, earlier months included.
     assert _matrix(owner_client, start="2025-06", end="2025-07")["months"] == [
         "2025-06",

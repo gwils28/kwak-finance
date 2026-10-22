@@ -11,7 +11,7 @@ The order below is the one every feature PR followed (#70 → #73). Skip the ste
    - An invariant of §8 gets a hypothesis property test.
 3. **Schema**, if needed: follow the `db-migration` skill.
 4. **API** in `kwak_api/`: the service in `services/<topic>.py` (queries + core calls), the router in `<topic>/routes.py` (thin: parse, authorise, call the service), registered in `main.py`.
-   - Every query is scoped to the caller's household, and account data goes through `services.accounts.visible_accounts` / `find_visible_account` (private accounts stay their owner's).
+   - Every query is scoped to the caller's household, and wealth lines and goals go through `services.wealth.visible_lines` / `services.goals.visible_goals` (private ones stay their owner's).
    - Endpoints use `CurrentSession`; time comes from the `Now` dependency so tests can freeze it.
    - Tests in `backend/tests/api/<topic>/` on the real Postgres fixtures, including a test that another member or household gets a 404.
 5. **Client.** `make openapi`, then use only the generated functions from `frontend/src/api/generated` (never hand-edit them).

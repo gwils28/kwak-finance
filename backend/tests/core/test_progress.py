@@ -6,7 +6,6 @@ import pytest
 from hypothesis import given
 from hypothesis import strategies as st
 from kwak_core.budget import Month, build_matrix
-from kwak_core.categories import DEFAULT_CATEGORIES
 from kwak_core.progress import (
     DEFAULT_WARN_AT,
     ProgressStatus,
@@ -87,11 +86,6 @@ def test_a_subcategory_is_one_off_like_its_parent_unless_it_says_otherwise() -> 
     assert one_off(own=False, parent=True) is False
     assert one_off(own=True, parent=None) is True
     assert one_off(own=None, parent=None) is False
-
-
-def test_housing_and_subscriptions_are_one_off_by_default() -> None:
-    marked = {c.names.en for c in DEFAULT_CATEGORIES if c.one_off}
-    assert marked == {"Housing", "Subscriptions"}
 
 
 def test_the_month_so_far_lists_the_categories_with_a_target_by_share_used() -> None:

@@ -39,9 +39,3 @@ def split(amount: Decimal, given: Sequence[Part], rest_category: UUID | None) ->
     if rest == 0 or (rest < 0) != (amount < 0):
         raise SplitError("the rest for the last part must be of the transaction's sign")
     return [*given, Part(rest_category, rest)]
-
-
-def resize(parts: Sequence[Part], amount: Decimal) -> list[Part]:
-    """The parts of a transaction whose amount changes: the last part takes the difference."""
-    *given, last = parts
-    return split(amount, given, last.category_id)

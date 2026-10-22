@@ -137,3 +137,14 @@ def test_a_typed_amount_is_stored_negative_unless_it_is_an_income() -> None:
     assert stored_amount(D("-200.00"), CategoryKind.SAVINGS) == D("200.00")
     assert stored_amount(D("2500.00"), CategoryKind.INCOME) == D("2500.00")
     assert stored_amount(D("8.00"), None) == D("-8.00")
+
+
+def test_top_categories_rank_the_largest_and_give_their_share() -> None:
+    from kwak_core.spending import top_categories
+
+    top = top_categories({GROCERIES: D("300"), HOME: D("700"), SAVINGS: D("0")}, total=D("1000"))
+    assert [(t.category_id, t.spent, t.share) for t in top] == [
+        (HOME, D("700"), D("0.7")),
+        (GROCERIES, D("300"), D("0.3")),
+    ]
+    assert len(top_categories({uuid4(): D(i) for i in range(1, 9)}, total=D("36"))) == 5

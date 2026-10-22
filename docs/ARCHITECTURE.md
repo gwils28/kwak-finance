@@ -35,7 +35,6 @@ Everything runs from a single `docker compose up`. The front end is served from 
 | DB driver | `psycopg` 3 | Async and sync, works with DuckDB `postgres` extension setups |
 | Auth | argon2-cffi, pyotp, server-side sessions table | Simple, no third-party identity provider in a self-hosted app |
 | Jobs | APScheduler, in a dedicated `worker` container | Few, simple daily jobs. No broker needed |
-| File parsing | `ofxtools` (OFX), a small in-house QIF parser, CSV via import profiles | QIF libraries are poorly maintained |
 | Analytics | **DuckDB**, polars, numpy, statsmodels / statsforecast (phase 5) | DuckDB reads Postgres directly, so no ETL pipeline at first |
 | Logging | structlog (JSON) | |
 | Lint / format | **ruff** (lint + format) | |
@@ -80,13 +79,13 @@ The React app is the product. Dash is used only for **exploratory analytics page
 ├── backend/
 │   ├── pyproject.toml       # uv workspace root
 │   ├── packages/
-│   │   ├── core/            # kwak_core: pure domain, no I/O (money, rules, amortisation, dedup)
+│   │   ├── core/            # kwak_core: pure domain, no I/O (money, spending, budget, wealth, goals)
 │   │   ├── api/             # kwak_api: FastAPI app, routers, schemas, persistence (SQLAlchemy, Alembic)
 │   │   └── analytics/       # kwak_analytics: DuckDB queries, forecasting, simulation (phase 5)
-│   └── tests/               # mirrors packages; fixtures/ holds synthetic bank files only
+│   └── tests/               # mirrors packages; every fixture is synthetic
 ├── frontend/
 │   └── src/{routes,features,components,api(generated),styles}
-├── data/                    # git-ignored: raw imports, Parquet snapshots, backups
+├── data/                    # git-ignored: Parquet snapshots, backups
 │   └── raw/                 # read-only for Claude (hook-enforced)
 ├── notebooks/               # explanation only; logic lives in packages
 └── docs/
@@ -96,22 +95,15 @@ The React app is the product. Dash is used only for **exploratory analytics page
     └── adr/                 # one file per significant decision
 ```
 
-**Layering rule**: `core` depends on nothing (stdlib + pydantic). `api` and `analytics` depend on `core`. Business rules (balances, splits, dedup fingerprints, amortisation, depreciation, rule matching) live in `core` and are unit and property tested without a database. Metrics are defined once (in SQL views or `core` functions) and reused by both API and analytics: there are no diverging pandas and SQL implementations of the same number.
+**Layering rule**: `core` depends on nothing (stdlib + pydantic). `api` and `analytics` depend on `core`. Business rules (money, splits, the month's figures, targets, fixed expenses, the wealth matrix, goal envelopes) live in `core` and are unit and property tested without a database. Metrics are defined once (in SQL views or `core` functions) and reused by both API and analytics: there are no diverging pandas and SQL implementations of the same number.
 
-## 4. Data model (initial sketch)
+## 4. Data model
 
-- `household`, `user` (table `app_user`: `user` is reserved in Postgres; + encrypted TOTP seed), `recovery_code` (SHA-256 only), `user_session` (only the SHA-256 of the cookie token is stored), `invite` (single-use, 7 days, token hashed), `auth_failure` (failed login/TOTP attempts, kept 24 h for rate limiting)
-- `institution`, `account` (type, owner_id, visibility, opened_at, closed_at)
-- `import_batch` (file_sha256, profile_id, row_count, status), `import_profile`
-- `transaction` (account_id, booked_at, amount NUMERIC(14,2), label_raw, label_norm, fingerprint UNIQUE per account, category_id, transfer_group_id, import_batch_id, recurring_id), `transaction_split`
-- `category` (parent_id), `categorization_rule` (priority, predicates JSONB)
-- `budget` (category_id, month, amount, rollover, scope), `recurring_series`
-- spending since v1.0 (lines entered by hand, replacing the account, import, transaction, rule, budget and recurring tables above, which are removed once the new screens ship): `spending_category` (one level, expense, savings or income, one_off, position), `spending_line` (day, label, amount, category_id or its parts, fixed_expense_id, entered_by_id; `created_at` is when it was entered; the month's income is the sum of its income lines), `spending_line_part`, `fixed_expense` (frequency, day, first and last month, paused), `fixed_skip`, `spending_target` (a category's monthly target or savings objective from a month on, NULL for none)
-- `shared_split_rule`, `settlement`
-- `instrument` (isin, ticker, kind, quote_currency), `price` (instrument_id, date, close, fx_to_eur), `position_operation` (buy/sell/dividend/fee)
-- `property`, `loan` (+ generated `loan_schedule`), `use_asset` (depreciation_method, params), `valuation` (manual value history for any non-market asset)
-- `networth_snapshot` (date, account_id, value_eur)
-- `audit_log`
+- `household` (warn_at, wealth_start, precaution_share, goal_capacity), `user` (table `app_user`: `user` is reserved in Postgres; + encrypted TOTP seed), `recovery_code` (SHA-256 only), `user_session` (only the SHA-256 of the cookie token is stored), `invite` (single-use, 7 days, token hashed), `auth_failure` (failed login/TOTP attempts, kept 24 h for rate limiting), `audit_event` (the activity log; `private_to` hides an entry about a private wealth line or goal from the other members)
+- spending, entered by hand since v1.0: `spending_category` (one level, expense, savings or income, one_off, position), `spending_line` (day, label, amount, category_id or its parts, fixed_expense_id, entered_by_id; `created_at` is when it was entered; the month's income is the sum of its income lines), `spending_line_part`, `fixed_expense` (frequency, day, first and last month, paused), `fixed_skip`, `spending_target` (a category's monthly target or savings objective from a month on, NULL for none). The accounts, imports, transactions, transfers, rules, recurring items and budget plans of v0 were dropped (migration c77a847d28b5).
+- wealth: `wealth_category` (asset or debt, colour, position), `wealth_line` (owner, visibility, opened and closed months), `wealth_value` (a line's value entered for a month, carried forward)
+- goals: `goal` (tier, target, deadline, precaution, owner, visibility, closed_as), `goal_funding` (a wealth line's envelope: opening amount, share of the rises), `goal_adjustment` (an envelope set by hand from a month)
+- later phases, not built: `instrument`, `price`, `position_operation`; `property`, `loan` (+ generated `loan_schedule`), `use_asset`, `valuation`
 
 Conventions: UUIDv7 primary keys, `created_at` / `updated_at` in UTC (`timestamptz`), booking dates as `date`, money as `NUMERIC` mapped to `Decimal`, quantities as `NUMERIC(28,10)`.
 

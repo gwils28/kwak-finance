@@ -22,16 +22,7 @@ const entry = (action: string, kind: string, details: object, extra: object = {}
 const entries = [
   entry("signed_in", "sign_in", { method: "totp" }, { ip: "192.168.1.20" }),
   entry("sign_in_failed", "sign_in", { step: "password" }, { user_name: "Léa", user_id: "m1" }),
-  entry("imported", "import", { account: "Compte courant", file: "march.csv", added: 42 }),
-  entry("transaction_deleted", "deletion", {
-    label: "Marché",
-    amount: "-12.50",
-    date: "2026-01-05",
-    account: "Compte courant",
-  }),
-  entry("rule_created", "rules", { category: "Groceries", label: "CARREFOUR" }),
   entry("settings_changed", "household", { warn_at: "0.90" }),
-  entry("plan_deleted", "deletion", { period: "2026-Q2" }),
   entry("settings_changed", "household", { analysis_start: "2026-10" }, { id: "e-start" }),
   entry("settings_changed", "household", { analysis_start: "" }, { id: "e-every" }),
   entry(
@@ -88,19 +79,16 @@ test("the account menu leads to the activity log, each entry in words", async ()
     .map((r) => plain(r.textContent));
   expect(rows[0]).toMatch(/WilsonSigned in192\.168\.1\.20$/);
   expect(rows[1]).toContain("LéaFailed sign-in: wrong password");
-  expect(rows[2]).toContain("Imported march.csv into Compte courant: 42 transactions added");
-  expect(rows[3]).toContain("Deleted “Marché” (-€12.50, 5 Jan 2026) on Compte courant");
-  expect(rows[4]).toContain("Created a rule: “CARREFOUR” → Groceries");
-  expect(rows[5]).toContain("Set the budget warning threshold to 90%");
-  expect(rows[6]).toContain("Deleted the budget plan Q2 2026");
-  expect(rows[7]).toContain("Set the analyses to start in Oct 2026");
-  expect(rows[8]).toContain("Set the analyses to count every month");
-  expect(rows[9]).toContain("A former memberRevoked the invitation of a@example.com");
-  expect(rows[10]).toContain("Deleted the goal Voyage");
-  expect(rows[11]).toContain("Set the precaution share of the goals' effort to 70%");
-  expect(rows[12]).toContain("Set the goals' monthly capacity to €1,350.00");
-  expect(rows[13]).toContain("Deleted the line “Cinéma” (-€12.00, 14 Oct 2026)");
-  expect(rows[14]).toContain("Deleted the category Loisirs, its lines moved to Divers");
+  expect(rows[2]).toContain("Set the budget warning threshold to 90%");
+  // Entries from before v1.0 still read: the analyses start is gone, its history stays.
+  expect(rows[3]).toContain("Set the analyses to start in Oct 2026");
+  expect(rows[4]).toContain("Set the analyses to count every month");
+  expect(rows[5]).toContain("A former memberRevoked the invitation of a@example.com");
+  expect(rows[6]).toContain("Deleted the goal Voyage");
+  expect(rows[7]).toContain("Set the precaution share of the goals' effort to 70%");
+  expect(rows[8]).toContain("Set the goals' monthly capacity to €1,350.00");
+  expect(rows[9]).toContain("Deleted the line “Cinéma” (-€12.00, 14 Oct 2026)");
+  expect(rows[10]).toContain("Deleted the category Loisirs, its lines moved to Divers");
 });
 
 test("the owner filters by kind and by member", async () => {
@@ -144,7 +132,5 @@ test("in French, the log speaks French", async () => {
   api({ ...owner, language: "fr" });
   render(<TestApp path="/activity" language="fr" />);
   const table = await screen.findByRole("table", { name: "Journal d'activité" });
-  expect(plain(table.textContent)).toContain(
-    "Import de march.csv dans Compte courant : 42 opérations ajoutées",
-  );
+  expect(plain(table.textContent)).toContain("Ligne « Cinéma » supprimée (-12,00 €, 14 oct. 2026)");
 });
