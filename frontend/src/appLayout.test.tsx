@@ -1,6 +1,7 @@
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, expect, test, vi } from "vitest";
+import { spendingHandlers } from "./spending/fixtures";
 import { fakeApi, owner } from "./test/fakeApi";
 import { TestApp } from "./test/TestApp";
 
@@ -11,20 +12,18 @@ function api() {
     "GET /api/auth/me": () => Response.json(owner),
     "PATCH /api/auth/me": (body) => Response.json({ ...owner, ...(body as object) }),
     "GET /api/accounts": () => Response.json([]),
+    ...spendingHandlers(),
   });
 }
 
 test("the main tabs lead to the everyday pages, the current one marked", async () => {
   api();
-  render(<TestApp path="/transactions" />);
+  render(<TestApp path="/spending?month=2026-10" />);
 
   const main = await screen.findByRole("navigation", { name: "Main" });
   const tabs = within(main).getAllByRole("link");
-  expect(tabs.map((tab) => tab.textContent)).toEqual(["Transactions", "Budget", "Reports"]);
-  expect(within(main).getByRole("link", { name: "Transactions" })).toHaveAttribute(
-    "aria-current",
-    "page",
-  );
+  expect(tabs.map((tab) => tab.textContent)).toEqual(["Lines", "Budget", "Reports"]);
+  expect(within(main).getByRole("link", { name: "Lines" })).toHaveAttribute("aria-current", "page");
   // Spending is the space shown; wealth and goals are one click away.
   const spaces = screen.getByRole("navigation", { name: "Spaces" });
   expect(
@@ -57,7 +56,10 @@ test("the account menu holds the household settings and preferences", async () =
   await user.click(button);
   expect(button).toHaveAttribute("aria-expanded", "true");
   expect(screen.getByText("owner@example.com")).toBeInTheDocument();
-  expect(screen.getByRole("link", { name: "Categories" })).toHaveAttribute("href", "/categories");
+  expect(screen.getByRole("link", { name: "Categories" })).toHaveAttribute(
+    "href",
+    "/spending/categories",
+  );
   expect(screen.getByRole("link", { name: "Members" })).toHaveAttribute("href", "/members");
   expect(screen.getByRole("link", { name: "Accounts" })).toHaveAttribute("href", "/accounts");
   expect(screen.getByRole("link", { name: "Activity log" })).toHaveAttribute("href", "/activity");
@@ -78,8 +80,10 @@ test("following a link from the account menu closes it", async () => {
   await user.click(button);
   await user.click(screen.getByRole("link", { name: "Categories" }));
 
-  expect(await screen.findByRole("heading", { name: "Categories" })).toBeInTheDocument();
+  expect(await screen.findByRole("heading", { name: "Spending categories" })).toBeInTheDocument();
   expect(button).toHaveAttribute("aria-expanded", "false");
+  // The household pages belong to no space.
+  expect(screen.queryByRole("navigation", { name: "Main" })).toBeNull();
 });
 
 test("the logo stands next to the app's name in the header", async () => {
@@ -114,7 +118,7 @@ test("the wealth space has its own tabs: monthly tracking and analysis", async (
   );
   expect(within(spaces).getByRole("link", { name: "Spending" })).toHaveAttribute(
     "href",
-    "/transactions",
+    "/spending",
   );
   const main = screen.getByRole("navigation", { name: "Main" });
   expect(

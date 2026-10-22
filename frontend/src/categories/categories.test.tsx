@@ -239,15 +239,6 @@ test("a rule is edited, deleted, and all rules can be re-applied", async () => {
   });
 });
 
-test("the account menu links to the categories", async () => {
-  api({ "GET /api/dashboard": () => Response.json({}, { status: 500 }) });
-  render(<TestApp path="/" />);
-  const user = userEvent.setup();
-  await user.click(await screen.findByRole("button", { name: "Account menu: Wilson" }));
-  await user.click(screen.getByRole("link", { name: "Categories" }));
-  expect(await screen.findByRole("heading", { name: "Categories" })).toBeInTheDocument();
-});
-
 test("a category's next-month shift is previewed, then saved", async () => {
   const calls = api({
     "GET /api/categories/c-salary/shift-preview": () =>

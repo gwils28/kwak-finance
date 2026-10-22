@@ -50,7 +50,8 @@ export const goalsEn = {
   ofTarget: (value: string, target: string) => `${value} of ${target}`,
   noGoalInTier: "No goal",
   effort: "This month's effort",
-  capacityComputed: "What you can save: your average net cash flow over the last 6 months.",
+  capacityComputed:
+    "What you can save: the household's average income minus spending over the last 6 complete months.",
   capacitySet: "What you can save: set by hand in the effort settings.",
   perMonth: (amount: string) => `${amount} / month`,
   missing: (amount: string) => `${amount} missing`,
@@ -172,10 +173,10 @@ export const goalsEn = {
   proposalMonths: "Months of fixed expenses",
   proposalOf: (months: number, monthly: string, amount: string) =>
     `${months} × ${monthly} of fixed expenses a month = ${amount}`,
-  proposalItems: "From your recurring expenses",
+  proposalItems: "From your fixed expenses",
   proposalNone:
-    "No recurring expense yet: add your rent, subscriptions and bills on the Recurring page to get a proposal.",
-  openRecurring: "Open the recurring items",
+    "No fixed expense yet: add your rent, subscriptions and bills on the Fixed expenses page to get a proposal.",
+  openFixed: "Open the fixed expenses",
   useProposal: "Use this amount",
   deadlineField: "Deadline",
   deadlineOptional: "Optional for a permanent goal.",
@@ -211,7 +212,7 @@ export const goalsEn = {
   precautionShareHint:
     "While the emergency fund falls short, it gets this share of what you can save first.",
   capacity: "What you can save each month",
-  capacityAuto: "My average net cash flow over the last 6 months",
+  capacityAuto: "The household's average income minus spending over the last 6 complete months",
   capacityManual: "An amount I set",
   capacityAmount: "Amount per month",
   saved: "Saved.",
@@ -272,7 +273,8 @@ export const goalsFr: typeof goalsEn = {
   ofTarget: (value, target) => `${value} sur ${target}`,
   noGoalInTier: "Aucun objectif",
   effort: "L'effort du mois",
-  capacityComputed: "Ce que vous pouvez épargner : votre solde net moyen des 6 derniers mois.",
+  capacityComputed:
+    "Ce que vous pouvez épargner : les revenus moins les dépenses du foyer, en moyenne sur les 6 derniers mois complets.",
   capacitySet: "Ce que vous pouvez épargner : fixé à la main dans les réglages de l'effort.",
   perMonth: (amount) => `${amount} / mois`,
   missing: (amount) => `il manque ${amount}`,
@@ -390,10 +392,10 @@ export const goalsFr: typeof goalsEn = {
   proposalMonths: "Mois de dépenses fixes",
   proposalOf: (months, monthly, amount) =>
     `${months} × ${monthly} de dépenses fixes par mois = ${amount}`,
-  proposalItems: "D'après vos dépenses récurrentes",
+  proposalItems: "D'après vos dépenses fixes",
   proposalNone:
-    "Aucune dépense récurrente pour l'instant : ajoutez loyer, abonnements et factures sur la page Récurrences pour obtenir une proposition.",
-  openRecurring: "Ouvrir les récurrences",
+    "Aucune dépense fixe pour l'instant : ajoutez loyer, abonnements et factures sur la page Dépenses fixes pour obtenir une proposition.",
+  openFixed: "Ouvrir les dépenses fixes",
   useProposal: "Utiliser ce montant",
   deadlineField: "Échéance",
   deadlineOptional: "Facultative pour un objectif permanent.",
@@ -428,7 +430,8 @@ export const goalsFr: typeof goalsEn = {
   precautionShareHint:
     "Tant que l'épargne de précaution n'est pas complète, elle reçoit d'abord cette part de ce que vous pouvez épargner.",
   capacity: "Ce que vous pouvez épargner chaque mois",
-  capacityAuto: "Mon solde net moyen des 6 derniers mois",
+  capacityAuto:
+    "Les revenus moins les dépenses du foyer, en moyenne sur les 6 derniers mois complets",
   capacityManual: "Un montant que je fixe",
   capacityAmount: "Montant par mois",
   saved: "Enregistré.",

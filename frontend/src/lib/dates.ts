@@ -19,3 +19,16 @@ export function formatDate(iso: string): string {
   const [year, month, day] = iso.slice(0, 10).split("-").map(Number);
   return dateFormat(DATE).format(new Date(year ?? 1970, (month ?? 1) - 1, day ?? 1));
 }
+
+/** A calendar date, short: "Thu 15/10" (en), "jeu. 15/10" (fr). */
+export function formatShortDay(iso: string): string {
+  const [year, month, day] = iso.slice(0, 10).split("-").map(Number);
+  return dateFormat({ weekday: "short", day: "2-digit", month: "2-digit" }).format(
+    new Date(year ?? 1970, (month ?? 1) - 1, day ?? 1),
+  );
+}
+
+/** The day of an instant, in the browser's time zone: "16/10". */
+export function formatInstantDay(iso: string): string {
+  return dateFormat({ day: "2-digit", month: "2-digit" }).format(new Date(iso));
+}

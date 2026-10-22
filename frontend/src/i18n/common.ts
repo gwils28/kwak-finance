@@ -167,6 +167,28 @@ export const API_MESSAGES_FR: Record<string, string> = {
   "unrecognised file format: export a CSV of the operations from Société Générale or Helios":
     "format de fichier non reconnu : exportez les opérations au format CSV depuis la Société Générale ou Helios",
   "not a Helios export": "ce n'est pas un export Helios",
+  "it holds lines or fixed expenses: say where to move them":
+    "elle contient des lignes ou des dépenses fixes : dites où les déplacer",
+  "move them to another category of the same kind":
+    "déplacez-les vers une autre catégorie du même type",
+  "an expense is an outflow: refunds go into the month's income":
+    "une dépense est une sortie : les remboursements vont dans les revenus du mois",
+  "a line needs a category of the household": "une ligne a besoin d'une catégorie du foyer",
+  "every part needs a category of the household": "chaque part a besoin d'une catégorie du foyer",
+  "a fixed expense is spent or put aside: a negative amount":
+    "une dépense fixe est dépensée ou mise de côté : un montant négatif",
+  "its last month cannot come before its first":
+    "son dernier mois ne peut pas précéder son premier",
+  "an income is zero or more": "des revenus valent zéro ou plus",
+  "only an expense category can be one-off": "seule une catégorie de dépense peut être ponctuelle",
+  "no such fixed expense": "dépense fixe inconnue",
+  "a part cannot be zero": "une part ne peut pas être nulle",
+  "a split needs at least two parts": "une ventilation a besoin d'au moins deux parts",
+  "no such line": "ligne inconnue",
+  "no such spending category": "catégorie de dépenses inconnue",
+  "every part has the sign of the transaction": "chaque part a le signe de la ligne",
+  "the rest for the last part must be of the transaction's sign":
+    "le reste pour la dernière part doit avoir le signe de la ligne",
 };
 
 /** API messages that carry a value: [English pattern, French replacement]. */

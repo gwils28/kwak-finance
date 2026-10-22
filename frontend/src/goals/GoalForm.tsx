@@ -348,8 +348,8 @@ function Proposal({ onUse }: { onUse: (amount: string) => void }) {
       {result && result.items.length === 0 && (
         <p>
           {g.proposalNone}{" "}
-          <Link to="/recurring" className="text-accent hover:underline">
-            {g.openRecurring}
+          <Link to="/spending/fixed" className="text-accent hover:underline">
+            {g.openFixed}
           </Link>
         </p>
       )}

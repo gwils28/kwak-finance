@@ -14,6 +14,7 @@ import { recurringFr } from "./recurring";
 import { reportsFr } from "./reports";
 import { reviewFr } from "./review";
 import { runGuideFr } from "./runGuide";
+import { spendingFr } from "./spending";
 import { transactionsFr } from "./transactions";
 import { wealthFr } from "./wealth";
 
@@ -26,6 +27,7 @@ export const fr: Messages = {
   imports: importsFr,
   dashboard: dashboardFr,
   household: householdFr,
+  spending: spendingFr,
   transactions: transactionsFr,
   recurring: recurringFr,
   budget: budgetFr,

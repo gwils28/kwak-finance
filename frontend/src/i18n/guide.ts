@@ -6,6 +6,9 @@
 /** The pages a guide section can open. */
 export type GuidePage =
   | "/"
+  | "/spending"
+  | "/spending/fixed"
+  | "/spending/categories"
   | "/accounts"
   | "/transactions"
   | "/recurring"
@@ -27,72 +30,48 @@ export type GuideSection = {
 export const guideEn = {
   title: "Using Kwak Finance",
   intro:
-    "Kwak Finance keeps your household's accounts, spending, budget, wealth and goals in one place, on your own computer. This guide walks through each page. The app's name, at the top left, leads to the overview, the summary of the whole app. Next to it, “Spending”, “Wealth” and “Goals” switch between three spaces: the everyday pages (transactions, budget, reports) and the wealth (monthly tracking, analysis), each with its tabs, and your financial goals. Categories, members, accounts, the activity log, language and theme are in the menu under your name, next to this guide. To install, start or update the app, see “How to run the app” at the bottom of every page.",
+    "Kwak Finance keeps your household's spending, budget, wealth and goals in one place, on your own computer. This guide walks through each page. The app's name, at the top left, leads to the overview, the summary of the whole app. Next to it, “Spending”, “Wealth” and “Goals” switch between three spaces: the everyday pages (lines, budget, reports) and the wealth (monthly tracking, analysis), each with its tabs, and your financial goals. Categories, members, accounts, the activity log, language and theme are in the menu under your name, next to this guide. To install, start or update the app, see “How to run the app” at the bottom of every page.",
   contents: "Contents",
   sections: [
     {
       id: "start",
       title: "Getting started",
       paragraphs: [
-        "Five steps take you from an empty app to a working budget, and the “Getting started” list on the overview ticks them off as you go: add your bank accounts, import a statement for each, categorise the transactions, set your monthly targets in a budget plan, and invite the rest of the household if you share your finances.",
-        "After that, a monthly routine is enough: import the new statements, categorise what the rules did not, then look at the plan review.",
+        "Four steps take you from an empty app to a working budget, and the “Getting started” list on the overview ticks them off as you go: enter this month's income, enter your first lines, add your fixed expenses and set your monthly targets; then set your emergency fund, and invite the rest of the household if you share your finances.",
+        "After that, a session once a week or once a month is enough: open Spending, confirm the fixed expenses waiting at the top of the month, type what you spent since last time (the header says where you stopped), and look at the month's figures.",
       ],
       link: { to: "/", label: "Open the overview" },
     },
     {
-      id: "accounts",
-      title: "Accounts",
+      id: "lines",
+      title: "Entering lines",
       paragraphs: [
-        "Add each bank account with its institution and type (checking, savings…). Its opening date is the first day of the first statement you will import, and its opening balance the balance on that day, before its first operation: operations dated earlier are ignored.",
-        "An account is visible only to you, to every household member, or is the household's joint account (the one shared expenses are paid from: rent, childminder, groceries…); only the member who created it can change that. Keep the same categories on every account: the account tells who pays, the category what for. A closed account keeps its history and can be reopened.",
+        "Spending is a list of lines you enter by hand, to the cent: a date, a label, an amount and a category, whichever card or account paid. “Spending” opens the grid of a month, the current one; ‹ and › (or Alt+Page Up and Alt+Page Down) move to the previous and next months. Every cell can be changed in place: Enter saves the row, Escape puts it back as it was. The empty row at the bottom is always ready: Tab moves from cell to cell, Enter saves it and opens a new one on the same date. A new row takes the date of the last line you entered, otherwise today (a past month's last day).",
+        "Type an expense as a positive amount. In a savings category (money put aside, see Categories), a positive amount is saved and a minus sign takes money back from savings. Refunds are not lines: add them to the month's income.",
+        "The quick line, above the grid, takes a whole line in any order: “bakery 12,50 yesterday”, “45 train 13/10”, “groceries 87.40 #home”. A date is a day word (today, yesterday, the day before yesterday), a weekday or a dd/mm date; the amount is the last number; “#word” picks the category whose name starts with that word; the rest is the label. It shows how it understood the line as you type. Enter saves it when it is complete; otherwise it goes into the empty row, the missing cell ready.",
+        "Labels you used before are suggested as you type, the most used first, and a known label brings the category of its last line, never the amount. Change the category if needed: your latest choice is the one remembered.",
+        "To spread a receipt over several categories, choose “Split…” as its category: enter each part but the last, which takes the rest, so the parts always add up. Each part counts in its own category everywhere.",
+        "The header holds the month's income, spent, saved and the rest (income minus spent minus saved). The income is one amount for the month (salaries, benefits, refunds): type it there. A month without one carries the previous month's, as the note below it says; emptying it goes back to that. The line entered last is marked with a dot, and the header says its date and when it was entered, with a link to its month. A deleted line comes back with “Undo” in the message that confirms the deletion.",
       ],
-      link: { to: "/accounts", label: "Open the accounts" },
+      link: { to: "/spending", label: "Open the lines" },
     },
     {
-      id: "import",
-      title: "Importing statements",
+      id: "fixed",
+      title: "Fixed expenses",
       paragraphs: [
-        "From an account, “Import” takes the bank's CSV export (Société Générale or Helios for now). A preview shows the new operations, the ones already imported and the errors with their line numbers: nothing is saved until you confirm, and importing the same file twice adds nothing.",
-        "Operations you entered by hand during the month are not added twice: a statement line with the same amount, on the same account and at most 5 days from an entry is marked “Already entered” and takes that entry over. The entry keeps your label and category and takes the bank's date (the bank's label shows when you point at it in Transactions). If a match is wrong, “Not the same” imports the line as a new operation. The preview also lists what you entered within the statement's dates that is not in it: a typo, or an operation the bank has not booked yet. Rolling the import back gives the entries back as you entered them.",
-        "After the import, the computed balance is compared with the bank's. If they differ, check the account's opening balance and date, or import the missing period. An import can be rolled back from the list of previous imports.",
+        "“Fixed expenses”, at the top of the grid, lists what comes back: rent, the childminder, subscriptions, insurance, or a monthly payment into savings. Each one has a label, a category, an amount, a frequency (every month, quarter or year), a day of the month (the last day standing in for a missing one), a first month and optionally a last one; pause it when it stops for a while.",
+        "Nothing is entered by itself: each one due in a month waits at the top of that month's grid, greyed, on its date. Change what differs, then Enter (or “Confirm”) creates the line; “Skip this month” leaves it out, and “Undo” brings it back. A line you type yourself with the same label and category counts as confirming it.",
       ],
-      link: { to: "/accounts", label: "Open the accounts" },
-    },
-    {
-      id: "transactions",
-      title: "Transactions",
-      paragraphs: [
-        "Filter by account, category, dates or label. Select several transactions to give them a category at once, or pick it on a single row. “Rule” creates a rule from a transaction's label, so the next imports are categorised for you.",
-        "Each transaction keeps its real date and also counts for a budget month: its date's month, or the next one when its category says so; the list says “counted in …” under the date when it differs. Click that note (or the calendar icon next to the date) to set it by hand (the date's month, the one before or the one after), e.g. for a salary paid early; “Automatic” goes back to the category's rule. Transfers between your accounts stay in their month. The “Budget month” filter shows what a budget cell counts.",
-        "Transfers between your own accounts are detected and offered for linking (the same amount, at most 3 days apart): linked, they count neither as spending nor as income. When the detection misses one, “Link to…” on a row lists the transactions of the same amount the other way on your other accounts, within 31 days, to pick the other side.",
-        "“Add a transaction” records cash or anything your bank does not export; pick its category there, or leave it to the rules. Choose “Transfer” to move money from one of your accounts to another, e.g. your share paid into the joint account: both sides are entered at once, already linked, labelled “Transfer to …” and “Transfer from …” unless you give a label. Change the amount or the date of one side and the other follows; delete one and both go. Once a side comes from a statement, its amount is the bank's: the other side's amount can no longer change.",
-        "“Details” on a row adds a note (searched with the label) and splits the transaction over several categories, e.g. a supermarket receipt with groceries, household supplies and the pharmacy: enter each part but the last, which takes the rest, so the parts always add up. Each part counts in its category in the budget, the overview and the review; the transaction counts in the month its first part's category gives. Rules and bulk categorisation leave a split transaction as it is; “Remove the split” brings it back to categorise.",
-      ],
-      link: { to: "/transactions", label: "Open the transactions" },
-    },
-    {
-      id: "recurring",
-      title: "Recurring items",
-      paragraphs: [
-        "“Recurring”, at the top of the transactions, lists what comes back regularly: salary, rent, subscriptions, a weekly market. Each item has an account, a label found in the transactions' labels (like a rule), an amount, a frequency (weekly, monthly, quarterly or yearly), a day and a category. Tick “Variable amount” for a bill that changes, such as electricity: Kwak then expects the average of its last 3 payments, shown “≈”.",
-        "Kwak never enters anything by itself. A transaction of the item's account whose label matches, within 10 % of the amount (any amount for a variable one) and 5 days of the date, counts as that occurrence. Without one, the occurrence is late 5 days after its date: “Enter it” opens a new transaction filled in with the item's account, label, category and amount, on the expected date (today if that is still to come), for you to check and save. “Skip” tells Kwak an occurrence will not happen (a subscription paused for a month); “History” shows the past ones and restores a skipped one. Pause an item, or give it an end date, when it stops.",
-        "Suggestions list the series found in the last 6 months: at least 3 transactions of one account with the same label, every week or every month, the amounts within 10 %. “Follow” opens the form filled in to check and save; “Dismiss” stops suggesting it. Quarterly and yearly items are too rare to detect: add them by hand.",
-        "A recurring item can also be a “Transfer”, such as a monthly share paid into the joint account: pick the account it leaves and the account it reaches, with no category. Any transfer between those two accounts counts as that occurrence, whatever its label, and “Enter it” opens a transfer to enter. Transfers are never suggested: add them by hand.",
-      ],
-      link: { to: "/recurring", label: "Open the recurring items" },
+      link: { to: "/spending/fixed", label: "Open the fixed expenses" },
     },
     {
       id: "categories",
-      title: "Categories and rules",
+      title: "Categories",
       paragraphs: [
-        "Categories have two levels: a category and its subcategories, for spending or for income. Rename, move or delete them as you like: deleting one sends its transactions back to “to categorise”.",
-        "A third kind, “Savings & investments”, holds the money you move to savings or investments the app does not track as an account (a PEA, a life insurance, a PER, a savings account you do not import). It is never spending nor income: it stays in the net and the savings rate, as a transfer to one of your savings accounts does. A transfer between two accounts of the app stays a transfer, whatever its category. A savings rule catches both outflows and money brought back.",
-        "Click the calendar icon next to a category's name (or its “Next month from …” note) to shift it to the next month from a day of the month: a salary paid on the 20th (or the 28th) for the next month's spending then counts for that month in the budget, the overview and the reviews, and the net is no longer negative while waiting for payday. A subcategory follows its parent unless it has a setting of its own (or “Never”). The setting applies to past transactions too: “Preview” says how many change month and which locked plans see their review change. For a full first month, import the previous month's statement too.",
-        "The same panel says whether an expense category is paid once in the month (rent, a subscription, an insurance premium): its target on the overview is then not compared with the pace of the month, and paying it in full is not a warning. Housing and Subscriptions are set so by default, and a subcategory follows its parent unless it says otherwise.",
-        "Rules run in order, and the first one that matches sets the category of each import and manual entry. A rule looks at the label (case, spacing and accents ignored), and can also check the amount and the account. They can be applied again to past transactions.",
-        "The household owner can restore the default categories, named in their language: defaults still there keep their transactions, rules and plan targets, copies merge into them, missing ones come back, and every other category is deleted. A preview lists what goes and what it implies before anything changes.",
+        "Spending categories have one level and are in the menu under your name: expense categories (housing, groceries, transport…) and savings categories, for money put aside, which is never counted as spending and lowers the month's rest. Rename them in place, add new ones, or delete one: when it holds lines, fixed expenses or targets, choose another category of the same kind to move them to.",
+        "Tick “One-off” for an expense paid once in the month (rent, a subscription): the month so far never warns about it. Housing and Subscriptions are one-off by default. The household owner can restore the default categories that are missing.",
       ],
-      link: { to: "/categories", label: "Open the categories" },
+      link: { to: "/spending/categories", label: "Open the categories" },
     },
     {
       id: "plans",
@@ -155,7 +134,7 @@ export const guideEn = {
         "The goals space follows amounts you want to gather by a date, in a pyramid: its foundation is your emergency fund, filled first; above it, three tiers given by how far the deadline is: first the long term (beyond five years: a home deposit, the children's studies); then the medium term (over a year, up to five: a trip, a car, a large purchase); at the top the short term (up to a year: holidays, a repair). You never pick the tier: a goal changes tier by itself when you move its deadline, and moves up a tier as the deadline nears, until it reaches the top. A goal can be “Permanent”: it stays in view once reached and needs no deadline (a fund for repairs, say); any other goal is archived by itself once it reaches its target. A goal can be your emergency fund (“This is the emergency fund” in the form): kept apart for the unexpected, filled first, always permanent, the pyramid's foundation. Each member can have one emergency fund, and the household one joint.",
         "A goal is funded by your wealth lines, each holding an envelope for it; the rest of the line stays free for anything else. For each line, set an opening amount, taken from what is free (0 to start from nothing), and the share of its rises that goes to the goal (100 % when the line only serves it). The goal then moves when you update your wealth each month, with nothing more to enter: a rise (a deposit, interest) fills its envelope up to its target; a withdrawal or a loss comes out of the free part first, and the goal only loses once the line is worth less than its goals hold, the farthest deadlines first and the emergency fund last. The form shows what is free on each line, the Wealth page what goals set aside on it. If a rise counted for a goal was not for it (a deposit for something else), “Adjust” in the goal's Envelopes sets what its envelope holds from a month you choose; it then rises and falls as before, and the adjustment can be removed. A line's shares of the rises never exceed 100 %, and a private line only funds a goal only you see. For the emergency fund, “Propose from my fixed expenses” multiplies the monthly total of your fixed expenses (rent, subscriptions, insurance…, a quarterly or yearly one counting a third or a twelfth of it) by the number of months you choose (6 by default); the amount stays fixed once saved.",
         "Each goal has a gauge with a marker where it should stand by now, on a straight line from its start to its target at its deadline, and a status: ahead, on track or behind (with a 5 % margin), reached, or “Fill first” for an emergency fund short of its target. It shows the effort it requires each month, your actual effort (the average gain of the last 6 months) and the date it should be reached at that pace, early or late. Its page draws the trajectory and lists each month.",
-        "“This month's effort” shares out what you can save (your average net cash flow over the last 6 months, or an amount the household owner sets in the effort settings): while the emergency fund falls short, it gets a share first (70 % by default, from 50 % to 100 %), the other goals the rest in proportion to the effort they require, and what they leave goes back to the emergency fund. It is a recommendation: nothing is moved. Each card has its actions: “Edit”, “Archive” once you are done with it (never for a permanent goal), “Cancel the goal” when it no longer matters. An archived or cancelled goal leaves the pyramid, frees its lines and is hidden from the page: “Show archived and cancelled goals” lists them, and a goal's page reopens it (a reached goal asks for a higher target, or to become permanent).",
+        "“This month's effort” shares out what you can save (the household's average income minus spending over the last 6 complete months, or an amount the household owner sets in the effort settings): while the emergency fund falls short, it gets a share first (70 % by default, from 50 % to 100 %), the other goals the rest in proportion to the effort they require, and what they leave goes back to the emergency fund. It is a recommendation: nothing is moved. Each card has its actions: “Edit”, “Archive” once you are done with it (never for a permanent goal), “Cancel the goal” when it no longer matters. An archived or cancelled goal leaves the pyramid, frees its lines and is hidden from the page: “Show archived and cancelled goals” lists them, and a goal's page reopens it (a reached goal asks for a higher target, or to become permanent).",
       ],
       link: { to: "/goals", label: "Open your goals" },
     },
@@ -186,9 +165,9 @@ export const guideEn = {
     hide: "Hide",
     readGuide: "Read the guide",
     steps: {
-      account: "Add your bank accounts",
-      import: "Import a statement",
-      categorise: "Categorise your transactions",
+      income: "Enter this month's income",
+      line: "Enter your first lines",
+      fixed: "Add your fixed expenses",
       plan: "Set your monthly targets",
       goal: "Set your emergency fund",
       invite: "Invite your household (optional)",
@@ -200,72 +179,48 @@ export const guideEn = {
 export const guideFr: typeof guideEn = {
   title: "Utiliser Kwak Finance",
   intro:
-    "Kwak Finance réunit les comptes, les dépenses, le budget, le patrimoine et les objectifs de votre foyer, sur votre propre ordinateur. Ce guide parcourt chaque page. Le nom de l'application, en haut à gauche, mène à la vue d'ensemble, le résumé de toute l'application. À côté, « Dépenses », « Patrimoine » et « Objectifs » passent d'un espace à l'autre : les pages du quotidien (opérations, budget, rapports) et le patrimoine (suivi mensuel, analyse), chacun avec ses onglets, et vos objectifs financiers. Les catégories, les membres, les comptes, le journal d'activité, la langue et le thème sont dans le menu à votre nom, à côté de ce guide. Pour installer, lancer ou mettre à jour l'application, voyez « Lancer et arrêter l'application » en bas de chaque page.",
+    "Kwak Finance réunit les dépenses, le budget, le patrimoine et les objectifs de votre foyer, sur votre propre ordinateur. Ce guide parcourt chaque page. Le nom de l'application, en haut à gauche, mène à la vue d'ensemble, le résumé de toute l'application. À côté, « Dépenses », « Patrimoine » et « Objectifs » passent d'un espace à l'autre : les pages du quotidien (lignes, budget, rapports) et le patrimoine (suivi mensuel, analyse), chacun avec ses onglets, et vos objectifs financiers. Les catégories, les membres, les comptes, le journal d'activité, la langue et le thème sont dans le menu à votre nom, à côté de ce guide. Pour installer, lancer ou mettre à jour l'application, voyez « Lancer et arrêter l'application » en bas de chaque page.",
   contents: "Sommaire",
   sections: [
     {
       id: "start",
       title: "Bien démarrer",
       paragraphs: [
-        "Cinq étapes mènent d'une application vide à un budget qui fonctionne, et la liste « Bien démarrer » de la vue d'ensemble les coche au fur et à mesure : ajouter vos comptes bancaires, importer un relevé pour chacun, catégoriser les opérations, fixer vos objectifs mensuels dans un plan budgétaire, et inviter le reste du foyer si vous partagez vos finances.",
-        "Ensuite, une routine mensuelle suffit : importer les nouveaux relevés, catégoriser ce que les règles n'ont pas fait, puis consulter le bilan du plan.",
+        "Quatre étapes mènent d'une application vide à un budget qui fonctionne, et la liste « Bien démarrer » de la vue d'ensemble les coche au fur et à mesure : saisir les revenus du mois, saisir vos premières lignes, ajouter vos dépenses fixes et fixer vos objectifs mensuels ; ensuite, constituer votre épargne de précaution, et inviter le reste du foyer si vous partagez vos finances.",
+        "Ensuite, une séance par semaine ou par mois suffit : ouvrez Dépenses, confirmez les dépenses fixes qui attendent en haut du mois, tapez ce que vous avez dépensé depuis la dernière fois (l'en-tête dit où vous vous êtes arrêté) et regardez les chiffres du mois.",
       ],
       link: { to: "/", label: "Ouvrir la vue d'ensemble" },
     },
     {
-      id: "accounts",
-      title: "Comptes",
+      id: "lines",
+      title: "Saisir les lignes",
       paragraphs: [
-        "Ajoutez chaque compte bancaire avec son établissement et son type (courant, livret…). Sa date d'ouverture est le premier jour du premier relevé que vous importerez, et son solde d'ouverture le solde ce jour-là, avant sa première opération : les opérations antérieures sont ignorées.",
-        "Un compte est visible de vous seul, de tout le foyer, ou c'est le compte commun du foyer (celui qui paie les dépenses partagées : loyer, assistante maternelle, courses…) ; seul le membre qui l'a créé peut changer cela. Gardez les mêmes catégories sur tous les comptes : le compte dit qui paie, la catégorie pour quoi. Un compte clôturé garde son historique et peut être rouvert.",
+        "Les dépenses sont une liste de lignes saisies à la main, au centime : une date, un libellé, un montant et une catégorie, quelle que soit la carte ou le compte qui a payé. « Dépenses » ouvre la grille d'un mois, le mois en cours ; ‹ et › (ou Alt+Page préc. et Alt+Page suiv.) passent au mois précédent et au suivant. Chaque cellule se modifie sur place : Entrée enregistre la ligne, Échap la remet comme elle était. La ligne vide en bas est toujours prête : Tab passe d'une cellule à l'autre, Entrée l'enregistre et en ouvre une nouvelle à la même date. Une nouvelle ligne prend la date de la dernière ligne saisie, sinon aujourd'hui (le dernier jour d'un mois passé).",
+        "Tapez une dépense en montant positif. Dans une catégorie d'épargne (l'argent mis de côté, voir Catégories), un montant positif est épargné et un signe moins reprend de l'argent à l'épargne. Les remboursements ne sont pas des lignes : ajoutez-les aux revenus du mois.",
+        "La saisie rapide, au-dessus de la grille, prend une ligne entière dans n'importe quel ordre : « boulangerie 12,50 hier », « 45 sncf 13/10 », « carrefour 87,40 #foyer ». Une date est un mot (aujourd'hui, hier, avant-hier), un jour de la semaine ou une date jj/mm ; le montant est le dernier nombre ; « #mot » choisit la catégorie dont le nom commence par ce mot ; le reste est le libellé. Elle montre comment elle a compris la ligne pendant la frappe. Entrée l'enregistre si elle est complète ; sinon elle passe dans la ligne vide, la cellule manquante prête.",
+        "Les libellés déjà utilisés sont proposés pendant la frappe, les plus utilisés d'abord, et un libellé connu reprend la catégorie de sa dernière ligne, jamais le montant. Changez la catégorie si besoin : votre dernier choix est celui qui est retenu.",
+        "Pour répartir un ticket sur plusieurs catégories, choisissez « Ventiler… » comme catégorie : saisissez chaque part sauf la dernière, qui prend le reste, si bien que les parts tombent toujours juste. Chaque part compte partout dans sa propre catégorie.",
+        "L'en-tête donne les revenus, le dépensé, l'épargné et le reste du mois (revenus moins dépensé moins épargné). Les revenus sont un montant pour le mois (salaires, allocations, remboursements) : tapez-le là. Un mois sans revenus reprend ceux du mois précédent, comme l'indique la note en dessous ; le vider y revient. La ligne saisie en dernier est marquée d'un point, et l'en-tête donne sa date et quand elle a été saisie, avec un lien vers son mois. Une ligne supprimée revient avec « Annuler » dans le message qui confirme la suppression.",
       ],
-      link: { to: "/accounts", label: "Ouvrir les comptes" },
+      link: { to: "/spending", label: "Ouvrir les lignes" },
     },
     {
-      id: "import",
-      title: "Importer des relevés",
+      id: "fixed",
+      title: "Dépenses fixes",
       paragraphs: [
-        "Depuis un compte, « Importer » prend l'export CSV de la banque (Société Générale ou Helios pour l'instant). Un aperçu montre les nouvelles opérations, celles déjà importées et les erreurs avec leur numéro de ligne : rien n'est enregistré avant votre confirmation, et importer deux fois le même fichier n'ajoute rien.",
-        "Les opérations saisies à la main pendant le mois ne sont pas ajoutées deux fois : une ligne du relevé de même montant, sur le même compte et à 5 jours au plus d'une saisie est marquée « Déjà saisie » et reprend cette saisie. La saisie garde votre libellé et votre catégorie, et prend la date de la banque (le libellé de la banque s'affiche au survol dans Opérations). Si un rapprochement est faux, « Pas la même » importe la ligne comme une nouvelle opération. L'aperçu liste aussi ce que vous avez saisi dans les dates du relevé et qui n'y figure pas : une faute de frappe, ou une opération que la banque n'a pas encore passée. Annuler l'import rend les saisies telles que vous les aviez entrées.",
-        "Après l'import, le solde calculé est comparé à celui de la banque. S'ils diffèrent, vérifiez le solde et la date d'ouverture du compte, ou importez la période manquante. Un import peut être annulé depuis la liste des imports précédents.",
+        "« Dépenses fixes », en haut de la grille, liste ce qui revient : loyer, nounou, abonnements, assurances, ou un versement mensuel sur l'épargne. Chacune a un libellé, une catégorie, un montant, une fréquence (tous les mois, trimestres ou ans), un jour du mois (le dernier jour remplaçant un jour manquant), un premier mois et éventuellement un dernier ; mettez-la en pause quand elle s'arrête un temps.",
+        "Rien n'est saisi tout seul : chacune due dans un mois attend en haut de la grille de ce mois, grisée, à sa date. Corrigez ce qui diffère, puis Entrée (ou « Confirmer ») crée la ligne ; « Sauter ce mois-ci » la laisse de côté, et « Annuler » la fait revenir. Une ligne que vous tapez vous-même avec le même libellé et la même catégorie vaut confirmation.",
       ],
-      link: { to: "/accounts", label: "Ouvrir les comptes" },
-    },
-    {
-      id: "transactions",
-      title: "Opérations",
-      paragraphs: [
-        "Filtrez par compte, catégorie, dates ou libellé. Sélectionnez plusieurs opérations pour leur donner une catégorie d'un coup, ou choisissez-la sur une ligne. « Règle » crée une règle à partir du libellé d'une opération, pour que les prochains imports soient catégorisés à votre place.",
-        "Chaque opération garde sa vraie date, et compte aussi pour un mois budgétaire : celui de sa date, ou le suivant si sa catégorie le prévoit ; la liste indique « compté en … » sous la date quand il diffère. Cliquez sur cette mention (ou sur l'icône calendrier à côté de la date) pour le fixer à la main (le mois de la date, celui d'avant ou celui d'après), par ex. pour un salaire versé en avance ; « Automatique » revient à la règle de la catégorie. Les virements entre vos comptes restent dans leur mois. Le filtre « Mois budgétaire » montre ce qu'une case du budget compte.",
-        "Les transferts entre vos propres comptes sont détectés et proposés au rapprochement (même montant, 3 jours d'écart au plus) : rapprochés, ils ne comptent ni comme dépense ni comme revenu. Quand la détection en manque un, « Lier à… » sur une ligne liste les opérations du même montant dans l'autre sens sur vos autres comptes, à 31 jours près, pour choisir l'autre côté.",
-        "« Ajouter une opération » enregistre les espèces ou ce que votre banque n'exporte pas ; choisissez-y sa catégorie, ou laissez faire les règles. Choisissez « Virement » pour passer de l'argent d'un de vos comptes à un autre, par exemple votre quote-part versée sur le compte commun : les deux côtés sont saisis d'un coup, déjà liés, avec pour libellés « Virement vers … » et « Virement depuis … » sauf si vous en donnez un. Changez le montant ou la date d'un côté et l'autre suit ; supprimez-en un et les deux partent. Dès qu'un côté vient d'un relevé, son montant est celui de la banque : celui de l'autre côté ne peut plus changer.",
-        "« Détails » sur une ligne ajoute une note (cherchée avec le libellé) et ventile l'opération sur plusieurs catégories, par exemple un ticket de supermarché avec les courses, l'entretien de la maison et la pharmacie : saisissez chaque partie sauf la dernière, qui prend le reste, si bien que les parties tombent toujours juste. Chaque partie compte dans sa catégorie, dans le budget, la vue d'ensemble et la revue ; l'opération compte dans le mois que donne la catégorie de sa première partie. Les règles et la catégorisation en lot laissent une opération ventilée telle quelle ; « Annuler la ventilation » la remet à catégoriser.",
-      ],
-      link: { to: "/transactions", label: "Ouvrir les opérations" },
-    },
-    {
-      id: "recurring",
-      title: "Récurrences",
-      paragraphs: [
-        "« Récurrences », en haut des opérations, liste ce qui revient régulièrement : salaire, loyer, abonnements, un marché chaque semaine. Chaque récurrence a un compte, un libellé cherché dans celui des opérations (comme une règle), un montant, une fréquence (hebdomadaire, mensuelle, trimestrielle ou annuelle), un jour et une catégorie. Cochez « Montant variable » pour une facture qui change, comme l'électricité : Kwak attend alors la moyenne de ses 3 derniers paiements, affichée « ≈ ».",
-        "Kwak ne saisit jamais rien tout seul. Une opération du compte de la récurrence dont le libellé correspond, à 10 % près du montant (n'importe quel montant pour une récurrence variable) et à 5 jours près de la date, compte pour cette échéance. Sans elle, l'échéance passe en retard 5 jours après sa date : « La saisir » ouvre une nouvelle opération remplie avec le compte, le libellé, la catégorie et le montant, à la date prévue (aujourd'hui si elle est encore à venir), à vérifier puis enregistrer. « Sauter » indique qu'une échéance n'aura pas lieu (un abonnement suspendu un mois) ; « Historique » montre les échéances passées et rétablit une échéance sautée. Mettez une récurrence en pause, ou donnez-lui une date de fin, quand elle s'arrête.",
-        "Les suggestions listent les séries trouvées sur les 6 derniers mois : au moins 3 opérations d'un même compte avec le même libellé, chaque semaine ou chaque mois, les montants à 10 % près. « Suivre » ouvre le formulaire rempli, à vérifier puis enregistrer ; « Ignorer » ne la propose plus. Les récurrences trimestrielles et annuelles sont trop rares pour être détectées : ajoutez-les à la main.",
-        "Une récurrence peut aussi être un « Virement », comme une quote-part mensuelle versée sur le compte commun : choisissez le compte qu'il quitte et celui qu'il rejoint, sans catégorie. Tout virement entre ces deux comptes compte pour l'échéance, quel que soit son libellé, et « La saisir » ouvre un virement à saisir. Les virements ne sont jamais suggérés : ajoutez-les à la main.",
-      ],
-      link: { to: "/recurring", label: "Ouvrir les récurrences" },
+      link: { to: "/spending/fixed", label: "Ouvrir les dépenses fixes" },
     },
     {
       id: "categories",
-      title: "Catégories et règles",
+      title: "Catégories",
       paragraphs: [
-        "Les catégories ont deux niveaux : une catégorie et ses sous-catégories, de dépense ou de revenu. Renommez-les, déplacez-les ou supprimez-les à votre guise : en supprimer une renvoie ses opérations « à catégoriser ».",
-        "Un troisième type, « Épargne et placements », reçoit l'argent mis de côté ou placé sur des supports que l'app ne suit pas comme un compte (un PEA, une assurance-vie, un PER, un livret que vous n'importez pas). Ce n'est jamais une dépense ni un revenu : il reste dans le solde net et le taux d'épargne, comme un virement vers un de vos livrets. Un virement entre deux comptes de l'app reste un virement, quelle que soit sa catégorie. Une règle d'épargne prend à la fois les sorties et l'argent rapatrié.",
-        "Cliquez sur l'icône calendrier à côté du nom d'une catégorie (ou sur sa mention « Mois suivant à partir du … ») pour la décaler au mois suivant à partir d'un jour du mois : un salaire versé le 20 (ou le 28) pour les dépenses du mois suivant compte alors pour ce mois-là dans le budget, la vue d'ensemble et les bilans, et le solde net n'est plus négatif en attendant la paie. Une sous-catégorie suit sa catégorie parente, sauf si elle a son propre réglage (ou « Jamais »). Le réglage vaut aussi pour les opérations passées : « Aperçu » dit combien changent de mois et quels plans verrouillés voient leur bilan changer. Pour un premier mois complet, importez aussi le relevé du mois précédent.",
-        "Le même panneau indique si une catégorie de dépense est payée une fois dans le mois (loyer, abonnement, prime d'assurance) : son objectif sur la vue d'ensemble n'est alors pas comparé au rythme du mois, et la payer en entier ne déclenche pas d'alerte. Logement et Abonnements le sont par défaut, et une sous-catégorie suit sa catégorie parente sauf si elle dit autrement.",
-        "Les règles s'appliquent dans l'ordre, et la première qui correspond fixe la catégorie de chaque import et de chaque saisie. Une règle regarde le libellé (sans tenir compte de la casse, des espaces ni des accents), et peut aussi vérifier le montant et le compte. Elles peuvent être réappliquées aux opérations passées.",
-        "Le propriétaire du foyer peut rétablir les catégories par défaut, nommées dans sa langue : celles encore présentes gardent leurs opérations, règles et objectifs de plans, les doublons sont fusionnés avec elles, celles qui manquent reviennent, et toutes les autres sont supprimées. Un aperçu liste ce qui part et ce que cela implique avant tout changement.",
+        "Les catégories de dépenses ont un seul niveau et sont dans le menu à votre nom : les catégories de dépense (logement, courses, transport…) et les catégories d'épargne, pour l'argent mis de côté, qui ne compte jamais comme dépense et réduit le reste du mois. Renommez-les sur place, ajoutez-en, ou supprimez-en une : si elle contient des lignes, des dépenses fixes ou des cibles, choisissez une autre catégorie du même type où les déplacer.",
+        "Cochez « Ponctuelle » pour une dépense payée une fois dans le mois (loyer, abonnement) : le mois en cours n'alerte jamais à son sujet. Logement et Abonnements sont ponctuelles par défaut. Le propriétaire du foyer peut restaurer les catégories par défaut qui manquent.",
       ],
-      link: { to: "/categories", label: "Ouvrir les catégories" },
+      link: { to: "/spending/categories", label: "Ouvrir les catégories" },
     },
     {
       id: "plans",
@@ -328,7 +283,7 @@ export const guideFr: typeof guideEn = {
         "L'espace Objectifs suit les montants que vous voulez réunir pour une date, en pyramide : son socle est votre épargne de précaution, servie en premier ; au-dessus, trois étages donnés par l'éloignement de l'échéance : d'abord le long terme (au-delà de cinq ans : un apport immobilier, les études des enfants) ; puis le moyen terme (plus d'un an, jusqu'à cinq : un voyage, une voiture, un gros achat) ; au sommet le court terme (jusqu'à un an : des vacances, une réparation). Vous ne choisissez jamais l'étage : un objectif change d'étage tout seul quand vous déplacez son échéance, et monte d'un étage à mesure qu'elle approche, jusqu'au sommet. Un objectif peut être « Permanent » : il reste affiché une fois atteint et n'a pas besoin d'échéance (un fonds travaux, par exemple) ; tout autre objectif s'archive de lui-même quand il atteint sa cible. Un objectif peut être votre épargne de précaution (« C'est l'épargne de précaution » dans le formulaire) : mise de côté pour les imprévus, servie en premier, toujours permanente, le socle de la pyramide. Chaque membre peut avoir une épargne de précaution, et le foyer une commune.",
         "Un objectif est financé par vos lignes de patrimoine, chacune lui réservant une enveloppe ; le reste de la ligne reste libre pour autre chose. Pour chaque ligne, indiquez un montant de départ, pris sur ce qui est libre (0 pour partir de rien), et la part de ses hausses qui revient à l'objectif (100 % si la ligne ne sert qu'à lui). L'objectif avance ensuite quand vous mettez votre patrimoine à jour chaque mois, sans autre saisie : une hausse (un versement, des intérêts) remplit son enveloppe jusqu'à sa cible ; un retrait ou une perte est d'abord pris sur la partie libre, et l'objectif ne baisse que si la ligne vaut moins que ce que ses objectifs y réservent, les échéances les plus lointaines d'abord et l'épargne de précaution en dernier. Le formulaire montre ce qui est libre sur chaque ligne, la page Patrimoine ce que les objectifs y réservent. Si une hausse comptée pour un objectif n'était pas pour lui (un versement destiné à autre chose), « Ajuster », dans les Enveloppes de l'objectif, fixe ce que son enveloppe réserve à partir du mois choisi ; elle suit ensuite les hausses et les baisses comme avant, et l'ajustement peut être retiré. Les parts des hausses d'une ligne ne dépassent jamais 100 %, et une ligne privée ne finance qu'un objectif que vous seul voyez. Pour l'épargne de précaution, « Proposer à partir de mes dépenses fixes » multiplie le total mensuel de vos dépenses fixes (loyer, abonnements, assurances…, une trimestrielle ou annuelle comptant pour un tiers ou un douzième) par le nombre de mois choisi (6 par défaut) ; le montant reste fixe une fois enregistré.",
         "Chaque objectif a une jauge avec un repère là où il devrait en être, sur une ligne droite de son début à sa cible à l'échéance, et un statut : en avance, dans les temps ou en retard (à 5 % près), atteint, ou « À combler en priorité » pour une épargne de précaution incomplète. Il donne l'effort requis chaque mois, votre effort réel (le gain moyen des 6 derniers mois) et la date à laquelle il serait atteint à ce rythme, en avance ou en retard. Sa page trace la trajectoire et détaille chaque mois.",
-        "« L'effort du mois » répartit ce que vous pouvez épargner (votre solde net moyen des 6 derniers mois, ou un montant que le propriétaire du foyer fixe dans les réglages de l'effort) : tant que l'épargne de précaution n'est pas complète, elle reçoit d'abord une part (70 % par défaut, de 50 % à 100 %), les autres objectifs le reste au prorata de l'effort qu'ils demandent, et ce qu'ils laissent revient à la précaution. C'est une recommandation : rien n'est déplacé. Chaque carte a ses actions : « Modifier », « Archiver » quand vous en avez terminé (jamais pour un objectif permanent), « Annuler l'objectif » quand il n'est plus d'actualité. Un objectif archivé ou annulé quitte la pyramide, libère ses lignes et n'apparaît plus sur la page : « Afficher les objectifs archivés et annulés » les liste, et la page d'un objectif permet de le rouvrir (un objectif atteint demande une cible plus haute, ou de devenir permanent).",
+        "« L'effort du mois » répartit ce que vous pouvez épargner (les revenus moins les dépenses du foyer, en moyenne sur les 6 derniers mois complets, ou un montant que le propriétaire du foyer fixe dans les réglages de l'effort) : tant que l'épargne de précaution n'est pas complète, elle reçoit d'abord une part (70 % par défaut, de 50 % à 100 %), les autres objectifs le reste au prorata de l'effort qu'ils demandent, et ce qu'ils laissent revient à la précaution. C'est une recommandation : rien n'est déplacé. Chaque carte a ses actions : « Modifier », « Archiver » quand vous en avez terminé (jamais pour un objectif permanent), « Annuler l'objectif » quand il n'est plus d'actualité. Un objectif archivé ou annulé quitte la pyramide, libère ses lignes et n'apparaît plus sur la page : « Afficher les objectifs archivés et annulés » les liste, et la page d'un objectif permet de le rouvrir (un objectif atteint demande une cible plus haute, ou de devenir permanent).",
       ],
       link: { to: "/goals", label: "Ouvrir vos objectifs" },
     },
@@ -359,9 +314,9 @@ export const guideFr: typeof guideEn = {
     hide: "Masquer",
     readGuide: "Lire le guide",
     steps: {
-      account: "Ajouter vos comptes bancaires",
-      import: "Importer un relevé",
-      categorise: "Catégoriser vos opérations",
+      income: "Saisir les revenus du mois",
+      line: "Saisir vos premières lignes",
+      fixed: "Ajouter vos dépenses fixes",
       plan: "Fixer vos objectifs mensuels",
       goal: "Constituer votre épargne de précaution",
       invite: "Inviter votre foyer (facultatif)",
