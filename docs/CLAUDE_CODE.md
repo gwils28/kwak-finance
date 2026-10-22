@@ -66,6 +66,7 @@ Money rules (Decimal, sign, rounding) are not a skill: `CLAUDE.md` and `kwak_cor
 | `security-auditor` | read-only | Reviews a diff against the project's threat model: other households, private wealth lines and goals of other members, owner-only actions, sessions/CSRF/TOTP, throttling, secrets (complements the generic `/security-review`) | done |
 | `ui-verifier` | Read + Chrome extension | Checks pages on the `ui-preview` instance: both languages, light/dark, phone width, console and network errors, guide accuracy. Screenshots stay out of the main context | done |
 | `statistician` | read-only | Reviews the forecasting/simulation protocol and leakage risks. No edits | 4 |
+| `finance-strategist` | read-only + web search | Personal finance and wealth expert for a French household: strict validator of the financial soundness of specs, defaults, formulas and wording (precaution, goals, allocation, returns, inflation, projection, FIRE), and strategist who ranks feature options. Never reads `data/` | done |
 
 A subagent is used only for a review in a fresh context or to keep heavy output (screenshots, logs) out of the main one. Implementation stays in the main session, so there is no editing agent.
 
