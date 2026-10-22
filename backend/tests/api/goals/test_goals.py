@@ -364,11 +364,11 @@ def _spending_categories(client: TestClient) -> dict[str, str]:
 
 def test_the_capacity_is_the_average_income_minus_spending(owner_client: TestClient) -> None:
     categories = _spending_categories(owner_client)
-    response = owner_client.put(
-        "/api/spending/income/2026-09", json={"amount": "2000.00"}, headers=csrf(owner_client)
-    )
-    assert response.status_code == 200, response.text
-    for category, amount in (("Groceries", "-800.00"), ("Savings", "-500.00")):
+    for category, amount in (
+        ("Salaries", "2000.00"),
+        ("Groceries", "-800.00"),
+        ("Savings", "-500.00"),
+    ):
         body = {
             "day": "2026-09-10",
             "label": "x",

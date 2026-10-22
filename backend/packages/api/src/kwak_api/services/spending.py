@@ -1,4 +1,4 @@
-"""The spending since v1.0 (§4.2 to 4.6): categories, lines, income and fixed expenses.
+"""The spending since v1.0 (§4.2 to 4.6): categories, lines (income included), fixed expenses.
 
 Spending belongs to the household: every member sees and edits every line (§3).
 """
@@ -10,10 +10,10 @@ from decimal import Decimal
 from uuid import UUID
 
 from kwak_core import fixed as core_fixed
-from kwak_core import income as core_income
 from kwak_core.budget import Month
 from kwak_core.categories import DEFAULT_SPENDING_CATEGORIES, CategoryKind
 from kwak_core.labels import Use
+from kwak_core.spending import LineKindError, check_line_kinds
 from kwak_core.splits import Part, SplitError, split
 from kwak_core.users import Language
 from sqlalchemy import Select, exists, func, select, update
@@ -23,7 +23,6 @@ from sqlalchemy.orm import Session, selectinload
 from kwak_api.models import (
     FixedExpense,
     FixedSkip,
-    MonthlyIncome,
     SpendingCategory,
     SpendingLine,
     SpendingLinePart,
@@ -170,9 +169,11 @@ def _check_line(data: LineData, kinds: dict[UUID, CategoryKind]) -> tuple[UUID |
             parts = split(data.amount, data.given, data.category_id)
         except SplitError as exc:
             raise LineError(str(exc)) from None
-    used = {p.category_id for p in parts} or {data.category_id}
-    if data.amount > 0 and any(kinds[c] is CategoryKind.EXPENSE for c in used if c):
-        raise LineError("an expense is an outflow: refunds go into the month's income")
+    used = {kinds[c] for p in parts if (c := p.category_id)} or {kinds[data.category_id]}
+    try:
+        check_line_kinds(data.amount, used)
+    except LineKindError as exc:
+        raise LineError(str(exc)) from None
     return (None, parts) if parts else (data.category_id, [])
 
 
@@ -251,47 +252,6 @@ def label_uses(db: Session, household_id: UUID) -> list[Use]:
         ).where(SpendingLine.household_id == household_id, SpendingLine.category_id.is_not(None))
     )
     return [Use(label, category, day, at) for label, category, day, at in rows if category]
-
-
-# Income (F-INC-1)
-
-
-def incomes(db: Session, household_id: UUID) -> dict[Month, Decimal]:
-    rows = db.execute(
-        select(MonthlyIncome.month, MonthlyIncome.amount).where(
-            MonthlyIncome.household_id == household_id
-        )
-    )
-    return {Month.of(month): amount for month, amount in rows}
-
-
-def income_of(db: Session, household_id: UUID, month: Month) -> core_income.Income | None:
-    return core_income.income_of(month, incomes(db, household_id))
-
-
-def _income_row(db: Session, household_id: UUID, month: Month) -> MonthlyIncome | None:
-    return db.scalar(
-        select(MonthlyIncome).where(
-            MonthlyIncome.household_id == household_id,
-            MonthlyIncome.month == month.first_day(),
-        )
-    )
-
-
-def set_income(db: Session, household_id: UUID, month: Month, amount: Decimal) -> None:
-    row = _income_row(db, household_id, month)
-    if row is None:
-        db.add(MonthlyIncome(household_id=household_id, month=month.first_day(), amount=amount))
-    else:
-        row.amount = amount
-    db.flush()
-
-
-def remove_income(db: Session, household_id: UUID, month: Month) -> None:
-    row = _income_row(db, household_id, month)
-    if row is not None:
-        db.delete(row)
-        db.flush()
 
 
 # Fixed expenses (F-FIX)

@@ -1,4 +1,4 @@
-"""The spending since v1.0 (§4.2 to 4.6): lines entered by hand, monthly income, fixed expenses."""
+"""The spending since v1.0 (§4.2 to 4.6): lines entered by hand, income included, fixed expenses."""
 
 from datetime import date
 from decimal import Decimal
@@ -40,7 +40,7 @@ def _string_enum(
 
 
 class SpendingCategory(UUIDPrimaryKey, Timestamps, Base):
-    """One level (F-CAT-1): an expense or a savings category."""
+    """One level (F-CAT-1): an expense, a savings or an income category."""
 
     __tablename__ = "spending_category"
     __table_args__ = (
@@ -50,7 +50,7 @@ class SpendingCategory(UUIDPrimaryKey, Timestamps, Base):
             text("lower(name)"),
             unique=True,
         ),
-        CheckConstraint("kind IN ('expense', 'savings')", name="spending_kind"),
+        CheckConstraint("kind IN ('expense', 'savings', 'income')", name="spending_kind"),
     )
 
     household_id: Mapped[UUID] = mapped_column(ForeignKey("household.id"), index=True)
@@ -58,7 +58,7 @@ class SpendingCategory(UUIDPrimaryKey, Timestamps, Base):
     kind: Mapped[CategoryKind] = mapped_column(
         _string_enum(CategoryKind, "category_kind", check=False)
     )
-    """Expense or savings only: the table's own CHECK (income has no lines since v1.0)."""
+    """The table's own CHECK: the legacy categories share the enum's name."""
     one_off: Mapped[bool] = mapped_column(server_default=text("false"))
     """F-CAT-6: paid once in the month, never judged against the month's pace."""
     position: Mapped[int] = mapped_column(Integer)
@@ -110,7 +110,8 @@ class FixedSkip(UUIDPrimaryKey, Base):
 
 
 class SpendingLine(UUIDPrimaryKey, Timestamps, Base):
-    """F-LIN-1: one expense or savings line; `created_at` is when it was entered (F-ENT-4)."""
+    """F-LIN-1: an expense, savings or income line; `created_at` is when it was entered
+    (F-ENT-4)."""
 
     __tablename__ = "spending_line"
     __table_args__ = (
@@ -122,7 +123,7 @@ class SpendingLine(UUIDPrimaryKey, Timestamps, Base):
     day: Mapped[date] = mapped_column(Date)
     label: Mapped[str] = mapped_column(String(100))
     amount: Mapped[Decimal] = mapped_column(Numeric(14, 2))
-    """Negative is spent or put aside, positive taken back from savings."""
+    """Negative is spent or put aside, positive received or taken back from savings."""
     category_id: Mapped[UUID | None] = mapped_column(ForeignKey("spending_category.id"), index=True)
     """None when the line is split (F-LIN-4): its parts hold the categories."""
     fixed_expense_id: Mapped[UUID | None] = mapped_column(
@@ -151,21 +152,6 @@ class SpendingLinePart(UUIDPrimaryKey, Base):
     line_id: Mapped[UUID] = mapped_column(ForeignKey("spending_line.id", ondelete="CASCADE"))
     position: Mapped[int] = mapped_column(SmallInteger)
     category_id: Mapped[UUID] = mapped_column(ForeignKey("spending_category.id"), index=True)
-    amount: Mapped[Decimal] = mapped_column(Numeric(14, 2))
-
-
-class MonthlyIncome(UUIDPrimaryKey, Timestamps, Base):
-    """F-INC-1: the household's income entered for a month."""
-
-    __tablename__ = "monthly_income"
-    __table_args__ = (
-        UniqueConstraint("household_id", "month"),
-        CheckConstraint("amount >= 0", name="amount_not_negative"),
-        CheckConstraint("extract(day FROM month) = 1", name="month_start"),
-    )
-
-    household_id: Mapped[UUID] = mapped_column(ForeignKey("household.id"))
-    month: Mapped[date] = mapped_column(Date)
     amount: Mapped[Decimal] = mapped_column(Numeric(14, 2))
 
 

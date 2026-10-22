@@ -258,7 +258,7 @@ def lines_free(db: Session, viewer: User, today: date) -> list[LineFree]:
 
 def capacity(db: Session, viewer: User, this_month: Month) -> Decimal:
     """The household's average monthly income minus spending over the last complete months,
-    from the first one with a line or an income: the same in every scope (F-GOAL-6). Savings
+    from the first one with a line: the same in every scope (F-GOAL-6). Savings
     lines stay in, since they are what goals are funded from."""
     household_id = viewer.household_id
     months = spending_budget.counted(

@@ -1,9 +1,9 @@
 """Reports on the spending lines since v1.0 (F-DSH-2, invariant §8.13).
 
-A report sorts a period's lines by category in two sections, spending and savings, and draws
-where the period's income went: spending by category, savings, and the unallocated rest. A
-shortfall comes in as a deficit, money taken back from savings as such, so both sides of the
-flows always add up to the same total.
+A report sorts a period's lines by category in three sections, income, spending and savings,
+and draws where the income of each category went: spending by category, savings, and the
+unallocated rest. A shortfall comes in as a deficit, money taken back from savings as such, so
+both sides of the flows always add up to the same total.
 """
 
 import enum
@@ -45,14 +45,18 @@ class Flow:
 
 def report_flows(
     *,
-    income: Decimal,
+    income: Mapping[UUID, Decimal],
     spent: Mapping[UUID, Decimal],
     saved: Decimal,
     over: Collection[UUID],
 ) -> list[Flow]:
-    """`spent` by expense category; `saved` net of withdrawals, negative when savings were
-    drawn on. Zero amounts are left out."""
-    flows = [Flow(FlowKind.INCOME, Side.IN, income)] if income else []
+    """`income` by income category, `spent` by expense category; `saved` net of withdrawals,
+    negative when savings were drawn on. Zero amounts are left out."""
+    flows = [
+        Flow(FlowKind.INCOME, Side.IN, amount, category)
+        for category, amount in income.items()
+        if amount
+    ]
     flows += [
         Flow(FlowKind.SPENDING, Side.OUT, amount, category, over=category in over)
         for category, amount in spent.items()

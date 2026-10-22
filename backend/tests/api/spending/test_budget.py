@@ -33,10 +33,8 @@ def _line(client: TestClient, category: str, amount: str, day: str = "2026-10-05
 
 
 def _income(client: TestClient, month: str, amount: str) -> None:
-    response = client.put(
-        f"/api/spending/income/{month}", json={"amount": amount}, headers=csrf(client)
-    )
-    assert response.status_code == 200, response.text
+    """An income line on the first of the month."""
+    _line(client, "Salaries", amount, f"{month}-01")
 
 
 def _target(client: TestClient, category: str, month: str, amount: str | None) -> Any:
@@ -111,7 +109,7 @@ def test_the_month_figures_progress_and_projected_rest(owner_client: TestClient)
         "500.00",
         "1000.00",
     )
-    assert (figures["savings_rate"], month["income_carried"]) == ("0.7500", False)
+    assert figures["savings_rate"] == "0.7500"
     assert (month["projected_rest"], month["to_confirm"]) == ("50.00", 1)
     cats = _categories(owner_client)
     assert [(t["category_id"], t["spent"], t["share"]) for t in month["top"]] == [
@@ -130,10 +128,11 @@ def test_the_month_figures_progress_and_projected_rest(owner_client: TestClient)
 def test_changes_against_the_previous_month_and_the_average(owner_client: TestClient) -> None:
     _income(owner_client, "2026-08", "1000.00")
     _line(owner_client, "Groceries", "-100.00", "2026-08-10")
-    _line(owner_client, "Groceries", "-300.00", "2026-09-10")  # income carried: 1000
+    _line(owner_client, "Groceries", "-300.00", "2026-09-10")  # no income line: none
     _line(owner_client, "Groceries", "-400.00", "2026-10-10")
     month = _get(owner_client, "/month", month="2026-10")
-    assert month["income_carried"] is True
+    assert month["previous"]["income"] == "0.00"
+    assert month["average"]["income"] == "500.00"
     assert month["previous"]["spent"] == "300.00"
     assert month["average"]["spent"] == "200.00"  # August and September only
     assert month["changes"]["vs_previous"]["spent"] == "0.3333"
@@ -164,6 +163,12 @@ def test_the_matrix_by_month_with_savings_and_totals(owner_client: TestClient) -
     assert (savings["cells"][1]["spent"], savings["cells"][1]["status"]) == ("500.00", "on")
     assert matrix["total"]["cells"][1]["spent"] == "500.00"
     assert [f["rest"] for f in matrix["figures"]] == ["0.00", "1000.00"]
+    salaries = next(r for r in matrix["income"] if r["name"] == "Salaries")
+    assert [(c["spent"], c["target"]) for c in salaries["cells"]] == [
+        ("0.00", None),
+        ("2000.00", None),
+    ]
+    assert [c["spent"] for c in matrix["income_total"]["cells"]] == ["0.00", "2000.00"]
 
 
 def test_the_matrix_period_is_checked(owner_client: TestClient) -> None:
@@ -189,6 +194,8 @@ def test_the_year_to_date(owner_client: TestClient) -> None:
     (savings,) = year["savings"]
     assert (savings["target_to_date"], savings["spent_to_date"]) == ("1200.00", "500.00")
     assert (year["totals"]["income"], year["totals"]["spent"]) == ("2000.00", "950.00")
+    income = {r["name"]: (r["spent_to_date"], r["target_full"]) for r in year["income"]}
+    assert income["Salaries"] == ("2000.00", None)
 
 
 def test_the_month_adds_up_its_spending_day_by_day(owner_client: TestClient) -> None:

@@ -40,16 +40,18 @@ function roleOf(f: SpendingFlowOut): Role {
 }
 
 /**
- * Where a report's money came from and went (F-DSH-2): income and money taken back from
- * savings on the left, spending by category, savings and the rest on the right. Every node is
- * labelled, the colours have a legend, and the table says each flow's status in words.
+ * Where a report's money came from and went (F-DSH-2): income by category and money taken
+ * back from savings on the left, spending by category, savings and the rest on the right.
+ * Every node is labelled, the colours have a legend, and the table says each flow's status in
+ * words.
  */
 export function FlowsChart({ flows }: { flows: SpendingFlowOut[] }) {
   const { t } = useI18n();
   const w = t.reports.flows;
   const entries: Entry[] = flows.map((f, i) => ({
     key: `${f.side}:${f.kind}:${f.category_id ?? i}`,
-    label: f.kind === "spending" ? (f.name ?? "") : w[f.kind],
+    // Income and spending flows are categories: their name; the others are named here.
+    label: f.kind === "spending" || f.category_id ? (f.name ?? "") : w[f.kind],
     side: f.side,
     role: roleOf(f),
     amount: Number(f.amount),
@@ -57,10 +59,11 @@ export function FlowsChart({ flows }: { flows: SpendingFlowOut[] }) {
   }));
   const bySize = (side: "in" | "out") => {
     const all = entries.filter((e) => e.side === side);
-    const spending = all.filter((e) => e.role === "spent" || e.role === "overspent");
+    // The categories' flows, income or spending, the largest first; then the others.
+    const byCategory = all.filter((e) => ["income", "spent", "overspent"].includes(e.role));
     return [
-      ...spending.sort((a, b) => b.amount - a.amount),
-      ...all.filter((e) => !spending.includes(e)),
+      ...byCategory.sort((a, b) => b.amount - a.amount),
+      ...all.filter((e) => !byCategory.includes(e)),
     ];
   };
   const left = bySize("in");

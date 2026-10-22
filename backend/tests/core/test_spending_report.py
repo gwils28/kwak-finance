@@ -14,19 +14,20 @@ from kwak_core.spending_report import (
 )
 
 D = Decimal
-GROCERIES, HOME, LEISURE = uuid4(), uuid4(), uuid4()
+GROCERIES, HOME, LEISURE, SALARY, REFUNDS = uuid4(), uuid4(), uuid4(), uuid4(), uuid4()
 OCT, NOV, DEC = Month(2026, 10), Month(2026, 11), Month(2026, 12)
 
 
 def test_flows_go_from_income_to_spending_savings_and_the_rest() -> None:
     flows = report_flows(
-        income=D("3000.00"),
+        income={SALARY: D("2800.00"), REFUNDS: D("200.00")},
         spent={GROCERIES: D("400.00"), HOME: D("100.00")},
         saved=D("500.00"),
         over={HOME},
     )
     assert flows == [
-        Flow(FlowKind.INCOME, Side.IN, D("3000.00")),
+        Flow(FlowKind.INCOME, Side.IN, D("2800.00"), SALARY),
+        Flow(FlowKind.INCOME, Side.IN, D("200.00"), REFUNDS),
         Flow(FlowKind.SPENDING, Side.OUT, D("400.00"), GROCERIES),
         Flow(FlowKind.SPENDING, Side.OUT, D("100.00"), HOME, over=True),
         Flow(FlowKind.SAVED, Side.OUT, D("500.00")),
@@ -36,27 +37,37 @@ def test_flows_go_from_income_to_spending_savings_and_the_rest() -> None:
 
 def test_a_shortfall_comes_in_as_a_deficit_and_a_withdrawal_as_taken_from_savings() -> None:
     flows = report_flows(
-        income=D("1000.00"), spent={GROCERIES: D("1500.00")}, saved=D("-200.00"), over=set()
+        income={SALARY: D("1000.00")},
+        spent={GROCERIES: D("1500.00")},
+        saved=D("-200.00"),
+        over=set(),
     )
     assert Flow(FlowKind.FROM_SAVINGS, Side.IN, D("200.00")) in flows
     assert flows[-1] == Flow(FlowKind.DEFICIT, Side.IN, D("300.00"))
 
 
 def test_nothing_flows_from_nothing() -> None:
-    assert report_flows(income=D(0), spent={GROCERIES: D(0)}, saved=D(0), over=set()) == []
+    assert (
+        report_flows(income={SALARY: D(0)}, spent={GROCERIES: D(0)}, saved=D(0), over=set()) == []
+    )
 
 
 amounts = st.decimals(min_value=0, max_value=50_000, places=2)
 
 
 @given(
-    income=amounts,
+    income=st.lists(amounts, max_size=4),
     spent=st.lists(amounts, max_size=5),
     saved=st.decimals(min_value=-5000, max_value=5000, places=2),
 )
-def test_flows_balance(income: Decimal, spent: list[Decimal], saved: Decimal) -> None:
+def test_flows_balance(income: list[Decimal], spent: list[Decimal], saved: Decimal) -> None:
     """Invariant 13: what comes in equals what goes out, every flow positive."""
-    flows = report_flows(income=income, spent={uuid4(): s for s in spent}, saved=saved, over=set())
+    flows = report_flows(
+        income={uuid4(): i for i in income},
+        spent={uuid4(): s for s in spent},
+        saved=saved,
+        over=set(),
+    )
     total_in = sum((f.amount for f in flows if f.side is Side.IN), D(0))
     total_out = sum((f.amount for f in flows if f.side is Side.OUT), D(0))
     assert total_in == total_out

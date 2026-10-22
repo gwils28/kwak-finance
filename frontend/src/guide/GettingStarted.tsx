@@ -5,12 +5,13 @@ import { listMembers } from "../api/generated";
 import { Button } from "../components/ui";
 import { goalsQuery } from "../goals/GoalsPage";
 import { useI18n } from "../i18n";
+import { isZero } from "../lib/money";
 import { thisMonth } from "../lib/months";
 import {
   fixedQuery,
-  incomeQuery,
   linesQuery,
   spendingCategoriesQuery,
+  summaryQuery,
   targetsQuery,
 } from "../spending/queries";
 
@@ -34,7 +35,8 @@ export function GettingStarted() {
   const titleId = useId();
   const [hidden, setHidden] = useState(readHidden);
   const month = thisMonth();
-  const income = useQuery({ ...incomeQuery(month), enabled: !hidden });
+  // The month's income is its income lines (F-INC-1).
+  const summary = useQuery({ ...summaryQuery(month), enabled: !hidden });
   // The last entry is the household's, in any month.
   const lines = useQuery({ ...linesQuery(month), enabled: !hidden });
   const fixed = useQuery({ ...fixedQuery, enabled: !hidden });
@@ -49,7 +51,7 @@ export function GettingStarted() {
   const goals = useQuery({ ...goalsQuery("household"), enabled: !hidden });
   if (
     hidden ||
-    !income.data ||
+    !summary.data ||
     !lines.data ||
     !fixed.data ||
     !targets.data ||
@@ -61,7 +63,17 @@ export function GettingStarted() {
   if (goals.isPending && goals.fetchStatus !== "idle") return null;
 
   const steps: { key: keyof typeof c.steps; done: boolean; link: LinkProps }[] = [
-    { key: "income", done: income.data.amount !== null, link: { to: "/spending" } },
+    {
+      key: "income",
+      // Done once income lines exist: this month, last month or in the last 12 months, so the
+      // list does not come back at the start of every month.
+      done: [
+        summary.data.figures.income,
+        summary.data.previous.income,
+        summary.data.average?.income ?? "0",
+      ].some((amount) => !isZero(amount)),
+      link: { to: "/spending" },
+    },
     { key: "line", done: lines.data.last_entry !== null, link: { to: "/spending" } },
     { key: "fixed", done: fixed.data.length > 0, link: { to: "/spending/fixed" } },
     {

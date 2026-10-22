@@ -2586,60 +2586,6 @@
         "title": "ImportPreview",
         "type": "object"
       },
-      "IncomeIn": {
-        "properties": {
-          "amount": {
-            "anyOf": [
-              {
-                "exclusiveMaximum": 1000000000000.0,
-                "exclusiveMinimum": -1000000000000.0,
-                "type": "number"
-              },
-              {
-                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
-                "type": "string"
-              }
-            ],
-            "title": "Amount"
-          }
-        },
-        "required": [
-          "amount"
-        ],
-        "title": "IncomeIn",
-        "type": "object"
-      },
-      "IncomeOut": {
-        "properties": {
-          "amount": {
-            "anyOf": [
-              {
-                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Amount"
-          },
-          "carried": {
-            "title": "Carried",
-            "type": "boolean"
-          },
-          "month": {
-            "title": "Month",
-            "type": "string"
-          }
-        },
-        "required": [
-          "month",
-          "amount",
-          "carried"
-        ],
-        "title": "IncomeOut",
-        "type": "object"
-      },
       "InviteAccept": {
         "properties": {
           "display_name": {
@@ -4576,6 +4522,7 @@
       },
       "ReportSection": {
         "enum": [
+          "income",
           "spending",
           "savings"
         ],
@@ -5899,6 +5846,16 @@
             "title": "Figures",
             "type": "array"
           },
+          "income": {
+            "items": {
+              "$ref": "#/components/schemas/SpendingMatrixRowOut"
+            },
+            "title": "Income",
+            "type": "array"
+          },
+          "income_total": {
+            "$ref": "#/components/schemas/SpendingMatrixRowOut"
+          },
           "months": {
             "items": {
               "type": "string"
@@ -5933,6 +5890,8 @@
           "total",
           "savings",
           "savings_total",
+          "income",
+          "income_total",
           "figures"
         ],
         "title": "SpendingMatrixOut",
@@ -6033,10 +5992,6 @@
           "figures": {
             "$ref": "#/components/schemas/SpendingFiguresOut"
           },
-          "income_carried": {
-            "title": "Income Carried",
-            "type": "boolean"
-          },
           "month": {
             "title": "Month",
             "type": "string"
@@ -6079,7 +6034,6 @@
         "required": [
           "month",
           "figures",
-          "income_carried",
           "previous",
           "average",
           "changes",
@@ -6670,6 +6624,13 @@
             "title": "Expenses",
             "type": "array"
           },
+          "income": {
+            "items": {
+              "$ref": "#/components/schemas/SpendingYearLineOut"
+            },
+            "title": "Income",
+            "type": "array"
+          },
           "months": {
             "items": {
               "type": "string"
@@ -6697,6 +6658,7 @@
           "months",
           "expenses",
           "savings",
+          "income",
           "totals"
         ],
         "title": "SpendingYearOut",
@@ -13656,180 +13618,6 @@
         ]
       }
     },
-    "/api/spending/income/{month}": {
-      "delete": {
-        "description": "The month carries the previous income forward again.",
-        "operationId": "removeMonthIncome",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "month",
-            "required": true,
-            "schema": {
-              "title": "Month",
-              "type": "string"
-            }
-          },
-          {
-            "in": "cookie",
-            "name": "kwak_session",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Kwak Session"
-            }
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Remove Month Income",
-        "tags": [
-          "spending"
-        ]
-      },
-      "get": {
-        "operationId": "monthIncome",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "month",
-            "required": true,
-            "schema": {
-              "title": "Month",
-              "type": "string"
-            }
-          },
-          {
-            "in": "cookie",
-            "name": "kwak_session",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Kwak Session"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/IncomeOut"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Month Income",
-        "tags": [
-          "spending"
-        ]
-      },
-      "put": {
-        "operationId": "setMonthIncome",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "month",
-            "required": true,
-            "schema": {
-              "title": "Month",
-              "type": "string"
-            }
-          },
-          {
-            "in": "cookie",
-            "name": "kwak_session",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Kwak Session"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/IncomeIn"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/IncomeOut"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Set Month Income",
-        "tags": [
-          "spending"
-        ]
-      }
-    },
     "/api/spending/labels": {
       "get": {
         "operationId": "labelSuggestions",
@@ -14341,7 +14129,7 @@
     },
     "/api/spending/report": {
       "get": {
-        "description": "Spending and savings by category over a period, against the one before (F-DSH-2).\n\nA period running past the current month stops there and is compared with the same months\nof the period before; months before the first line or income are left out.",
+        "description": "Income, spending and savings by category over a period, against the one before\n(F-DSH-2).\n\nA period running past the current month stops there and is compared with the same months\nof the period before; months before the first line are left out.",
         "operationId": "spendingReport",
         "parameters": [
           {
@@ -14529,7 +14317,7 @@
         ]
       },
       "put": {
-        "description": "From `month` on, until the next change (F-BUD-1).",
+        "description": "From `month` on, until the next change (F-BUD-1); an income category has none.",
         "operationId": "setTarget",
         "parameters": [
           {

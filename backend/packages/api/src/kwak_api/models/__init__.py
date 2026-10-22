@@ -15,7 +15,6 @@ from kwak_api.models.session import UserSession
 from kwak_api.models.spending import (
     FixedExpense,
     FixedSkip,
-    MonthlyIncome,
     SpendingCategory,
     SpendingLine,
     SpendingLinePart,
@@ -43,7 +42,6 @@ __all__ = [
     "ImportBatch",
     "Institution",
     "Invite",
-    "MonthlyIncome",
     "RecoveryCode",
     "RecurringItem",
     "RecurringSkip",

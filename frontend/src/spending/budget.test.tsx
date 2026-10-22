@@ -5,7 +5,7 @@ import type { SpendingMatrixOut, SpendingYearOut } from "../api/generated";
 import { thisMonth } from "../lib/months";
 import { fakeApi, owner } from "../test/fakeApi";
 import { TestApp } from "../test/TestApp";
-import { groceries, savingsCategory, spendingCategories } from "./fixtures";
+import { groceries, salaries, savingsCategory, spendingCategories } from "./fixtures";
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -53,6 +53,20 @@ const matrix = {
     target: null,
     cells: [cell("200.00", null, "none")],
   },
+  income: [
+    {
+      category_id: salaries.id,
+      name: "Salaries",
+      target: null,
+      cells: [cell("3000.00", null, "none")],
+    },
+  ],
+  income_total: {
+    category_id: null,
+    name: "Total",
+    target: null,
+    cells: [cell("3000.00", null, "none")],
+  },
   figures: [
     { income: "3000.00", spent: "60.00", saved: "200.00", rest: "2740.00", savings_rate: "0.98" },
   ],
@@ -77,6 +91,21 @@ const year = {
     },
   ],
   savings: [],
+  income: [
+    {
+      category_id: salaries.id,
+      name: "Salaries",
+      target_to_date: null,
+      target_full: null,
+      spent_to_date: "6000.00",
+      gap: null,
+      gap_ratio: null,
+      status: "none",
+      above: 0,
+      on: 0,
+      below: 0,
+    },
+  ],
   totals: {
     income: "6000.00",
     spent: "90.00",
@@ -113,6 +142,11 @@ test("the matrix shows each category's month against its target, coloured and sa
   expect(link).toHaveAccessibleName(/over target/);
   expect(link).toHaveAttribute("href", `/spending?month=${current}&category=${groceries.id}`);
   expect(within(table).getByRole("row", { name: /^Rest/ })).toHaveTextContent("+€2,740");
+  // An income category is shown, without a target to set.
+  const salary = within(table).getByRole("row", { name: /^Salaries/ });
+  expect(salary).toHaveTextContent("€3,000");
+  expect(within(salary).queryByRole("button")).toBeNull();
+  expect(within(table).getByRole("row", { name: /^Total received/ })).toHaveTextContent("€3,000");
 });
 
 test("a target is set from a month on", async () => {
@@ -162,6 +196,7 @@ test("the year adds up the targets to date and counts the months", async () => {
   expect(row).toHaveTextContent("under target");
   expect(row).toHaveTextContent("0 · 1 · 1");
   expect(row).toHaveTextContent("€600");
+  expect(within(table).getByRole("row", { name: /^Salaries/ })).toHaveTextContent("€6,000");
   expect(screen.getByRole("region", { name: "The year so far" })).toHaveTextContent("€5,910");
   expect(screen.getByRole("link", { name: "The year" })).toHaveAttribute("aria-current", "page");
 });

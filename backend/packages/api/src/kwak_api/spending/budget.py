@@ -82,8 +82,10 @@ def list_targets(user_session: CurrentSession, db: Db) -> list[SpendingTargetOut
 def set_target(
     category_id: UUID, month: str, body: SpendingTargetIn, user_session: CurrentSession, db: Db
 ) -> SpendingTargetOut:
-    """From `month` on, until the next change (F-BUD-1)."""
+    """From `month` on, until the next change (F-BUD-1); an income category has none."""
     category = _category(db, user_session, category_id)
+    if category.kind is CategoryKind.INCOME:
+        raise _unprocessable("an income category has no target")
     wanted = _month(month)
     service.set_target(db, category, wanted, body.amount)
     return SpendingTargetOut(category_id=category.id, from_month=str(wanted), amount=body.amount)
@@ -175,11 +177,9 @@ class SpendingDayOut(BaseModel):
 class SpendingMonthOut(BaseModel):
     month: str
     figures: SpendingFiguresOut
-    income_carried: bool
-    """No income entered this month: the previous one carried forward."""
     previous: SpendingFiguresOut
     average: SpendingFiguresOut | None
-    """Of the 12 months before, from the first month with a line or an income."""
+    """Of the 12 months before, from the first month with a line."""
     changes: SpendingMonthChangesOut
     top: list[SpendingTopOut]
     projected_rest: Decimal
@@ -192,13 +192,15 @@ class SpendingMonthOut(BaseModel):
     """The month's expense targets added up; None without any."""
 
 
-def _sections(
-    categories: list[SpendingCategory],
-) -> tuple[list[tuple[UUID, None, str]], list[tuple[UUID, None, str]]]:
-    def of(kind: CategoryKind) -> list[tuple[UUID, None, str]]:
-        return [(c.id, None, c.name) for c in categories if c.kind is kind]
+Section = list[tuple[UUID, None, str]]
 
-    return of(CategoryKind.EXPENSE), of(CategoryKind.SAVINGS)
+
+def _section(categories: list[SpendingCategory], kind: CategoryKind) -> Section:
+    return [(c.id, None, c.name) for c in categories if c.kind is kind]
+
+
+def _sections(categories: list[SpendingCategory]) -> tuple[Section, Section]:
+    return _section(categories, CategoryKind.EXPENSE), _section(categories, CategoryKind.SAVINGS)
 
 
 @router.get("/month")
@@ -215,7 +217,6 @@ def month_summary(
     figures = service.figures_by_month(db, household_id, [wanted.previous(), wanted], kinds)
     current, previous = figures[wanted], figures[wanted.previous()]
     average = service.average(db, household_id, wanted, kinds)
-    income = spending.income_of(db, household_id, wanted)
 
     by_category = service.spending_by_month(db, household_id, wanted, wanted)
     expenses, savings = _sections(categories)
@@ -237,7 +238,6 @@ def month_summary(
     return SpendingMonthOut(
         month=str(wanted),
         figures=SpendingFiguresOut.of(current),
-        income_carried=income.carried if income else False,
         previous=SpendingFiguresOut.of(previous),
         average=SpendingFiguresOut.of(average) if average else None,
         changes=SpendingMonthChangesOut(
@@ -323,6 +323,9 @@ class SpendingMatrixOut(BaseModel):
     total: SpendingMatrixRowOut
     savings: list[SpendingMatrixRowOut]
     savings_total: SpendingMatrixRowOut
+    income: list[SpendingMatrixRowOut]
+    """What each income category received; they have no target."""
+    income_total: SpendingMatrixRowOut
     figures: list[SpendingFiguresOut]
     """Each month's income, spent, saved and rest."""
 
@@ -344,14 +347,16 @@ def spending_matrix(
         raise _unprocessable(f"the period runs forward, {MAX_MONTHS} months at most")
     categories = spending.categories(db, household_id)
     expenses, savings = _sections(categories)
+    by_category = service.spending_by_month(db, household_id, start, end)
     matrix = build_matrix(
         expenses,
         service.targets(db, household_id),
-        service.spending_by_month(db, household_id, start, end),
+        by_category,
         months,
         DEFAULT_BAND,
         savings=savings,
     )
+    income = build_matrix(_section(categories, CategoryKind.INCOME), {}, by_category, months)
     figures = service.figures_by_month(db, household_id, months, {c.id: c.kind for c in categories})
     return SpendingMatrixOut(
         months=[str(m) for m in months],
@@ -359,6 +364,8 @@ def spending_matrix(
         total=SpendingMatrixRowOut.of(matrix.total),
         savings=[SpendingMatrixRowOut.of(r) for r in matrix.savings],
         savings_total=SpendingMatrixRowOut.of(matrix.savings_total),
+        income=[SpendingMatrixRowOut.of(r) for r in income.rows],
+        income_total=SpendingMatrixRowOut.of(income.total),
         figures=[SpendingFiguresOut.of(figures[m]) for m in months],
     )
 
@@ -373,6 +380,7 @@ class SpendingYearLineOut(BaseModel):
     """January to this month, the current month in full."""
     target_full: Decimal | None
     spent_to_date: Decimal
+    """Spent, saved or received, by the line's section."""
     gap: Decimal | None
     gap_ratio: Decimal | None
     status: BudgetStatus
@@ -388,6 +396,8 @@ class SpendingYearOut(BaseModel):
     """The months counted to date."""
     expenses: list[SpendingYearLineOut]
     savings: list[SpendingYearLineOut]
+    income: list[SpendingYearLineOut]
+    """Without targets."""
     totals: SpendingFiguresOut
 
 
@@ -447,5 +457,6 @@ def spending_year(
         months=[str(m) for m in to_date],
         expenses=lines(CategoryKind.EXPENSE),
         savings=lines(CategoryKind.SAVINGS),
+        income=lines(CategoryKind.INCOME),
         totals=SpendingFiguresOut.of(totals),
     )

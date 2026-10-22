@@ -1,6 +1,8 @@
-"""The spending since v1.0 (§4.2 to 4.6): lines entered by hand, income and fixed expenses.
+"""The spending since v1.0 (§4.2 to 4.6): lines entered by hand, income included, and fixed
+expenses.
 
-Amounts are signed as stored: negative is spent or put aside, positive taken back from savings.
+Amounts are signed as stored: negative is spent or put aside, positive received or taken back
+from savings.
 """
 
 import re
@@ -14,10 +16,10 @@ from kwak_core.audit import AuditAction
 from kwak_core.budget import Month
 from kwak_core.categories import CategoryKind
 from kwak_core.fixed import FixedFrequency, FixedStatus
-from kwak_core.income import check_income
 from kwak_core.labels import remembered_category, suggest
 from kwak_core.money import require_cents
 from kwak_core.quickline import match_category, parse
+from kwak_core.spending import stored_amount
 from kwak_core.splits import Part
 from kwak_core.users import Language
 from pydantic import AfterValidator, BaseModel, Field, StringConstraints, model_validator
@@ -82,12 +84,6 @@ class SpendingCategoryOut(BaseModel):
 class SpendingCategoryIn(BaseModel):
     name: Name
     kind: CategoryKind
-
-    @model_validator(mode="after")
-    def _spending_kind(self) -> "SpendingCategoryIn":
-        if self.kind is CategoryKind.INCOME:
-            raise ValueError("a spending category is an expense or a savings one")
-        return self
 
 
 class SpendingCategoryPatch(BaseModel):
@@ -367,7 +363,7 @@ class QuickOut(BaseModel):
     day: date | None
     """None: no date typed, the grid's default applies."""
     amount: Decimal | None
-    """Signed as stored: what was typed as spent is negative."""
+    """Signed as stored: what was typed is negative, unless its category is an income one."""
     label: str
     category_id: UUID | None
     category_word: str | None
@@ -381,61 +377,19 @@ def understand_quick_line(
     """How the quick line is understood (F-ENT-2); nothing is saved."""
     household = user_session.user.household_id
     line = parse(body.text, now.date(), _language(user_session))
+    categories = service.categories(db, household)
     if line.category_word is not None:
-        names = {c.id: c.name for c in service.categories(db, household)}
-        category = match_category(line.category_word, names)
+        category = match_category(line.category_word, {c.id: c.name for c in categories})
     else:
         category = remembered_category(line.label, service.label_uses(db, household))
+    kind = next((c.kind for c in categories if c.id == category), None)
     return QuickOut(
         day=line.day,
-        amount=-line.amount if line.amount is not None else None,
+        amount=stored_amount(line.amount, kind) if line.amount is not None else None,
         label=line.label,
         category_id=category,
         category_word=line.category_word,
     )
-
-
-# Income (F-INC-1)
-
-
-class IncomeOut(BaseModel):
-    month: str
-    amount: Decimal | None
-    """None before the first income entered."""
-    carried: bool
-    """No income entered this month: the previous one carried forward."""
-
-
-class IncomeIn(BaseModel):
-    amount: Signed
-
-
-@router.get("/income/{month}")
-def month_income(month: str, user_session: CurrentSession, db: Db) -> IncomeOut:
-    wanted = _month(month)
-    income = service.income_of(db, user_session.user.household_id, wanted)
-    return IncomeOut(
-        month=str(wanted),
-        amount=income.amount if income else None,
-        carried=income.carried if income else False,
-    )
-
-
-@router.put("/income/{month}")
-def set_month_income(month: str, body: IncomeIn, user_session: CurrentSession, db: Db) -> IncomeOut:
-    wanted = _month(month)
-    try:
-        amount = check_income(body.amount)
-    except ValueError as exc:
-        raise _unprocessable(str(exc)) from None
-    service.set_income(db, user_session.user.household_id, wanted, amount)
-    return IncomeOut(month=str(wanted), amount=amount, carried=False)
-
-
-@router.delete("/income/{month}", status_code=status.HTTP_204_NO_CONTENT)
-def remove_month_income(month: str, user_session: CurrentSession, db: Db) -> None:
-    """The month carries the previous income forward again."""
-    service.remove_income(db, user_session.user.household_id, _month(month))
 
 
 # Fixed expenses (F-FIX)
@@ -481,6 +435,8 @@ class FixedOut(BaseModel):
 
 def _fill_fixed(db: Db, user_session: CurrentSession, item: FixedExpense, body: FixedIn) -> None:
     category = _category(db, user_session, body.category_id)
+    if category.kind is CategoryKind.INCOME:
+        raise _unprocessable("a fixed expense is spent or put aside: not an income category")
     if body.amount >= 0:
         raise _unprocessable("a fixed expense is spent or put aside: a negative amount")
     first = _month(body.first_month)

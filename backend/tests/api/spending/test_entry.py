@@ -59,9 +59,14 @@ def test_a_new_household_has_the_flat_default_categories(owner_client: TestClien
         "Gifts",
         "Miscellaneous",
         "Savings",
+        "Salaries",
+        "Benefits",
+        "Refunds",
+        "Other income",
     ]
     kinds = {c["name"]: (c["kind"], c["one_off"]) for c in categories}
     assert kinds["Savings"] == ("savings", False)
+    assert kinds["Refunds"] == ("income", False)
     assert kinds["Housing"] == ("expense", True)
     assert kinds["Groceries"] == ("expense", False)
 
@@ -262,27 +267,83 @@ def test_the_quick_line_is_understood(owner_client: TestClient) -> None:
 # Income (F-INC-1)
 
 
-def test_income_is_carried_until_entered(owner_client: TestClient) -> None:
-    assert owner_client.get("/api/spending/income/2026-10").json() == {
-        "month": "2026-10",
-        "amount": None,
-        "carried": False,
-    }
-    put = owner_client.put(
-        "/api/spending/income/2026-09", json={"amount": "4200.00"}, headers=csrf(owner_client)
+def test_an_income_line_is_an_inflow_never_mixed_with_spending(
+    owner_client: TestClient,
+) -> None:
+    ids = {name: c["id"] for name, c in _categories(owner_client).items()}
+    _line(owner_client, "Salary", "2500.00", "Salaries")
+    outflow = {"day": "2026-10-14", "label": "x", "amount": "-10.00"}
+    assert (
+        _post(owner_client, "/lines", outflow | {"category_id": ids["Refunds"]}).status_code == 422
     )
-    assert put.status_code == 200, put.text
-    assert owner_client.get("/api/spending/income/2026-10").json() == {
-        "month": "2026-10",
-        "amount": "4200.00",
-        "carried": True,
+    mixed = {
+        "day": "2026-10-14",
+        "label": "x",
+        "amount": "100.00",
+        "split": {
+            "parts": [{"category_id": ids["Refunds"], "amount": "40.00"}],
+            "rest_category_id": ids["Savings"],
+        },
     }
-    negative = owner_client.put(
-        "/api/spending/income/2026-10", json={"amount": "-1.00"}, headers=csrf(owner_client)
+    assert _post(owner_client, "/lines", mixed).status_code == 422
+    income = _post(
+        owner_client,
+        "/lines",
+        mixed
+        | {
+            "split": {
+                "parts": [{"category_id": ids["Refunds"], "amount": "40.00"}],
+                "rest_category_id": ids["Benefits"],
+            }
+        },
     )
-    assert negative.status_code == 422
-    owner_client.delete("/api/spending/income/2026-09", headers=csrf(owner_client))
-    assert owner_client.get("/api/spending/income/2026-10").json()["amount"] is None
+    assert income.status_code == 201, income.text
+    figures = owner_client.get("/api/spending/month", params={"month": "2026-10"}).json()
+    assert figures["figures"]["income"] == "2600.00"
+
+
+def test_an_income_category_can_be_added_but_has_no_target_nor_fixed_expense(
+    owner_client: TestClient,
+) -> None:
+    created = _post(owner_client, "/categories", {"name": "Rent received", "kind": "income"})
+    assert created.status_code == 201, created.text
+    category = created.json()["id"]
+    target = owner_client.put(
+        f"/api/spending/targets/{category}/2026-10",
+        json={"amount": "100.00"},
+        headers=csrf(owner_client),
+    )
+    assert target.status_code == 422
+    fixed = {
+        "label": "Rent",
+        "category_id": category,
+        "amount": "-500.00",
+        "frequency": "monthly",
+        "day": 5,
+        "first_month": "2026-10",
+    }
+    assert _post(owner_client, "/fixed", fixed).status_code == 422
+
+
+def test_an_expense_line_can_become_an_income_line(owner_client: TestClient) -> None:
+    line = _line(owner_client, "Mutuelle", "-30.00", "Health")
+    body = {
+        "day": "2026-10-14",
+        "label": "Mutuelle",
+        "amount": "30.00",
+        "category_id": _categories(owner_client)["Refunds"]["id"],
+    }
+    response = owner_client.put(
+        f"/api/spending/lines/{line['id']}", json=body, headers=csrf(owner_client)
+    )
+    assert response.status_code == 200, response.text
+    assert response.json()["amount"] == "30.00"
+
+
+def test_the_quick_line_keeps_an_income_positive(owner_client: TestClient) -> None:
+    quick = _post(owner_client, "/quick", {"text": "#sal 2500 paie"}).json()
+    assert (quick["amount"], quick["label"]) == ("2500.00", "paie")
+    assert quick["category_id"] == _categories(owner_client)["Salaries"]["id"]
 
 
 # Fixed expenses (F-FIX)

@@ -1307,34 +1307,6 @@ export type ImportPreview = {
 };
 
 /**
- * IncomeIn
- */
-export type IncomeIn = {
-    /**
-     * Amount
-     */
-    amount: number | string;
-};
-
-/**
- * IncomeOut
- */
-export type IncomeOut = {
-    /**
-     * Amount
-     */
-    amount: string | null;
-    /**
-     * Carried
-     */
-    carried: boolean;
-    /**
-     * Month
-     */
-    month: string;
-};
-
-/**
  * InviteAccept
  */
 export type InviteAccept = {
@@ -2389,7 +2361,7 @@ export type ReportRowOut = {
 /**
  * ReportSection
  */
-export type ReportSection = 'spending' | 'savings';
+export type ReportSection = 'income' | 'spending' | 'savings';
 
 /**
  * RestoreOut
@@ -3040,6 +3012,11 @@ export type SpendingMatrixOut = {
      */
     figures: Array<SpendingFiguresOut>;
     /**
+     * Income
+     */
+    income: Array<SpendingMatrixRowOut>;
+    income_total: SpendingMatrixRowOut;
+    /**
      * Months
      */
     months: Array<string>;
@@ -3096,10 +3073,6 @@ export type SpendingMonthOut = {
      */
     cumulative: Array<SpendingDayOut>;
     figures: SpendingFiguresOut;
-    /**
-     * Income Carried
-     */
-    income_carried: boolean;
     /**
      * Month
      */
@@ -3447,6 +3420,10 @@ export type SpendingYearOut = {
      * Expenses
      */
     expenses: Array<SpendingYearLineOut>;
+    /**
+     * Income
+     */
+    income: Array<SpendingYearLineOut>;
     /**
      * Months
      */
@@ -6873,96 +6850,6 @@ export type SkipOccurrence2Responses = {
 };
 
 export type SkipOccurrence2Response = SkipOccurrence2Responses[keyof SkipOccurrence2Responses];
-
-export type RemoveMonthIncomeData = {
-    body?: never;
-    path: {
-        /**
-         * Month
-         */
-        month: string;
-    };
-    query?: never;
-    url: '/api/spending/income/{month}';
-};
-
-export type RemoveMonthIncomeErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type RemoveMonthIncomeError = RemoveMonthIncomeErrors[keyof RemoveMonthIncomeErrors];
-
-export type RemoveMonthIncomeResponses = {
-    /**
-     * Successful Response
-     */
-    204: void;
-};
-
-export type RemoveMonthIncomeResponse = RemoveMonthIncomeResponses[keyof RemoveMonthIncomeResponses];
-
-export type MonthIncomeData = {
-    body?: never;
-    path: {
-        /**
-         * Month
-         */
-        month: string;
-    };
-    query?: never;
-    url: '/api/spending/income/{month}';
-};
-
-export type MonthIncomeErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type MonthIncomeError = MonthIncomeErrors[keyof MonthIncomeErrors];
-
-export type MonthIncomeResponses = {
-    /**
-     * Successful Response
-     */
-    200: IncomeOut;
-};
-
-export type MonthIncomeResponse = MonthIncomeResponses[keyof MonthIncomeResponses];
-
-export type SetMonthIncomeData = {
-    body: IncomeIn;
-    path: {
-        /**
-         * Month
-         */
-        month: string;
-    };
-    query?: never;
-    url: '/api/spending/income/{month}';
-};
-
-export type SetMonthIncomeErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type SetMonthIncomeError = SetMonthIncomeErrors[keyof SetMonthIncomeErrors];
-
-export type SetMonthIncomeResponses = {
-    /**
-     * Successful Response
-     */
-    200: IncomeOut;
-};
-
-export type SetMonthIncomeResponse = SetMonthIncomeResponses[keyof SetMonthIncomeResponses];
 
 export type LabelSuggestionsData = {
     body?: never;

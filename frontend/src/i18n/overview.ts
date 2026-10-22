@@ -3,7 +3,6 @@
 export const overviewEn = {
   scope: "Wealth and goals",
   scopeHint: "Spending is the household's: the view only changes the wealth and the goals.",
-  incomeCarried: "Carried from the previous month",
   savedHelp: "Put aside in savings categories",
   rest: "Rest",
   restHelp: "Income minus spent minus saved",
@@ -29,7 +28,6 @@ export const overviewFr: typeof overviewEn = {
   scope: "Patrimoine et objectifs",
   scopeHint:
     "Les dépenses sont celles du foyer : la vue ne change que le patrimoine et les objectifs.",
-  incomeCarried: "Reportés du mois précédent",
   savedHelp: "Mis de côté dans les catégories d'épargne",
   rest: "Reste",
   restHelp: "Revenus moins dépensé moins épargné",

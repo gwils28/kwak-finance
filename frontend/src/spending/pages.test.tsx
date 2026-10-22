@@ -159,6 +159,8 @@ test("only the owner restores the default categories", async () => {
   api({}, { ...owner, role: "member" });
   render(<TestApp path="/spending/categories" />);
   await screen.findByRole("region", { name: "Expense categories" });
+  const income = screen.getByRole("region", { name: "Income categories" });
+  expect(within(income).getByLabelText("Rename Salaries")).toHaveValue("Salaries");
   expect(screen.queryByRole("button", { name: "Restore defaults" })).toBeNull();
-  expect(spendingCategories).toHaveLength(4);
+  expect(spendingCategories).toHaveLength(5);
 });

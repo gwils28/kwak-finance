@@ -271,7 +271,7 @@ function Summary({ report }: { report: SpendingReportOut }) {
   );
 }
 
-const SECTIONS: ReportSection[] = ["spending", "savings"];
+const SECTIONS: ReportSection[] = ["income", "spending", "savings"];
 
 function CategoryTable({ report }: { report: SpendingReportOut }) {
   const { t } = useI18n();

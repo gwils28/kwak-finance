@@ -71,6 +71,7 @@ def report(db: Session, household_id: UUID, period: ReportPeriod) -> SpendingRep
     totals = sum((f for _, f in monthly), MonthFigures.zero())
     current = _by_category(by_month)
     spent = {c: a for c, a in current.items() if kinds.get(c) is CategoryKind.EXPENSE}
+    income = {c: a for c, a in current.items() if kinds.get(c) is CategoryKind.INCOME}
     over = overspent(by_month, budget.targets(db, household_id), months)
     return SpendingReport(
         period=period,
@@ -81,5 +82,5 @@ def report(db: Session, household_id: UUID, period: ReportPeriod) -> SpendingRep
         previous=sum((figures[m] for m in previous_months), MonthFigures.zero()),
         current=current,
         before=_by_category(before),
-        flows=report_flows(income=totals.income, spent=spent, saved=totals.saved, over=over),
+        flows=report_flows(income=income, spent=spent, saved=totals.saved, over=over),
     )

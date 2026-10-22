@@ -20,7 +20,7 @@ import {
   formatPercentSigned,
 } from "../lib/money";
 import { monthLabel, thisMonth } from "../lib/months";
-import { negate } from "./draft";
+import { incomeIds, isIncomeLine, negate, typedOf } from "./draft";
 import { BAR, ICON, Threshold } from "./progress";
 import {
   linesQuery,
@@ -43,11 +43,7 @@ export function MonthOverview({ month, isOwner }: { month: string; isOwner: bool
 
   if (summary.isError) return <ErrorAlert message={t.dashboard.loadFailed} />;
   if (!summary.data || !lines.data) return <p className="text-sm text-muted">{t.common.loading}</p>;
-  const nothing =
-    lines.data.last_entry === null &&
-    Number(summary.data.figures.income) === 0 &&
-    !summary.data.income_carried;
-  if (nothing) {
+  if (lines.data.last_entry === null) {
     return (
       <section className="rounded-lg border border-border bg-surface p-6">
         <p>{t.dashboard.empty}</p>
@@ -109,9 +105,7 @@ function Figures({ summary }: { summary: SpendingMonthOut }) {
   const vsAverage = summary.changes.vs_average?.spent ?? null;
   return (
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-      <Tile label={t.dashboard.income} value={formatEurWhole(f.income)}>
-        {summary.income_carried && <p className="text-muted">{o.incomeCarried}</p>}
-      </Tile>
+      <Tile label={t.dashboard.income} value={formatEurWhole(f.income)} />
       <Tile label={t.dashboard.spent} value={formatEurWhole(f.spent)}>
         {vsPrevious === null && vsAverage === null ? (
           <p className="text-muted">{t.dashboard.nothingToCompare}</p>
@@ -347,6 +341,7 @@ function LastLines({ month }: { month: string }) {
   const latest = [...(lines.data?.lines ?? [])]
     .sort((a, b) => b.entered_at.localeCompare(a.entered_at))
     .slice(0, 5);
+  const income = incomeIds(categories.data ?? []);
   const nameOf = (id: string | null) =>
     id === null ? t.spending.split.title : (categories.data?.find((c) => c.id === id)?.name ?? "");
   return (
@@ -361,7 +356,9 @@ function LastLines({ month }: { month: string }) {
               <span className="w-28 text-muted">{formatDate(line.day)}</span>
               <span className="flex-1 truncate">{line.label}</span>
               <span className="text-muted">{nameOf(line.category_id)}</span>
-              <span className="tabular w-24 text-right">{formatEur(negate(line.amount))}</span>
+              <span className="tabular w-24 text-right">
+                {formatEur(typedOf(line.amount, isIncomeLine(line, income)))}
+              </span>
             </li>
           ))}
         </ul>

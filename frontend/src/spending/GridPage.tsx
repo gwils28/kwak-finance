@@ -1,15 +1,13 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getRouteApi, Link } from "@tanstack/react-router";
-import { type KeyboardEvent, useEffect, useId, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   createLine,
   deleteLine,
   type FixedOccurrenceOut,
   type LineOut,
-  removeMonthIncome,
   replaceLine,
   type SpendingCategoryOut,
-  setMonthIncome,
   skipOccurrence2,
   unskipOccurrence2,
 } from "../api/generated";
@@ -17,13 +15,21 @@ import { detailSentence } from "../auth/errors";
 import { Button, ErrorAlert } from "../components/ui";
 import { useI18n } from "../i18n";
 import { formatDate, formatInstantDay, formatShortDay, todayIso } from "../lib/dates";
-import { amountInputShort, formatEur, parseEurInput } from "../lib/money";
+import { amountInputShort, formatEur } from "../lib/money";
 import { isMonth, monthLabel, shiftMonth, thisMonth } from "../lib/months";
-import { type Cell, type Draft, defaultDay, draftOf, lineBody, negate } from "./draft";
+import {
+  type Cell,
+  type Draft,
+  defaultDay,
+  draftOf,
+  type IncomeIds,
+  incomeIds,
+  lineBody,
+  negate,
+} from "./draft";
 import { LineRow } from "./LineRow";
 import { QuickLine } from "./QuickLine";
 import {
-  incomeQuery,
   linesQuery,
   occurrencesQuery,
   refreshSpending,
@@ -71,6 +77,7 @@ export function GridPage() {
   const [failure, setFailure] = useState<string | null>(null);
   const busy = useRef(false);
   const day = defaultDay(month, todayIso(), sessionDay);
+  const income: IncomeIds = incomeIds(categories.data ?? []);
 
   const goTo = (target: string) => {
     setNotice(null);
@@ -95,7 +102,7 @@ export function GridPage() {
   });
 
   const create = async (draft: Draft, fixedId: string | null = null) => {
-    const body = lineBody(draft, fixedId);
+    const body = lineBody(draft, income, fixedId);
     if (!body) return;
     await createLine({ body, throwOnError: true });
     setSessionDay(draft.day);
@@ -125,7 +132,7 @@ export function GridPage() {
   const remove = (line: LineOut) =>
     attempt(async () => {
       await deleteLine({ path: { line_id: line.id }, throwOnError: true });
-      const body = lineBody(draftOf(line), line.fixed_expense_id);
+      const body = lineBody(draftOf(line, income), income, line.fixed_expense_id);
       setNotice({
         text: g.deleted(line.label),
         undo: body
@@ -188,8 +195,7 @@ export function GridPage() {
         </Link>
       </div>
 
-      {/* Keyed: what was typed for one month is never saved into another. */}
-      <MonthFigures key={month} month={month} />
+      <MonthFigures month={month} />
 
       {last && (
         <p className="text-sm text-muted">
@@ -296,7 +302,7 @@ export function GridPage() {
               <LineRow
                 key={line.id}
                 variant="line"
-                initial={draftOf(line)}
+                initial={draftOf(line, income)}
                 categories={categories.data}
                 lead={
                   line.id === last?.id ? (
@@ -310,7 +316,7 @@ export function GridPage() {
                   ) : null
                 }
                 onSave={async (draft) => {
-                  const body = lineBody(draft, line.fixed_expense_id);
+                  const body = lineBody(draft, income, line.fixed_expense_id);
                   if (!body) return;
                   await replaceLine({ path: { line_id: line.id }, body, throwOnError: true });
                   setSessionDay(draft.day);
@@ -421,78 +427,18 @@ function Occurrence({
   );
 }
 
-/** The month's income (editable, F-INC-1), spent, saved and rest (F-DSH-4). */
+/** The month's income (its income lines, F-INC-1), spent, saved and rest (F-DSH-4). */
 function MonthFigures({ month }: { month: string }) {
   const { t } = useI18n();
   const s = t.spending;
-  const queryClient = useQueryClient();
-  const id = useId();
-  const income = useQuery(incomeQuery(month));
   const summary = useQuery(summaryQuery(month));
-  const entered = income.data?.amount ?? null;
-  const shown = entered === null ? "" : amountInputShort(entered);
-  const [text, setText] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const value = text ?? shown;
-
-  const save = async () => {
-    if (text === null || (text === shown && !income.data?.carried)) return;
-    setError(null);
-    try {
-      if (!text.trim()) {
-        if (income.data && !income.data.carried && entered !== null) {
-          await removeMonthIncome({ path: { month }, throwOnError: true });
-        }
-      } else {
-        const amount = parseEurInput(text);
-        if (amount === null) {
-          setError(t.errors.checkForm);
-          return;
-        }
-        await setMonthIncome({ path: { month }, body: { amount }, throwOnError: true });
-      }
-      setText(null);
-      await refreshSpending(queryClient);
-    } catch (exc) {
-      setError(detailSentence(exc) ?? t.errors.generic);
-    }
-  };
-
-  const onKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
-    if (event.key === "Enter") void save();
-    if (event.key === "Escape") setText(null);
-  };
-
   const figures = summary.data?.figures;
   const tile = "flex flex-col gap-1 rounded-lg border border-border bg-surface p-4";
   return (
     <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-      <div className={tile}>
-        <label htmlFor={id} className="text-sm text-muted">
-          {s.income}
-        </label>
-        <input
-          id={id}
-          inputMode="decimal"
-          value={value}
-          placeholder={entered === null ? "—" : undefined}
-          aria-describedby={`${id}-note`}
-          onChange={(e) => setText(e.target.value)}
-          onBlur={() => void save()}
-          onKeyDown={onKeyDown}
-          className="w-full rounded border border-border bg-bg px-2 py-1 font-mono text-lg tabular-nums"
-        />
-        <span id={`${id}-note`} className="text-xs text-muted">
-          {income.data?.carried ? s.incomeCarried : entered === null ? s.incomeNone : s.incomeHint}
-        </span>
-        {error && (
-          <span role="alert" className="text-xs text-negative">
-            {error}
-          </span>
-        )}
-      </div>
       {(
         [
+          ["income", s.income],
           ["spent", s.spent],
           ["saved", s.saved],
           ["rest", s.rest],
