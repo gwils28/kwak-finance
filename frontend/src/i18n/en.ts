@@ -13,6 +13,7 @@ import { recurringEn } from "./recurring";
 import { reportsEn } from "./reports";
 import { reviewEn } from "./review";
 import { runGuideEn } from "./runGuide";
+import { spendingEn } from "./spending";
 import { transactionsEn } from "./transactions";
 import { wealthEn } from "./wealth";
 
@@ -26,6 +27,7 @@ export const en = {
   imports: importsEn,
   dashboard: dashboardEn,
   household: householdEn,
+  spending: spendingEn,
   transactions: transactionsEn,
   recurring: recurringEn,
   budget: budgetEn,

@@ -17,7 +17,7 @@ import { useI18n } from "./i18n";
  */
 const SPACES = {
   spending: [
-    { to: "/transactions", label: "transactions", exact: false },
+    { to: "/spending", label: "lines", exact: false },
     { to: "/budget", label: "budget", exact: false },
     { to: "/reports", label: "reports", exact: false },
   ],
@@ -31,18 +31,19 @@ type Space = keyof typeof SPACES | "goals";
 
 /** Where each switch leads: the space's most used page. */
 const SWITCH = [
-  { key: "spending", to: "/transactions", label: "spending" },
+  { key: "spending", to: "/spending", label: "spending" },
   { key: "wealth", to: "/wealth", label: "wealth" },
   { key: "goals", to: "/goals", label: "goals" },
 ] as const;
 
-const SPENDING_PAGES = ["/transactions", "/recurring", "/budget", "/reports"];
+const SPENDING_PAGES = ["/spending", "/transactions", "/recurring", "/budget", "/reports"];
 
 /** The space a page belongs to; none for the overview and the account menu's pages. */
 function placeOf(pathname: string): Space | null {
   const under = (root: string) => pathname === root || pathname.startsWith(`${root}/`);
   if (under("/wealth")) return "wealth";
   if (under("/goals")) return "goals";
+  if (under("/spending/categories")) return null;
   return SPENDING_PAGES.some(under) ? "spending" : null;
 }
 

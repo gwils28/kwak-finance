@@ -2,6 +2,8 @@ import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeAll, beforeEach, expect, test, vi } from "vitest";
 import { current } from "../budget/fixtures";
+import { thisMonth } from "../lib/months";
+import { bakery, incomeOf, monthOf } from "../spending/fixtures";
 import { fakeApi, owner } from "../test/fakeApi";
 import { TestApp } from "../test/TestApp";
 
@@ -16,7 +18,6 @@ beforeAll(() => {
 beforeEach(() => localStorage.clear());
 afterEach(() => vi.unstubAllGlobals());
 
-const page = (total: number) => ({ items: [], total, limit: 1, offset: 0 });
 const emptyDashboard = {
   month: "2026-03",
   kpis: {
@@ -37,18 +38,18 @@ const emptyDashboard = {
 };
 
 type Progress = {
-  accounts?: number;
-  transactions?: number;
-  uncategorised?: number;
+  income?: boolean;
+  lines?: boolean;
+  fixed?: boolean;
   plan?: boolean;
   members?: number;
   goal?: boolean;
 };
 
 function api({
-  accounts = 0,
-  transactions = 0,
-  uncategorised = 0,
+  income = false,
+  lines = false,
+  fixed = false,
   plan = false,
   members = 1,
   goal = false,
@@ -56,12 +57,10 @@ function api({
   return fakeApi({
     "GET /api/auth/me": () => Response.json(owner),
     "GET /api/dashboard": () => Response.json(emptyDashboard),
-    "GET /api/accounts": () =>
-      Response.json(Array.from({ length: accounts }, (_, i) => ({ id: `a${i}` }))),
-    "GET /api/transactions": (_body, url) =>
-      Response.json(
-        page(url.searchParams.get("uncategorised") === "true" ? uncategorised : transactions),
-      ),
+    [`GET /api/spending/income/${thisMonth()}`]: () =>
+      Response.json(incomeOf(thisMonth(), income ? "3000.00" : null)),
+    "GET /api/spending/lines": () => Response.json(monthOf(thisMonth(), lines ? [bakery] : [])),
+    "GET /api/spending/fixed": () => Response.json(fixed ? [{ id: "f1" }] : []),
     "GET /api/budget/plans": () => Response.json(plan ? [current()] : []),
     "GET /api/household/members": () =>
       Response.json(Array.from({ length: members }, (_, i) => ({ id: `m${i}` }))),
@@ -78,25 +77,26 @@ const checklist = () => screen.findByRole("region", { name: "Getting started" })
 const step = (region: HTMLElement, name: RegExp) => within(region).getByRole("listitem", { name });
 
 test("the overview's checklist ticks itself from the household's data", async () => {
-  api({ accounts: 1, transactions: 40, uncategorised: 3 });
+  api({ income: true, lines: true });
   render(<TestApp path="/" />);
 
   const region = await checklist();
   await vi.waitFor(() =>
-    expect(step(region, /Add your bank accounts/)).toHaveAttribute("data-done", "true"),
+    expect(step(region, /Enter this month's income/)).toHaveAttribute("data-done", "true"),
   );
-  expect(step(region, /Import a statement/)).toHaveAttribute("data-done", "true");
-  expect(step(region, /Categorise your transactions/)).toHaveAttribute("data-done", "false");
+  expect(step(region, /Enter your first lines/)).toHaveAttribute("data-done", "true");
+  expect(step(region, /Add your fixed expenses/)).toHaveAttribute("data-done", "false");
   expect(step(region, /Set your monthly targets/)).toHaveAttribute("data-done", "false");
   expect(step(region, /Set your emergency fund/)).toHaveAttribute("data-done", "false");
   expect(region).toHaveTextContent("2 of 6 done");
-  expect(
-    within(region).getByRole("link", { name: "Categorise your transactions" }),
-  ).toHaveAttribute("href", "/transactions?category=none");
+  expect(within(region).getByRole("link", { name: "Add your fixed expenses" })).toHaveAttribute(
+    "href",
+    "/spending/fixed",
+  );
 });
 
 test("a plan with targets and a second member complete the checklist, which then disappears", async () => {
-  api({ accounts: 1, transactions: 40, uncategorised: 0, plan: true, members: 2, goal: true });
+  api({ income: true, lines: true, fixed: true, plan: true, members: 2, goal: true });
   render(<TestApp path="/" />);
 
   expect(await screen.findByRole("heading", { name: "Overview" })).toBeInTheDocument();
@@ -134,11 +134,9 @@ test("the guide is in the header and has a section per feature", async () => {
   const entries = within(contents).getAllByRole("link");
   expect(entries.map((l) => l.textContent)).toEqual([
     "Getting started",
-    "Accounts",
-    "Importing statements",
-    "Transactions",
-    "Recurring items",
-    "Categories and rules",
+    "Entering lines",
+    "Fixed expenses",
+    "Categories",
     "Budget plans",
     "The budget table",
     "Plan review",
@@ -148,7 +146,12 @@ test("the guide is in the header and has a section per feature", async () => {
     "Reports",
     "Members and security",
   ]);
-  expect(entries[6]).toHaveAttribute("href", "#plans");
+  expect(entries[4]).toHaveAttribute("href", "#plans");
+  const lines = screen.getByRole("region", { name: "Entering lines" });
+  expect(within(lines).getByRole("link", { name: "Open the lines" })).toHaveAttribute(
+    "href",
+    "/spending",
+  );
   const plans = screen.getByRole("region", { name: "Budget plans" });
   expect(within(plans).getByRole("link", { name: "Open the budget" })).toHaveAttribute(
     "href",

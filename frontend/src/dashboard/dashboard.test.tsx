@@ -257,8 +257,11 @@ test("a household without transactions is pointed to the first import", async ()
   });
   render(<TestApp path="/" />);
 
-  expect(await screen.findByText(/No transactions yet/)).toBeInTheDocument();
-  expect(screen.getByRole("link", { name: "Go to Accounts" })).toHaveAttribute("href", "/accounts");
+  expect(await screen.findByText(/Nothing entered yet/)).toBeInTheDocument();
+  expect(screen.getByRole("link", { name: "Enter your lines" })).toHaveAttribute(
+    "href",
+    "/spending",
+  );
 });
 
 test("the month's targets show each category's progress, its status and the pace", async () => {

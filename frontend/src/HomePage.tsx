@@ -65,8 +65,8 @@ export function HomePage() {
       {data && empty && (
         <section className="rounded-lg border border-border bg-surface p-6">
           <p>{t.dashboard.empty}</p>
-          <Link to="/accounts" className="mt-3 inline-block text-accent hover:underline">
-            {t.dashboard.goToAccounts}
+          <Link to="/spending" className="mt-3 inline-block text-accent hover:underline">
+            {t.dashboard.goToLines}
           </Link>
         </section>
       )}

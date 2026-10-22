@@ -26,6 +26,9 @@ import { isMonth } from "./lib/months";
 import { RecurringPage } from "./recurring/RecurringPage";
 import { ReportsPage } from "./reports/ReportsPage";
 import { RunGuidePage } from "./runGuide/RunGuidePage";
+import { CategoriesPage as SpendingCategoriesPage } from "./spending/CategoriesPage";
+import { FixedPage } from "./spending/FixedPage";
+import { GridPage, parseGridSearch } from "./spending/GridPage";
 import { parseTransactionSearch, TransactionsPage } from "./transactions/TransactionsPage";
 import { WealthAnalysisPage } from "./wealth/WealthAnalysisPage";
 import { WealthPage } from "./wealth/WealthPage";
@@ -59,6 +62,25 @@ const membersRoute = createRoute({
   getParentRoute: () => appRoute,
   path: "/members",
   component: MembersPage,
+});
+
+const spendingRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: "/spending",
+  validateSearch: parseGridSearch,
+  component: GridPage,
+});
+
+const fixedRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: "/spending/fixed",
+  component: FixedPage,
+});
+
+const spendingCategoriesRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: "/spending/categories",
+  component: SpendingCategoriesPage,
 });
 
 const accountsRoute = createRoute({
@@ -192,6 +214,9 @@ const runGuideRoute = createRoute({
 const routeTree = rootRoute.addChildren([
   appRoute.addChildren([
     homeRoute,
+    spendingRoute,
+    fixedRoute,
+    spendingCategoriesRoute,
     accountsRoute,
     importRoute,
     transactionsRoute,

@@ -1,11 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link, type LinkProps } from "@tanstack/react-router";
 import { useId, useState } from "react";
-import { listAccounts, listMembers, listPlans, listTransactions } from "../api/generated";
+import { listMembers, listPlans } from "../api/generated";
 import { PLANS_KEY } from "../budget/PlanPanel";
 import { Button } from "../components/ui";
 import { goalsQuery } from "../goals/GoalsPage";
 import { useI18n } from "../i18n";
+import { thisMonth } from "../lib/months";
+import { fixedQuery, incomeQuery, linesQuery } from "../spending/queries";
 
 const HIDDEN_KEY = "kwak-getting-started-hidden";
 
@@ -17,12 +19,6 @@ function readHidden(): boolean {
   }
 }
 
-/** How many transactions match, from one row of the list. */
-async function countTransactions(uncategorised: boolean): Promise<number> {
-  const query = { limit: 1, ...(uncategorised ? { uncategorised: true } : {}) };
-  return (await listTransactions({ query, throwOnError: true })).data.total;
-}
-
 /**
  * The overview's "Getting started" list. Each step ticks itself from the household's data;
  * the list goes away once every step is done, or when hidden (a per-browser choice).
@@ -32,19 +28,11 @@ export function GettingStarted() {
   const c = t.guide.checklist;
   const titleId = useId();
   const [hidden, setHidden] = useState(readHidden);
-  const accounts = useQuery({
-    queryKey: ["accounts", "getting-started"],
-    queryFn: async () => (await listAccounts({ throwOnError: true })).data,
-    enabled: !hidden,
-  });
-  const transactions = useQuery({
-    queryKey: ["transactions", "getting-started"],
-    queryFn: async () => ({
-      all: await countTransactions(false),
-      uncategorised: await countTransactions(true),
-    }),
-    enabled: !hidden,
-  });
+  const month = thisMonth();
+  const income = useQuery({ ...incomeQuery(month), enabled: !hidden });
+  // The last entry is the household's, in any month.
+  const lines = useQuery({ ...linesQuery(month), enabled: !hidden });
+  const fixed = useQuery({ ...fixedQuery, enabled: !hidden });
   const plans = useQuery({
     queryKey: PLANS_KEY,
     queryFn: async () => (await listPlans({ throwOnError: true })).data,
@@ -57,18 +45,15 @@ export function GettingStarted() {
   });
   // Optional for the list: without goals (or if they cannot load), the step stays to do.
   const goals = useQuery({ ...goalsQuery("household"), enabled: !hidden });
-  if (hidden || !accounts.data || !transactions.data || !plans.data || !members.data) return null;
+  if (hidden || !income.data || !lines.data || !fixed.data || !plans.data || !members.data) {
+    return null;
+  }
   if (goals.isPending && goals.fetchStatus !== "idle") return null;
 
-  const imported = transactions.data.all > 0;
   const steps: { key: keyof typeof c.steps; done: boolean; link: LinkProps }[] = [
-    { key: "account", done: accounts.data.length > 0, link: { to: "/accounts" } },
-    { key: "import", done: imported, link: { to: "/accounts" } },
-    {
-      key: "categorise",
-      done: imported && transactions.data.uncategorised === 0,
-      link: { to: "/transactions", search: { category: "none" } },
-    },
+    { key: "income", done: income.data.amount !== null, link: { to: "/spending" } },
+    { key: "line", done: lines.data.last_entry !== null, link: { to: "/spending" } },
+    { key: "fixed", done: fixed.data.length > 0, link: { to: "/spending/fixed" } },
     {
       key: "plan",
       done: plans.data.some((p) => p.targets.length > 0),

@@ -234,16 +234,6 @@ test("deleting a manual transaction asks for confirmation", async () => {
   expect(calls.some((c) => c.route === "DELETE /api/transactions/t2")).toBe(true);
 });
 
-test("the header links to the transactions page", async () => {
-  api();
-  render(<TestApp path="/" />);
-  const user = userEvent.setup();
-  // The overview stands apart: the spending tabs are in the Spending space.
-  await user.click(await screen.findByRole("link", { name: "Spending" }));
-  await user.click(await screen.findByRole("link", { name: "Transactions" }));
-  expect(await screen.findByRole("heading", { name: "Transactions" })).toBeInTheDocument();
-});
-
 const salary = {
   ...manual,
   id: "t3",

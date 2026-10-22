@@ -102,7 +102,7 @@ export function AccountMenu({
           </div>
 
           <Section title={t.nav.household}>
-            <Link to="/categories" className={ITEM} onClick={close}>
+            <Link to="/spending/categories" className={ITEM} onClick={close}>
               <Icon name="tag" className="size-4 text-muted" />
               {t.nav.categories}
             </Link>
