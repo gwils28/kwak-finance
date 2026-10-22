@@ -37,7 +37,7 @@ export const householdEn = {
   createAccount: "Create my account",
   analysisStart: "Analyses start",
   analysisStartHelp:
-    "Before this month, your history may be incomplete. The reports and the detection of recurring items leave earlier months out; transactions, balances and budget plans stay as they are.",
+    "The budget, the overview and the reports no longer use it: their figures start from your first line or income. The wealth opens from it when it has no start of its own.",
   analysisStartMonth: "First month analysed",
   startsIn: (month: string) => `Analyses start in ${month}.`,
   everyMonth: "Every month counts.",
@@ -98,7 +98,7 @@ export const householdFr: typeof householdEn = {
   createAccount: "Créer mon compte",
   analysisStart: "Début des analyses",
   analysisStartHelp:
-    "Avant ce mois, votre historique peut être incomplet. Les rapports et la détection des récurrences laissent de côté les mois précédents ; les opérations, les soldes et les plans de budget restent tels quels.",
+    "Le budget, la vue d'ensemble et les rapports ne l'utilisent plus : leurs chiffres partent de votre première ligne ou de vos premiers revenus. Le patrimoine s'ouvre à partir de lui quand il n'a pas de début propre.",
   analysisStartMonth: "Premier mois analysé",
   startsIn: (month) => `Les analyses commencent en ${month}.`,
   everyMonth: "Tous les mois comptent.",
