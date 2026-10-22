@@ -251,7 +251,8 @@ function FixedForm({
           <option value="" disabled>
             {t.spending.grid.chooseCategory}
           </option>
-          <CategoryOptions categories={categories} />
+          {/* A fixed expense is spent or put aside, never an income (F-FIX-1). */}
+          <CategoryOptions categories={categories.filter((c) => c.kind !== "income")} />
         </select>
       </div>
       <div className="flex flex-col gap-1">

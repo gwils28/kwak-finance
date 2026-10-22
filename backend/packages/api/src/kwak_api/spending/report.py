@@ -35,11 +35,13 @@ def _ratio(value: Decimal | None) -> Decimal | None:
 
 
 class ReportSection(enum.StrEnum):
+    INCOME = "income"
     SPENDING = "spending"
     SAVINGS = "savings"
 
 
 SECTION_OF = {
+    CategoryKind.INCOME: ReportSection.INCOME,
     CategoryKind.EXPENSE: ReportSection.SPENDING,
     CategoryKind.SAVINGS: ReportSection.SAVINGS,
 }
@@ -89,7 +91,7 @@ class SpendingFlowOut(BaseModel):
     amount: Decimal
     category_id: UUID | None
     name: str | None
-    """The category's name, for spending flows."""
+    """The category's name, for income and spending flows."""
     over: bool
     """Spending over its category's targets for the period."""
 
@@ -101,7 +103,7 @@ class SpendingReportOut(BaseModel):
     to_date: bool
     """The period asked for runs past the current month: shown so far."""
     first_month: str | None
-    """The first month with a line or an income: a period starts no earlier."""
+    """The first month with a line, income included: a period starts no earlier."""
     months: int
     previous_start: str
     previous_end: str
@@ -112,7 +114,7 @@ class SpendingReportOut(BaseModel):
     changes: SpendingChangesOut
     sections: list[SpendingReportSectionOut]
     rows: list[SpendingReportRowOut]
-    """Spending, then savings, largest first."""
+    """Income, spending, then savings, largest first."""
     monthly: list[SpendingReportMonthOut]
     flows: list[SpendingFlowOut]
     """Both sides always add up to the same total."""
@@ -130,10 +132,11 @@ def spending_report(
     start: Annotated[MonthText, Query(description="First month, YYYY-MM")],
     end: Annotated[MonthText, Query(description="Last month, YYYY-MM, included")],
 ) -> SpendingReportOut:
-    """Spending and savings by category over a period, against the one before (F-DSH-2).
+    """Income, spending and savings by category over a period, against the one before
+    (F-DSH-2).
 
     A period running past the current month stops there and is compared with the same months
-    of the period before; months before the first line or income are left out."""
+    of the period before; months before the first line are left out."""
     household_id = user_session.user.household_id
     first, last = _month(start), _month(end)
     count = (last.year - first.year) * 12 + last.month - first.month + 1
@@ -153,6 +156,7 @@ def spending_report(
     compared = period.compared
     names = {cid: c.name for cid, c in r.categories.items()}
     sections = {
+        ReportSection.INCOME: (r.totals.income, r.previous.income),
         ReportSection.SPENDING: (r.totals.spent, r.previous.spent),
         ReportSection.SAVINGS: (r.totals.saved, r.previous.saved),
     }

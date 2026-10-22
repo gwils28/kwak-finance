@@ -1,7 +1,6 @@
 /** Synthetic spending data for the tests: a household's categories and one month of lines. */
 import type {
   FixedOccurrenceOut,
-  IncomeOut,
   LineOut,
   MonthLinesOut,
   SpendingCategoryOut,
@@ -16,7 +15,8 @@ export const groceries = category("c-groceries", "Groceries", 1);
 export const home = category("c-home", "Home", 2);
 export const housing = category("c-housing", "Housing", 0, "expense", true);
 export const savingsCategory = category("c-savings", "Savings", 9, "savings");
-export const spendingCategories = [groceries, home, housing, savingsCategory];
+export const salaries = category("c-salaries", "Salaries", 10, "income");
+export const spendingCategories = [groceries, home, housing, savingsCategory, salaries];
 
 export const bakery: LineOut = {
   id: "l1",
@@ -78,7 +78,6 @@ export const summaryOf = (month: string): SpendingMonthOut => ({
     vs_previous: { income: "0", spent: "-0.1000", saved: null, rest: "-0.0654" },
     vs_average: { income: "0", spent: "0.1100", saved: null, rest: "-0.0721" },
   },
-  income_carried: false,
   progress: {
     warn_at: "0.80",
     lines: [
@@ -103,16 +102,6 @@ export const summaryOf = (month: string): SpendingMonthOut => ({
   projected_rest: "1750.10",
   to_confirm: 1,
   top: [{ category_id: "c-home", spent: "57.40", share: "0.5746" }],
-});
-
-export const incomeOf = (
-  month: string,
-  amount: string | null = "3000.00",
-  carried = false,
-): IncomeOut => ({
-  month,
-  amount,
-  carried,
 });
 
 export const rent: FixedOccurrenceOut = {
@@ -140,6 +129,5 @@ export function spendingHandlers(
       Response.json(summaryOf(url.searchParams.get("month") ?? "")),
     "GET /api/spending/fixed/occurrences": () => Response.json(occurrences),
     "GET /api/spending/labels": () => Response.json([]),
-    "GET /api/spending/income/2026-10": () => Response.json(incomeOf("2026-10")),
   };
 }

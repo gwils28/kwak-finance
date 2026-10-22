@@ -1,9 +1,9 @@
 /**
- * A grid row as typed (F-ENT-1): amounts as the user writes them, positive when spent or put
- * aside. The API stores them signed, negative for an outflow, so every amount is negated on
- * the way in and out.
+ * A grid row as typed (F-ENT-1): amounts as the user writes them, positive when spent, put
+ * aside or received. The API stores them signed, negative for an outflow, so every amount but
+ * an income line's is negated on the way in and out.
  */
-import type { LineIn, LineOut } from "../api/generated";
+import type { LineIn, LineOut, SpendingCategoryOut } from "../api/generated";
 import { amountInputShort, isZero, parseEurInput } from "../lib/money";
 import { daysInMonth } from "../lib/months";
 
@@ -29,10 +29,31 @@ export function negate(amount: string): string {
   return amount.startsWith("-") ? amount.slice(1) : `-${amount}`;
 }
 
+/** The income categories: their lines are inflows, typed and stored positive. */
+export type IncomeIds = ReadonlySet<string>;
+
+export function incomeIds(categories: Pick<SpendingCategoryOut, "id" | "kind">[]): IncomeIds {
+  return new Set(categories.filter((c) => c.kind === "income").map((c) => c.id));
+}
+
+/** A line is income or spending, never both: its last part's category says which. */
+export function isIncomeLine(
+  line: Pick<LineOut, "category_id" | "parts">,
+  income: IncomeIds,
+): boolean {
+  const category = line.category_id ?? line.parts.at(-1)?.category_id;
+  return category !== undefined && income.has(category);
+}
+
+/** A stored amount as the grid shows it: positive when spent, put aside or received. */
+export function typedOf(amount: string, income: boolean): string {
+  return income ? amount : negate(amount);
+}
+
 /** The typed amount as the API stores it; null when not a non-zero number of cents. */
-function stored(typed: string): string | null {
+function stored(typed: string, income = false): string | null {
   const amount = parseEurInput(typed);
-  return amount === null || isZero(amount) ? null : negate(amount);
+  return amount === null || isZero(amount) ? null : typedOf(amount, income);
 }
 
 function splitComplete(split: SplitDraft): boolean {
@@ -49,8 +70,13 @@ export function firstMissing(draft: Draft): Cell | null {
 }
 
 /** What the API takes, or null while the row is incomplete. */
-export function lineBody(draft: Draft, fixedExpenseId: string | null = null): LineIn | null {
-  const amount = stored(draft.amount);
+export function lineBody(
+  draft: Draft,
+  income: IncomeIds,
+  fixedExpenseId: string | null = null,
+): LineIn | null {
+  const inflow = income.has(draft.split ? draft.split.rest : draft.category);
+  const amount = stored(draft.amount, inflow);
   if (firstMissing(draft) !== null || amount === null) return null;
   const common = { day: draft.day, label: draft.label.trim(), amount };
   if (!draft.split) {
@@ -61,7 +87,7 @@ export function lineBody(draft: Draft, fixedExpenseId: string | null = null): Li
     split: {
       parts: draft.split.parts.map((p) => ({
         category_id: p.category,
-        amount: stored(p.amount) ?? "",
+        amount: stored(p.amount, inflow) ?? "",
       })),
       rest_category_id: draft.split.rest,
     },
@@ -72,8 +98,10 @@ export function lineBody(draft: Draft, fixedExpenseId: string | null = null): Li
 /** A saved line, as the grid shows it for editing. */
 export function draftOf(
   line: Pick<LineOut, "day" | "label" | "amount" | "category_id" | "parts">,
+  income: IncomeIds,
 ): Draft {
-  const typed = (amount: string) => amountInputShort(negate(amount));
+  const inflow = isIncomeLine(line, income);
+  const typed = (amount: string) => amountInputShort(typedOf(amount, inflow));
   const last = line.parts.at(-1);
   return {
     day: line.day,

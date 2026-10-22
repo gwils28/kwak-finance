@@ -37,10 +37,8 @@ def _line(client: TestClient, category: str, amount: str, day: str) -> None:
 
 
 def _income(client: TestClient, month: str, amount: str) -> None:
-    response = client.put(
-        f"/api/spending/income/{month}", json={"amount": amount}, headers=csrf(client)
-    )
-    assert response.status_code == 200, response.text
+    """An income line on the first of the month."""
+    _line(client, "Salaries", amount, f"{month}-01")
 
 
 def _report(client: TestClient, start: str, end: str) -> Any:
@@ -50,10 +48,13 @@ def _report(client: TestClient, start: str, end: str) -> Any:
 
 
 def _two_months(client: TestClient) -> None:
-    """September: income 2000, groceries 200. October: income carried, groceries 300, home 100,
-    savings 500 put aside and 100 taken back; groceries' target 250 from October."""
+    """September: income 2000, groceries 200. October: income 2000 (salaries 1800, refunds
+    200), groceries 300, home 100, savings 500 put aside and 100 taken back; groceries' target
+    250 from October."""
     _income(client, "2026-09", "2000.00")
     _line(client, "Groceries", "-200.00", "2026-09-10")
+    _income(client, "2026-10", "1800.00")
+    _line(client, "Refunds", "200.00", "2026-10-12")
     _line(client, "Groceries", "-300.00", "2026-10-05")
     _line(client, "Home", "-100.00", "2026-10-06")
     _line(client, "Savings", "-500.00", "2026-10-07")
@@ -85,16 +86,18 @@ def test_a_month_against_the_one_before(owner_client: TestClient) -> None:
 
     rows = [(r["section"], r["name"], r["amount"], r["share"]) for r in report["rows"]]
     assert rows == [
+        ("income", "Salaries", "1800.00", "0.9000"),
+        ("income", "Refunds", "200.00", "0.1000"),
         ("spending", "Groceries", "300.00", "0.7500"),
         ("spending", "Home", "100.00", "0.2500"),
         ("savings", "Savings", "400.00", "1.0000"),
     ]
-    groceries = report["rows"][0]
+    groceries = report["rows"][2]
     assert groceries["previous"] == "200.00"
     assert groceries["change"] == "0.5000"
     assert groceries["monthly_average"] == "300.00"
     sections = {s["section"]: s["amount"] for s in report["sections"]}
-    assert sections == {"spending": "400.00", "savings": "400.00"}
+    assert sections == {"income": "2000.00", "spending": "400.00", "savings": "400.00"}
 
 
 def test_the_flows_balance_and_mark_the_spending_over_its_targets(
@@ -104,7 +107,8 @@ def test_the_flows_balance_and_mark_the_spending_over_its_targets(
     flows = _report(owner_client, "2026-10", "2026-10")["flows"]
 
     by_kind = {(f["kind"], f["name"]): (f["side"], f["amount"], f["over"]) for f in flows}
-    assert by_kind[("income", None)] == ("in", "2000.00", False)
+    assert by_kind[("income", "Salaries")] == ("in", "1800.00", False)
+    assert by_kind[("income", "Refunds")] == ("in", "200.00", False)
     assert by_kind[("spending", "Groceries")] == ("out", "300.00", True)
     assert by_kind[("spending", "Home")] == ("out", "100.00", False)
     assert by_kind[("saved", None)] == ("out", "400.00", False)

@@ -54,6 +54,13 @@ const report = {
   changes: { income: "0.0345", spent: "0.0500", saved: "0.0000", rest: null },
   sections: [
     {
+      section: "income",
+      amount: "30000.00",
+      monthly_average: "2500.00",
+      previous: "29000.00",
+      change: "0.0345",
+    },
+    {
       section: "spending",
       amount: "21000.00",
       monthly_average: "1750.00",
@@ -69,6 +76,13 @@ const report = {
     },
   ],
   rows: [
+    row("income", "c-salaries", "Salaries", {
+      amount: "30000.00",
+      monthly_average: "2500.00",
+      share: "1.0000",
+      previous: "29000.00",
+      change: "0.0345",
+    }),
     row("spending", "c-housing", "Housing", {
       amount: "12000.00",
       monthly_average: "1000.00",
@@ -100,7 +114,14 @@ const report = {
     by_category: [],
   })),
   flows: [
-    { kind: "income", side: "in", amount: "30000.00", category_id: null, name: null, over: false },
+    {
+      kind: "income",
+      side: "in",
+      amount: "30000.00",
+      category_id: "c-salaries",
+      name: "Salaries",
+      over: false,
+    },
     {
       kind: "spending",
       side: "out",
@@ -190,7 +211,7 @@ test("a custom period ending before it starts is not asked for", async () => {
   expect(asked.length).toBe(count);
 });
 
-test("the table lists the spending and savings categories with their totals", async () => {
+test("the table lists the income, spending and savings categories with their totals", async () => {
   api();
   render(<TestApp path="/reports" />);
   const table = await screen.findByRole("table", { name: "By category" });
@@ -198,6 +219,8 @@ test("the table lists the spending and savings categories with their totals", as
   const rows = within(table)
     .getAllByRole("row")
     .map((r) => plain(r.textContent));
+  expect(rows).toContain("Salaries€30,000€2,500100%€29,000+3%");
+  expect(rows).toContain("Total income€30,000€2,500100%€29,000+3%");
   expect(rows).toContain("Housing€12,000€1,00057%€10,000+20%");
   expect(rows).toContain("Groceries€9,000€75043%€10,000-10%");
   expect(rows).toContain("Total spending€21,000€1,750100%€20,000+5%");
@@ -217,7 +240,7 @@ test("the money flows mark the spending over its targets, in colour and in words
     .map((r) => plain(r.textContent));
   expect(rows).toContain("OutHousing€12,00040%over its targets");
   expect(rows).toContain("OutGroceries€9,00030%within its targets, or without one");
-  expect(rows).toContain("InIncome€30,000100%");
+  expect(rows).toContain("InSalaries€30,000100%");
   expect(rows).toContain("OutUnallocated€8,80029%");
 });
 
@@ -292,7 +315,7 @@ test("a report starting at the first month says so, and compares nothing before 
   render(<TestApp path="/reports" />);
   expect(
     await screen.findByText(
-      "Oct 2026 is the first month with a line or an income: earlier months are left out.",
+      "Oct 2026 is the first month with a line: earlier months are left out.",
     ),
   ).toBeInTheDocument();
   expect(screen.getByText(/nothing is compared/)).toBeInTheDocument();
@@ -304,7 +327,14 @@ test("a shortfall comes in as a deficit, savings taken back as such, and the res
     ...report,
     totals: figures("1000.00", "1500.00", "-200.00", "-300.00"),
     flows: [
-      { kind: "income", side: "in", amount: "1000.00", category_id: null, name: null, over: false },
+      {
+        kind: "income",
+        side: "in",
+        amount: "1000.00",
+        category_id: "c-salaries",
+        name: "Salaries",
+        over: false,
+      },
       {
         kind: "from_savings",
         side: "in",

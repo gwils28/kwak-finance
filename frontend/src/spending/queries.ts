@@ -4,7 +4,6 @@ import {
   listFixed,
   listSpendingCategories,
   listTargets,
-  monthIncome,
   monthLines,
   monthOccurrences,
   monthSummary,
@@ -37,12 +36,6 @@ export const occurrencesQuery = (month: string) =>
   queryOptions({
     queryKey: [SPENDING, "occurrences", month],
     queryFn: async () => (await monthOccurrences({ query: { month }, throwOnError: true })).data,
-  });
-
-export const incomeQuery = (month: string) =>
-  queryOptions({
-    queryKey: [SPENDING, "income", month],
-    queryFn: async () => (await monthIncome({ path: { month }, throwOnError: true })).data,
   });
 
 export const fixedQuery = queryOptions({
@@ -81,11 +74,12 @@ export function refreshSpending(queryClient: QueryClient): Promise<void> {
   return queryClient.invalidateQueries({ queryKey: [SPENDING] });
 }
 
-/** Expense categories first, then savings ones, each in the household's order. */
+/** Expense categories first, then savings and income ones, each in the household's order. */
 export function byKind(categories: SpendingCategoryOut[]) {
   const sorted = [...categories].sort((a, b) => a.position - b.position);
   return {
     expense: sorted.filter((c) => c.kind === "expense"),
     savings: sorted.filter((c) => c.kind === "savings"),
+    income: sorted.filter((c) => c.kind === "income"),
   };
 }

@@ -14,10 +14,9 @@ import { Button, ErrorAlert } from "../components/ui";
 import { useI18n } from "../i18n";
 import { byKind, refreshSpending, spendingCategoriesQuery } from "./queries";
 
-type Kind = Extract<CategoryKind, "expense" | "savings">;
 const field = "rounded-md border border-border bg-surface px-3 py-2";
 
-/** The spending categories (F-CAT-1, 4, 6): one level, expense or savings. */
+/** The spending categories (F-CAT-1, 4, 6): one level, expense, savings or income. */
 export function CategoriesPage() {
   const { t } = useI18n();
   const c = t.spending.categoriesPage;
@@ -40,7 +39,7 @@ export function CategoriesPage() {
   };
 
   if (!categories.data) return <p>{t.common.loading}</p>;
-  const { expense, savings } = byKind(categories.data);
+  const { expense, savings, income } = byKind(categories.data);
 
   return (
     <div className="flex max-w-3xl flex-col gap-6">
@@ -56,6 +55,7 @@ export function CategoriesPage() {
         [
           ["expense", c.expenses, expense],
           ["savings", c.savings, savings],
+          ["income", c.income, income],
         ] as const
       ).map(([kind, title, list]) => (
         <section key={kind} aria-labelledby={`${id}-${kind}`} className="flex flex-col gap-2">
@@ -204,7 +204,7 @@ function AddCategory({ run }: { run: (action: () => Promise<string>) => Promise<
   const c = t.spending.categoriesPage;
   const id = useId();
   const [name, setName] = useState("");
-  const [kind, setKind] = useState<Kind>("expense");
+  const [kind, setKind] = useState<CategoryKind>("expense");
 
   const submit = (event: FormEvent) => {
     event.preventDefault();
@@ -238,11 +238,12 @@ function AddCategory({ run }: { run: (action: () => Promise<string>) => Promise<
         <select
           id={`${id}-kind`}
           value={kind}
-          onChange={(e) => setKind(e.target.value as Kind)}
+          onChange={(e) => setKind(e.target.value as CategoryKind)}
           className={field}
         >
           <option value="expense">{c.kinds.expense}</option>
           <option value="savings">{c.kinds.savings}</option>
+          <option value="income">{c.kinds.income}</option>
         </select>
       </div>
       <Button type="submit">{c.add}</Button>

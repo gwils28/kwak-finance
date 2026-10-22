@@ -182,8 +182,12 @@ DEFAULT_SPENDING_CATEGORIES: tuple[DefaultCategory, ...] = (
     DefaultCategory(N("Gifts", "Cadeaux"), _E),
     DefaultCategory(N("Miscellaneous", "Divers"), _E),
     DefaultCategory(N("Savings", "Épargne"), _S),
+    DefaultCategory(N("Salaries", "Salaires"), _I),
+    DefaultCategory(N("Benefits", "Aides et allocations"), _I),
+    DefaultCategory(N("Refunds", "Remboursements"), _I),
+    DefaultCategory(N("Other income", "Autres revenus"), _I),
 )
-SPENDING_KINDS = frozenset({CategoryKind.EXPENSE, CategoryKind.SAVINGS})
+SPENDING_KINDS = frozenset({CategoryKind.EXPENSE, CategoryKind.SAVINGS, CategoryKind.INCOME})
 
 
 @dataclass(frozen=True)

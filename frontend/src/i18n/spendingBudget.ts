@@ -21,6 +21,7 @@ export const spendingBudgetEn = {
   savings: "Savings",
   savingsTotal: "Total saved",
   spendingTotal: "Total spent",
+  incomeTotal: "Total received",
   figures: "The month",
   income: "Income",
   spent: "Spent",
@@ -36,7 +37,7 @@ export const spendingBudgetEn = {
     none: "no target",
   },
   legend:
-    "Green: more than 5 % under the target (or above a savings objective). Grey: within 5 %. Burnt orange: more than 5 % over the target (or below an objective). No colour: no target that month.",
+    "Green: more than 5 % under the target (or above a savings objective). Grey: within 5 %. Burnt orange: more than 5 % over the target (or below an objective). No colour: no target that month. Income categories have no target.",
   editor: {
     title: (name: string) => `Monthly target of ${name}`,
     objectiveTitle: (name: string) => `Monthly savings objective of ${name}`,
@@ -61,6 +62,7 @@ export const spendingBudgetEn = {
     fullYear: "Target for the year",
     spentToDate: "Spent to date",
     savedToDate: "Saved to date",
+    receivedToDate: "Received to date",
     gap: "Gap",
     status: "Status",
     monthsCount: "Months over · on · under",
@@ -92,6 +94,7 @@ export const spendingBudgetFr: typeof spendingBudgetEn = {
   savings: "Épargne",
   savingsTotal: "Total épargné",
   spendingTotal: "Total dépensé",
+  incomeTotal: "Total reçu",
   figures: "Le mois",
   income: "Revenus",
   spent: "Dépensé",
@@ -107,7 +110,7 @@ export const spendingBudgetFr: typeof spendingBudgetEn = {
     none: "pas de cible",
   },
   legend:
-    "Vert : plus de 5 % sous la cible (ou au-dessus d'un objectif d'épargne). Gris : à 5 % près. Orange brûlé : plus de 5 % au-dessus de la cible (ou sous un objectif). Sans couleur : pas de cible ce mois-là.",
+    "Vert : plus de 5 % sous la cible (ou au-dessus d'un objectif d'épargne). Gris : à 5 % près. Orange brûlé : plus de 5 % au-dessus de la cible (ou sous un objectif). Sans couleur : pas de cible ce mois-là. Les catégories de revenus n'ont pas de cible.",
   editor: {
     title: (name) => `Cible mensuelle de ${name}`,
     objectiveTitle: (name) => `Objectif d'épargne mensuel de ${name}`,
@@ -132,6 +135,7 @@ export const spendingBudgetFr: typeof spendingBudgetEn = {
     fullYear: "Cible de l'année",
     spentToDate: "Dépensé à date",
     savedToDate: "Épargné à date",
+    receivedToDate: "Reçu à date",
     gap: "Écart",
     status: "État",
     monthsCount: "Mois au-dessus · dans · sous",

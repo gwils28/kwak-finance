@@ -2,7 +2,7 @@ import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeAll, beforeEach, expect, test, vi } from "vitest";
 import { thisMonth } from "../lib/months";
-import { bakery, incomeOf, monthOf, spendingCategories, summaryOf } from "../spending/fixtures";
+import { bakery, monthOf, spendingCategories, summaryOf } from "../spending/fixtures";
 import { fakeApi, owner } from "../test/fakeApi";
 import { TestApp } from "../test/TestApp";
 
@@ -18,7 +18,8 @@ beforeEach(() => localStorage.clear());
 afterEach(() => vi.unstubAllGlobals());
 
 type Progress = {
-  income?: boolean;
+  /** "lastMonth": income lines last month, none yet this month. */
+  income?: boolean | "lastMonth";
   lines?: boolean;
   fixed?: boolean;
   plan?: boolean;
@@ -36,11 +37,22 @@ function api({
 }: Progress) {
   return fakeApi({
     "GET /api/auth/me": () => Response.json(owner),
-    "GET /api/spending/month": () => Response.json(summaryOf(thisMonth())),
+    "GET /api/spending/month": () => {
+      const summary = summaryOf(thisMonth());
+      // The month's income is its income lines: none entered, none.
+      return Response.json(
+        income === true
+          ? summary
+          : {
+              ...summary,
+              figures: { ...summary.figures, income: "0.00" },
+              previous: { ...summary.previous, income: income ? "3000.00" : "0.00" },
+              average: null,
+            },
+      );
+    },
     "GET /api/spending/categories": () => Response.json(spendingCategories),
     "GET /api/spending/fixed/occurrences": () => Response.json([]),
-    [`GET /api/spending/income/${thisMonth()}`]: () =>
-      Response.json(incomeOf(thisMonth(), income ? "3000.00" : null)),
     "GET /api/spending/lines": () => Response.json(monthOf(thisMonth(), lines ? [bakery] : [])),
     "GET /api/spending/fixed": () => Response.json(fixed ? [{ id: "f1" }] : []),
     "GET /api/spending/targets": () =>
@@ -77,6 +89,15 @@ test("the overview's checklist ticks itself from the household's data", async ()
   expect(within(region).getByRole("link", { name: "Add your fixed expenses" })).toHaveAttribute(
     "href",
     "/spending/fixed",
+  );
+});
+
+test("the income step stays done at the start of a month, before its salary line", async () => {
+  api({ income: "lastMonth", lines: true });
+  render(<TestApp path="/" />);
+  const region = await checklist();
+  await vi.waitFor(() =>
+    expect(step(region, /Enter this month's income/)).toHaveAttribute("data-done", "true"),
   );
 });
 

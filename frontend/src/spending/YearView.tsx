@@ -118,6 +118,41 @@ export function YearView({ year }: { year: number }) {
               {data.savings.map(line)}
             </tbody>
           )}
+          {data.income.length > 0 && (
+            <tbody>
+              <tr>
+                <th
+                  colSpan={7}
+                  className="px-3 pt-4 pb-1 text-left text-xs font-semibold text-muted uppercase"
+                >
+                  {b.income}
+                </th>
+              </tr>
+              <tr className="text-left text-muted">
+                <th scope="col" className="px-3 py-2 font-medium">
+                  {b.category}
+                </th>
+                <td />
+                <th scope="col" className="px-2 py-2 text-right font-medium">
+                  {y.receivedToDate}
+                </th>
+                <td colSpan={4} />
+              </tr>
+              {/* Income categories have no target: what they received, nothing to judge. */}
+              {data.income.map((l) => (
+                <tr key={l.category_id} className="border-t border-border">
+                  <th scope="row" className="px-3 py-2 text-left font-medium">
+                    {l.name}
+                  </th>
+                  <td />
+                  <td className="tabular px-2 py-2 text-right">
+                    {formatEurWhole(l.spent_to_date)}
+                  </td>
+                  <td colSpan={4} />
+                </tr>
+              ))}
+            </tbody>
+          )}
         </table>
       </div>
       {lastMonth && year === Number(thisMonth().slice(0, 4)) && (

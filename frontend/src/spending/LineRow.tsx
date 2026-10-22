@@ -34,7 +34,7 @@ const same = (a: Draft, b: Draft) => JSON.stringify(a) === JSON.stringify(b);
 
 export function CategoryOptions({ categories }: { categories: SpendingCategoryOut[] }) {
   const { t } = useI18n();
-  const { expense, savings } = byKind(categories);
+  const { expense, savings, income } = byKind(categories);
   return (
     <>
       <optgroup label={t.spending.grid.expenses}>
@@ -46,6 +46,13 @@ export function CategoryOptions({ categories }: { categories: SpendingCategoryOu
       </optgroup>
       <optgroup label={t.spending.grid.savings}>
         {savings.map((c) => (
+          <option key={c.id} value={c.id}>
+            {c.name}
+          </option>
+        ))}
+      </optgroup>
+      <optgroup label={t.spending.grid.income}>
+        {income.map((c) => (
           <option key={c.id} value={c.id}>
             {c.name}
           </option>

@@ -184,7 +184,8 @@ function Matrix({ first, last }: { first: string; last: string }) {
           {r.name}
         </th>
         <td className={`${TARGET_COL} px-2 py-2 text-right`}>
-          {category ? (
+          {/* An income category has no target: it is shown, never judged. */}
+          {category && category.kind !== "income" ? (
             <button
               type="button"
               aria-label={b.setTarget(r.name)}
@@ -278,6 +279,13 @@ function Matrix({ first, last }: { first: string; last: string }) {
             </tr>
           </thead>
           <tbody>
+            {data.income.length > 0 && (
+              <>
+                {section(b.income)}
+                {data.income.map((r) => row(r))}
+                {row({ ...data.income_total, name: b.incomeTotal }, true)}
+              </>
+            )}
             {section(b.expenses)}
             {data.rows.map((r) => row(r))}
             {row({ ...data.total, name: b.spendingTotal }, true)}

@@ -49,7 +49,8 @@ def test_existing_households_get_the_flat_categories_in_their_owners_language(
         rows = conn.execute(
             text(
                 "SELECT household_id::text, name, kind, one_off FROM spending_category"
-                " ORDER BY position"
+                # Added by a later revision.
+                " WHERE kind <> 'income' ORDER BY position"
             )
         ).all()
     by_household = {

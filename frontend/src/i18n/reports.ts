@@ -1,7 +1,7 @@
 export const reportsEn = {
   title: "Reports",
   intro:
-    "Spending and savings by category over any period of months, against the period just before.",
+    "Income, spending and savings by category over any period of months, against the period just before.",
   period: "Period",
   presets: {
     thisMonth: "This month",
@@ -19,10 +19,10 @@ export const reportsEn = {
   range: (start: string, end: string) => (start === end ? start : `${start} – ${end}`),
   soFar: (range: string) => `${range} so far`,
   firstMonth: (month: string) =>
-    `${month} is the first month with a line or an income: earlier months are left out.`,
+    `${month} is the first month with a line: earlier months are left out.`,
   comparedWith: (range: string) => `Compared with ${range}`,
   notCompared: (month: string) =>
-    `The period before starts before ${month}, the first month with a line or an income: nothing is compared.`,
+    `The period before starts before ${month}, the first month with a line: nothing is compared.`,
   future: "A report covers months up to this one: choose a first month that has started.",
   summary: "Totals",
   income: "Income",
@@ -34,7 +34,7 @@ export const reportsEn = {
   noPrevious: "Nothing the period before",
   byCategory: "By category",
   byCategoryHelp: "A split line counts in each of its parts' categories.",
-  sections: { spending: "Spending", savings: "Savings" },
+  sections: { income: "Income", spending: "Spending", savings: "Savings" },
   category: "Category",
   total: "Total",
   monthlyAverage: "Per month",
@@ -54,7 +54,7 @@ export const reportsEn = {
   month: "Month",
   flows: {
     title: "Money flows",
-    help: "Where the period's income went: spending, savings and what is left unallocated.",
+    help: "Where the period's income, by category, went: spending, savings and what is left unallocated.",
     none: "No money in or out over this period.",
     hub: "Available",
     income: "Income",
@@ -86,7 +86,7 @@ export const reportsEn = {
 export const reportsFr: typeof reportsEn = {
   title: "Rapports",
   intro:
-    "Dépenses et épargne par catégorie sur n'importe quelle période de mois, face à la période juste avant.",
+    "Revenus, dépenses et épargne par catégorie sur n'importe quelle période de mois, face à la période juste avant.",
   period: "Période",
   presets: {
     thisMonth: "Ce mois-ci",
@@ -104,10 +104,10 @@ export const reportsFr: typeof reportsEn = {
   range: (start, end) => (start === end ? start : `${start} – ${end}`),
   soFar: (range) => `${range} à ce jour`,
   firstMonth: (month) =>
-    `${month} est le premier mois avec une ligne ou des revenus : les mois d'avant sont laissés de côté.`,
+    `${month} est le premier mois avec une ligne : les mois d'avant sont laissés de côté.`,
   comparedWith: (range) => `Comparé à ${range}`,
   notCompared: (month) =>
-    `La période d'avant commence avant ${month}, le premier mois avec une ligne ou des revenus : rien n'est comparé.`,
+    `La période d'avant commence avant ${month}, le premier mois avec une ligne : rien n'est comparé.`,
   future: "Un rapport couvre les mois jusqu'à celui-ci : choisissez un premier mois déjà commencé.",
   summary: "Totaux",
   income: "Revenus",
@@ -119,7 +119,7 @@ export const reportsFr: typeof reportsEn = {
   noPrevious: "Rien sur la période d'avant",
   byCategory: "Par catégorie",
   byCategoryHelp: "Une ligne ventilée compte dans la catégorie de chacune de ses parts.",
-  sections: { spending: "Dépenses", savings: "Épargne" },
+  sections: { income: "Revenus", spending: "Dépenses", savings: "Épargne" },
   category: "Catégorie",
   total: "Total",
   monthlyAverage: "Par mois",
@@ -139,7 +139,7 @@ export const reportsFr: typeof reportsEn = {
   month: "Mois",
   flows: {
     title: "Flux d'argent",
-    help: "Où sont allés les revenus de la période : dépenses, épargne et restant non alloué.",
+    help: "Où sont allés les revenus de la période, par catégorie : dépenses, épargne et restant non alloué.",
     none: "Aucune entrée ni sortie d'argent sur cette période.",
     hub: "Disponible",
     income: "Revenus",

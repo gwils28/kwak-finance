@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, expect, test, vi } from "vitest";
 import { fakeApi, owner } from "../test/fakeApi";
 import { TestApp } from "../test/TestApp";
-import { bakery, groceries, home, rent, spendingHandlers, supermarket } from "./fixtures";
+import { bakery, groceries, home, rent, salaries, spendingHandlers, supermarket } from "./fixtures";
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -41,7 +41,7 @@ test("the month's lines are listed with its figures, a split line with its parts
 
   await grid();
   expect(screen.getByRole("heading", { name: "Oct 2026" })).toBeInTheDocument();
-  await vi.waitFor(() => expect(screen.getByLabelText("Income")).toHaveValue("3000"));
+  expect(await screen.findByText("€3,000.00")).toBeInTheDocument();
   expect(await screen.findByText("€99.90")).toBeInTheDocument();
   expect(screen.getByText("€2,700.10")).toBeInTheDocument();
 
@@ -247,22 +247,26 @@ test("a deleted line can be put back from the message", async () => {
   );
 });
 
-test("the month's income is entered in the header", async () => {
+test("an income line is typed and stored positive, and the header shows the month's income", async () => {
   const calls = api({
-    "PUT /api/spending/income/2026-10": (body) =>
-      Response.json({ month: "2026-10", ...(body as object), carried: false }),
+    "POST /api/spending/lines": (body) =>
+      Response.json({ ...bakery, id: "l9", ...(body as object), parts: [] }, { status: 201 }),
   });
   render(<TestApp path={PATH} />);
   await grid();
 
+  expect(await screen.findByText("€3,000.00")).toBeInTheDocument();
   const user = userEvent.setup();
-  const income = screen.getByLabelText("Income");
-  await vi.waitFor(() => expect(income).toHaveValue("3000"));
-  await user.clear(income);
-  await user.type(income, "3 150,20{Enter}");
+  const row = newRow();
+  await user.type(within(row).getByLabelText("Label"), "Pay");
+  await user.type(within(row).getByLabelText("Amount"), "2500");
+  await user.selectOptions(within(row).getByLabelText("Category"), salaries.id);
+  await user.keyboard("{Enter}");
   await vi.waitFor(() =>
-    expect(calls.find((c) => c.route === "PUT /api/spending/income/2026-10")?.body).toEqual({
-      amount: "3150.20",
+    expect(calls.find((c) => c.route === "POST /api/spending/lines")?.body).toMatchObject({
+      label: "Pay",
+      amount: "2500.00",
+      category_id: salaries.id,
     }),
   );
 });
@@ -318,11 +322,8 @@ test("Enter pressed twice saves the row once", async () => {
   expect(calls.filter((c) => c.route === "POST /api/spending/lines")).toHaveLength(1);
 });
 
-test("changing month with the keyboard keeps a row's unsaved changes, and never moves the income", async () => {
-  const calls = api({
-    "PUT /api/spending/income/2026-10": (body) =>
-      Response.json({ month: "2026-10", ...(body as object), carried: false }),
-  });
+test("changing month with the keyboard keeps a row's unsaved changes", async () => {
+  api();
   render(<TestApp path={PATH} />);
   await grid();
 
@@ -332,14 +333,8 @@ test("changing month with the keyboard keeps a row's unsaved changes, and never 
   await user.keyboard("{Alt>}{PageDown}{/Alt}");
   expect(screen.getByRole("heading", { name: "Oct 2026" })).toBeInTheDocument();
   await user.keyboard("{Escape}");
-
-  const income = screen.getByLabelText("Income");
-  await vi.waitFor(() => expect(income).toHaveValue("3000"));
-  await user.clear(income);
-  await user.type(income, "2500");
   await user.keyboard("{Alt>}{PageDown}{/Alt}");
   expect(await screen.findByRole("heading", { name: "Nov 2026" })).toBeInTheDocument();
-  expect(calls.some((c) => c.route === "PUT /api/spending/income/2026-11")).toBe(false);
 });
 
 test("a delete that fails says so", async () => {

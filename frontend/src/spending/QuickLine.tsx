@@ -5,7 +5,7 @@ import { detailSentence } from "../auth/errors";
 import { useI18n } from "../i18n";
 import { formatDate } from "../lib/dates";
 import { amountInputShort, formatEur } from "../lib/money";
-import { type Cell, type Draft, firstMissing, negate } from "./draft";
+import { type Cell, type Draft, firstMissing, incomeIds, typedOf } from "./draft";
 import { useDebounced } from "./LineRow";
 import { labelsQuery, SPENDING } from "./queries";
 
@@ -44,10 +44,14 @@ export function QuickLine({
   });
   const labels = useQuery(labelsQuery(typed));
 
+  const income = incomeIds(categories);
+  // As typed: an income line's amount is positive as stored, every other one negated.
+  const typedAmount = (line: QuickOut, amount: string) =>
+    typedOf(amount, income.has(line.category_id ?? ""));
   const draftOf = (line: QuickOut): Draft => ({
     day: line.day ?? defaultDay,
     label: line.label,
-    amount: line.amount ? amountInputShort(negate(line.amount)) : "",
+    amount: line.amount ? amountInputShort(typedAmount(line, line.amount)) : "",
     category: line.category_id ?? "",
     split: null,
   });
@@ -109,7 +113,7 @@ export function QuickLine({
             {q.understood}{" "}
             <span className="text-fg">
               {line.day ? formatDate(line.day) : q.defaultDate} · {line.label || "…"} ·{" "}
-              {line.amount ? formatEur(negate(line.amount)) : "…"} ·{" "}
+              {line.amount ? formatEur(typedAmount(line, line.amount)) : "…"} ·{" "}
               {category?.name ??
                 (line.category_word ? q.unknownCategory(line.category_word) : q.noCategory)}
             </span>
