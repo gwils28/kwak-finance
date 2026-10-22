@@ -23,44 +23,36 @@ afterEach(() => {
 
 const plain = (text: string | null) => text?.replace(/[  ]/g, " ");
 
-const totals = (spent: string, income: string, net: string) => ({
-  spent,
+const figures = (income: string, spent: string, saved: string, rest: string) => ({
   income,
-  paid_in: "0.00",
-  paid_out: "0.00",
-  net,
-  saved: "200.00",
+  spent,
+  saved,
+  rest,
   savings_rate: "0.3000",
 });
-const row = (extra: object) => ({
-  category_id: null,
-  name: null,
+const row = (section: string, id: string, name: string, extra: object) => ({
+  section,
+  category_id: id,
+  name,
   monthly_average: "0.00",
   share: null,
   previous: "0.00",
   change: null,
-  children: [],
   ...extra,
 });
 const report = {
   start: "2026-01",
   end: "2026-12",
   to_date: false,
-  analysis_start: null,
+  first_month: "2024-01",
   months: 12,
   previous_start: "2025-01",
   previous_end: "2025-12",
-  totals: totals("21000.00", "30000.00", "9000.00"),
-  previous: totals("20000.00", "29000.00", "9000.00"),
-  changes: { income: "0.0345", spent: "0.0500", net: "0.0000", saved: null },
+  compared: true,
+  totals: figures("30000.00", "21000.00", "200.00", "8800.00"),
+  previous: figures("29000.00", "20000.00", "200.00", "8800.00"),
+  changes: { income: "0.0345", spent: "0.0500", saved: "0.0000", rest: null },
   sections: [
-    {
-      section: "income",
-      amount: "30000.00",
-      monthly_average: "2500.00",
-      previous: "29000.00",
-      change: "0.0345",
-    },
     {
       section: "spending",
       amount: "21000.00",
@@ -77,89 +69,62 @@ const report = {
     },
   ],
   rows: [
-    row({
-      section: "income",
-      category_id: "c-income",
-      name: "Income",
-      amount: "30000.00",
-      monthly_average: "2500.00",
-      share: "1.0000",
-      previous: "29000.00",
-      change: "0.0345",
-      children: [
-        row({
-          section: "income",
-          category_id: "c-salary",
-          name: "Salary",
-          amount: "30000.00",
-          monthly_average: "2500.00",
-          share: "1.0000",
-          previous: "29000.00",
-          change: "0.0345",
-        }),
-      ],
-    }),
-    row({
-      section: "spending",
-      category_id: "c-housing",
-      name: "Housing",
+    row("spending", "c-housing", "Housing", {
       amount: "12000.00",
       monthly_average: "1000.00",
       share: "0.5714",
       previous: "10000.00",
       change: "0.2000",
     }),
-    row({
-      section: "spending",
+    row("spending", "c-groceries", "Groceries", {
       amount: "9000.00",
       monthly_average: "750.00",
       share: "0.4286",
       previous: "10000.00",
       change: "-0.1000",
     }),
+    row("savings", "c-savings", "Savings", {
+      amount: "200.00",
+      monthly_average: "16.67",
+      share: "1.0000",
+      previous: "200.00",
+      change: "0.0000",
+    }),
   ],
   monthly: Array.from({ length: 12 }, (_, i) => ({
     month: `2026-${String(i + 1).padStart(2, "0")}`,
     income: "2500.00",
     spent: "1750.00",
-    net: "750.00",
+    saved: "16.67",
+    rest: "733.33",
+    by_category: [],
   })),
   flows: [
-    {
-      kind: "income",
-      side: "in",
-      amount: "30000.00",
-      category_id: "c-salary",
-      name: "Salary",
-      parent_id: "c-income",
-      parent_name: "Income",
-    },
+    { kind: "income", side: "in", amount: "30000.00", category_id: null, name: null, over: false },
     {
       kind: "spending",
       side: "out",
       amount: "12000.00",
       category_id: "c-housing",
       name: "Housing",
-      parent_id: null,
-      parent_name: null,
+      over: true,
     },
     {
-      kind: "uncategorised",
+      kind: "spending",
       side: "out",
       amount: "9000.00",
-      category_id: null,
-      name: null,
-      parent_id: null,
-      parent_name: null,
+      category_id: "c-groceries",
+      name: "Groceries",
+      over: false,
     },
+    { kind: "saved", side: "out", amount: "200.00", category_id: null, name: null, over: false },
     {
       kind: "unallocated",
       side: "out",
-      amount: "9000.00",
+      amount: "8800.00",
       category_id: null,
       name: null,
-      parent_id: null,
-      parent_name: null,
+      over: false,
     },
   ],
 };
@@ -168,8 +133,7 @@ function api(answer: (url: URL) => object = () => report) {
   const asked: URL[] = [];
   fakeApi({
     "GET /api/auth/me": () => Response.json(owner),
-    "GET /api/accounts": () => Response.json([]),
-    "GET /api/reports": (_, url) => {
+    "GET /api/spending/report": (_, url) => {
       asked.push(url);
       return Response.json(answer(url));
     },
@@ -179,20 +143,17 @@ function api(answer: (url: URL) => object = () => report) {
 
 test("the reports tab shows this year's totals against the year before", async () => {
   const asked = api();
-  render(<TestApp path="/" />);
-  const user = userEvent.setup();
-  // The overview stands apart: the spending tabs are in the Spending space.
-  await user.click(await screen.findByRole("link", { name: "Spending" }));
-  await user.click(await screen.findByRole("link", { name: "Reports" }));
+  render(<TestApp path="/reports" />);
 
   const summary = await screen.findByRole("region", { name: "Totals" });
   expect(plain(summary.textContent)).toContain("Spending€21,000+5% vs the period before");
   expect(plain(summary.textContent)).toContain("Savings rate30%");
-  expect(plain(summary.textContent)).toContain("Of which saved€200Nothing the period before");
+  expect(plain(summary.textContent)).toContain("Saved€2000% vs the period before");
+  expect(plain(summary.textContent)).toContain("Rest+€8,800Nothing the period before");
   expect(screen.getByText(/Compared with Jan 2025 – Dec 2025/)).toBeInTheDocument();
   expect(asked[0]?.searchParams.get("start")).toBe("2026-01");
   expect(asked[0]?.searchParams.get("end")).toBe("2026-12");
-  expect(asked[0]?.searchParams.get("scope")).toBe("household");
+  expect(asked[0]?.searchParams.has("scope")).toBe(false);
 });
 
 test("a preset or a custom period changes the months asked for", async () => {
@@ -229,7 +190,7 @@ test("a custom period ending before it starts is not asked for", async () => {
   expect(asked.length).toBe(count);
 });
 
-test("the table lists each section's categories with their subcategories", async () => {
+test("the table lists the spending and savings categories with their totals", async () => {
   api();
   render(<TestApp path="/reports" />);
   const table = await screen.findByRole("table", { name: "By category" });
@@ -237,32 +198,48 @@ test("the table lists each section's categories with their subcategories", async
   const rows = within(table)
     .getAllByRole("row")
     .map((r) => plain(r.textContent));
-  expect(rows).toContain("Income€30,000€2,500100%€29,000+3%");
-  expect(rows).toContain("Salary€30,000€2,500100%€29,000+3%");
   expect(rows).toContain("Housing€12,000€1,00057%€10,000+20%");
-  expect(rows).toContain("To categorise€9,000€75043%€10,000-10%");
+  expect(rows).toContain("Groceries€9,000€75043%€10,000-10%");
   expect(rows).toContain("Total spending€21,000€1,750100%€20,000+5%");
+  expect(rows).toContain("Savings€200€17100%€2000%");
 });
 
-test("the money flows of the period have no status", async () => {
+test("the money flows mark the spending over its targets, in colour and in words", async () => {
   api();
   render(<TestApp path="/reports" />);
   const flows = await screen.findByRole("region", { name: "Money flows" });
-  expect(within(flows).getByRole("list", { name: "Colours" })).toHaveTextContent("Spending");
-  expect(within(flows).queryByText("Status")).not.toBeInTheDocument();
+  const legend = within(flows).getByRole("list", { name: "Colours" });
+  expect(legend).toHaveTextContent("Spending over its targets");
+  expect(legend).toHaveTextContent("Spending within its targets, or without one");
+  const table = within(flows).getByRole("table", { name: "Money flows" });
+  const rows = within(table)
+    .getAllByRole("row")
+    .map((r) => plain(r.textContent));
+  expect(rows).toContain("OutHousing€12,00040%over its targets");
+  expect(rows).toContain("OutGroceries€9,00030%within its targets, or without one");
+  expect(rows).toContain("InIncome€30,000100%");
+  expect(rows).toContain("OutUnallocated€8,80029%");
 });
 
-test("a period without transactions says so", async () => {
+test("the spending chart has its table, the largest category first", async () => {
+  api();
+  render(<TestApp path="/reports" />);
+  const chart = await screen.findByRole("region", { name: "Spending by category" });
+  const table = within(chart).getByRole("table", { name: "Spending by category over the period" });
+  const rows = within(table).getAllByRole("row");
+  expect(plain(rows[1]?.textContent ?? "")).toBe("Housing€12,00057%");
+});
+
+test("a period without lines says so", async () => {
   api(() => ({ ...report, rows: [], flows: [] }));
   render(<TestApp path="/reports" />);
-  expect(await screen.findByText("No transactions in this period.")).toBeInTheDocument();
+  expect(await screen.findByText("No lines in this period.")).toBeInTheDocument();
 });
 
 test("in French, the reports speak French", async () => {
   fakeApi({
     "GET /api/auth/me": () => Response.json({ ...owner, language: "fr" }),
-    "GET /api/accounts": () => Response.json([]),
-    "GET /api/reports": () => Response.json(report),
+    "GET /api/spending/report": () => Response.json(report),
   });
   render(<TestApp path="/reports" language="fr" />);
   expect(await screen.findByRole("heading", { name: "Rapports" })).toBeInTheDocument();
@@ -304,10 +281,95 @@ test("a link with an impossible month opens this year instead", async () => {
   expect(asked[0]?.searchParams.get("start")).toBe("2026-01");
 });
 
-test("a report says from which month analyses start", async () => {
-  api(() => ({ ...report, start: "2026-10", analysis_start: "2026-10" }));
+test("a report starting at the first month says so, and compares nothing before it", async () => {
+  api(() => ({
+    ...report,
+    start: "2026-10",
+    first_month: "2026-10",
+    compared: false,
+    changes: { income: null, spent: null, saved: null, rest: null },
+  }));
   render(<TestApp path="/reports" />);
   expect(
-    await screen.findByText("Analyses start in Oct 2026: earlier months are left out."),
+    await screen.findByText(
+      "Oct 2026 is the first month with a line or an income: earlier months are left out.",
+    ),
   ).toBeInTheDocument();
+  expect(screen.getByText(/nothing is compared/)).toBeInTheDocument();
+  expect(screen.getByRole("region", { name: "Totals" })).not.toHaveTextContent("vs the period");
+});
+
+test("a shortfall comes in as a deficit, savings taken back as such, and the rest goes negative", async () => {
+  api(() => ({
+    ...report,
+    totals: figures("1000.00", "1500.00", "-200.00", "-300.00"),
+    flows: [
+      { kind: "income", side: "in", amount: "1000.00", category_id: null, name: null, over: false },
+      {
+        kind: "from_savings",
+        side: "in",
+        amount: "200.00",
+        category_id: null,
+        name: null,
+        over: false,
+      },
+      {
+        kind: "spending",
+        side: "out",
+        amount: "1500.00",
+        category_id: "c-housing",
+        name: "Housing",
+        over: false,
+      },
+      { kind: "deficit", side: "in", amount: "300.00", category_id: null, name: null, over: false },
+    ],
+  }));
+  render(<TestApp path="/reports" />);
+
+  const summary = await screen.findByRole("region", { name: "Totals" });
+  expect(plain(summary.textContent)).toContain("Rest-€300");
+  const flows = screen.getByRole("region", { name: "Money flows" });
+  const rows = within(within(flows).getByRole("table", { name: "Money flows" }))
+    .getAllByRole("row")
+    .map((r) => plain(r.textContent));
+  expect(rows).toContain("InTaken from savings€20013%");
+  expect(rows).toContain("InDeficit€30020%");
+  expect(rows).toContain("OutHousing€1,500100%within its targets, or without one");
+  expect(within(flows).getByRole("list", { name: "Colours" })).toHaveTextContent("Deficit");
+});
+
+test("a period not compared leaves the period before blank in the table", async () => {
+  api(() => ({
+    ...report,
+    start: "2026-06",
+    first_month: "2026-01",
+    compared: false,
+    changes: { income: null, spent: null, saved: null, rest: null },
+    rows: report.rows.map((r) => ({ ...r, previous: "0.00", change: null })),
+  }));
+  render(<TestApp path="/reports" />);
+
+  expect(
+    await screen.findByText(/The period before starts before Jan 2026, the first month/),
+  ).toBeInTheDocument();
+  const table = screen.getByRole("table", { name: "By category" });
+  const housing = within(table)
+    .getAllByRole("row")
+    .map((r) => plain(r.textContent))
+    .find((text) => text?.startsWith("Housing"));
+  expect(housing).toBe("Housing€12,000€1,00057%");
+});
+
+test("a custom period that has not started is not asked for", async () => {
+  const asked = api();
+  render(<TestApp path="/reports" />);
+  const user = userEvent.setup();
+  await screen.findByRole("region", { name: "Totals" });
+  await user.selectOptions(screen.getByLabelText("Period"), "custom");
+  const count = asked.length;
+  fireEvent.change(screen.getByLabelText("First month"), { target: { value: "2027-03" } });
+  fireEvent.change(screen.getByLabelText("Last month"), { target: { value: "2027-04" } });
+
+  expect(screen.getByRole("alert")).toHaveTextContent(/choose a first month that has started/);
+  expect(asked.length).toBe(count);
 });
