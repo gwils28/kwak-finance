@@ -1,13 +1,18 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link, type LinkProps } from "@tanstack/react-router";
 import { useId, useState } from "react";
-import { listMembers, listPlans } from "../api/generated";
-import { PLANS_KEY } from "../budget/PlanPanel";
+import { listMembers } from "../api/generated";
 import { Button } from "../components/ui";
 import { goalsQuery } from "../goals/GoalsPage";
 import { useI18n } from "../i18n";
 import { thisMonth } from "../lib/months";
-import { fixedQuery, incomeQuery, linesQuery } from "../spending/queries";
+import {
+  fixedQuery,
+  incomeQuery,
+  linesQuery,
+  spendingCategoriesQuery,
+  targetsQuery,
+} from "../spending/queries";
 
 const HIDDEN_KEY = "kwak-getting-started-hidden";
 
@@ -33,11 +38,8 @@ export function GettingStarted() {
   // The last entry is the household's, in any month.
   const lines = useQuery({ ...linesQuery(month), enabled: !hidden });
   const fixed = useQuery({ ...fixedQuery, enabled: !hidden });
-  const plans = useQuery({
-    queryKey: PLANS_KEY,
-    queryFn: async () => (await listPlans({ throwOnError: true })).data,
-    enabled: !hidden,
-  });
+  const targets = useQuery({ ...targetsQuery, enabled: !hidden });
+  const categories = useQuery({ ...spendingCategoriesQuery, enabled: !hidden });
   const members = useQuery({
     queryKey: ["members", "getting-started"],
     queryFn: async () => (await listMembers({ throwOnError: true })).data,
@@ -45,7 +47,15 @@ export function GettingStarted() {
   });
   // Optional for the list: without goals (or if they cannot load), the step stays to do.
   const goals = useQuery({ ...goalsQuery("household"), enabled: !hidden });
-  if (hidden || !income.data || !lines.data || !fixed.data || !plans.data || !members.data) {
+  if (
+    hidden ||
+    !income.data ||
+    !lines.data ||
+    !fixed.data ||
+    !targets.data ||
+    !categories.data ||
+    !members.data
+  ) {
     return null;
   }
   if (goals.isPending && goals.fetchStatus !== "idle") return null;
@@ -56,7 +66,12 @@ export function GettingStarted() {
     { key: "fixed", done: fixed.data.length > 0, link: { to: "/spending/fixed" } },
     {
       key: "plan",
-      done: plans.data.some((p) => p.targets.length > 0),
+      // Spending targets: a savings objective alone does not count.
+      done: targets.data.some(
+        (target) =>
+          target.amount !== null &&
+          categories.data.find((c) => c.id === target.category_id)?.kind === "expense",
+      ),
       link: { to: "/budget" },
     },
     {

@@ -71,15 +71,32 @@ const figures = (
 
 export const summaryOf = (month: string): SpendingMonthOut => ({
   month,
-  figures: figures("3000.00", "99.90", "0.00", "2900.10"),
-  previous: figures("0", "0", "0", "0"),
-  average: null,
-  changes: {} as SpendingMonthOut["changes"],
+  figures: { ...figures("3000.00", "99.90", "200.00", "2700.10"), savings_rate: "0.9667" },
+  previous: figures("3000.00", "111.00", "0.00", "2889.00"),
+  average: figures("3000.00", "90.00", "0.00", "2910.00"),
+  changes: {
+    vs_previous: { income: "0", spent: "-0.1000", saved: null, rest: "-0.0654" },
+    vs_average: { income: "0", spent: "0.1100", saved: null, rest: "-0.0721" },
+  },
   income_carried: false,
-  progress: {} as SpendingMonthOut["progress"],
-  projected_rest: "2900.10",
-  to_confirm: 0,
-  top: [],
+  progress: {
+    warn_at: "0.80",
+    lines: [
+      {
+        category_id: "c-groceries",
+        name: "Groceries",
+        spent: "42.50",
+        target: "50.00",
+        remaining: "7.50",
+        share: "0.8500",
+        status: "watch",
+        pace: "0.7097",
+      },
+    ],
+  },
+  projected_rest: "1750.10",
+  to_confirm: 1,
+  top: [{ category_id: "c-home", spent: "57.40", share: "0.5746" }],
 });
 
 export const incomeOf = (

@@ -9,11 +9,13 @@ import { goalsEn } from "./goals";
 import { guideEn } from "./guide";
 import { householdEn } from "./household";
 import { importsEn } from "./imports";
+import { overviewEn } from "./overview";
 import { recurringEn } from "./recurring";
 import { reportsEn } from "./reports";
 import { reviewEn } from "./review";
 import { runGuideEn } from "./runGuide";
 import { spendingEn } from "./spending";
+import { spendingBudgetEn } from "./spendingBudget";
 import { transactionsEn } from "./transactions";
 import { wealthEn } from "./wealth";
 
@@ -28,6 +30,8 @@ export const en = {
   dashboard: dashboardEn,
   household: householdEn,
   spending: spendingEn,
+  spendingBudget: spendingBudgetEn,
+  overview: overviewEn,
   transactions: transactionsEn,
   recurring: recurringEn,
   budget: budgetEn,

@@ -22,7 +22,9 @@ export function ScopeSelect({
   onChange,
   labelClassName,
   fieldClassName,
+  label,
 }: {
+  label?: string;
   value: Scope;
   onChange: (scope: Scope) => void;
   labelClassName: string;
@@ -33,7 +35,7 @@ export function ScopeSelect({
   const hasJoint = useHasJointAccount();
   return (
     <label htmlFor={id} className={labelClassName}>
-      {t.dashboard.scope}
+      {label ?? t.dashboard.scope}
       <select
         id={id}
         className={fieldClassName}

@@ -10,11 +10,13 @@ import { goalsFr } from "./goals";
 import { guideFr } from "./guide";
 import { householdFr } from "./household";
 import { importsFr } from "./imports";
+import { overviewFr } from "./overview";
 import { recurringFr } from "./recurring";
 import { reportsFr } from "./reports";
 import { reviewFr } from "./review";
 import { runGuideFr } from "./runGuide";
 import { spendingFr } from "./spending";
+import { spendingBudgetFr } from "./spendingBudget";
 import { transactionsFr } from "./transactions";
 import { wealthFr } from "./wealth";
 
@@ -28,6 +30,8 @@ export const fr: Messages = {
   dashboard: dashboardFr,
   household: householdFr,
   spending: spendingFr,
+  spendingBudget: spendingBudgetFr,
+  overview: overviewFr,
   transactions: transactionsFr,
   recurring: recurringFr,
   budget: budgetFr,

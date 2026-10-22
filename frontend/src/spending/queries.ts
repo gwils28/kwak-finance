@@ -3,11 +3,14 @@ import {
   labelSuggestions,
   listFixed,
   listSpendingCategories,
+  listTargets,
   monthIncome,
   monthLines,
   monthOccurrences,
   monthSummary,
   type SpendingCategoryOut,
+  spendingMatrix,
+  spendingYear,
 } from "../api/generated";
 
 /** Every query below starts with this key: a write refreshes them all. */
@@ -54,6 +57,24 @@ export const labelsQuery = (q: string) =>
     enabled: q.trim() !== "",
     staleTime: 60_000,
   });
+
+export const matrixQuery = (first: string, last: string) =>
+  queryOptions({
+    queryKey: [SPENDING, "matrix", first, last],
+    queryFn: async () =>
+      (await spendingMatrix({ query: { first, last }, throwOnError: true })).data,
+  });
+
+export const yearQuery = (year: number) =>
+  queryOptions({
+    queryKey: [SPENDING, "year", year],
+    queryFn: async () => (await spendingYear({ query: { year }, throwOnError: true })).data,
+  });
+
+export const targetsQuery = queryOptions({
+  queryKey: [SPENDING, "targets"],
+  queryFn: async () => (await listTargets({ throwOnError: true })).data,
+});
 
 /** After any write: lines, figures, occurrences and labels all move together. */
 export function refreshSpending(queryClient: QueryClient): Promise<void> {

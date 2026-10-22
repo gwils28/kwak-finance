@@ -43,7 +43,7 @@ test("the month's lines are listed with its figures, a split line with its parts
   expect(screen.getByRole("heading", { name: "Oct 2026" })).toBeInTheDocument();
   await vi.waitFor(() => expect(screen.getByLabelText("Income")).toHaveValue("3000"));
   expect(await screen.findByText("€99.90")).toBeInTheDocument();
-  expect(screen.getByText("€2,900.10")).toBeInTheDocument();
+  expect(screen.getByText("€2,700.10")).toBeInTheDocument();
 
   const row = rowOf("Bakery");
   expect(within(row).getByLabelText("Amount")).toHaveValue("12.50");

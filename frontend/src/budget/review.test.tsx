@@ -175,14 +175,6 @@ test("without a plan in the address, the review shows this month's plan", async 
   await vi.waitFor(() => expect(queries("/api/budget/plans/p-current/review")).toHaveLength(1));
 });
 
-test("the budget page links to the review of the selected plan", async () => {
-  api();
-  render(<TestApp path="/budget" />);
-
-  const link = await screen.findByRole("link", { name: "See the review" });
-  expect(link).toHaveAttribute("href", "/budget/review?plan=p-current");
-});
-
 test("with no plan at all, the review says how to start", async () => {
   api(runningReview(), []);
   render(<TestApp path="/budget/review" />);
