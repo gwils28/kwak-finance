@@ -747,11 +747,6 @@ export type FixedOut = {
 export type FixedStatus = 'to_confirm' | 'confirmed' | 'skipped';
 
 /**
- * FlowKind
- */
-export type FlowKind = 'income' | 'spending' | 'uncategorised' | 'paid_in' | 'paid_out' | 'saved' | 'from_savings' | 'unallocated' | 'deficit';
-
-/**
  * FlowOut
  */
 export type FlowOut = {
@@ -763,7 +758,7 @@ export type FlowOut = {
      * Category Id
      */
     category_id: string | null;
-    kind: FlowKind;
+    kind: KwakCoreFlowsFlowKind;
     /**
      * Name
      */
@@ -2392,6 +2387,11 @@ export type ReportRowOut = {
 };
 
 /**
+ * ReportSection
+ */
+export type ReportSection = 'spending' | 'savings';
+
+/**
  * RestoreOut
  *
  * What restoring the default categories does (GET) or did (POST).
@@ -2994,6 +2994,30 @@ export type SpendingFiguresOut = {
 };
 
 /**
+ * SpendingFlowOut
+ */
+export type SpendingFlowOut = {
+    /**
+     * Amount
+     */
+    amount: string;
+    /**
+     * Category Id
+     */
+    category_id: string | null;
+    kind: KwakCoreSpendingReportFlowKind;
+    /**
+     * Name
+     */
+    name: string | null;
+    /**
+     * Over
+     */
+    over: boolean;
+    side: Side;
+};
+
+/**
  * SpendingMatrixOut
  */
 export type SpendingMatrixOut = {
@@ -3125,6 +3149,169 @@ export type SpendingProgressOut = {
      * Warn At
      */
     warn_at: string;
+};
+
+/**
+ * SpendingReportCategoryOut
+ */
+export type SpendingReportCategoryOut = {
+    /**
+     * Category Id
+     */
+    category_id: string;
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Spent
+     */
+    spent: string;
+};
+
+/**
+ * SpendingReportMonthOut
+ */
+export type SpendingReportMonthOut = {
+    /**
+     * By Category
+     */
+    by_category: Array<SpendingReportCategoryOut>;
+    /**
+     * Income
+     */
+    income: string;
+    /**
+     * Month
+     */
+    month: string;
+    /**
+     * Rest
+     */
+    rest: string;
+    /**
+     * Saved
+     */
+    saved: string;
+    /**
+     * Spent
+     */
+    spent: string;
+};
+
+/**
+ * SpendingReportOut
+ */
+export type SpendingReportOut = {
+    changes: SpendingChangesOut;
+    /**
+     * Compared
+     */
+    compared: boolean;
+    /**
+     * End
+     */
+    end: string;
+    /**
+     * First Month
+     */
+    first_month: string | null;
+    /**
+     * Flows
+     */
+    flows: Array<SpendingFlowOut>;
+    /**
+     * Monthly
+     */
+    monthly: Array<SpendingReportMonthOut>;
+    /**
+     * Months
+     */
+    months: number;
+    previous: SpendingFiguresOut;
+    /**
+     * Previous End
+     */
+    previous_end: string;
+    /**
+     * Previous Start
+     */
+    previous_start: string;
+    /**
+     * Rows
+     */
+    rows: Array<SpendingReportRowOut>;
+    /**
+     * Sections
+     */
+    sections: Array<SpendingReportSectionOut>;
+    /**
+     * Start
+     */
+    start: string;
+    /**
+     * To Date
+     */
+    to_date: boolean;
+    totals: SpendingFiguresOut;
+};
+
+/**
+ * SpendingReportRowOut
+ */
+export type SpendingReportRowOut = {
+    /**
+     * Amount
+     */
+    amount: string;
+    /**
+     * Category Id
+     */
+    category_id: string;
+    /**
+     * Change
+     */
+    change: string | null;
+    /**
+     * Monthly Average
+     */
+    monthly_average: string;
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Previous
+     */
+    previous: string;
+    section: ReportSection;
+    /**
+     * Share
+     */
+    share: string | null;
+};
+
+/**
+ * SpendingReportSectionOut
+ */
+export type SpendingReportSectionOut = {
+    /**
+     * Amount
+     */
+    amount: string;
+    /**
+     * Change
+     */
+    change: string | null;
+    /**
+     * Monthly Average
+     */
+    monthly_average: string;
+    /**
+     * Previous
+     */
+    previous: string;
+    section: ReportSection;
 };
 
 /**
@@ -4153,6 +4340,16 @@ export type KwakApiTransactionsRoutesSplitIn = {
      */
     rest_category_id: string | null;
 };
+
+/**
+ * FlowKind
+ */
+export type KwakCoreFlowsFlowKind = 'income' | 'spending' | 'uncategorised' | 'paid_in' | 'paid_out' | 'saved' | 'from_savings' | 'unallocated' | 'deficit';
+
+/**
+ * FlowKind
+ */
+export type KwakCoreSpendingReportFlowKind = 'income' | 'spending' | 'saved' | 'from_savings' | 'unallocated' | 'deficit';
 
 export type ListAccountsData = {
     body?: never;
@@ -6988,6 +7185,44 @@ export type UnderstandQuickLineResponses = {
 };
 
 export type UnderstandQuickLineResponse = UnderstandQuickLineResponses[keyof UnderstandQuickLineResponses];
+
+export type SpendingReportData = {
+    body?: never;
+    path?: never;
+    query: {
+        /**
+         * Start
+         *
+         * First month, YYYY-MM
+         */
+        start: string;
+        /**
+         * End
+         *
+         * Last month, YYYY-MM, included
+         */
+        end: string;
+    };
+    url: '/api/spending/report';
+};
+
+export type SpendingReportErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type SpendingReportError = SpendingReportErrors[keyof SpendingReportErrors];
+
+export type SpendingReportResponses = {
+    /**
+     * Successful Response
+     */
+    200: SpendingReportOut;
+};
+
+export type SpendingReportResponse = SpendingReportResponses[keyof SpendingReportResponses];
 
 export type ListTargetsData = {
     body?: never;

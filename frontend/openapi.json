@@ -1444,21 +1444,6 @@
         "title": "FixedStatus",
         "type": "string"
       },
-      "FlowKind": {
-        "enum": [
-          "income",
-          "spending",
-          "uncategorised",
-          "paid_in",
-          "paid_out",
-          "saved",
-          "from_savings",
-          "unallocated",
-          "deficit"
-        ],
-        "title": "FlowKind",
-        "type": "string"
-      },
       "FlowOut": {
         "properties": {
           "amount": {
@@ -1479,7 +1464,7 @@
             "title": "Category Id"
           },
           "kind": {
-            "$ref": "#/components/schemas/FlowKind"
+            "$ref": "#/components/schemas/kwak_core__flows__FlowKind"
           },
           "name": {
             "anyOf": [
@@ -4589,6 +4574,14 @@
         "title": "ReportRowOut",
         "type": "object"
       },
+      "ReportSection": {
+        "enum": [
+          "spending",
+          "savings"
+        ],
+        "title": "ReportSection",
+        "type": "string"
+      },
       "RestoreOut": {
         "description": "What restoring the default categories does (GET) or did (POST).",
         "properties": {
@@ -5825,6 +5818,58 @@
         "title": "SpendingFiguresOut",
         "type": "object"
       },
+      "SpendingFlowOut": {
+        "properties": {
+          "amount": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Amount",
+            "type": "string"
+          },
+          "category_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category Id"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/kwak_core__spending_report__FlowKind"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "over": {
+            "title": "Over",
+            "type": "boolean"
+          },
+          "side": {
+            "$ref": "#/components/schemas/Side"
+          }
+        },
+        "required": [
+          "kind",
+          "side",
+          "amount",
+          "category_id",
+          "name",
+          "over"
+        ],
+        "title": "SpendingFlowOut",
+        "type": "object"
+      },
       "SpendingMatrixOut": {
         "properties": {
           "figures": {
@@ -6094,6 +6139,285 @@
           "lines"
         ],
         "title": "SpendingProgressOut",
+        "type": "object"
+      },
+      "SpendingReportCategoryOut": {
+        "properties": {
+          "category_id": {
+            "format": "uuid",
+            "title": "Category Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "spent": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Spent",
+            "type": "string"
+          }
+        },
+        "required": [
+          "category_id",
+          "name",
+          "spent"
+        ],
+        "title": "SpendingReportCategoryOut",
+        "type": "object"
+      },
+      "SpendingReportMonthOut": {
+        "properties": {
+          "by_category": {
+            "items": {
+              "$ref": "#/components/schemas/SpendingReportCategoryOut"
+            },
+            "title": "By Category",
+            "type": "array"
+          },
+          "income": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Income",
+            "type": "string"
+          },
+          "month": {
+            "title": "Month",
+            "type": "string"
+          },
+          "rest": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Rest",
+            "type": "string"
+          },
+          "saved": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Saved",
+            "type": "string"
+          },
+          "spent": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Spent",
+            "type": "string"
+          }
+        },
+        "required": [
+          "month",
+          "income",
+          "spent",
+          "saved",
+          "rest",
+          "by_category"
+        ],
+        "title": "SpendingReportMonthOut",
+        "type": "object"
+      },
+      "SpendingReportOut": {
+        "properties": {
+          "changes": {
+            "$ref": "#/components/schemas/SpendingChangesOut"
+          },
+          "compared": {
+            "title": "Compared",
+            "type": "boolean"
+          },
+          "end": {
+            "title": "End",
+            "type": "string"
+          },
+          "first_month": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "First Month"
+          },
+          "flows": {
+            "items": {
+              "$ref": "#/components/schemas/SpendingFlowOut"
+            },
+            "title": "Flows",
+            "type": "array"
+          },
+          "monthly": {
+            "items": {
+              "$ref": "#/components/schemas/SpendingReportMonthOut"
+            },
+            "title": "Monthly",
+            "type": "array"
+          },
+          "months": {
+            "title": "Months",
+            "type": "integer"
+          },
+          "previous": {
+            "$ref": "#/components/schemas/SpendingFiguresOut"
+          },
+          "previous_end": {
+            "title": "Previous End",
+            "type": "string"
+          },
+          "previous_start": {
+            "title": "Previous Start",
+            "type": "string"
+          },
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/SpendingReportRowOut"
+            },
+            "title": "Rows",
+            "type": "array"
+          },
+          "sections": {
+            "items": {
+              "$ref": "#/components/schemas/SpendingReportSectionOut"
+            },
+            "title": "Sections",
+            "type": "array"
+          },
+          "start": {
+            "title": "Start",
+            "type": "string"
+          },
+          "to_date": {
+            "title": "To Date",
+            "type": "boolean"
+          },
+          "totals": {
+            "$ref": "#/components/schemas/SpendingFiguresOut"
+          }
+        },
+        "required": [
+          "start",
+          "end",
+          "to_date",
+          "first_month",
+          "months",
+          "previous_start",
+          "previous_end",
+          "compared",
+          "totals",
+          "previous",
+          "changes",
+          "sections",
+          "rows",
+          "monthly",
+          "flows"
+        ],
+        "title": "SpendingReportOut",
+        "type": "object"
+      },
+      "SpendingReportRowOut": {
+        "properties": {
+          "amount": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Amount",
+            "type": "string"
+          },
+          "category_id": {
+            "format": "uuid",
+            "title": "Category Id",
+            "type": "string"
+          },
+          "change": {
+            "anyOf": [
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Change"
+          },
+          "monthly_average": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Monthly Average",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "previous": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Previous",
+            "type": "string"
+          },
+          "section": {
+            "$ref": "#/components/schemas/ReportSection"
+          },
+          "share": {
+            "anyOf": [
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Share"
+          }
+        },
+        "required": [
+          "section",
+          "category_id",
+          "name",
+          "amount",
+          "monthly_average",
+          "share",
+          "previous",
+          "change"
+        ],
+        "title": "SpendingReportRowOut",
+        "type": "object"
+      },
+      "SpendingReportSectionOut": {
+        "properties": {
+          "amount": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Amount",
+            "type": "string"
+          },
+          "change": {
+            "anyOf": [
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Change"
+          },
+          "monthly_average": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Monthly Average",
+            "type": "string"
+          },
+          "previous": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Previous",
+            "type": "string"
+          },
+          "section": {
+            "$ref": "#/components/schemas/ReportSection"
+          }
+        },
+        "required": [
+          "section",
+          "amount",
+          "monthly_average",
+          "previous",
+          "change"
+        ],
+        "title": "SpendingReportSectionOut",
         "type": "object"
       },
       "SpendingRestoreOut": {
@@ -8017,6 +8341,33 @@
         ],
         "title": "SplitIn",
         "type": "object"
+      },
+      "kwak_core__flows__FlowKind": {
+        "enum": [
+          "income",
+          "spending",
+          "uncategorised",
+          "paid_in",
+          "paid_out",
+          "saved",
+          "from_savings",
+          "unallocated",
+          "deficit"
+        ],
+        "title": "FlowKind",
+        "type": "string"
+      },
+      "kwak_core__spending_report__FlowKind": {
+        "enum": [
+          "income",
+          "spending",
+          "saved",
+          "from_savings",
+          "unallocated",
+          "deficit"
+        ],
+        "title": "FlowKind",
+        "type": "string"
       }
     }
   },
@@ -13942,6 +14293,80 @@
           }
         },
         "summary": "Understand Quick Line",
+        "tags": [
+          "spending"
+        ]
+      }
+    },
+    "/api/spending/report": {
+      "get": {
+        "description": "Spending and savings by category over a period, against the one before (F-DSH-2).\n\nA period running past the current month stops there and is compared with the same months\nof the period before; months before the first line or income are left out.",
+        "operationId": "spendingReport",
+        "parameters": [
+          {
+            "description": "First month, YYYY-MM",
+            "in": "query",
+            "name": "start",
+            "required": true,
+            "schema": {
+              "description": "First month, YYYY-MM",
+              "maxLength": 7,
+              "title": "Start",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Last month, YYYY-MM, included",
+            "in": "query",
+            "name": "end",
+            "required": true,
+            "schema": {
+              "description": "Last month, YYYY-MM, included",
+              "maxLength": 7,
+              "title": "End",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "kwak_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Kwak Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SpendingReportOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Spending Report",
         "tags": [
           "spending"
         ]
