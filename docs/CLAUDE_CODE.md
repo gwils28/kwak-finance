@@ -49,7 +49,7 @@ Deterministic code rules (no float for money, no ad-hoc hex) belong in ruff, Bio
 | `prepare-commit` | Single-topic diff check, Conventional Commit message, PR description template | done |
 | `feature-slice` | A feature end to end: spec, core rule with failing test first, migration, API with household/visibility scoping, `make openapi`, web with i18n EN/FR, guides, checks and subagents, `scripts/ship-pr.sh` | done |
 | `ui-preview` | Throwaway Postgres, synthetic data and dev servers on `127.0.0.1:5173`, so a browser check never touches the real data or session | done |
-| `bank-import-profile` | How to add a new bank format: anonymised fixture, test written first, profile, dedup check | 1 |
+| `bank-import-profile` | *(dropped in v1.0: no bank import)* | — |
 | `db-migration` | Alembic procedure: autogenerate, review, up/down test on testcontainers, never edit a merged migration | done |
 | `design-system` | Blog palette tokens, typography, chart colours, shadcn conventions, light/dark check with Chrome | 1 |
 | `forecast-protocol` | Temporal split, naive baseline, rolling-origin metrics with dispersion, seeds, no look-ahead property test | 4 |
@@ -63,7 +63,7 @@ Money rules (Decimal, sign, rounding) are not a skill: `CLAUDE.md` and `kwak_cor
 |---|---|---|---|
 | `code-reviewer` | read-only (Read, Grep, Glob, `git diff`) | Reviews the diff in a fresh context before each PR: correctness, invariants, tests, project rules (i18n, guides, palette, generated client, merged migrations), single topic | done |
 | `data-quality` | read-only + Bash for read-only scripts | Inspects imported files and the DB for anomalies (duplicates, gaps, sign errors). Never edits. Reads real data, so only on the maintainer's explicit request, through a read-only DB role | later |
-| `security-auditor` | read-only | Reviews a diff against the project's threat model: other households, private accounts of other members, owner-only actions, sessions/CSRF/TOTP, throttling, secrets, imports (complements the generic `/security-review`) | done |
+| `security-auditor` | read-only | Reviews a diff against the project's threat model: other households, private wealth lines and goals of other members, owner-only actions, sessions/CSRF/TOTP, throttling, secrets (complements the generic `/security-review`) | done |
 | `ui-verifier` | Read + Chrome extension | Checks pages on the `ui-preview` instance: both languages, light/dark, phone width, console and network errors, guide accuracy. Screenshots stay out of the main context | done |
 | `statistician` | read-only | Reviews the forecasting/simulation protocol and leakage risks. No edits | 4 |
 

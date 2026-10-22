@@ -8,28 +8,22 @@ import {
   redirect,
 } from "@tanstack/react-router";
 import { AppLayout } from "./AppLayout";
-import { AccountsPage } from "./accounts/AccountsPage";
 import { ActivityPage } from "./activity/ActivityPage";
 import { LoginPage } from "./auth/LoginPage";
 import { meQuery } from "./auth/session";
-import { ReviewPage } from "./budget/ReviewPage";
-import { CategoriesPage } from "./categories/CategoriesPage";
 import { GoalPage } from "./goals/GoalPage";
 import { GoalsPage } from "./goals/GoalsPage";
 import { GuidePage } from "./guide/GuidePage";
 import { HomePage } from "./HomePage";
 import { AcceptInvitePage } from "./household/AcceptInvitePage";
 import { MembersPage } from "./household/MembersPage";
-import { ImportPage } from "./imports/ImportPage";
 import { isMonth } from "./lib/months";
-import { RecurringPage } from "./recurring/RecurringPage";
 import { ReportsPage } from "./reports/ReportsPage";
 import { RunGuidePage } from "./runGuide/RunGuidePage";
 import { BudgetPage, parseBudgetSearch } from "./spending/BudgetPage";
 import { CategoriesPage as SpendingCategoriesPage } from "./spending/CategoriesPage";
 import { FixedPage } from "./spending/FixedPage";
 import { GridPage, parseGridSearch } from "./spending/GridPage";
-import { parseTransactionSearch, TransactionsPage } from "./transactions/TransactionsPage";
 import { WealthAnalysisPage } from "./wealth/WealthAnalysisPage";
 import { WealthPage } from "./wealth/WealthPage";
 
@@ -83,46 +77,11 @@ const spendingCategoriesRoute = createRoute({
   component: SpendingCategoriesPage,
 });
 
-const accountsRoute = createRoute({
-  getParentRoute: () => appRoute,
-  path: "/accounts",
-  component: AccountsPage,
-});
-
-const importRoute = createRoute({
-  getParentRoute: () => appRoute,
-  path: "/accounts/$accountId/import",
-  component: ImportPage,
-});
-
-const transactionsRoute = createRoute({
-  getParentRoute: () => appRoute,
-  path: "/transactions",
-  validateSearch: parseTransactionSearch,
-  component: TransactionsPage,
-});
-
-const recurringRoute = createRoute({
-  getParentRoute: () => appRoute,
-  path: "/recurring",
-  component: RecurringPage,
-});
-
 const budgetRoute = createRoute({
   getParentRoute: () => appRoute,
   path: "/budget",
   validateSearch: parseBudgetSearch,
   component: BudgetPage,
-});
-
-const reviewRoute = createRoute({
-  getParentRoute: () => appRoute,
-  path: "/budget/review",
-  validateSearch: (search: Record<string, unknown>): { plan?: string } =>
-    typeof search.plan === "string" ? { plan: search.plan } : {},
-  component: function Review() {
-    return <ReviewPage planId={reviewRoute.useSearch().plan} />;
-  },
 });
 
 const reportsRoute = createRoute({
@@ -184,12 +143,6 @@ const guideRoute = createRoute({
   component: GuidePage,
 });
 
-const categoriesRoute = createRoute({
-  getParentRoute: () => appRoute,
-  path: "/categories",
-  component: CategoriesPage,
-});
-
 const loginRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/login",
@@ -218,18 +171,12 @@ const routeTree = rootRoute.addChildren([
     spendingRoute,
     fixedRoute,
     spendingCategoriesRoute,
-    accountsRoute,
-    importRoute,
-    transactionsRoute,
-    recurringRoute,
     budgetRoute,
-    reviewRoute,
     wealthRoute,
     wealthAnalysisRoute,
     goalsRoute,
     goalRoute,
     reportsRoute,
-    categoriesRoute,
     membersRoute,
     activityRoute,
     guideRoute,

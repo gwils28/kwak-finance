@@ -8,10 +8,10 @@ from decimal import Decimal
 from uuid import UUID
 
 from kwak_core import goals as core
-from kwak_core.accounts import Scope, Visibility, can_view, in_scope
 from kwak_core.budget import Month, month_range
 from kwak_core.categories import CategoryKind
 from kwak_core.fixed import FixedFrequency
+from kwak_core.visibility import Scope, Visibility, can_view, in_scope
 from kwak_core.wealth import WealthKind
 from sqlalchemy import select
 from sqlalchemy.orm import Session, joinedload, selectinload

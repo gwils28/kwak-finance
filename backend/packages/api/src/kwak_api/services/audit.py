@@ -1,18 +1,16 @@
 """The activity log (F-ADM-3): entries are added in the same database transaction as the
 action, so an action that fails leaves none."""
 
-from collections.abc import Sequence
 from datetime import datetime
 from decimal import Decimal
 from typing import Any
 from uuid import UUID
 
-from kwak_core.accounts import Visibility
 from kwak_core.audit import AuditAction, AuditKind
 from sqlalchemy import ColumnElement, func, or_, select, true
 from sqlalchemy.orm import Session, joinedload
 
-from kwak_api.models import Account, AuditEvent, Role, User
+from kwak_api.models import AuditEvent, Role, User
 
 type Detail = str | int | None
 
@@ -23,28 +21,22 @@ def record(
     action: AuditAction,
     now: datetime,
     *,
-    accounts: Sequence[Account | None] = (),
     private_to: UUID | None = None,
     ip: str | None = None,
     **details: Detail | Decimal,
 ) -> None:
-    """Add an entry by `user` about `accounts` (the first one's name is kept). An entry about
-    a private account, even as the other side of a transfer, is only shown to its owner;
-    `private_to` does the same for anything else private (a wealth line)."""
+    """Add an entry by `user`; one `private_to` a member (about a private wealth line or goal)
+    is only shown to them."""
     kept: dict[str, Any] = {
         k: str(v) if isinstance(v, Decimal) else v for k, v in details.items() if v is not None
     }
-    involved = [a for a in accounts if a is not None]
-    if involved:
-        kept["account"] = involved[0].name
-    private = next((a for a in involved if a.visibility is Visibility.PRIVATE), None)
     db.add(
         AuditEvent(
             household_id=user.household_id,
             user_id=user.id,
             at=now,
             action=action,
-            private_to=private.owner_id if private else private_to,
+            private_to=private_to,
             ip=ip,
             details=kept,
         )

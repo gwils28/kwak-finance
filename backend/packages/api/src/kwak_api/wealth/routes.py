@@ -5,11 +5,11 @@ from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Query, status
-from kwak_core.accounts import Scope, Visibility
 from kwak_core.audit import AuditAction
 from kwak_core.budget import Month, month_range
 from kwak_core.goals import GoalError
 from kwak_core.money import quantize, require_cents
+from kwak_core.visibility import Scope, Visibility
 from kwak_core.wealth import WEALTH_COLOURS, Cell, WealthKind, WealthValueError, check_value
 from pydantic import AfterValidator, BaseModel, Field, StringConstraints
 
@@ -440,7 +440,7 @@ def wealth_matrix(
     scope: Scope = Scope.HOUSEHOLD,
 ) -> WealthMatrixOut:
     """The wealth matrix (F-WLT-5). Without a window: the last 12 months, from the wealth start
-    at the earliest (the analyses start without one, F-ADM-4)."""
+    at the earliest."""
     user = user_session.user
     months = _window(start, end, now.date(), wealth_start(db, user.household_id))
     m = service.matrix(db, user, months, scope)

@@ -14,10 +14,10 @@ from dataclasses import dataclass
 from decimal import Decimal
 from uuid import UUID
 
-from kwak_core.accounts import Scope, Visibility
-from kwak_core.accounts import in_scope as account_in_scope
 from kwak_core.budget import Month
 from kwak_core.categories import Names
+from kwak_core.visibility import Scope, Visibility
+from kwak_core.visibility import in_scope as visible_in_scope
 
 ZERO = Decimal(0)
 CENT = Decimal("0.01")
@@ -108,11 +108,11 @@ class LineInput:
 
 
 def in_scope(lines: Sequence[LineInput], scope: Scope, viewer_id: UUID) -> list[LineInput]:
-    """The lines a view covers, by the accounts' rules (§3)."""
+    """The lines a view covers, by the visibility rules (§3)."""
     return [
         line
         for line in lines
-        if account_in_scope(
+        if visible_in_scope(
             scope, owner_id=line.owner_id, visibility=line.visibility, viewer_id=viewer_id
         )
     ]

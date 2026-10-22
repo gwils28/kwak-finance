@@ -1,13 +1,36 @@
+from collections.abc import Iterator
 from typing import Any
 
 import pytest
 from alembic import command
+from kwak_api.db import Base
 from kwak_api.migrate import alembic_config
-from sqlalchemy import Engine, text
-
-from tests.api.db.test_savings_category_migration import _household, clean  # noqa: F401
+from sqlalchemy import Connection, Engine, text
 
 WEALTH_REVISION = "02d05c0c4e51"
+
+
+@pytest.fixture
+def clean(engine: Engine) -> Iterator[None]:
+    yield
+    with engine.begin() as conn:
+        tables = ", ".join(t.name for t in Base.metadata.sorted_tables)
+        conn.execute(text(f"TRUNCATE {tables}"))
+
+
+def _household(conn: Connection, owner_language: str | None) -> Any:
+    household = conn.scalar(
+        text("INSERT INTO household (id, name) VALUES (gen_random_uuid(), 'Home') RETURNING id")
+    )
+    conn.execute(
+        text(
+            "INSERT INTO app_user"
+            " (id, household_id, email, display_name, password_hash, role, language)"
+            " VALUES (gen_random_uuid(), :h, :e, 'Owner', 'x', 'owner', :l)"
+        ),
+        {"h": household, "e": f"{household}@example.test", "l": owner_language},
+    )
+    return household
 
 
 def _categories(engine: Engine, household: Any) -> list[tuple[str, str, int]]:

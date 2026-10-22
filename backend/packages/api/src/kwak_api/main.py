@@ -5,25 +5,15 @@ from fastapi.routing import APIRoute
 from pydantic import BaseModel
 from sqlalchemy.orm import sessionmaker
 
-from kwak_api.accounts.routes import router as accounts_router
 from kwak_api.audit.routes import router as audit_router
 from kwak_api.auth.routes import router as auth_router
-from kwak_api.budget.routes import router as budget_router
-from kwak_api.categories.routes import router as categories_router
-from kwak_api.dashboard.routes import router as dashboard_router
 from kwak_api.db import make_engine
 from kwak_api.goals.routes import router as goals_router
 from kwak_api.household.routes import router as household_router
-from kwak_api.imports.routes import router as imports_router
-from kwak_api.recurring.routes import router as recurring_router
-from kwak_api.reports.routes import router as reports_router
-from kwak_api.rules.routes import router as rules_router
 from kwak_api.settings import Settings
 from kwak_api.spending.budget import router as spending_budget_router
 from kwak_api.spending.report import router as spending_report_router
 from kwak_api.spending.routes import router as spending_router
-from kwak_api.transactions.routes import router as transactions_router
-from kwak_api.transfers.routes import router as transfers_router
 from kwak_api.wealth.routes import router as wealth_router
 
 
@@ -59,16 +49,6 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(router)
     app.include_router(auth_router)
     app.include_router(household_router)
-    app.include_router(accounts_router)
-    app.include_router(imports_router)
-    app.include_router(transactions_router)
-    app.include_router(categories_router)
-    app.include_router(rules_router)
-    app.include_router(budget_router)
-    app.include_router(transfers_router)
-    app.include_router(dashboard_router)
-    app.include_router(recurring_router)
-    app.include_router(reports_router)
     app.include_router(audit_router)
     app.include_router(wealth_router)
     app.include_router(goals_router)

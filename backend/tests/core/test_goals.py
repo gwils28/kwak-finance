@@ -5,7 +5,6 @@ from uuid import UUID, uuid4
 import pytest
 from hypothesis import given
 from hypothesis import strategies as st
-from kwak_core.accounts import Visibility
 from kwak_core.budget import Month
 from kwak_core.fixed import FixedFrequency as Frequency
 from kwak_core.goals import (
@@ -31,6 +30,7 @@ from kwak_core.goals import (
     tier_of,
     track,
 )
+from kwak_core.visibility import Visibility
 from kwak_core.wealth import WealthKind, line_cell
 
 D = Decimal

@@ -12,12 +12,12 @@ afterEach(() => {
 test("the footer of a signed-in page links to the guide on running the app", async () => {
   fakeApi({
     "GET /api/auth/me": () => Response.json(owner),
-    "GET /api/accounts": () => Response.json([]),
+    "GET /api/goals": () => Response.json({ goals: [], closed: [], pyramid: [] }),
   });
   const user = userEvent.setup();
-  render(<TestApp path="/accounts" />);
+  render(<TestApp path="/guide" />);
 
-  await screen.findByRole("heading", { name: "Accounts" });
+  await screen.findByRole("heading", { name: "Using Kwak Finance" });
   await user.click(screen.getByRole("link", { name: "How to run the app" }));
 
   expect(await screen.findByRole("heading", { name: "Running Kwak Finance" })).toBeInTheDocument();

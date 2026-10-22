@@ -2,7 +2,6 @@ import { keepPreviousData, useQuery, useSuspenseQuery } from "@tanstack/react-qu
 import { useId, useState } from "react";
 import { type AuditEntryOut, type AuditKind, activityLog, listMembers } from "../api/generated";
 import { meQuery } from "../auth/session";
-import { usePeriodLabel } from "../budget/PlanPanel";
 import { Button, ErrorAlert } from "../components/ui";
 import { useI18n } from "../i18n";
 import { formatDate, formatDateTime } from "../lib/dates";
@@ -12,21 +11,17 @@ import { monthLabel } from "../lib/months";
 const fieldClass = "rounded-md border border-border bg-surface px-3 py-2";
 const labelClass = "flex flex-col gap-1 text-sm font-medium";
 const PAGE = 50;
-const KINDS: AuditKind[] = ["sign_in", "household", "import", "deletion", "rules"];
+const KINDS: AuditKind[] = ["sign_in", "household", "deletion"];
 
 /** The details as the sentences expect them: amounts, dates and percentages formatted. */
-function formatted(
-  details: AuditEntryOut["details"],
-  period: (text: string) => string,
-): Record<string, string> {
+function formatted(details: AuditEntryOut["details"]): Record<string, string> {
   const out: Record<string, string> = {};
   for (const [key, value] of Object.entries(details)) {
     const text = String(value);
-    if (key === "amount" || key === "min" || key === "max") out[key] = formatEur(text);
+    if (key === "amount") out[key] = formatEur(text);
     else if (key === "date") out[key] = formatDate(text);
     else if (key === "warn_at" || key === "precaution_share") out[key] = formatPercent(text);
     else if (key === "goal_capacity") out[key] = text && formatEur(text);
-    else if (key === "period") out[key] = period(text);
     else if (key === "analysis_start" || key === "wealth_start")
       out[key] = text && monthLabel(text);
     else out[key] = text;
@@ -38,7 +33,6 @@ function formatted(
 export function ActivityPage() {
   const { data: user } = useSuspenseQuery(meQuery);
   const { t } = useI18n();
-  const period = usePeriodLabel();
   const ids = { kind: useId(), member: useId() };
   const isOwner = user.role === "owner";
   const [kind, setKind] = useState<AuditKind | "">("");
@@ -146,7 +140,7 @@ export function ActivityPage() {
                       {e.user_name ?? t.activity.removedMember}
                     </td>
                     <td className="px-3 py-2">
-                      {t.activity.actions[e.action](formatted(e.details, period))}
+                      {t.activity.actions[e.action](formatted(e.details))}
                     </td>
                     <td className="tabular whitespace-nowrap px-3 py-2 text-muted">{e.ip ?? ""}</td>
                   </tr>

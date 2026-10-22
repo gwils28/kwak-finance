@@ -11,8 +11,10 @@ function api() {
   return fakeApi({
     "GET /api/auth/me": () => Response.json(owner),
     "PATCH /api/auth/me": (body) => Response.json({ ...owner, ...(body as object) }),
-    "GET /api/accounts": () => Response.json([]),
     ...spendingHandlers(),
+    "GET /api/household/members": () => Response.json([owner]),
+    "GET /api/invites": () => Response.json([]),
+    "GET /api/household/settings": () => Response.json({ warn_at: "0.80", wealth_start: null }),
   });
 }
 
@@ -37,7 +39,7 @@ test("the main tabs lead to the everyday pages, the current one marked", async (
 
 test("the guide stands apart from the main tabs", async () => {
   api();
-  render(<TestApp path="/transactions" />);
+  render(<TestApp path="/spending?month=2026-10" />);
 
   const main = await screen.findByRole("navigation", { name: "Main" });
   expect(within(main).queryByRole("link", { name: "Guide" })).toBeNull();
@@ -46,7 +48,7 @@ test("the guide stands apart from the main tabs", async () => {
 
 test("the account menu holds the household settings and preferences", async () => {
   api();
-  render(<TestApp path="/accounts" />);
+  render(<TestApp path="/spending?month=2026-10" />);
 
   const user = userEvent.setup();
   const button = await screen.findByRole("button", { name: "Account menu: Wilson" });
@@ -61,7 +63,7 @@ test("the account menu holds the household settings and preferences", async () =
     "/spending/categories",
   );
   expect(screen.getByRole("link", { name: "Members" })).toHaveAttribute("href", "/members");
-  expect(screen.getByRole("link", { name: "Accounts" })).toHaveAttribute("href", "/accounts");
+  expect(screen.queryByRole("link", { name: "Accounts" })).toBeNull();
   expect(screen.getByRole("link", { name: "Activity log" })).toHaveAttribute("href", "/activity");
   expect(screen.getByRole("button", { name: "Dark theme" })).toBeInTheDocument();
   expect(screen.getByRole("button", { name: "Sign out" })).toBeInTheDocument();
@@ -73,7 +75,7 @@ test("the account menu holds the household settings and preferences", async () =
 
 test("following a link from the account menu closes it", async () => {
   api();
-  render(<TestApp path="/accounts" />);
+  render(<TestApp path="/members" />);
 
   const user = userEvent.setup();
   const button = await screen.findByRole("button", { name: "Account menu: Wilson" });
@@ -88,7 +90,7 @@ test("following a link from the account menu closes it", async () => {
 
 test("the logo stands next to the app's name in the header", async () => {
   api();
-  render(<TestApp path="/accounts" />);
+  render(<TestApp path="/members" />);
 
   const home = await screen.findByRole("link", { name: "Kwak Finance" });
   expect(home.querySelector("img")).toHaveAttribute("src", "/logo.png");
@@ -149,13 +151,13 @@ test("the goals space has no tabs", async () => {
 
 test("the overview is the app's name, apart from every space", async () => {
   api();
-  render(<TestApp path="/accounts" />);
+  render(<TestApp path="/members" />);
 
   // The app's name leads to the overview; no switch nor tab repeats it.
   expect(await screen.findByRole("link", { name: "Kwak Finance" })).toHaveAttribute("href", "/");
   const spaces = screen.getByRole("navigation", { name: "Spaces" });
   expect(within(spaces).queryByRole("link", { name: "Overview" })).toBeNull();
-  // Accounts are a household page now, in the account menu: neither space is marked.
+  // Members is a household page, in the account menu: neither space is marked.
   expect(within(spaces).getByRole("link", { name: "Spending" })).not.toHaveAttribute(
     "aria-current",
   );

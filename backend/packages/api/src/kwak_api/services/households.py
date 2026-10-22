@@ -8,24 +8,15 @@ from sqlalchemy.orm import Session
 from kwak_api.auth.passwords import hash_password
 from kwak_api.models import Household, Role, User
 from kwak_api.services import spending, wealth
-from kwak_api.services.categories import seed_defaults
 
 
 class HouseholdAlreadyExistsError(Exception):
     """The app hosts a single household (see docs/SPECIFICATIONS.md §2)."""
 
 
-def analysis_start(db: Session, household_id: UUID) -> Month | None:
-    """The first month analyses count (F-ADM-4); None: every month."""
-    start = db.get_one(Household, household_id).analysis_start
-    return Month.of(start) if start else None
-
-
 def wealth_start(db: Session, household_id: UUID) -> Month | None:
-    """The first month the wealth matrix shows by default (F-WLT-5): its own, else the
-    analyses start; None: no limit."""
-    household = db.get_one(Household, household_id)
-    start = household.wealth_start or household.analysis_start
+    """The first month the wealth matrix shows by default (F-WLT-5); None: no limit."""
+    start = db.get_one(Household, household_id).wealth_start
     return Month.of(start) if start else None
 
 
@@ -54,7 +45,6 @@ def create_household(
     )
     session.add(owner)
     session.flush()
-    seed_defaults(session, owner.household_id, language or Language.EN)
     wealth.seed_defaults(session, owner.household_id, language or Language.EN)
     spending.seed_categories(session, owner.household_id, language or Language.EN)
     return owner

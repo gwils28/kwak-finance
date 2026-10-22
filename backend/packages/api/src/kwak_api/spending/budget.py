@@ -12,10 +12,9 @@ from fastapi import APIRouter, Query, status
 from kwak_core.budget import DEFAULT_BAND, BudgetStatus, Cell, Month, Row, build_matrix, month_range
 from kwak_core.categories import CategoryKind
 from kwak_core.fixed import FixedStatus, projected_rest
-from kwak_core.kpis import top_categories
 from kwak_core.money import quantize, require_cents
 from kwak_core.progress import ProgressStatus, month_progress
-from kwak_core.spending import MonthFigures, cumulative_by_day
+from kwak_core.spending import MonthFigures, cumulative_by_day, top_categories
 from kwak_core.year import YearLine, months_to_date, year_lines
 from pydantic import AfterValidator, BaseModel, Field
 
@@ -221,7 +220,7 @@ def month_summary(
     by_category = service.spending_by_month(db, household_id, wanted, wanted)
     expenses, savings = _sections(categories)
     spent = {c: by_category.get((c, wanted), ZERO) for c, _, _ in expenses}
-    top = top_categories(spent, {}, total=current.spent)
+    top = top_categories(spent, total=current.spent)
 
     matrix = build_matrix(
         expenses, service.targets(db, household_id), by_category, [wanted], savings=savings

@@ -8,8 +8,8 @@ import {
   type LineOut,
   replaceLine,
   type SpendingCategoryOut,
-  skipOccurrence2,
-  unskipOccurrence2,
+  skipOccurrence,
+  unskipOccurrence,
 } from "../api/generated";
 import { detailSentence } from "../auth/errors";
 import { Button, ErrorAlert } from "../components/ui";
@@ -384,7 +384,7 @@ function Occurrence({
   const path = { fixed_id: occurrence.fixed_expense_id, month };
   const toggle = (skip: boolean) =>
     onToggle(async () => {
-      await (skip ? skipOccurrence2 : unskipOccurrence2)({ path, throwOnError: true });
+      await (skip ? skipOccurrence : unskipOccurrence)({ path, throwOnError: true });
       await refreshSpending(queryClient);
     });
 

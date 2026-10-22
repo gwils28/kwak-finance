@@ -4,9 +4,9 @@ from uuid import UUID, uuid4
 import pytest
 from hypothesis import given
 from hypothesis import strategies as st
-from kwak_core.accounts import Scope, Visibility
 from kwak_core.budget import Month, month_range
 from kwak_core.users import Language
+from kwak_core.visibility import Scope, Visibility
 from kwak_core.wealth import (
     DEFAULT_WEALTH_CATEGORIES,
     CategoryInput,
@@ -134,7 +134,7 @@ def test_update_this_month_lists_the_open_lines_with_their_last_value() -> None:
     assert to_update([pea, sold, new], OCT) == [(pea, D("900")), (new, None)]
 
 
-def test_scopes_select_lines_as_accounts() -> None:
+def test_scopes_select_lines_by_visibility() -> None:
     mine = _line(STOCKS, {OCT: D("1")})
     theirs = _line(STOCKS, {OCT: D("2")}, owner=OTHER)
     hidden = _line(STOCKS, {OCT: D("4")}, owner=OTHER, visibility=Visibility.PRIVATE)
@@ -200,7 +200,7 @@ def test_values_carry_forward_and_net_worth_is_assets_minus_debts(
 def test_the_household_is_mine_plus_joint_plus_what_others_share(
     lines: list[LineInput],
 ) -> None:
-    """Invariant §8.6, as invariant 11 for accounts."""
+    """Invariant §8.6, as invariant 11."""
 
     def net(scoped: list[LineInput]) -> list[Decimal]:
         return wealth_matrix(CATEGORIES, scoped, ALL).net

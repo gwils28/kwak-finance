@@ -1,21 +1,20 @@
 import { useQuery } from "@tanstack/react-query";
 import { useId } from "react";
-import { listAccounts, type Scope } from "../api/generated";
+import { listMembers, type Scope } from "../api/generated";
 import { useI18n } from "../i18n";
 
-/** Whether the household has a joint account, closed ones included (they hold history). */
-export function useHasJointAccount(): boolean {
-  const { data: accounts } = useQuery({
-    queryKey: ["accounts", { includeClosed: true }],
-    queryFn: async () =>
-      (await listAccounts({ query: { include_closed: true }, throwOnError: true })).data,
+/** Whether the household has several members: only then is anything held jointly. */
+function useSharedHousehold(): boolean {
+  const { data: members } = useQuery({
+    queryKey: ["members"],
+    queryFn: async () => (await listMembers({ throwOnError: true })).data,
   });
-  return accounts?.some((a) => a.visibility === "joint") ?? false;
+  return (members?.length ?? 0) > 1;
 }
 
 /**
- * Which accounts an aggregated view covers. "Joint accounts" is offered once the household
- * has one, closed ones included since they still hold history.
+ * Which wealth lines and goals a view covers. "Joint" is offered once the household has
+ * several members, or when it is already the scope shown.
  */
 export function ScopeSelect({
   value,
@@ -32,7 +31,7 @@ export function ScopeSelect({
 }) {
   const { t } = useI18n();
   const id = useId();
-  const hasJoint = useHasJointAccount();
+  const hasJoint = useSharedHousehold();
   return (
     <label htmlFor={id} className={labelClassName}>
       {label ?? t.dashboard.scope}

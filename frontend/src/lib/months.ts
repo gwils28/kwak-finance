@@ -30,11 +30,3 @@ export function daysInMonth(month: string): number {
   const [year, m] = month.split("-").map(Number) as [number, number];
   return new Date(year, m, 0).getDate();
 }
-
-/** First and last day, as the transactions filters expect them. */
-export function monthBounds(month: string): { from: string; to: string } {
-  return {
-    from: `${month}-01`,
-    to: `${month}-${String(daysInMonth(month)).padStart(2, "0")}`,
-  };
-}

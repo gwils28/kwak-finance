@@ -84,6 +84,24 @@ def stored_amount(typed: Decimal, kind: CategoryKind | None) -> Decimal:
     return typed if kind is CategoryKind.INCOME else -typed
 
 
+@dataclass(frozen=True)
+class TopCategory:
+    category_id: UUID
+    spent: Decimal
+    share: Decimal | None
+    """Of the month's total spending."""
+
+
+def top_categories(
+    spending: Mapping[UUID, Decimal], *, total: Decimal, limit: int = 5
+) -> list[TopCategory]:
+    """The categories that spent most (F-DSH-4), with their share of the month's spending."""
+    ranked = sorted(
+        ((c, s) for c, s in spending.items() if s > 0), key=lambda item: (-item[1], str(item[0]))
+    )
+    return [TopCategory(c, s, s / total if total > 0 else None) for c, s in ranked[:limit]]
+
+
 def cumulative_by_day(spent: Mapping[date, Decimal], month: Month) -> list[tuple[date, Decimal]]:
     """The month's spending added up day by day (F-DSH-5), every day of the month."""
     day, end, total, out = month.first_day(), month.next().first_day(), ZERO, []

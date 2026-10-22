@@ -59,8 +59,6 @@ export const authFr: typeof authEn = {
 
 export const navEn = {
   overview: "Overview",
-  accounts: "Accounts",
-  transactions: "Transactions",
   budget: "Budget",
   wealth: "Wealth",
   goals: "Goals",
@@ -82,8 +80,6 @@ export const navEn = {
 
 export const navFr: typeof navEn = {
   overview: "Vue d'ensemble",
-  accounts: "Comptes",
-  transactions: "Opérations",
   budget: "Budget",
   wealth: "Patrimoine",
   goals: "Objectifs",
