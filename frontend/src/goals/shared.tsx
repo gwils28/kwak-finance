@@ -43,6 +43,7 @@ const STATUS_CLASS: Record<GoalStatus, string> = {
   behind: "bg-budget-over-bg text-budget-over-fg",
   fill_first: "border border-[var(--color-goal-priority)] text-fg",
   open: "bg-budget-on-bg text-budget-on-fg",
+  locked: "bg-budget-on-bg text-muted",
 };
 
 const STATUS_ICON: Record<GoalStatus, string> = {
@@ -52,6 +53,7 @@ const STATUS_ICON: Record<GoalStatus, string> = {
   behind: "▼",
   fill_first: "!",
   open: "○",
+  locked: "🔒",
 };
 
 const BAR_COLOUR: Record<GoalStatus, string> = {
@@ -61,6 +63,7 @@ const BAR_COLOUR: Record<GoalStatus, string> = {
   behind: "var(--color-progress-over)",
   fill_first: "var(--color-goal-priority)",
   open: "var(--color-chart-on)",
+  locked: "var(--color-chart-on)",
 };
 
 /** The status with its icon and word: colour is never the only cue. */

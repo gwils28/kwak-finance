@@ -55,6 +55,7 @@ const goal = (fields: Partial<GoalOut>): GoalOut => ({
   effort: "290.00",
   precaution: false,
   permanent: false,
+  pleasure: false,
   ...fields,
 });
 
@@ -127,7 +128,16 @@ const goals: GoalsOut = {
     { tier: "short", value: "0.00", target: "0.00", progress: null },
     { tier: "medium", value: "4000.00", target: "8500.00", progress: "0.4706" },
     { tier: "long", value: "0.00", target: "0.00", progress: null },
+    { tier: "pleasure", value: "0.00", target: "0.00", progress: null },
   ],
+  capstone: {
+    month: "2026-09",
+    precaution: "0.8435",
+    ahead: 1,
+    counted: 1,
+    needed: 1,
+    unlocked: false,
+  },
   plan: {
     capacity: "1350.00",
     capacity_set: false,

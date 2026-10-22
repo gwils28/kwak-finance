@@ -16,18 +16,21 @@ export const goalsEn = {
     short: "Short term",
     medium: "Medium term",
     long: "Long term",
+    pleasure: "Pleasure",
   } satisfies Record<Tier, string>,
   tierShort: {
     precaution: "Emergency fund",
     short: "Short term",
     medium: "Medium term",
     long: "Long term",
+    pleasure: "Pleasure",
   } satisfies Record<Tier, string>,
   horizons: {
     precaution: "the foundation, filled first",
     short: "up to a year",
     medium: "over a year, up to five",
     long: "beyond five years",
+    pleasure: "the capstone, once the rest is in order",
   } satisfies Record<Tier, string>,
   status: {
     reached: "Reached",
@@ -36,6 +39,7 @@ export const goalsEn = {
     behind: "Behind",
     fill_first: "Fill first",
     open: "In progress",
+    locked: "Locked",
   } satisfies Record<GoalStatus, string>,
   closedAs: {
     archived: "Archived",
@@ -238,18 +242,21 @@ export const goalsFr: typeof goalsEn = {
     short: "Court terme",
     medium: "Moyen terme",
     long: "Long terme",
+    pleasure: "Plaisir",
   },
   tierShort: {
     precaution: "Précaution",
     short: "Court terme",
     medium: "Moyen terme",
     long: "Long terme",
+    pleasure: "Plaisir",
   },
   horizons: {
     precaution: "le socle, servi en premier",
     short: "jusqu'à un an",
     medium: "plus d'un an, jusqu'à cinq",
     long: "au-delà de cinq ans",
+    pleasure: "la pointe, une fois le reste en ordre",
   },
   status: {
     reached: "Atteint",
@@ -258,6 +265,7 @@ export const goalsFr: typeof goalsEn = {
     behind: "En retard",
     fill_first: "À combler en priorité",
     open: "En cours",
+    locked: "Verrouillé",
   },
   closedAs: {
     archived: "Archivé",

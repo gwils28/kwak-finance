@@ -240,9 +240,9 @@ def test_a_permanent_goal_needs_no_deadline_and_the_precaution_is_one(
     assert (fund["tier"], fund["status"], fund["deadline"]) == ("short", "open", None)
     precaution = _goal(owner_client, name="Précaution", precaution=True, deadline=None)
     assert (precaution["permanent"], precaution["tier"]) == (True, "precaution")
-    # the foundation of the pyramid, under its three tiers
+    # the foundation of the pyramid, under its three tiers and the capstone
     tiers = [t["tier"] for t in _goals(owner_client)["pyramid"]]
-    assert tiers == ["precaution", "short", "medium", "long"]
+    assert tiers == ["precaution", "short", "medium", "long", "pleasure"]
     response = owner_client.patch(
         f"/api/goals/{precaution['id']}", json={"permanent": False}, headers=csrf(owner_client)
     )
@@ -463,3 +463,75 @@ def test_an_adjustment_stays_within_the_goals_months_and_lines(
     url = f"/api/goals/{goal['id']}/envelopes/" + path.format(line=livret, other=other)
     response = owner_client.put(url, json={"amount": "50.00"}, headers=csrf(owner_client))
     assert response.status_code == status
+
+
+def test_a_pleasure_goal_sits_in_the_capstone_locked_until_the_rest_is_in_order(
+    owner_client: TestClient,
+) -> None:
+    livret = _livret(owner_client)
+    rum = _goal(owner_client, name="Rhum", pleasure=True, deadline=None, target="120.00")
+    assert (rum["tier"], rum["pleasure"], rum["deadline"]) == ("pleasure", True, None)
+    assert rum["status"] == "locked"
+    goals = _goals(owner_client)
+    assert [t["tier"] for t in goals["pyramid"]][-1] == "pleasure"
+    # no precaution yet: the capstone stays locked, judged on September
+    assert goals["capstone"] == {
+        "month": "2026-09",
+        "precaution": None,
+        "ahead": 0,
+        "counted": 0,
+        "needed": 0,
+        "unlocked": False,
+    }
+    precaution = {"line_id": livret, "share": 50, "opening": "500.00"}
+    _goal(
+        owner_client,
+        name="Précaution",
+        precaution=True,
+        deadline=None,
+        target="500.00",
+        start="2026-09",
+        fundings=[precaution],
+    )
+    assert _goals(owner_client)["capstone"]["unlocked"] is True
+    # from September: locked then (judged on August), it takes half the October rise of 200
+    patched = owner_client.patch(
+        f"/api/goals/{rum['id']}",
+        json={"start": "2026-09", "fundings": [{"line_id": livret, "share": 50}]},
+        headers=csrf(owner_client),
+    )
+    assert patched.status_code == 200, patched.text
+    assert (patched.json()["status"], patched.json()["value"]) == ("open", "100.00")
+
+
+def test_a_pleasure_goal_has_no_deadline_and_is_neither_permanent_nor_the_precaution(
+    owner_client: TestClient,
+) -> None:
+    assert _post(owner_client, pleasure=True).status_code == 422
+    assert _post(owner_client, pleasure=True, deadline=None, permanent=True).status_code == 422
+
+
+def test_the_plan_gives_unlocked_pleasure_goals_what_is_left(owner_client: TestClient) -> None:
+    owner_client.patch(
+        "/api/household/settings",
+        json={"goal_capacity": "1000.00"},
+        headers=csrf(owner_client),
+    )
+    livret = _livret(owner_client)
+    _goal(
+        owner_client,
+        name="Précaution",
+        precaution=True,
+        deadline=None,
+        target="500.00",
+        start="2026-09",
+        fundings=[{"line_id": livret, "share": 50, "opening": "500.00"}],
+    )
+    japan = _goal(owner_client, target="2900.00")  # 290 a month: on track, in its start month
+    rum = _goal(owner_client, name="Rhum", pleasure=True, deadline=None, target="120.00")
+    goals = _goals(owner_client)
+    # Japan, judged on September, did not exist: only the precaution counts
+    assert goals["capstone"]["unlocked"] is True
+    efforts = {g["id"]: g["effort"] for g in goals["goals"]}
+    assert (efforts[japan["id"]], efforts[rum["id"]]) == ("290.00", "120.00")
+    assert goals["plan"]["unallocated"] == "590.00"
