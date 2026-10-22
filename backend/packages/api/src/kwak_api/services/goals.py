@@ -2,24 +2,21 @@
 and the month's effort plan."""
 
 from collections import defaultdict
-from dataclasses import dataclass, replace
+from dataclasses import dataclass
 from datetime import date
 from decimal import Decimal
 from uuid import UUID
 
 from kwak_core import goals as core
 from kwak_core.accounts import Scope, Visibility, can_view, in_scope
-from kwak_core.analysis import counted_months
 from kwak_core.budget import Month, month_range
 from kwak_core.categories import CategoryKind
-from kwak_core.kpis import month_figures
-from kwak_core.recurring import Frequency
+from kwak_core.fixed import FixedFrequency
 from kwak_core.wealth import WealthKind
 from sqlalchemy import select
 from sqlalchemy.orm import Session, joinedload, selectinload
 
 from kwak_api.models import (
-    Category,
     ClosedAs,
     Goal,
     GoalFunding,
@@ -28,10 +25,7 @@ from kwak_api.models import (
     WealthLine,
     WealthValue,
 )
-from kwak_api.services import recurring, wealth
-from kwak_api.services.budget import crossing_by_month, scoped_accounts
-from kwak_api.services.dashboard import flows_by_month
-from kwak_api.services.households import analysis_start
+from kwak_api.services import spending, spending_budget, wealth
 
 
 class SharesExceededError(Exception):
@@ -262,27 +256,19 @@ def lines_free(db: Session, viewer: User, today: date) -> list[LineFree]:
     return out
 
 
-def capacity(db: Session, viewer: User, scope: Scope, this_month: Month) -> Decimal:
-    """The average monthly net cash flow of the last complete months with transactions."""
-    accounts = scoped_accounts(db, viewer, scope)
-    last = this_month.previous()
-    first = core.add_months(this_month, -core.EFFORT_MONTHS)
-    months = counted_months(month_range(first, last), analysis_start(db, viewer.household_id))
-    if not accounts or not months:
-        return Decimal(0)
-    kinds = {
-        c.id: c.kind
-        for c in db.scalars(select(Category).where(Category.household_id == viewer.household_id))
-    }
-    flows = flows_by_month(db, accounts, months[0], months[-1])
-    crossed = crossing_by_month(db, accounts, months)
-    nets = []
-    for m in months:
-        if not flows[m] and m not in crossed:
-            continue  # before the first transaction: not a month of zero
-        paid_in, paid_out = crossed.get(m, (Decimal(0), Decimal(0)))
-        nets.append(replace(month_figures(flows[m], kinds), paid_in=paid_in, paid_out=paid_out).net)
-    return core.capacity(nets)
+def capacity(db: Session, viewer: User, this_month: Month) -> Decimal:
+    """The household's average monthly income minus spending over the last complete months,
+    from the first one with a line or an income: the same in every scope (F-GOAL-6). Savings
+    lines stay in, since they are what goals are funded from."""
+    household_id = viewer.household_id
+    months = spending_budget.counted(
+        month_range(core.add_months(this_month, -core.EFFORT_MONTHS), this_month.previous()),
+        spending_budget.first_month(db, household_id),
+    )
+    figures = spending_budget.figures_by_month(
+        db, household_id, months, spending_budget.kinds(db, household_id)
+    )
+    return core.capacity([f.income - f.spent for f in figures.values()])
 
 
 @dataclass
@@ -318,7 +304,7 @@ def overview(db: Session, viewer: User, scope: Scope, today: date, band: Decimal
     cap = (
         household.goal_capacity
         if household.goal_capacity is not None
-        else capacity(db, viewer, scope, this_month)
+        else capacity(db, viewer, this_month)
     )
     plan = core.effort_plan(
         cap,
@@ -346,44 +332,31 @@ def overview(db: Session, viewer: User, scope: Scope, today: date, band: Decimal
 @dataclass
 class FixedItem:
     label: str
-    frequency: Frequency
+    frequency: FixedFrequency
     amount: Decimal
-    """The expected outflow, positive."""
+    """The outflow each time, positive."""
     monthly: Decimal
 
 
-def fixed_items(db: Session, viewer: User, scope: Scope, today: date) -> list[FixedItem]:
-    """The active recurring expense items of the scope's accounts, at their expected amount."""
-    accounts = set(scoped_accounts(db, viewer, scope))
-    savings = {
-        c.id
-        for c in db.scalars(
-            select(Category).where(
-                Category.household_id == viewer.household_id,
-                Category.kind == CategoryKind.SAVINGS,
-            )
-        )
-    }
+def fixed_items(db: Session, viewer: User, today: date) -> list[FixedItem]:
+    """The household's fixed expenses in an expense category, neither paused nor ended
+    (F-GOAL-2): the same in every scope, the spending being the household's."""
+    this_month = Month.of(today)
     out = []
-    for view in recurring.overview(db, viewer, today):
-        item = view.item
+    for item in spending.fixed_expenses(db, viewer.household_id):
         if (
-            item.destination_id is not None
-            or item.paused
-            or (item.end_on is not None and item.end_on < today)
-            or item.account_id not in accounts
-            or item.category_id in savings
+            item.paused
+            or item.amount >= 0
+            or item.category.kind is not CategoryKind.EXPENSE
+            or (item.last_month is not None and Month.of(item.last_month) < this_month)
         ):
-            continue
-        expected = view.next.expected if view.next else item.amount
-        if expected >= 0:
             continue
         out.append(
             FixedItem(
                 item.label,
                 item.frequency,
-                -expected,
-                core.fixed_expenses([(item.frequency, expected)]),
+                -item.amount,
+                core.fixed_expenses([(item.frequency, item.amount)]),
             )
         )
     return sorted(out, key=lambda i: i.label.lower())

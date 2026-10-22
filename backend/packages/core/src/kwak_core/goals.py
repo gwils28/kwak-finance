@@ -14,8 +14,8 @@ from uuid import UUID
 
 from kwak_core.accounts import Visibility
 from kwak_core.budget import DEFAULT_BAND, BudgetStatus, Month, budget_status, month_range
+from kwak_core.fixed import STEP, FixedFrequency
 from kwak_core.money import quantize
-from kwak_core.recurring import Frequency
 from kwak_core.wealth import WealthKind, line_cell
 
 ZERO = Decimal(0)
@@ -129,17 +129,10 @@ def check_precaution_slot(
 
 # F-GOAL-2
 
-_PER_MONTH = {
-    Frequency.WEEKLY: Decimal(52) / 12,
-    Frequency.MONTHLY: Decimal(1),
-    Frequency.QUARTERLY: Decimal(1) / 3,
-    Frequency.YEARLY: Decimal(1) / 12,
-}
 
-
-def fixed_expenses(items: Iterable[tuple[Frequency, Decimal]]) -> Decimal:
-    """The monthly equivalent of the recurring outflows given (signed, as transactions')."""
-    return quantize(sum((-amount * _PER_MONTH[f] for f, amount in items if amount < 0), ZERO))
+def fixed_expenses(items: Iterable[tuple[FixedFrequency, Decimal]]) -> Decimal:
+    """The monthly equivalent of the fixed outflows given (signed, as lines')."""
+    return quantize(sum((-amount / STEP[f] for f, amount in items if amount < 0), ZERO))
 
 
 def precaution_proposal(monthly_fixed: Decimal, months: int) -> Decimal:

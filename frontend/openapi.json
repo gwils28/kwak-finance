@@ -1627,7 +1627,7 @@
             "type": "string"
           },
           "frequency": {
-            "$ref": "#/components/schemas/Frequency"
+            "$ref": "#/components/schemas/FixedFrequency"
           },
           "label": {
             "title": "Label",
@@ -5657,6 +5657,445 @@
         "title": "SpendingCategoryPatch",
         "type": "object"
       },
+      "SpendingCellOut": {
+        "properties": {
+          "gap": {
+            "anyOf": [
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gap"
+          },
+          "gap_ratio": {
+            "anyOf": [
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gap Ratio"
+          },
+          "month": {
+            "title": "Month",
+            "type": "string"
+          },
+          "spent": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Spent",
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/BudgetStatus"
+          },
+          "target": {
+            "anyOf": [
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target"
+          }
+        },
+        "required": [
+          "month",
+          "spent",
+          "target",
+          "gap",
+          "gap_ratio",
+          "status"
+        ],
+        "title": "SpendingCellOut",
+        "type": "object"
+      },
+      "SpendingChangesOut": {
+        "description": "Relative changes, None from a zero reference.",
+        "properties": {
+          "income": {
+            "anyOf": [
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Income"
+          },
+          "rest": {
+            "anyOf": [
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rest"
+          },
+          "saved": {
+            "anyOf": [
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Saved"
+          },
+          "spent": {
+            "anyOf": [
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Spent"
+          }
+        },
+        "required": [
+          "income",
+          "spent",
+          "saved",
+          "rest"
+        ],
+        "title": "SpendingChangesOut",
+        "type": "object"
+      },
+      "SpendingFiguresOut": {
+        "properties": {
+          "income": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Income",
+            "type": "string"
+          },
+          "rest": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Rest",
+            "type": "string"
+          },
+          "saved": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Saved",
+            "type": "string"
+          },
+          "savings_rate": {
+            "anyOf": [
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Savings Rate"
+          },
+          "spent": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Spent",
+            "type": "string"
+          }
+        },
+        "required": [
+          "income",
+          "spent",
+          "saved",
+          "rest",
+          "savings_rate"
+        ],
+        "title": "SpendingFiguresOut",
+        "type": "object"
+      },
+      "SpendingMatrixOut": {
+        "properties": {
+          "figures": {
+            "items": {
+              "$ref": "#/components/schemas/SpendingFiguresOut"
+            },
+            "title": "Figures",
+            "type": "array"
+          },
+          "months": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Months",
+            "type": "array"
+          },
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/SpendingMatrixRowOut"
+            },
+            "title": "Rows",
+            "type": "array"
+          },
+          "savings": {
+            "items": {
+              "$ref": "#/components/schemas/SpendingMatrixRowOut"
+            },
+            "title": "Savings",
+            "type": "array"
+          },
+          "savings_total": {
+            "$ref": "#/components/schemas/SpendingMatrixRowOut"
+          },
+          "total": {
+            "$ref": "#/components/schemas/SpendingMatrixRowOut"
+          }
+        },
+        "required": [
+          "months",
+          "rows",
+          "total",
+          "savings",
+          "savings_total",
+          "figures"
+        ],
+        "title": "SpendingMatrixOut",
+        "type": "object"
+      },
+      "SpendingMatrixRowOut": {
+        "properties": {
+          "category_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category Id"
+          },
+          "cells": {
+            "items": {
+              "$ref": "#/components/schemas/SpendingCellOut"
+            },
+            "title": "Cells",
+            "type": "array"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "target": {
+            "anyOf": [
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target"
+          }
+        },
+        "required": [
+          "category_id",
+          "name",
+          "target",
+          "cells"
+        ],
+        "title": "SpendingMatrixRowOut",
+        "type": "object"
+      },
+      "SpendingMonthChangesOut": {
+        "properties": {
+          "vs_average": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SpendingChangesOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "vs_previous": {
+            "$ref": "#/components/schemas/SpendingChangesOut"
+          }
+        },
+        "required": [
+          "vs_previous",
+          "vs_average"
+        ],
+        "title": "SpendingMonthChangesOut",
+        "type": "object"
+      },
+      "SpendingMonthOut": {
+        "properties": {
+          "average": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SpendingFiguresOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "changes": {
+            "$ref": "#/components/schemas/SpendingMonthChangesOut"
+          },
+          "figures": {
+            "$ref": "#/components/schemas/SpendingFiguresOut"
+          },
+          "income_carried": {
+            "title": "Income Carried",
+            "type": "boolean"
+          },
+          "month": {
+            "title": "Month",
+            "type": "string"
+          },
+          "previous": {
+            "$ref": "#/components/schemas/SpendingFiguresOut"
+          },
+          "progress": {
+            "$ref": "#/components/schemas/SpendingProgressOut"
+          },
+          "projected_rest": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Projected Rest",
+            "type": "string"
+          },
+          "to_confirm": {
+            "title": "To Confirm",
+            "type": "integer"
+          },
+          "top": {
+            "items": {
+              "$ref": "#/components/schemas/SpendingTopOut"
+            },
+            "title": "Top",
+            "type": "array"
+          }
+        },
+        "required": [
+          "month",
+          "figures",
+          "income_carried",
+          "previous",
+          "average",
+          "changes",
+          "top",
+          "projected_rest",
+          "to_confirm",
+          "progress"
+        ],
+        "title": "SpendingMonthOut",
+        "type": "object"
+      },
+      "SpendingProgressLineOut": {
+        "properties": {
+          "category_id": {
+            "format": "uuid",
+            "title": "Category Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "pace": {
+            "anyOf": [
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pace"
+          },
+          "remaining": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Remaining",
+            "type": "string"
+          },
+          "share": {
+            "anyOf": [
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Share"
+          },
+          "spent": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Spent",
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ProgressStatus"
+          },
+          "target": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Target",
+            "type": "string"
+          }
+        },
+        "required": [
+          "category_id",
+          "name",
+          "spent",
+          "target",
+          "remaining",
+          "share",
+          "status",
+          "pace"
+        ],
+        "title": "SpendingProgressLineOut",
+        "type": "object"
+      },
+      "SpendingProgressOut": {
+        "properties": {
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/SpendingProgressLineOut"
+            },
+            "title": "Lines",
+            "type": "array"
+          },
+          "warn_at": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Warn At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "warn_at",
+          "lines"
+        ],
+        "title": "SpendingProgressOut",
+        "type": "object"
+      },
       "SpendingRestoreOut": {
         "properties": {
           "added": {
@@ -5668,6 +6107,234 @@
           "added"
         ],
         "title": "SpendingRestoreOut",
+        "type": "object"
+      },
+      "SpendingTargetIn": {
+        "properties": {
+          "amount": {
+            "anyOf": [
+              {
+                "exclusiveMaximum": 1000000000000.0,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Amount"
+          }
+        },
+        "required": [
+          "amount"
+        ],
+        "title": "SpendingTargetIn",
+        "type": "object"
+      },
+      "SpendingTargetOut": {
+        "properties": {
+          "amount": {
+            "anyOf": [
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Amount"
+          },
+          "category_id": {
+            "format": "uuid",
+            "title": "Category Id",
+            "type": "string"
+          },
+          "from_month": {
+            "title": "From Month",
+            "type": "string"
+          }
+        },
+        "required": [
+          "category_id",
+          "from_month",
+          "amount"
+        ],
+        "title": "SpendingTargetOut",
+        "type": "object"
+      },
+      "SpendingTopOut": {
+        "properties": {
+          "category_id": {
+            "format": "uuid",
+            "title": "Category Id",
+            "type": "string"
+          },
+          "share": {
+            "anyOf": [
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Share"
+          },
+          "spent": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Spent",
+            "type": "string"
+          }
+        },
+        "required": [
+          "category_id",
+          "spent",
+          "share"
+        ],
+        "title": "SpendingTopOut",
+        "type": "object"
+      },
+      "SpendingYearLineOut": {
+        "properties": {
+          "above": {
+            "title": "Above",
+            "type": "integer"
+          },
+          "below": {
+            "title": "Below",
+            "type": "integer"
+          },
+          "category_id": {
+            "format": "uuid",
+            "title": "Category Id",
+            "type": "string"
+          },
+          "gap": {
+            "anyOf": [
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gap"
+          },
+          "gap_ratio": {
+            "anyOf": [
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gap Ratio"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "on": {
+            "title": "On",
+            "type": "integer"
+          },
+          "spent_to_date": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Spent To Date",
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/BudgetStatus"
+          },
+          "target_full": {
+            "anyOf": [
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Full"
+          },
+          "target_to_date": {
+            "anyOf": [
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target To Date"
+          }
+        },
+        "required": [
+          "category_id",
+          "name",
+          "target_to_date",
+          "target_full",
+          "spent_to_date",
+          "gap",
+          "gap_ratio",
+          "status",
+          "above",
+          "on",
+          "below"
+        ],
+        "title": "SpendingYearLineOut",
+        "type": "object"
+      },
+      "SpendingYearOut": {
+        "properties": {
+          "expenses": {
+            "items": {
+              "$ref": "#/components/schemas/SpendingYearLineOut"
+            },
+            "title": "Expenses",
+            "type": "array"
+          },
+          "months": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Months",
+            "type": "array"
+          },
+          "savings": {
+            "items": {
+              "$ref": "#/components/schemas/SpendingYearLineOut"
+            },
+            "title": "Savings",
+            "type": "array"
+          },
+          "totals": {
+            "$ref": "#/components/schemas/SpendingFiguresOut"
+          },
+          "year": {
+            "title": "Year",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "year",
+          "months",
+          "expenses",
+          "savings",
+          "totals"
+        ],
+        "title": "SpendingYearOut",
         "type": "object"
       },
       "SuggestionOut": {
@@ -9998,12 +10665,14 @@
             }
           },
           {
+            "description": "Ignored: the spending is the household's",
             "in": "query",
             "name": "scope",
             "required": false,
             "schema": {
               "$ref": "#/components/schemas/Scope",
-              "default": "household"
+              "default": "household",
+              "description": "Ignored: the spending is the household's"
             }
           },
           {
@@ -13069,6 +13738,155 @@
         ]
       }
     },
+    "/api/spending/matrix": {
+      "get": {
+        "description": "By default the last 12 months, this one included.",
+        "operationId": "spendingMatrix",
+        "parameters": [
+          {
+            "description": "YYYY-MM",
+            "in": "query",
+            "name": "first",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 7,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "YYYY-MM",
+              "title": "First"
+            }
+          },
+          {
+            "description": "YYYY-MM",
+            "in": "query",
+            "name": "last",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 7,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "YYYY-MM",
+              "title": "Last"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "kwak_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Kwak Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SpendingMatrixOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Spending Matrix",
+        "tags": [
+          "spending"
+        ]
+      }
+    },
+    "/api/spending/month": {
+      "get": {
+        "operationId": "monthSummary",
+        "parameters": [
+          {
+            "description": "YYYY-MM",
+            "in": "query",
+            "name": "month",
+            "required": true,
+            "schema": {
+              "description": "YYYY-MM",
+              "maxLength": 7,
+              "title": "Month",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "kwak_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Kwak Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SpendingMonthOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Month Summary",
+        "tags": [
+          "spending"
+        ]
+      }
+    },
     "/api/spending/quick": {
       "post": {
         "description": "How the quick line is understood (F-ENT-2); nothing is saved.",
@@ -13124,6 +13942,267 @@
           }
         },
         "summary": "Understand Quick Line",
+        "tags": [
+          "spending"
+        ]
+      }
+    },
+    "/api/spending/targets": {
+      "get": {
+        "description": "Each category's targets (objectives for savings), by the month they start.",
+        "operationId": "listTargets",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "kwak_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Kwak Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/SpendingTargetOut"
+                  },
+                  "title": "Response Listtargets",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Targets",
+        "tags": [
+          "spending"
+        ]
+      }
+    },
+    "/api/spending/targets/{category_id}/{month}": {
+      "delete": {
+        "description": "The month follows the earlier target again.",
+        "operationId": "removeTarget",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "category_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Category Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "month",
+            "required": true,
+            "schema": {
+              "title": "Month",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "kwak_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Kwak Session"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Remove Target",
+        "tags": [
+          "spending"
+        ]
+      },
+      "put": {
+        "description": "From `month` on, until the next change (F-BUD-1).",
+        "operationId": "setTarget",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "category_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Category Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "month",
+            "required": true,
+            "schema": {
+              "title": "Month",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "kwak_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Kwak Session"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SpendingTargetIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SpendingTargetOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Set Target",
+        "tags": [
+          "spending"
+        ]
+      }
+    },
+    "/api/spending/year": {
+      "get": {
+        "description": "The current year by default; a past one whole.",
+        "operationId": "spendingYear",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "year",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "exclusiveMaximum": 2201,
+                  "minimum": 1900,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Year"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "kwak_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Kwak Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SpendingYearOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Spending Year",
         "tags": [
           "spending"
         ]

@@ -7,6 +7,7 @@ from hypothesis import given
 from hypothesis import strategies as st
 from kwak_core.accounts import Visibility
 from kwak_core.budget import Month
+from kwak_core.fixed import FixedFrequency as Frequency
 from kwak_core.goals import (
     Envelope,
     FundedGoal,
@@ -30,7 +31,6 @@ from kwak_core.goals import (
     tier_of,
     track,
 )
-from kwak_core.recurring import Frequency
 from kwak_core.wealth import WealthKind, line_cell
 
 D = Decimal
@@ -116,15 +116,14 @@ def test_one_open_precaution_per_member_and_one_joint() -> None:
 # F-GOAL-2: the precaution's proposal
 
 
-def test_fixed_expenses_are_the_monthly_equivalent_of_recurring_outflows() -> None:
+def test_fixed_expenses_are_the_monthly_equivalent_of_their_outflows() -> None:
     items = [
         (Frequency.MONTHLY, D("-900")),  # rent
-        (Frequency.WEEKLY, D("-12")),  # 12 x 52 / 12 = 52
         (Frequency.QUARTERLY, D("-90")),  # 30
         (Frequency.YEARLY, D("-600")),  # 50
         (Frequency.MONTHLY, D("2500")),  # a salary is no expense
     ]
-    assert fixed_expenses(items) == D("1032.00")
+    assert fixed_expenses(items) == D("980.00")
 
 
 def test_the_proposal_is_a_number_of_months_of_fixed_expenses() -> None:

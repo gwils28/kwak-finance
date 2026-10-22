@@ -358,28 +358,27 @@ def test_the_effort_plan_fills_the_precaution_first(owner_client: TestClient) ->
     assert plan["shortfall"] == "0.00"
 
 
-def _checking(client: TestClient) -> str:
-    body = {
-        "name": "Courant",
-        "institution_name": "SG",
-        "type": "checking",
-        "visibility": "shared",
-        "opening_balance": "0",
-        "opening_date": "2026-01-01",
-    }
-    response = client.post("/api/accounts", json=body, headers=csrf(client))
-    assert response.status_code == 201, response.text
-    account: str = response.json()["id"]
-    return account
+def _spending_categories(client: TestClient) -> dict[str, str]:
+    return {c["name"]: c["id"] for c in client.get("/api/spending/categories").json()}
 
 
-def test_the_capacity_is_the_average_net_cash_flow(owner_client: TestClient) -> None:
-    account = _checking(owner_client)
-    for day, amount in (("2026-09-02", "2000.00"), ("2026-09-10", "-800.00")):
-        body = {"account_id": account, "booked_on": day, "amount": amount, "label": "x"}
-        response = owner_client.post("/api/transactions", json=body, headers=csrf(owner_client))
+def test_the_capacity_is_the_average_income_minus_spending(owner_client: TestClient) -> None:
+    categories = _spending_categories(owner_client)
+    response = owner_client.put(
+        "/api/spending/income/2026-09", json={"amount": "2000.00"}, headers=csrf(owner_client)
+    )
+    assert response.status_code == 200, response.text
+    for category, amount in (("Groceries", "-800.00"), ("Savings", "-500.00")):
+        body = {
+            "day": "2026-09-10",
+            "label": "x",
+            "amount": amount,
+            "category_id": categories[category],
+        }
+        response = owner_client.post("/api/spending/lines", json=body, headers=csrf(owner_client))
         assert response.status_code == 201, response.text
     plan = _goals(owner_client)["plan"]
+    # Savings lines stay in: they are what goals are funded from.
     assert (plan["capacity"], plan["capacity_set"]) == ("1200.00", False)
 
 
@@ -394,21 +393,23 @@ def test_goal_settings_are_checked(owner_client: TestClient, body: dict[str, str
 def test_the_precaution_proposal_counts_months_of_fixed_expenses(
     owner_client: TestClient,
 ) -> None:
-    account = _checking(owner_client)
-    for label, amount, frequency in (
-        ("Loyer", "-900.00", "monthly"),
-        ("Assurance", "-600.00", "yearly"),
-        ("Salaire", "2500.00", "monthly"),
+    categories = _spending_categories(owner_client)
+    for label, category, amount, frequency, paused in (
+        ("Loyer", "Housing", "-900.00", "monthly", False),
+        ("Assurance", "Home", "-600.00", "yearly", False),
+        ("Livret", "Savings", "-200.00", "monthly", False),  # put aside, not spent
+        ("Salle", "Leisure", "-30.00", "monthly", True),  # paused
     ):
         body = {
-            "account_id": account,
             "label": label,
+            "category_id": categories[category],
             "amount": amount,
             "frequency": frequency,
             "day": 5,
-            "start_on": "2026-01-05",
+            "first_month": "2026-01",
+            "paused": paused,
         }
-        response = owner_client.post("/api/recurring", json=body, headers=csrf(owner_client))
+        response = owner_client.post("/api/spending/fixed", json=body, headers=csrf(owner_client))
         assert response.status_code == 201, response.text
     proposal = owner_client.get("/api/goals/precaution-proposal", params={"months": 6}).json()
     assert (proposal["monthly_fixed"], proposal["amount"]) == ("950.00", "5700.00")
