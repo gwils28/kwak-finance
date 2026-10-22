@@ -22,7 +22,16 @@ const goalKeys = (css: string) =>
   [...css.matchAll(/--color-goal-([a-z0-9-]+):/g)].map((m) => m[1]).sort();
 
 test("goal colours survive the build in both themes", () => {
-  const keys = ["foundation", "priority", "tier-1", "tier-2", "tier-3"];
+  const keys = [
+    "foundation",
+    "priority",
+    "stone",
+    "stone-edge",
+    "stone-top",
+    "tier-1",
+    "tier-2",
+    "tier-3",
+  ];
   expect(goalKeys(block("@theme static {"))).toEqual(keys);
   expect(goalKeys(block(':root[data-theme="dark"] {'))).toEqual(keys);
 });
