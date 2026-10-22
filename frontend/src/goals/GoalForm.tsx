@@ -42,6 +42,7 @@ export function GoalForm({ goal, onDone }: { goal?: GoalOut; onDone: () => void 
     who: useId(),
     precaution: useId(),
     permanent: useId(),
+    pleasure: useId(),
   };
   const lines = useQuery({
     queryKey: ["wealth", "lines"],
@@ -57,8 +58,9 @@ export function GoalForm({ goal, onDone }: { goal?: GoalOut; onDone: () => void 
   });
   const [precaution, setPrecaution] = useState(goal?.precaution ?? false);
   const [isPermanent, setPermanent] = useState(goal?.permanent ?? false);
-  // The emergency fund is always permanent.
-  const permanent = precaution || isPermanent;
+  const [pleasure, setPleasure] = useState(goal?.pleasure ?? false);
+  // The emergency fund is always permanent; a pleasure goal never, and has no deadline.
+  const permanent = !pleasure && (precaution || isPermanent);
   const [name, setName] = useState(goal?.name ?? "");
   const [target, setTarget] = useState(goal ? amountInputShort(goal.target) : "");
   const [deadline, setDeadline] = useState(goal?.deadline ?? "");
@@ -85,10 +87,11 @@ export function GoalForm({ goal, onDone }: { goal?: GoalOut; onDone: () => void 
     mutationFn: async ({ amount, fundings }: { amount: string; fundings: GoalFundingIn[] }) => {
       const body = {
         name,
-        precaution,
+        precaution: precaution && !pleasure,
         permanent,
+        pleasure,
         target: amount,
-        deadline: deadline || null,
+        deadline: pleasure ? null : deadline || null,
         start,
         fundings,
         ...(canChangeWho ? { visibility } : {}),
@@ -145,7 +148,8 @@ export function GoalForm({ goal, onDone }: { goal?: GoalOut; onDone: () => void 
             id={ids.precaution}
             type="checkbox"
             aria-describedby={`${ids.precaution}-hint`}
-            checked={precaution}
+            checked={precaution && !pleasure}
+            disabled={pleasure}
             onChange={(e) => setPrecaution(e.target.checked)}
           />
           {g.isPrecaution}
@@ -161,13 +165,29 @@ export function GoalForm({ goal, onDone }: { goal?: GoalOut; onDone: () => void 
             type="checkbox"
             aria-describedby={`${ids.permanent}-hint`}
             checked={permanent}
-            disabled={precaution}
+            disabled={precaution || pleasure}
             onChange={(e) => setPermanent(e.target.checked)}
           />
           {g.isPermanent}
         </label>
         <p id={`${ids.permanent}-hint`} className={hintClass}>
           {g.isPermanentHint}
+        </p>
+      </div>
+      <div className="flex flex-col gap-1 text-sm">
+        <label htmlFor={ids.pleasure} className="flex items-center gap-2 font-medium">
+          <input
+            id={ids.pleasure}
+            type="checkbox"
+            aria-describedby={`${ids.pleasure}-hint`}
+            checked={pleasure}
+            disabled={precaution}
+            onChange={(e) => setPleasure(e.target.checked)}
+          />
+          {g.isPleasure}
+        </label>
+        <p id={`${ids.pleasure}-hint`} className={hintClass}>
+          {g.isPleasureHint}
         </p>
       </div>
       <label htmlFor={ids.name} className={labelClass}>
@@ -192,25 +212,29 @@ export function GoalForm({ goal, onDone }: { goal?: GoalOut; onDone: () => void 
           onChange={(e) => setTarget(e.target.value)}
         />
       </label>
-      {precaution && <Proposal onUse={(amount) => setTarget(amountInputShort(amount))} />}
+      {precaution && !pleasure && (
+        <Proposal onUse={(amount) => setTarget(amountInputShort(amount))} />
+      )}
       <div className="grid gap-4 sm:grid-cols-2">
-        <div className={labelClass}>
-          <label htmlFor={ids.deadline}>{g.deadlineField}</label>
-          <input
-            id={ids.deadline}
-            type="month"
-            required={!permanent}
-            aria-describedby={`${ids.deadline}-hint`}
-            className={fieldClass}
-            value={deadline}
-            onChange={(e) => setDeadline(e.target.value)}
-          />
-          <p id={`${ids.deadline}-hint`} className={hintClass}>
-            {permanent && !deadline
-              ? g.deadlineOptional
-              : g.tierOf(g.tiers[tierOf(deadline || null, thisMonth(), precaution)])}
-          </p>
-        </div>
+        {!pleasure && (
+          <div className={labelClass}>
+            <label htmlFor={ids.deadline}>{g.deadlineField}</label>
+            <input
+              id={ids.deadline}
+              type="month"
+              required={!permanent}
+              aria-describedby={`${ids.deadline}-hint`}
+              className={fieldClass}
+              value={deadline}
+              onChange={(e) => setDeadline(e.target.value)}
+            />
+            <p id={`${ids.deadline}-hint`} className={hintClass}>
+              {permanent && !deadline
+                ? g.deadlineOptional
+                : g.tierOf(g.tiers[tierOf(deadline || null, thisMonth(), precaution)])}
+            </p>
+          </div>
+        )}
         <div className={labelClass}>
           <label htmlFor={ids.start}>{g.start}</label>
           <input

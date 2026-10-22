@@ -29,7 +29,7 @@ export function GoalsTile({ scope }: { scope: Scope }) {
           {g.openGoals}
         </Link>
       </div>
-      <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
         {TIERS.map((tier) => {
           const p = data.pyramid.find((x) => x.tier === tier);
           return (

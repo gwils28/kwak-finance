@@ -3,9 +3,10 @@ import { useI18n } from "../i18n";
 import { formatEurWhole } from "../lib/money";
 import { tierColour } from "./shared";
 
-/** What a goal asks of this month: its gap for the emergency fund, its required effort else. */
+/** What a goal asks of this month: what is missing for the emergency fund and pleasure goals,
+ * its required effort else. */
 function need(goal: GoalOut): string | null {
-  if (goal.precaution) return goal.remaining;
+  if (goal.precaution || goal.pleasure) return goal.remaining;
   return goal.required;
 }
 
@@ -16,7 +17,7 @@ export function EffortPlan({ data }: { data: GoalsOut }) {
   const plan = data.plan;
   const capacity = Number(plan.capacity);
   const rows = data.goals.filter((goal) => goal.effort !== null);
-  const others = rows.filter((goal) => !goal.precaution);
+  const others = rows.filter((goal) => !goal.precaution && !goal.pleasure);
   const given = others.reduce((sum, goal) => sum + Number(goal.effort), 0);
   const needed = others.reduce((sum, goal) => sum + Number(goal.required ?? 0), 0);
   return (
@@ -90,7 +91,7 @@ export function EffortPlan({ data }: { data: GoalsOut }) {
                     <td className="px-2 py-1.5 text-right text-muted tabular whitespace-nowrap">
                       {amount === null
                         ? ""
-                        : goal.precaution
+                        : goal.precaution || goal.pleasure
                           ? g.missing(formatEurWhole(amount))
                           : g.required(formatEurWhole(amount))}
                     </td>

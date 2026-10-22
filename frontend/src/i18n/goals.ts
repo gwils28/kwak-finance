@@ -3,7 +3,7 @@ import type { ClosedAs, GoalStatus, Tier } from "../api/generated";
 export const goalsEn = {
   title: "Goals",
   intro:
-    "Amounts to gather by a date, in a pyramid: the emergency fund as its foundation, filled first, then three tiers by deadline: the short term (up to a year), the medium term (over a year, up to five) and the long term (beyond five years). Each goal is funded by your wealth lines, so it moves when you update your wealth each month.",
+    "Amounts to gather by a date, in a pyramid: the emergency fund as its foundation, filled first, then three tiers by deadline: the short term (up to a year), the medium term (over a year, up to five) and the long term (beyond five years), and at the top a golden capstone for what you want just for the pleasure of it, unlocked once the rest is in order. Each goal is funded by your wealth lines, so it moves when you update your wealth each month.",
   newGoal: "New goal",
   settings: "Effort settings",
   loadFailed: "Could not load your goals.",
@@ -53,6 +53,14 @@ export const goalsEn = {
   tierGoals: (n: number) => (n === 1 ? "1 goal" : `${n} goals`),
   ofTarget: (value: string, target: string) => `${value} of ${target}`,
   noGoalInTier: "No goal",
+  capstoneLocked: (missing: string[]) =>
+    `Pleasure goals unlock once the emergency fund is full and at least 3 in 4 goals with a deadline are ahead. Still missing: ${missing.join(", ")}.`,
+  capstoneUnlocked:
+    "Pleasure goals are unlocked: they take what the other goals leave of this month's effort.",
+  gateNoPrecaution: "an emergency fund",
+  gatePrecaution: (percent: string) => `emergency fund at ${percent}`,
+  gateAhead: (ahead: number, counted: number, needed: number) =>
+    `${ahead} of ${counted} goals ahead (${needed} needed)`,
   effort: "This month's effort",
   capacityComputed:
     "What you can save: the household's average income minus spending over the last 6 complete months.",
@@ -187,6 +195,9 @@ export const goalsEn = {
   isPermanent: "Permanent",
   isPermanentHint:
     "It stays in view once reached and needs no deadline. Any other goal is archived by itself once reached.",
+  isPleasure: "This is a pleasure goal",
+  isPleasureHint:
+    "Something you want just for the pleasure of it (a record player, a fine bottle): no deadline, in the golden capstone, funded only once the emergency fund is full and most goals are ahead.",
   isPrecaution: "This is the emergency fund",
   isPrecautionHint:
     "Kept apart for the unexpected, filled first and always permanent: the foundation of the pyramid. One per member, and one for the household.",
@@ -228,7 +239,7 @@ export const goalsEn = {
 export const goalsFr: typeof goalsEn = {
   title: "Objectifs",
   intro:
-    "Des montants à réunir pour une date, en pyramide : l'épargne de précaution comme socle, servie en premier, puis trois étages selon l'échéance : le court terme (jusqu'à un an), le moyen terme (plus d'un an, jusqu'à cinq) et le long terme (au-delà de cinq ans). Chaque objectif est financé par vos lignes de patrimoine : il avance quand vous mettez votre patrimoine à jour chaque mois.",
+    "Des montants à réunir pour une date, en pyramide : l'épargne de précaution comme socle, servie en premier, puis trois étages selon l'échéance : le court terme (jusqu'à un an), le moyen terme (plus d'un an, jusqu'à cinq) et le long terme (au-delà de cinq ans), et au sommet une pointe dorée pour ce qui vous ferait simplement plaisir, débloquée une fois le reste en ordre. Chaque objectif est financé par vos lignes de patrimoine : il avance quand vous mettez votre patrimoine à jour chaque mois.",
   newGoal: "Nouvel objectif",
   settings: "Réglages de l'effort",
   loadFailed: "Impossible de charger vos objectifs.",
@@ -280,6 +291,14 @@ export const goalsFr: typeof goalsEn = {
   tierGoals: (n) => (n <= 1 ? `${n} objectif` : `${n} objectifs`),
   ofTarget: (value, target) => `${value} sur ${target}`,
   noGoalInTier: "Aucun objectif",
+  capstoneLocked: (missing) =>
+    `Les objectifs plaisir se débloquent une fois l'épargne de précaution pleine et au moins 3 objectifs datés sur 4 en avance. Il manque encore : ${missing.join(", ")}.`,
+  capstoneUnlocked:
+    "Les objectifs plaisir sont débloqués : ils reçoivent ce que les autres objectifs laissent de l'effort du mois.",
+  gateNoPrecaution: "une épargne de précaution",
+  gatePrecaution: (percent) => `épargne de précaution à ${percent}`,
+  gateAhead: (ahead, counted, needed) =>
+    `${ahead} objectif${ahead > 1 ? "s" : ""} en avance sur ${counted} (${needed} nécessaire${needed > 1 ? "s" : ""})`,
   effort: "L'effort du mois",
   capacityComputed:
     "Ce que vous pouvez épargner : les revenus moins les dépenses du foyer, en moyenne sur les 6 derniers mois complets.",
@@ -410,6 +429,9 @@ export const goalsFr: typeof goalsEn = {
   isPermanent: "Permanent",
   isPermanentHint:
     "Il reste affiché une fois atteint et n'a pas besoin d'échéance. Tout autre objectif s'archive de lui-même une fois atteint.",
+  isPleasure: "C'est un objectif plaisir",
+  isPleasureHint:
+    "Une envie, juste pour se faire plaisir (une platine vinyle, une belle bouteille) : sans échéance, dans la pointe dorée, financée seulement une fois l'épargne de précaution pleine et la plupart des objectifs en avance.",
   isPrecaution: "C'est l'épargne de précaution",
   isPrecautionHint:
     "Mise de côté pour les imprévus, servie en premier et toujours permanente : le socle de la pyramide. Une par membre, et une pour le foyer.",

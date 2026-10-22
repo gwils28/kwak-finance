@@ -6,9 +6,11 @@ import { PYRAMID, TIERS, tierColour } from "./shared";
 
 /**
  * The pyramid (F-GOAL-7) as a stone monument: three tiers of block courses on a Roman column,
- * the emergency fund. Each tier fills from the bottom to its progress, the column from its
- * foot. Colours are tokens (§7): the tiers', the foundation's, and the `goal-stone*` greys;
- * light and shade are the palette's lightest and darkest greys at low opacity.
+ * the emergency fund, under a gilded capstone, the pleasure goals (F-GOAL-10), bare stone with
+ * a padlock while locked. Each tier fills from the bottom to its progress, the column from its
+ * foot. Colours are tokens (§7): the tiers', the foundation's, the capstone's `goal-gold*` and
+ * the `goal-stone*` greys; light and shade are the palette's lightest and darkest greys at low
+ * opacity.
  */
 
 const WIDTH = 500;
@@ -28,9 +30,11 @@ const BY = 224;
 const HALF_BASE = 124;
 const RIDGE = 28;
 const SPAN = BY - AY;
-const COURSES = 5;
+const COURSES = 4;
 const BRICK = 16;
-const TIERS_ABOVE = PYRAMID.filter((tier) => tier !== "precaution");
+/** The capstone: the pyramidion from the apex down to the top course of the short term. */
+const CAP_BOTTOM = AY + 46;
+const TIERS_ABOVE = PYRAMID.filter((tier) => tier !== "precaution" && tier !== "pleasure");
 
 const half = (y: number) => (HALF_BASE * (y - AY)) / SPAN;
 const ridge = (y: number) => AX + (RIDGE * (y - AY)) / SPAN;
@@ -47,7 +51,7 @@ function grain(a: number, b: number): { tint: string; alpha: number } {
 type Block = { x: number; y: number; w: number; h: number; tint: string; alpha: number };
 
 function tierShape(index: number) {
-  const step = SPAN / TIERS_ABOVE.length;
+  const step = (BY - CAP_BOTTOM) / TIERS_ABOVE.length;
   const bottom = BY - index * step;
   const top = bottom - step;
   const rowH = step / COURSES;
@@ -96,14 +100,25 @@ function tierShape(index: number) {
 
 const SHAPES = TIERS_ABOVE.map((_, i) => tierShape(i));
 
+const CAPSTONE = {
+  left: [pt(AX - half(CAP_BOTTOM), CAP_BOTTOM), pt(ridge(CAP_BOTTOM), CAP_BOTTOM), pt(AX, AY)].join(
+    " ",
+  ),
+  right: [
+    pt(ridge(CAP_BOTTOM), CAP_BOTTOM),
+    pt(AX + half(CAP_BOTTOM), CAP_BOTTOM),
+    pt(AX, AY),
+  ].join(" "),
+};
+
 // The column, from the abacus the pyramid stands on down to its plinth.
 const ABACUS = { x: AX - 138, y: BY + 8, w: 276, h: 14, depth: 8 };
 const ECHINUS = { x: AX - 118, y: ABACUS.y + ABACUS.h, w: 236, h: 17 };
-const CAP_BOTTOM = ECHINUS.y + 56;
+const BELL_BOTTOM = ECHINUS.y + 56;
 const SHAFT_TOP_HALF = 88;
 const SHAFT_BOTTOM_HALF = 94;
 const NECK_H = 10;
-const SHAFT_TOP = CAP_BOTTOM + NECK_H;
+const SHAFT_TOP = BELL_BOTTOM + NECK_H;
 const SHAFT_BOTTOM = SHAFT_TOP + 92;
 const PLINTH = { x: AX - 134, y: SHAFT_BOTTOM + 36, w: 268, h: 24, depth: 8 };
 const COLUMN_TOP = ABACUS.y - ABACUS.depth;
@@ -123,7 +138,7 @@ const column = (() => {
     pt(PLINTH.x + PLINTH.w, PLINTH.y),
     pt(PLINTH.x, PLINTH.y),
   ].join(" ");
-  const bell = `M ${cx - 114} ${ECHINUS.y + 6} C ${cx - 110} ${CAP_BOTTOM - 18}, ${cx - SHAFT_TOP_HALF - 8} ${CAP_BOTTOM - 6}, ${cx - SHAFT_TOP_HALF - 4} ${CAP_BOTTOM} L ${cx + SHAFT_TOP_HALF + 4} ${CAP_BOTTOM} C ${cx + SHAFT_TOP_HALF + 8} ${CAP_BOTTOM - 6}, ${cx + 110} ${CAP_BOTTOM - 18}, ${cx + 114} ${ECHINUS.y + 6} Z`;
+  const bell = `M ${cx - 114} ${ECHINUS.y + 6} C ${cx - 110} ${BELL_BOTTOM - 18}, ${cx - SHAFT_TOP_HALF - 8} ${BELL_BOTTOM - 6}, ${cx - SHAFT_TOP_HALF - 4} ${BELL_BOTTOM} L ${cx + SHAFT_TOP_HALF + 4} ${BELL_BOTTOM} C ${cx + SHAFT_TOP_HALF + 8} ${BELL_BOTTOM - 6}, ${cx + 110} ${BELL_BOTTOM - 18}, ${cx + 114} ${ECHINUS.y + 6} Z`;
   const shaft = `M ${cx - SHAFT_TOP_HALF} ${SHAFT_TOP} L ${cx + SHAFT_TOP_HALF} ${SHAFT_TOP} L ${cx + SHAFT_BOTTOM_HALF} ${SHAFT_BOTTOM} L ${cx - SHAFT_BOTTOM_HALF} ${SHAFT_BOTTOM} Z`;
   // Acanthus: pointed leaves, veined, their tips curling out under the echinus.
   const count = 11;
@@ -138,12 +153,12 @@ const column = (() => {
     for (let j = 1; j <= 4; j++) {
       const f = j / 5;
       const vx = bx + (tipX - bx) * f * 0.8;
-      const vy = CAP_BOTTOM + (tipY - CAP_BOTTOM) * f;
+      const vy = BELL_BOTTOM + (tipY - BELL_BOTTOM) * f;
       veins += `M ${vx} ${vy} l -6 -5 M ${vx} ${vy} l 6 -5 `;
     }
     return {
-      d: `M ${bx - w} ${CAP_BOTTOM} C ${bx - w - 2} ${CAP_BOTTOM - 24}, ${tipX - 10} ${tipY + 14}, ${tipX} ${tipY} C ${tipX + 10} ${tipY + 14}, ${bx + w + 2} ${CAP_BOTTOM - 24}, ${bx + w} ${CAP_BOTTOM} Z`,
-      rib: `M ${bx} ${CAP_BOTTOM} Q ${bx + lean * 0.4} ${(CAP_BOTTOM + tipY) / 2} ${tipX} ${tipY + 3}`,
+      d: `M ${bx - w} ${BELL_BOTTOM} C ${bx - w - 2} ${BELL_BOTTOM - 24}, ${tipX - 10} ${tipY + 14}, ${tipX} ${tipY} C ${tipX + 10} ${tipY + 14}, ${bx + w + 2} ${BELL_BOTTOM - 24}, ${bx + w} ${BELL_BOTTOM} Z`,
+      rib: `M ${bx} ${BELL_BOTTOM} Q ${bx + lean * 0.4} ${(BELL_BOTTOM + tipY) / 2} ${tipX} ${tipY + 3}`,
       veins,
       shaded: k % 2 === 1,
     };
@@ -167,7 +182,7 @@ const column = (() => {
   const rings = [
     {
       x: cx - SHAFT_TOP_HALF - 6,
-      y: CAP_BOTTOM,
+      y: BELL_BOTTOM,
       w: (SHAFT_TOP_HALF + 6) * 2,
       h: NECK_H,
       rx: 5,
@@ -225,7 +240,24 @@ export function Pyramid({ data }: { data: GoalsOut }) {
     const p = byTier.get(tier);
     return p?.progress == null ? g.noGoalInTier : formatPercent(p.progress);
   };
+  const locked = !data.capstone.unlocked;
   const fundLevel = COLUMN_BOTTOM - (COLUMN_BOTTOM - COLUMN_TOP) * progress("precaution");
+  const capFilled = locked ? 0 : (CAP_BOTTOM - AY) * progress("pleasure");
+  const capLabel = () => {
+    const value = label("pleasure");
+    return locked && byTier.get("pleasure")?.progress != null
+      ? `${g.status.locked} · ${value}`
+      : value;
+  };
+  const gate = data.capstone;
+  const missing = [
+    ...(gate.precaution === null
+      ? [g.gateNoPrecaution]
+      : Number(gate.precaution) < 1
+        ? [g.gatePrecaution(formatPercent(gate.precaution))]
+        : []),
+    ...(gate.ahead < gate.needed ? [g.gateAhead(gate.ahead, gate.counted, gate.needed)] : []),
+  ];
   const shaftMid = (SHAFT_TOP + SHAFT_BOTTOM) / 2;
   const shade = (name: string) => `url(#${id(name)})`;
 
@@ -244,7 +276,9 @@ export function Pyramid({ data }: { data: GoalsOut }) {
         viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
         className="mx-auto w-full max-w-md"
         role="img"
-        aria-label={TIERS.map((tier) => `${g.tiers[tier]}: ${label(tier)}`).join(", ")}
+        aria-label={TIERS.map(
+          (tier) => `${g.tiers[tier]}: ${tier === "pleasure" ? capLabel() : label(tier)}`,
+        ).join(", ")}
       >
         <defs>
           <linearGradient id={id("cylinder")} x1="0" x2="1" y1="0" y2="0">
@@ -263,6 +297,16 @@ export function Pyramid({ data }: { data: GoalsOut }) {
           </clipPath>
           <clipPath id={id("column")}>
             <ColumnSilhouette />
+          </clipPath>
+          <linearGradient id={id("gilt")} x1="0" x2="1" y1="0" y2="1">
+            <stop offset="0" stopColor="var(--color-goal-gold-shine)" stopOpacity="0.85" />
+            <stop offset="0.7" stopColor="var(--color-goal-gold-shine)" stopOpacity="0" />
+          </linearGradient>
+          <clipPath id={id("cap-left")}>
+            <polygon points={CAPSTONE.left} />
+          </clipPath>
+          <clipPath id={id("cap-right")}>
+            <polygon points={CAPSTONE.right} />
           </clipPath>
           {SHAPES.map((shape, i) => (
             <g key={TIERS_ABOVE[i]}>
@@ -368,7 +412,7 @@ export function Pyramid({ data }: { data: GoalsOut }) {
           const tier = TIERS_ABOVE[i] as Tier;
           const height = shape.bottom - shape.top;
           const filled = height * progress(tier);
-          const mid = (shape.bottom + shape.top) / 2 + (i === SHAPES.length - 1 ? height / 6 : 0);
+          const mid = (shape.bottom + shape.top) / 2;
           return (
             <g key={tier}>
               <polygon points={shape.left} fill={STONE} />
@@ -418,7 +462,64 @@ export function Pyramid({ data }: { data: GoalsOut }) {
             </g>
           );
         })}
+
+        {/* The capstone: gilded from its base as the pleasure goals fill, or stone and a padlock. */}
+        <g>
+          <polygon points={CAPSTONE.left} fill={STONE} />
+          <polygon points={CAPSTONE.right} fill={STONE} />
+          <g clipPath={`url(#${id("cap-left")})`}>
+            <rect
+              x={0}
+              y={CAP_BOTTOM - capFilled}
+              width={WIDTH}
+              height={capFilled}
+              fill={tierColour("pleasure")}
+            />
+            <rect
+              x={0}
+              y={CAP_BOTTOM - capFilled}
+              width={WIDTH}
+              height={capFilled}
+              fill={shade("gilt")}
+            />
+          </g>
+          <g clipPath={`url(#${id("cap-right")})`}>
+            <rect
+              x={0}
+              y={CAP_BOTTOM - capFilled}
+              width={WIDTH}
+              height={capFilled}
+              fill={tierColour("pleasure")}
+            />
+            <rect
+              x={0}
+              y={AY}
+              width={WIDTH}
+              height={CAP_BOTTOM - AY}
+              fill={DARK}
+              fillOpacity={0.17}
+            />
+          </g>
+          <line
+            x1={AX - half(CAP_BOTTOM)}
+            x2={AX + half(CAP_BOTTOM)}
+            y1={CAP_BOTTOM}
+            y2={CAP_BOTTOM}
+            stroke="var(--color-surface)"
+            strokeWidth={3}
+          />
+          {locked && <Padlock x={AX + 1} y={CAP_BOTTOM - 16} />}
+          <Label
+            y={AY + (CAP_BOTTOM - AY) * 0.6}
+            fromX={AX + half(AY + (CAP_BOTTOM - AY) * 0.6) + 8}
+            name={g.tierShort.pleasure}
+            value={capLabel()}
+          />
+        </g>
       </svg>
+      <p className="text-sm text-muted">
+        {locked ? g.capstoneLocked(missing) : g.capstoneUnlocked}
+      </p>
       <ul className="flex flex-col gap-1 text-sm">
         {[...PYRAMID].reverse().map((tier) => {
           const p = byTier.get(tier);
@@ -542,6 +643,16 @@ function Blocks({
         </g>
       ))}
     </>
+  );
+}
+
+/** A small padlock, centred on (x, y), in the muted text colour. */
+function Padlock({ x, y }: { x: number; y: number }) {
+  return (
+    <g stroke="var(--color-muted)" strokeWidth={1.6} fill="none">
+      <path d={`M ${x - 4} ${y - 2} v -3 a 4 4 0 0 1 8 0 v 3`} />
+      <rect x={x - 6} y={y - 2} width={12} height={9} rx={1.5} fill="var(--color-goal-stone-top)" />
+    </g>
   );
 }
 

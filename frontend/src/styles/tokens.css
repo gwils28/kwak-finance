@@ -142,6 +142,9 @@
   --color-goal-stone: var(--color-neutral-100);
   --color-goal-stone-top: var(--color-neutral-50);
   --color-goal-stone-edge: var(--color-neutral-300);
+  /* The capstone (F-GOAL-10): pleasure goals in gold, lit on its left face. */
+  --color-goal-gold: var(--color-secondary-400);
+  --color-goal-gold-shine: var(--color-secondary-200);
 }
 
 @layer base {
@@ -208,6 +211,8 @@
     --color-goal-stone: var(--color-neutral-700);
     --color-goal-stone-top: var(--color-neutral-600);
     --color-goal-stone-edge: var(--color-neutral-500);
+    --color-goal-gold: var(--color-secondary-300);
+    --color-goal-gold-shine: var(--color-secondary-100);
   }
 
   body {
