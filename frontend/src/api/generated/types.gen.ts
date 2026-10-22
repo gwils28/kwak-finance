@@ -300,6 +300,40 @@ export type GoalFundingOut = {
 };
 
 /**
+ * GoalGateOut
+ *
+ * What unlocks the capstone this month, judged at the end of the month before
+ * (F-GOAL-10), on the viewer's own goals and the joint ones (the joint ones only in the joint
+ * scope).
+ */
+export type GoalGateOut = {
+    /**
+     * Ahead
+     */
+    ahead: number;
+    /**
+     * Counted
+     */
+    counted: number;
+    /**
+     * Month
+     */
+    month: string;
+    /**
+     * Needed
+     */
+    needed: number;
+    /**
+     * Precaution
+     */
+    precaution: string | null;
+    /**
+     * Unlocked
+     */
+    unlocked: boolean;
+};
+
+/**
  * GoalIn
  */
 export type GoalIn = {
@@ -319,6 +353,10 @@ export type GoalIn = {
      * Permanent
      */
     permanent?: boolean;
+    /**
+     * Pleasure
+     */
+    pleasure?: boolean;
     /**
      * Precaution
      */
@@ -458,6 +496,10 @@ export type GoalOut = {
      */
     permanent: boolean;
     /**
+     * Pleasure
+     */
+    pleasure: boolean;
+    /**
      * Precaution
      */
     precaution: boolean;
@@ -518,6 +560,10 @@ export type GoalPatch = {
      */
     permanent?: boolean | null;
     /**
+     * Pleasure
+     */
+    pleasure?: boolean | null;
+    /**
      * Precaution
      */
     precaution?: boolean | null;
@@ -565,7 +611,7 @@ export type GoalPlanOut = {
 /**
  * GoalStatus
  */
-export type GoalStatus = 'reached' | 'ahead' | 'on' | 'behind' | 'fill_first' | 'open';
+export type GoalStatus = 'reached' | 'ahead' | 'on' | 'behind' | 'fill_first' | 'open' | 'locked';
 
 /**
  * GoalTierOut
@@ -590,6 +636,7 @@ export type GoalTierOut = {
  * GoalsOut
  */
 export type GoalsOut = {
+    capstone: GoalGateOut;
     /**
      * Closed
      */
@@ -1693,7 +1740,7 @@ export type SplitIn = {
  *
  * The pyramid's levels, from its foundation up.
  */
-export type Tier = 'precaution' | 'short' | 'medium' | 'long';
+export type Tier = 'precaution' | 'short' | 'medium' | 'long' | 'pleasure';
 
 /**
  * TotpCode

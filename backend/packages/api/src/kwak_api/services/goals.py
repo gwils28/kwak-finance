@@ -146,6 +146,7 @@ def tier(goal: Goal, this_month: Month) -> core.Tier:
         Month.of(goal.deadline) if goal.deadline else None,
         this_month=last_month(goal, this_month),
         precaution=goal.precaution,
+        pleasure=goal.pleasure,
     )
 
 
@@ -159,16 +160,14 @@ def _funded(goal: Goal) -> core.FundedGoal:
         goal.precaution,
         Month.of(goal.closed_from) if goal.closed_from else None,
         {(a.line_id, Month.of(a.month)): a.amount for a in goal.adjustments},
+        goal.pleasure,
+        goal.owner_id,
+        goal.visibility,
     )
 
 
-def envelopes(db: Session, household_id: UUID, this_month: Month) -> core.Envelopes:
-    """Every goal's envelopes in the household up to this month (F-GOAL-3).
-
-    All the household's goals count, whoever sees them: a line's rises and falls are shared
-    out the same way for every viewer.
-    """
-    goals = list(
+def _household_goals(db: Session, household_id: UUID) -> list[Goal]:
+    return list(
         db.scalars(
             select(Goal)
             .where(Goal.household_id == household_id)
@@ -178,6 +177,15 @@ def envelopes(db: Session, household_id: UUID, this_month: Month) -> core.Envelo
             )
         )
     )
+
+
+def envelopes(db: Session, household_id: UUID, this_month: Month) -> core.Envelopes:
+    """Every goal's envelopes in the household up to this month (F-GOAL-3).
+
+    All the household's goals count, whoever sees them: a line's rises and falls are shared
+    out the same way for every viewer; so do the pleasure goals' gates (F-GOAL-10).
+    """
+    goals = _household_goals(db, household_id)
     line_rows = {f.line_id: f.line for g in goals for f in g.fundings}
     values = _values(db, set(line_rows))
     lines = {
@@ -213,6 +221,35 @@ def track(goal: Goal, env: core.Envelopes, this_month: Month, band: Decimal) -> 
         values,
         this_month=last,
         precaution=goal.precaution,
+        locked=goal.pleasure and not env.gates(goal.id)[_at(env, last)].unlocked,
+        band=band,
+    )
+
+
+def capstone(
+    db: Session,
+    viewer: User,
+    scope: Scope,
+    env: core.Envelopes,
+    this_month: Month,
+    band: Decimal,
+) -> core.Gate:
+    """This month's gate for a pleasure goal of the viewer's, or a joint one in the joint
+    scope, judged at the end of last month (F-GOAL-10): it only looks at the viewer's own
+    goals and the joint ones."""
+    month = this_month.previous()
+    if month < env.months[0]:
+        return core.LOCKED
+
+    def values(goal: core.FundedGoal) -> list[Decimal]:
+        return env.value(goal.id)[_at(env, goal.start) : _at(env, month) + 1]
+
+    return core.gate_at(
+        [_funded(g) for g in _household_goals(db, viewer.household_id)],
+        month,
+        values,
+        owner=viewer.id,
+        joint=scope is Scope.JOINT,
         band=band,
     )
 
@@ -277,6 +314,7 @@ class Overview:
     open: list[tuple[Goal, core.Tracking]]
     closed: list[tuple[Goal, core.Tracking]]
     pyramid: dict[core.Tier, core.TierProgress]
+    capstone: core.Gate
     capacity: Decimal
     capacity_set: bool
     precaution_share: Decimal
@@ -315,12 +353,18 @@ def overview(db: Session, viewer: User, scope: Scope, today: date, band: Decimal
             for g, t in open_
             if not g.precaution and t.required is not None and t.remaining
         },
+        pleasure={
+            g.id: t.remaining
+            for g, t in open_
+            if g.pleasure and t.status is core.GoalStatus.OPEN and t.remaining
+        },
     )
     return Overview(
         this_month,
         open_,
         closed,
         core.pyramid(core.PyramidGoal(tier(g, this_month), t.value, g.target) for g, t in open_),
+        capstone(db, viewer, scope, env, this_month, band),
         cap,
         household.goal_capacity is not None,
         household.precaution_share,

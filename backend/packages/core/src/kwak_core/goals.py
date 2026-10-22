@@ -1,4 +1,4 @@
-"""Financial goals: a three-tier pyramid funded by wealth lines (F-GOAL, invariants §8.19-20).
+"""Financial goals: a three-tier pyramid funded by wealth lines (F-GOAL, invariants §8.19-20, 22).
 
 A goal is an amount to gather by a date. Its value in a month is the sum of the values of the
 wealth lines that fund it, each times its share, so it follows the wealth matrix with nothing
@@ -7,9 +7,10 @@ more to enter. Shares are rounded down to the cent, so goals never hold more tha
 
 import enum
 import math
-from collections.abc import Iterable, Mapping, Sequence
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
 from decimal import ROUND_DOWN, Decimal
+from functools import partial
 from uuid import UUID
 
 from kwak_core.budget import DEFAULT_BAND, BudgetStatus, Month, budget_status, month_range
@@ -39,6 +40,8 @@ class Tier(enum.StrEnum):
     """Over a year, up to five."""
     LONG = "long"
     """Beyond five years."""
+    PLEASURE = "pleasure"
+    """The capstone: what is wanted for the pleasure of it, unlocked by the rest (F-GOAL-10)."""
 
 
 SHORT_MONTHS = 12
@@ -55,6 +58,8 @@ class GoalStatus(enum.StrEnum):
     """A precaution goal short of its target."""
     OPEN = "open"
     """A permanent goal without a deadline, short of its target: no pace to keep."""
+    LOCKED = "locked"
+    """A pleasure goal short of its target while its capstone is locked."""
 
 
 class GoalError(ValueError):
@@ -83,6 +88,7 @@ def check_goal(
     *,
     precaution: bool = False,
     permanent: bool = False,
+    pleasure: bool = False,
     deadline: Month | None,
     start: Month,
     this_month: Month,
@@ -91,7 +97,11 @@ def check_goal(
         raise GoalError("a target is a positive amount in cents")
     if precaution and not permanent:
         raise GoalError("the precaution is permanent")
-    if deadline is None and not permanent:
+    if pleasure and (precaution or permanent):
+        raise GoalError("a pleasure goal is neither the precaution nor permanent")
+    if pleasure and deadline is not None:
+        raise GoalError("a pleasure goal has no deadline")
+    if deadline is None and not (permanent or pleasure):
         raise GoalError("a goal needs a deadline, unless it is permanent")
     if start > this_month:
         raise GoalError("a goal's start is never a month to come")
@@ -99,11 +109,15 @@ def check_goal(
         raise GoalError("a deadline is never a past month")
 
 
-def tier_of(deadline: Month | None, *, this_month: Month, precaution: bool = False) -> Tier:
+def tier_of(
+    deadline: Month | None, *, this_month: Month, precaution: bool = False, pleasure: bool = False
+) -> Tier:
     """The tier is never chosen: it follows the deadline, so a goal moves down as it nears.
-    The precaution is the foundation, whatever its deadline."""
+    The precaution is the foundation, whatever its deadline, and a pleasure goal the capstone."""
     if precaution:
         return Tier.PRECAUTION
+    if pleasure:
+        return Tier.PLEASURE
     if deadline is None:
         return Tier.SHORT
     months = months_between(this_month, deadline)
@@ -210,6 +224,84 @@ class FundedGoal:
     """From this month, its envelopes are freed."""
     adjustments: Mapping[tuple[UUID, Month], Decimal] = field(default_factory=dict)
     """(line, month) -> what its envelope on the line holds from that month, set by hand."""
+    pleasure: bool = False
+    owner: UUID | None = None
+    visibility: Visibility = Visibility.SHARED
+
+
+# F-GOAL-10
+
+AHEAD_SHARE = Decimal("0.75")
+"""The share of the goals with a deadline that must be ahead to unlock the capstone."""
+
+
+@dataclass(frozen=True)
+class Gate:
+    """What unlocks the capstone, at the end of a month."""
+
+    precaution: Decimal | None
+    """The precaution goals' progress, each counting up to its target; None without one."""
+    ahead: int
+    """Of the goals with a deadline, those ahead or reached."""
+    counted: int
+    """The open goals with a deadline."""
+
+    @property
+    def needed(self) -> int:
+        return math.ceil(self.counted * AHEAD_SHARE)
+
+    @property
+    def unlocked(self) -> bool:
+        return self.precaution == 1 and self.ahead >= self.needed
+
+
+LOCKED = Gate(None, 0, 0)
+
+
+def gate_of(precautions: Iterable[tuple[Decimal, Decimal]], statuses: Iterable[GoalStatus]) -> Gate:
+    """`precautions`: each precaution goal's (value, target); `statuses`: those of the open goals
+    with a deadline, the precaution and pleasure goals left out."""
+    precautions = list(precautions)
+    statuses = list(statuses)
+    target = sum((t for _, t in precautions), ZERO)
+    return Gate(
+        sum((min(v, t) for v, t in precautions), ZERO) / target if target else None,
+        sum(s in (GoalStatus.AHEAD, GoalStatus.REACHED) for s in statuses),
+        len(statuses),
+    )
+
+
+def gate_at(
+    goals: Iterable[FundedGoal],
+    month: Month,
+    values: Callable[[FundedGoal], Sequence[Decimal]],
+    *,
+    owner: UUID | None,
+    joint: bool,
+    band: Decimal = DEFAULT_BAND,
+) -> Gate:
+    """The gate at the end of `month` for a pleasure goal of `owner`, or a joint one: it looks
+    at its owner's goals and the joint ones, a joint one at the joint ones only. `values` gives
+    a goal's values from its start to `month`."""
+
+    def counts(g: FundedGoal) -> bool:
+        if g.pleasure or not (
+            g.start <= month and (g.closed_from is None or month < g.closed_from)
+        ):
+            return False
+        if g.visibility is Visibility.JOINT:
+            return True
+        return not joint and g.owner == owner
+
+    open_ = [g for g in goals if counts(g)]
+    return gate_of(
+        ((values(g)[-1], g.target) for g in open_ if g.precaution),
+        (
+            track(g.target, g.start, g.deadline, values(g), this_month=month, band=band).status
+            for g in open_
+            if not g.precaution and g.deadline is not None
+        ),
+    )
 
 
 @dataclass(frozen=True)
@@ -217,6 +309,7 @@ class Envelopes:
     months: Sequence[Month]
     _held: Mapping[tuple[UUID, UUID], list[Decimal]]
     _free: Mapping[UUID, list[Decimal]]
+    _gates: Mapping[UUID, list[Gate]] = field(default_factory=dict)
 
     def held(self, goal: UUID, line: UUID) -> list[Decimal]:
         """What the goal holds on the line, month by month."""
@@ -234,9 +327,17 @@ class Envelopes:
         """What the line holds beyond every goal's envelope, month by month."""
         return list(self._free.get(line, [ZERO] * len(self.months)))
 
+    def gates(self, goal: UUID) -> list[Gate]:
+        """A pleasure goal's gate month by month, judged at the end of the month before."""
+        return list(self._gates.get(goal, [LOCKED] * len(self.months)))
+
 
 def envelopes(
-    lines: Mapping[UUID, Line], goals: Sequence[FundedGoal], months: Sequence[Month]
+    lines: Mapping[UUID, Line],
+    goals: Sequence[FundedGoal],
+    months: Sequence[Month],
+    *,
+    band: Decimal = DEFAULT_BAND,
 ) -> Envelopes:
     """Every goal's envelopes on its lines, month by month (F-GOAL-3, invariant §8.19).
 
@@ -244,7 +345,9 @@ def envelopes(
     by the goals it funded the month before, never beyond their targets; goals starting take
     their opening amounts from what is free; envelopes adjusted by hand take the amount set, as
     far as the line and the target allow; closed goals free theirs; then a line worth less
-    than its envelopes cuts them from the farthest deadline to the nearest, the precaution last.
+    than its envelopes cuts them from the pleasure goals, then the farthest deadline to the
+    nearest, the precaution last. A pleasure goal takes no rise in a month its gate, judged on
+    the month before, leaves locked (F-GOAL-10, invariant §8.22).
     """
     if any(g.start < months[0] for g in goals):
         raise ValueError("months must start no later than the earliest goal")
@@ -253,6 +356,7 @@ def envelopes(
         (g.id, e.line): [] for g in goals for e in g.envelopes
     }
     free: dict[UUID, list[Decimal]] = {line: [] for line in lines}
+    gates: dict[UUID, list[Gate]] = {g.id: [] for g in goals if g.pleasure}
     before = dict.fromkeys(lines, ZERO)
 
     def total(goal: FundedGoal) -> Decimal:
@@ -261,7 +365,28 @@ def envelopes(
     def on_line(line: UUID) -> Decimal:
         return sum((a for (_, ln), a in held.items() if ln == line), ZERO)
 
-    for month in months:
+    def history(goal: FundedGoal, k: int) -> list[Decimal]:
+        """The goal's values from its start to months[k]."""
+        series = [ZERO] * (k + 1)
+        for e in goal.envelopes:
+            series = [a + b for a, b in zip(series, out[(goal.id, e.line)][: k + 1], strict=True)]
+        return series[months.index(goal.start) :]
+
+    for k, month in enumerate(months):
+        for g in goals:
+            if g.pleasure:
+                gates[g.id].append(
+                    gate_at(
+                        goals,
+                        months[k - 1],
+                        partial(history, k=k - 1),
+                        owner=g.owner,
+                        joint=g.visibility is Visibility.JOINT,
+                        band=band,
+                    )
+                    if k
+                    else LOCKED
+                )
         worth = {line: line_worth(lines[line], month) for line in lines}
         active = [
             g
@@ -269,7 +394,7 @@ def envelopes(
             if g.start <= month and (g.closed_from is None or month < g.closed_from)
         ]
         for g in active:
-            if g.start == month:
+            if g.start == month or (g.pleasure and not gates[g.id][-1].unlocked):
                 continue
             for e in g.envelopes:
                 rise = worth[e.line] - before[e.line]
@@ -301,6 +426,7 @@ def envelopes(
                 (g for g in active if (g.id, line) in held),
                 key=lambda g: (
                     g.precaution,
+                    not g.pleasure,
                     -months_between(month, g.deadline) if g.deadline is not None else 0,
                 ),
             )
@@ -313,7 +439,7 @@ def envelopes(
         for line in lines:
             free[line].append(worth[line] - on_line(line))
         before = worth
-    return Envelopes(months, out, free)
+    return Envelopes(months, out, free, gates)
 
 
 # F-GOAL-4 and 5
@@ -359,9 +485,11 @@ def track(
     *,
     this_month: Month,
     precaution: bool = False,
+    locked: bool = False,
     band: Decimal = DEFAULT_BAND,
 ) -> Tracking:
-    """`values` are the goal's values for every month from `start` to `this_month`."""
+    """`values` are the goal's values for every month from `start` to `this_month`; `locked`
+    for a pleasure goal whose capstone is locked."""
     months = month_range(start, this_month)
     if len(values) != len(months):
         raise ValueError("values must cover every month from the start to this month")
@@ -420,6 +548,8 @@ def track(
         status = GoalStatus.REACHED
     elif precaution:
         status = GoalStatus.FILL_FIRST
+    elif locked:
+        status = GoalStatus.LOCKED
     elif (exp := rows[-1].expected) is None:
         status = GoalStatus.OPEN
     else:
@@ -492,28 +622,34 @@ def effort_plan(
     *,
     precaution: Mapping[UUID, Decimal],
     others: Mapping[UUID, Decimal],
+    pleasure: Mapping[UUID, Decimal] | None = None,
 ) -> EffortPlan:
-    """`precaution`: each precaution goal's gap; `others`: each goal's required effort.
+    """`precaution`: each precaution goal's gap; `others`: each goal's required effort;
+    `pleasure`: what each unlocked pleasure goal still lacks.
 
     The precaution receives its gap up to `share` of the capacity, the others the rest in
-    proportion to their required effort; what they leave goes to the precaution, then is
-    unallocated.
+    proportion to their required effort; what they leave goes to the precaution, then to the
+    pleasure goals in proportion to what they lack, then is unallocated.
     """
     check_precaution_share(share)
     gaps = {k: max(ZERO, v) for k, v in precaution.items()}
     needs = {k: max(ZERO, v) for k, v in others.items()}
+    lacks = {k: max(ZERO, v) for k, v in (pleasure or {}).items()}
     gap_total = sum(gaps.values(), ZERO)
 
     first = _split(min(gap_total, _floor(cap * share)), gaps)
     rest = cap - sum(first.values(), ZERO)
     second = _split(rest, needs)
     need_total = sum(needs.values(), ZERO)
+    third = dict.fromkeys(lacks, ZERO)
     if rest >= need_total:  # the others are served: the precaution takes what they leave
         gaps_left = {k: gaps[k] - first[k] for k in gaps}
         topped = _split(min(rest - need_total, sum(gaps_left.values(), ZERO)), gaps_left)
         first = {k: first[k] + topped[k] for k in gaps}
+        if all(first[k] == gaps[k] for k in gaps):  # the cents a split rounds down stay out
+            third = _split(rest - need_total - sum(topped.values(), ZERO), lacks)
 
-    allocations = first | second
+    allocations = first | second | third
     to_precaution = sum(first.values(), ZERO)
     return EffortPlan(
         allocations,

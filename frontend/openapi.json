@@ -548,6 +548,53 @@
         "title": "GoalFundingOut",
         "type": "object"
       },
+      "GoalGateOut": {
+        "description": "What unlocks the capstone this month, judged at the end of the month before\n(F-GOAL-10), on the viewer's own goals and the joint ones (the joint ones only in the joint\nscope).",
+        "properties": {
+          "ahead": {
+            "title": "Ahead",
+            "type": "integer"
+          },
+          "counted": {
+            "title": "Counted",
+            "type": "integer"
+          },
+          "month": {
+            "title": "Month",
+            "type": "string"
+          },
+          "needed": {
+            "title": "Needed",
+            "type": "integer"
+          },
+          "precaution": {
+            "anyOf": [
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Precaution"
+          },
+          "unlocked": {
+            "title": "Unlocked",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "month",
+          "precaution",
+          "ahead",
+          "counted",
+          "needed",
+          "unlocked"
+        ],
+        "title": "GoalGateOut",
+        "type": "object"
+      },
       "GoalIn": {
         "properties": {
           "deadline": {
@@ -580,6 +627,11 @@
           "permanent": {
             "default": false,
             "title": "Permanent",
+            "type": "boolean"
+          },
+          "pleasure": {
+            "default": false,
+            "title": "Pleasure",
             "type": "boolean"
           },
           "precaution": {
@@ -869,6 +921,10 @@
             "title": "Permanent",
             "type": "boolean"
           },
+          "pleasure": {
+            "title": "Pleasure",
+            "type": "boolean"
+          },
           "precaution": {
             "title": "Precaution",
             "type": "boolean"
@@ -925,6 +981,7 @@
           "tier",
           "precaution",
           "permanent",
+          "pleasure",
           "target",
           "start",
           "deadline",
@@ -1026,6 +1083,17 @@
               }
             ],
             "title": "Permanent"
+          },
+          "pleasure": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pleasure"
           },
           "precaution": {
             "anyOf": [
@@ -1137,7 +1205,8 @@
           "on",
           "behind",
           "fill_first",
-          "open"
+          "open",
+          "locked"
         ],
         "title": "GoalStatus",
         "type": "string"
@@ -1181,6 +1250,9 @@
       },
       "GoalsOut": {
         "properties": {
+          "capstone": {
+            "$ref": "#/components/schemas/GoalGateOut"
+          },
           "closed": {
             "items": {
               "$ref": "#/components/schemas/GoalOut"
@@ -1213,6 +1285,7 @@
         "required": [
           "month",
           "pyramid",
+          "capstone",
           "plan",
           "goals",
           "closed"
@@ -3220,7 +3293,8 @@
           "precaution",
           "short",
           "medium",
-          "long"
+          "long",
+          "pleasure"
         ],
         "title": "Tier",
         "type": "string"

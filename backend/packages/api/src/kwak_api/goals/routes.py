@@ -100,6 +100,8 @@ class GoalIn(BaseModel):
     """The emergency fund, filled first: always short-term and permanent."""
     permanent: bool = False
     """Kept in view once reached, its deadline optional; any other goal archives itself."""
+    pleasure: bool = False
+    """In the capstone: no deadline, unlocked by the rest of the pyramid."""
     target: Target
     deadline: MonthText | None = None
     """YYYY-MM; required but for the precaution."""
@@ -115,6 +117,7 @@ class GoalPatch(BaseModel):
     name: GoalName | None = None
     precaution: bool | None = None
     permanent: bool | None = None
+    pleasure: bool | None = None
     target: Target | None = None
     deadline: MonthText | None = None
     start: MonthText | None = None
@@ -134,6 +137,7 @@ class GoalOut(BaseModel):
     """Given by the deadline (F-GOAL-1): it moves down as the deadline nears."""
     precaution: bool
     permanent: bool
+    pleasure: bool
     target: Decimal
     start: str
     deadline: str | None
@@ -176,6 +180,7 @@ def _out(goal: Goal, t: core.Tracking, o: service.Overview, effort: Decimal | No
         tier=service.tier(goal, this_month),
         precaution=goal.precaution,
         permanent=goal.permanent,
+        pleasure=goal.pleasure,
         target=quantize(goal.target),
         start=str(Month.of(goal.start)),
         deadline=_text(Month.of(goal.deadline) if goal.deadline else None),
@@ -223,6 +228,22 @@ class GoalTierOut(BaseModel):
     """Each goal counting up to its target; null for a tier without a goal."""
 
 
+class GoalGateOut(BaseModel):
+    """What unlocks the capstone this month, judged at the end of the month before
+    (F-GOAL-10), on the viewer's own goals and the joint ones (the joint ones only in the joint
+    scope)."""
+
+    month: str
+    """YYYY-MM, the month judged."""
+    precaution: Decimal | None
+    """The precaution goals' progress; null without one."""
+    ahead: int
+    """Of the open goals with a deadline, those ahead or reached."""
+    counted: int
+    needed: int
+    unlocked: bool
+
+
 class GoalPlanOut(BaseModel):
     capacity: Decimal
     capacity_set: bool
@@ -238,6 +259,7 @@ class GoalPlanOut(BaseModel):
 class GoalsOut(BaseModel):
     month: str
     pyramid: list[GoalTierOut]
+    capstone: GoalGateOut
     plan: GoalPlanOut
     goals: list[GoalOut]
     """Open goals, from the base of the pyramid up."""
@@ -281,6 +303,14 @@ def list_goals(
             )
             for tier, p in o.pyramid.items()
         ],
+        capstone=GoalGateOut(
+            month=str(o.this_month.previous()),
+            precaution=_ratio(o.capstone.precaution),
+            ahead=o.capstone.ahead,
+            counted=o.capstone.counted,
+            needed=o.capstone.needed,
+            unlocked=o.capstone.unlocked,
+        ),
         plan=GoalPlanOut(
             capacity=quantize(o.capacity),
             capacity_set=o.capacity_set,
@@ -415,6 +445,7 @@ def _check(goal: Goal, this_month: Month) -> None:
             goal.target,
             precaution=goal.precaution,
             permanent=goal.permanent,
+            pleasure=goal.pleasure,
             deadline=deadline,
             start=Month.of(goal.start),
             this_month=this_month,
@@ -452,6 +483,7 @@ def create_goal(body: GoalIn, user_session: CurrentSession, db: Db, now: Now) ->
         name=body.name,
         precaution=body.precaution,
         permanent=body.permanent or body.precaution,
+        pleasure=body.pleasure,
         target=body.target,
         start=(_month(body.start) if body.start else this_month).first_day(),
         deadline=_month(body.deadline).first_day() if body.deadline else None,
@@ -491,13 +523,15 @@ def update_goal(
         goal.permanent = goal.permanent or body.precaution
     if body.permanent is not None:
         goal.permanent = body.permanent
+    if body.pleasure is not None:
+        goal.pleasure = body.pleasure
     if body.target is not None:
         goal.target = body.target
     if "deadline" in given:
         goal.deadline = _month(body.deadline).first_day() if body.deadline else None
     if body.start is not None:
         goal.start = _month(body.start).first_day()
-    if {"deadline", "start", "precaution", "permanent", "target"} & given:
+    if {"deadline", "start", "precaution", "permanent", "pleasure", "target"} & given:
         # An overdue goal stays editable: its deadline is only checked when it changes.
         kept = goal.deadline if "deadline" not in given else None
         _check(goal, min(this_month, Month.of(kept)) if kept else this_month)

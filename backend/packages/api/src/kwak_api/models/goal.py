@@ -47,8 +47,12 @@ class Goal(UUIDPrimaryKey, Timestamps, Base):
     __tablename__ = "goal"
     __table_args__ = (
         CheckConstraint("target > 0", name="target_positive"),
-        CheckConstraint("deadline IS NOT NULL OR permanent", name="deadline_needed"),
+        CheckConstraint("deadline IS NOT NULL OR permanent OR pleasure", name="deadline_needed"),
         CheckConstraint("permanent OR NOT precaution", name="precaution_permanent"),
+        CheckConstraint(
+            "NOT pleasure OR (deadline IS NULL AND NOT permanent AND NOT precaution)",
+            name="pleasure_alone",
+        ),
         CheckConstraint("extract(day from start) = 1", name="start_month"),
         CheckConstraint("extract(day from deadline) = 1", name="deadline_month"),
         CheckConstraint("extract(day from closed_from) = 1", name="closed_from_month"),
@@ -61,6 +65,8 @@ class Goal(UUIDPrimaryKey, Timestamps, Base):
     """The emergency fund, filled first (F-GOAL-6): a short-term goal."""
     permanent: Mapped[bool] = mapped_column(default=False, server_default=text("false"))
     """Kept in view once reached; any other goal archives itself then (F-GOAL-8)."""
+    pleasure: Mapped[bool] = mapped_column(default=False, server_default=text("false"))
+    """In the capstone, without a deadline, unlocked by the rest of the pyramid (F-GOAL-10)."""
     target: Mapped[Decimal] = mapped_column(Numeric(14, 2))
     start: Mapped[date] = mapped_column(Date)
     """The first month tracked (its first day)."""

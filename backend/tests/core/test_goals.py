@@ -10,6 +10,7 @@ from kwak_core.fixed import FixedFrequency as Frequency
 from kwak_core.goals import (
     Envelope,
     FundedGoal,
+    Gate,
     GoalError,
     GoalStatus,
     Line,
@@ -24,6 +25,7 @@ from kwak_core.goals import (
     effort_plan,
     envelopes,
     fixed_expenses,
+    gate_of,
     line_worth,
     precaution_proposal,
     pyramid,
@@ -96,7 +98,7 @@ def test_the_tier_follows_the_deadline_and_moves_down_as_it_nears() -> None:
 
 
 def test_the_precaution_is_the_pyramids_foundation() -> None:
-    assert list(Tier) == [Tier.PRECAUTION, Tier.SHORT, Tier.MEDIUM, Tier.LONG]
+    assert list(Tier) == [Tier.PRECAUTION, Tier.SHORT, Tier.MEDIUM, Tier.LONG, Tier.PLEASURE]
     assert tier_of(None, this_month=OCT, precaution=True) is Tier.PRECAUTION
     assert tier_of(Month(2029, 1), this_month=OCT, precaution=True) is Tier.PRECAUTION
     # a permanent goal without a deadline is in the short term
@@ -175,7 +177,7 @@ def test_a_lines_shares_sum_to_100_percent_at_most() -> None:
             check_line_shares(shares)
 
 
-LDDS, PEA = uuid4(), uuid4()
+LDDS, PEA, SAVINGS = uuid4(), uuid4(), uuid4()
 JUL, MAY = Month(2026, 7), Month(2027, 5)
 
 
@@ -187,9 +189,22 @@ def _funded(
     precaution: bool = False,
     closed_from: Month | None = None,
     adjustments: dict[tuple[UUID, Month], Decimal] | None = None,
+    pleasure: bool = False,
+    owner: UUID = ME,
+    visibility: Visibility = Visibility.SHARED,
 ) -> FundedGoal:
     return FundedGoal(
-        uuid4(), D(target), start, envelopes, deadline, precaution, closed_from, adjustments or {}
+        uuid4(),
+        D(target),
+        start,
+        envelopes,
+        None if pleasure else deadline,
+        precaution,
+        closed_from,
+        adjustments or {},
+        pleasure,
+        owner,
+        visibility,
     )
 
 
@@ -503,3 +518,232 @@ def test_the_effort_plan_never_hands_out_more_than_the_capacity_or_the_needs(
     to_prec = sum(plan.allocations[g] for g in precaution)
     # the precaution gets the least of its gap and its share before anyone else (to the cent)
     assert to_prec >= min(sum(gaps), cap * share) - D("0.01") * (len(gaps) + 1)
+
+
+# F-GOAL-10: pleasure goals in the capstone
+
+
+def test_a_pleasure_goal_has_no_deadline_and_is_neither_permanent_nor_the_precaution() -> None:
+    check_goal(D("180"), pleasure=True, deadline=None, start=OCT, this_month=OCT)
+    with pytest.raises(GoalError, match="no deadline"):
+        check_goal(D("180"), pleasure=True, deadline=Month(2027, 1), start=OCT, this_month=OCT)
+    with pytest.raises(GoalError, match="neither"):
+        check_goal(
+            D("180"), pleasure=True, permanent=True, deadline=None, start=OCT, this_month=OCT
+        )
+    with pytest.raises(GoalError, match="neither"):
+        check_goal(
+            D("180"),
+            pleasure=True,
+            precaution=True,
+            permanent=True,
+            deadline=None,
+            start=OCT,
+            this_month=OCT,
+        )
+
+
+def test_a_pleasure_goal_sits_in_the_capstone_and_archives_itself_once_reached() -> None:
+    assert tier_of(None, this_month=OCT, pleasure=True) is Tier.PLEASURE
+    tiers = pyramid([PyramidGoal(Tier.PLEASURE, D("90"), D("180"))])
+    assert tiers[Tier.PLEASURE].progress == D("0.5")
+    reached = track(D("180"), OCT, None, [D("180")], this_month=OCT, locked=True)
+    assert archives_itself(reached, permanent=False)
+
+
+def test_a_pleasure_goal_short_of_its_target_is_locked_or_open() -> None:
+    values = [D("0"), D("90")]
+    assert track(D("180"), JUL, None, values, this_month=JUL.next()).status is GoalStatus.OPEN
+    locked = track(D("180"), JUL, None, values, this_month=JUL.next(), locked=True)
+    assert locked.status is GoalStatus.LOCKED
+    assert (locked.remaining, locked.actual, locked.required) == (D("90"), D("90"), None)
+
+
+R, A, ON, BEHIND = GoalStatus.REACHED, GoalStatus.AHEAD, GoalStatus.ON, GoalStatus.BEHIND
+
+
+@pytest.mark.parametrize(
+    ("precautions", "statuses", "unlocked"),
+    [
+        ([(D("14700"), D("14700"))], [], True),  # no goal with a deadline: the precaution only
+        ([(D("12400"), D("14700"))], [], False),  # precaution at 84 %
+        ([], [], False),  # no precaution at all
+        ([(D("100"), D("100")), (D("50"), D("100"))], [], False),  # every precaution
+        ([(D("200"), D("100"))], [A, R, A, BEHIND], True),  # 3 of 4: reached counts
+        ([(D("100"), D("100"))], [A, A, ON, BEHIND], False),  # 2 of 4, on track does not count
+        ([(D("100"), D("100"))], [A, ON], False),  # 1 of 2: 2 needed
+    ],
+)
+def test_the_capstone_unlocks_with_a_full_precaution_and_three_quarters_ahead(
+    precautions: list[tuple[Decimal, Decimal]], statuses: list[GoalStatus], unlocked: bool
+) -> None:
+    assert gate_of(precautions, statuses).unlocked is unlocked
+
+
+def test_the_gate_says_why_it_is_locked() -> None:
+    gate = gate_of([(D("12400"), D("14700")), (D("3000"), D("2000"))], [A, ON, BEHIND, R])
+    # each precaution counts up to its target
+    assert gate == Gate(D("14400") / D("16700"), ahead=2, counted=4)
+    assert gate.needed == 3
+
+
+SEP, NOV = Month(2026, 9), Month(2026, 11)
+
+
+def test_a_locked_pleasure_goal_leaves_the_rises_free_until_the_month_after_it_unlocks() -> None:
+    # the precaution reaches its 1000 in August; the gloves unlock from September
+    fund = _funded("1000", Envelope(PEA, 100, D("500")), deadline=None, precaution=True)
+    gloves = _funded("180", Envelope(LDDS, 100), pleasure=True)
+    lines = {PEA: Line(_series(500, 1000, 1000, 1000)), LDDS: Line(_series(0, 50, 100, 150))}
+    held = envelopes(lines, [fund, gloves], _months(JUL, 4))
+    assert [g.unlocked for g in held.gates(gloves.id)] == [False, False, True, True]
+    assert held.value(gloves.id) == [D("0"), D("0"), D("50"), D("100")]
+    assert held.free(LDDS) == [D("0"), D("50"), D("50"), D("50")]
+
+
+def test_goals_behind_keep_the_capstone_locked() -> None:
+    fund = _funded("1000", Envelope(PEA, 100, D("1000")), deadline=None, precaution=True)
+    # a trip from July to May: 1000 expected by then, nothing gathered by August
+    trip = _funded("1000", Envelope(SAVINGS, 100), deadline=MAY)
+    gloves = _funded("180", Envelope(LDDS, 100), pleasure=True)
+    lines = {
+        PEA: Line(_series(1000)),
+        SAVINGS: Line(_series(0, 0, 900)),
+        LDDS: Line(_series(0, 50, 100, 150)),
+    }
+    held = envelopes(lines, [fund, trip, gloves], _months(JUL, 4))
+    # July: on track (its start); August: behind; September: ahead again
+    assert [g.unlocked for g in held.gates(gloves.id)] == [False, False, False, True]
+    assert held.value(gloves.id) == [D("0"), D("0"), D("0"), D("50")]
+
+
+def test_the_gate_looks_at_the_owners_goals_and_the_joint_ones() -> None:
+    mine = _funded("1000", Envelope(PEA, 100, D("1000")), deadline=None, precaution=True)
+    theirs = _funded("1000", Envelope(SAVINGS, 100), deadline=None, precaution=True, owner=OTHER)
+    joint_rum = _funded("120", Envelope(LDDS, 50), pleasure=True, visibility=Visibility.JOINT)
+    my_gloves = _funded("180", Envelope(LDDS, 50), pleasure=True)
+    lines = {
+        PEA: Line(_series(1000)),
+        SAVINGS: Line(_series(0)),
+        LDDS: Line(_series(0, 100)),
+    }
+    held = envelopes(lines, [mine, theirs, joint_rum, my_gloves], _months(JUL, 2))
+    assert held.gates(my_gloves.id)[1].unlocked
+    # no joint precaution: the joint capstone stays locked
+    assert not held.gates(joint_rum.id)[1].unlocked
+    assert held.value(my_gloves.id) == [D("0"), D("50")]
+
+
+def test_an_opening_amount_or_an_adjustment_still_fills_a_locked_pleasure_goal() -> None:
+    gloves = _funded(
+        "180", Envelope(LDDS, 100, D("60")), pleasure=True, adjustments={(LDDS, SEP): D("90")}
+    )
+    held = envelopes({LDDS: Line(_series(500, 600, 700))}, [gloves], _months(JUL, 3))
+    assert held.value(gloves.id) == [D("60"), D("60"), D("90")]
+
+
+def test_a_fall_cuts_the_pleasure_goals_first() -> None:
+    fund = _funded("400", Envelope(LDDS, 40, D("400")), deadline=None, precaution=True)
+    house = _funded("300", Envelope(LDDS, 30, D("300")), deadline=Month(2032, 1))
+    rum = _funded("300", Envelope(LDDS, 30, D("300")), pleasure=True)
+    held = envelopes({LDDS: Line(_series(1000, 500))}, [fund, house, rum], _months(JUL, 2))
+    assert held.value(rum.id) == [D("300"), D("0")]
+    assert held.value(house.id) == [D("300"), D("100")]
+
+
+def test_the_plan_gives_the_unlocked_pleasure_goals_what_is_left_by_what_they_lack() -> None:
+    trip = uuid4()
+    gloves, rum = uuid4(), uuid4()
+    plan = effort_plan(
+        D("1000"),
+        D("0.7"),
+        precaution={},
+        others={trip: D("400")},
+        pleasure={gloves: D("180"), rum: D("120")},
+    )
+    assert plan.allocations[trip] == D("400")
+    assert (plan.allocations[gloves], plan.allocations[rum]) == (D("180"), D("120"))
+    assert plan.unallocated == D("300")
+    tight = effort_plan(
+        D("550"),
+        D("0.7"),
+        precaution={},
+        others={trip: D("400")},
+        pleasure={gloves: D("180"), rum: D("120")},
+    )
+    # 150 left: 90 and 60, in proportion to what each lacks
+    assert (tight.allocations[gloves], tight.allocations[rum]) == (D("90"), D("60"))
+
+
+# §8 invariant 22
+
+
+@given(
+    st.lists(st.dictionaries(st.sampled_from(MONTHS), amounts, max_size=6), min_size=1, max_size=2),
+    st.lists(
+        st.tuples(
+            st.sampled_from(MONTHS),
+            amounts,
+            st.integers(0, 1),
+            st.sampled_from(["pleasure", "precaution", "dated"]),
+            st.sampled_from([Visibility.SHARED, Visibility.JOINT]),
+        ),
+        max_size=5,
+    ),
+)
+def test_a_locked_pleasure_goal_never_gains_from_a_rise(
+    series: list[dict[Month, Decimal]], drawn: list[tuple[Any, ...]]
+) -> None:
+    line_ids = [uuid4() for _ in series]
+    lines = {i: Line(v) for i, v in zip(line_ids, series, strict=True)}
+    left = dict.fromkeys(line_ids, 100)
+    goals = []
+    for start, target, index, kind, visibility in drawn:
+        line = line_ids[index % len(line_ids)]
+        share = min(40, left[line])
+        left[line] -= share
+        envs = [Envelope(line, share)] if share else []
+        goals.append(
+            _funded(
+                str(target + 1),
+                *envs,
+                start=start,
+                deadline=Month(2027, 1) if kind == "dated" else None,
+                precaution=kind == "precaution",
+                pleasure=kind == "pleasure",
+                visibility=visibility,
+            )
+        )
+    held = envelopes(lines, goals, MONTHS)
+    for g in goals:
+        if not g.pleasure:
+            continue
+        values, gates = held.value(g.id), held.gates(g.id)
+        for k in range(1, len(MONTHS)):
+            if MONTHS[k] > g.start and not gates[k].unlocked:
+                assert values[k] <= values[k - 1]
+
+
+@given(
+    amounts,
+    st.sampled_from([D("0.5"), D("0.7"), D("1")]),
+    st.lists(amounts, max_size=2),
+    st.lists(amounts, max_size=3),
+    st.lists(amounts, max_size=3),
+)
+def test_the_pleasure_goals_take_only_what_every_other_goal_leaves(
+    cap: Decimal,
+    share: Decimal,
+    gaps: list[Decimal],
+    required: list[Decimal],
+    lacking: list[Decimal],
+) -> None:
+    precaution = {uuid4(): g for g in gaps}
+    others = {uuid4(): r for r in required}
+    pleasure = {uuid4(): p for p in lacking}
+    plan = effort_plan(cap, share, precaution=precaution, others=others, pleasure=pleasure)
+    assert sum(plan.allocations.values()) + plan.unallocated == cap
+    for goal_id, lack in pleasure.items():
+        assert 0 <= plan.allocations[goal_id] <= lack
+    if any(plan.allocations[g] for g in pleasure):
+        assert all(plan.allocations[g] == need for g, need in (precaution | others).items())
