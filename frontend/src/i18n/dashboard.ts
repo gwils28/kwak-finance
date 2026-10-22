@@ -109,8 +109,8 @@ export const dashboardFr: typeof dashboardEn = {
   budgetPace: "Rythme du budget",
   paceTable: "Dépenses à ce jour par rapport au rythme du budget",
   targets: {
-    title: "Objectifs du mois",
-    titleOf: (month) => `Objectifs, ${month}`,
+    title: "Cibles du mois",
+    titleOf: (month) => `Cibles, ${month}`,
     noPlan: "Aucun plan budgétaire ne couvre ce mois.",
     createPlan: "En créer un dans Budget",
     noTargets: "Aucune catégorie n'a d'objectif mensuel dans ce plan.",

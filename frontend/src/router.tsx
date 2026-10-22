@@ -12,7 +12,6 @@ import { AccountsPage } from "./accounts/AccountsPage";
 import { ActivityPage } from "./activity/ActivityPage";
 import { LoginPage } from "./auth/LoginPage";
 import { meQuery } from "./auth/session";
-import { BudgetPage } from "./budget/BudgetPage";
 import { ReviewPage } from "./budget/ReviewPage";
 import { CategoriesPage } from "./categories/CategoriesPage";
 import { GoalPage } from "./goals/GoalPage";
@@ -26,6 +25,7 @@ import { isMonth } from "./lib/months";
 import { RecurringPage } from "./recurring/RecurringPage";
 import { ReportsPage } from "./reports/ReportsPage";
 import { RunGuidePage } from "./runGuide/RunGuidePage";
+import { BudgetPage, parseBudgetSearch } from "./spending/BudgetPage";
 import { CategoriesPage as SpendingCategoriesPage } from "./spending/CategoriesPage";
 import { FixedPage } from "./spending/FixedPage";
 import { GridPage, parseGridSearch } from "./spending/GridPage";
@@ -111,6 +111,7 @@ const recurringRoute = createRoute({
 const budgetRoute = createRoute({
   getParentRoute: () => appRoute,
   path: "/budget",
+  validateSearch: parseBudgetSearch,
   component: BudgetPage,
 });
 

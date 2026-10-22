@@ -1,9 +1,8 @@
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeAll, beforeEach, expect, test, vi } from "vitest";
-import { current } from "../budget/fixtures";
 import { thisMonth } from "../lib/months";
-import { bakery, incomeOf, monthOf } from "../spending/fixtures";
+import { bakery, incomeOf, monthOf, spendingCategories, summaryOf } from "../spending/fixtures";
 import { fakeApi, owner } from "../test/fakeApi";
 import { TestApp } from "../test/TestApp";
 
@@ -17,25 +16,6 @@ beforeAll(() => {
 });
 beforeEach(() => localStorage.clear());
 afterEach(() => vi.unstubAllGlobals());
-
-const emptyDashboard = {
-  month: "2026-03",
-  kpis: {
-    spent: "0.00",
-    income: "0.00",
-    net: "0.00",
-    savings_rate: null,
-    previous_spent: "0.00",
-    average_spent: "0.00",
-    spent_change_vs_previous: null,
-    spent_change_vs_average: null,
-  },
-  top_categories: [],
-  to_categorise: { count: 0, spent: "0.00" },
-  monthly: [{ month: "2026-03", spent: "0.00", income: "0.00", by_category: [] }],
-  cumulative: [],
-  budget_target: null,
-};
 
 type Progress = {
   income?: boolean;
@@ -56,12 +36,17 @@ function api({
 }: Progress) {
   return fakeApi({
     "GET /api/auth/me": () => Response.json(owner),
-    "GET /api/dashboard": () => Response.json(emptyDashboard),
+    "GET /api/spending/month": () => Response.json(summaryOf(thisMonth())),
+    "GET /api/spending/categories": () => Response.json(spendingCategories),
+    "GET /api/spending/fixed/occurrences": () => Response.json([]),
     [`GET /api/spending/income/${thisMonth()}`]: () =>
       Response.json(incomeOf(thisMonth(), income ? "3000.00" : null)),
     "GET /api/spending/lines": () => Response.json(monthOf(thisMonth(), lines ? [bakery] : [])),
     "GET /api/spending/fixed": () => Response.json(fixed ? [{ id: "f1" }] : []),
-    "GET /api/budget/plans": () => Response.json(plan ? [current()] : []),
+    "GET /api/spending/targets": () =>
+      Response.json(
+        plan ? [{ category_id: "c-groceries", from_month: "2026-01", amount: "50.00" }] : [],
+      ),
     "GET /api/household/members": () =>
       Response.json(Array.from({ length: members }, (_, i) => ({ id: `m${i}` }))),
     "GET /api/goals": () =>
@@ -137,23 +122,22 @@ test("the guide is in the header and has a section per feature", async () => {
     "Entering lines",
     "Fixed expenses",
     "Categories",
-    "Budget plans",
-    "The budget table",
-    "Plan review",
+    "Budget",
+    "The year",
     "Overview",
     "Wealth",
     "Goals",
     "Reports",
     "Members and security",
   ]);
-  expect(entries[4]).toHaveAttribute("href", "#plans");
+  expect(entries[4]).toHaveAttribute("href", "#budget");
   const lines = screen.getByRole("region", { name: "Entering lines" });
   expect(within(lines).getByRole("link", { name: "Open the lines" })).toHaveAttribute(
     "href",
     "/spending",
   );
-  const plans = screen.getByRole("region", { name: "Budget plans" });
-  expect(within(plans).getByRole("link", { name: "Open the budget" })).toHaveAttribute(
+  const budget = screen.getByRole("region", { name: "Budget" });
+  expect(within(budget).getByRole("link", { name: "Open the budget" })).toHaveAttribute(
     "href",
     "/budget",
   );
@@ -176,5 +160,5 @@ test("the guide reads in French", async () => {
   expect(
     await screen.findByRole("heading", { level: 1, name: "Utiliser Kwak Finance" }),
   ).toBeInTheDocument();
-  expect(screen.getByRole("region", { name: "Plans budgétaires" })).toBeInTheDocument();
+  expect(screen.getByRole("region", { name: "Saisir les lignes" })).toBeInTheDocument();
 });
