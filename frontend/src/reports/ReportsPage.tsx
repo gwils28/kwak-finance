@@ -31,7 +31,14 @@ import {
   TOOLTIP,
 } from "../dashboard/charts";
 import { useI18n } from "../i18n";
-import { formatEurSigned, formatEurWhole, formatPercent, formatPercentSigned } from "../lib/money";
+import {
+  formatEurSigned,
+  formatEurWhole,
+  formatPercent,
+  formatPercentSigned,
+  fromCents,
+  toCents,
+} from "../lib/money";
 import { isMonth, monthLabel, shiftMonth, thisMonth } from "../lib/months";
 import { FlowsChart } from "../spending/FlowsChart";
 import { SPENDING } from "../spending/queries";
@@ -393,17 +400,41 @@ function SpendingChart({ report }: { report: SpendingReportOut }) {
   );
 }
 
-/** Spending columns (accent) against the income line (grey), as on the overview. */
+/** The period's six largest expense categories keep a colour each, in this order; the rest is grey. */
+const SERIES = [1, 2, 3, 4, 5, 6].map((n) => `var(--color-spend-${n})`);
+const OTHER = "var(--color-spend-other)";
+
+/**
+ * F-DSH-5: each month's spending stacked by category against the income line (one axis, in
+ * euros). A category keeps its colour across the months; every series is in the legend and
+ * has its column in the table.
+ */
 function OverMonths({ report }: { report: SpendingReportOut }) {
   const { t } = useI18n();
-  const data = report.monthly.map((m) => ({
-    month: monthLabel(m.month),
-    spent: Number(m.spent),
-    income: Number(m.income),
-  }));
+  // Only what spent this period: a category kept for the period before has nothing to draw.
+  const ranked = report.rows.filter((r) => r.section === "spending" && toCents(r.amount) > 0);
+  const named = ranked.slice(0, SERIES.length);
+  const key = (id: string) => `c-${id}`;
+  type Month = SpendingReportOut["monthly"][number];
+  const amount = (m: Month, id: string) =>
+    toCents(m.by_category.find((c) => c.category_id === id)?.spent ?? "0");
+  // In whole cents, so an empty remainder is 0, never -0.
+  const otherOf = (m: Month) =>
+    named.reduce((rest, r) => rest - amount(m, r.category_id), toCents(m.spent));
+  const hasOther = report.monthly.some((m) => otherOf(m) !== 0);
+  const data = report.monthly.map((m) => {
+    const point: Record<string, number | string> = {
+      month: monthLabel(m.month),
+      income: Number(m.income),
+    };
+    for (const r of named) point[key(r.category_id)] = amount(m, r.category_id) / 100;
+    if (hasOther) point.other = otherOf(m) / 100;
+    return point;
+  });
+  const values = report.monthly.flatMap((m) => [Number(m.spent), Number(m.income)]);
   return (
     <Card title={t.reports.overMonths} subtitle={t.reports.overMonthsHelp}>
-      <div style={{ height: 280 }}>
+      <div style={{ height: 300 }}>
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart data={data} margin={{ top: 8, right: 16, bottom: 0, left: 0 }}>
             <CartesianGrid vertical={false} stroke={GRID} />
@@ -412,19 +443,37 @@ function OverMonths({ report }: { report: SpendingReportOut }) {
               {...AXIS}
               axisLine={false}
               width={72}
-              {...axisTicks(data.flatMap((d) => [d.spent, d.income]))}
+              {...axisTicks(values)}
               tickFormatter={(v: number) => formatEurWhole(v)}
             />
             <Tooltip {...TOOLTIP} cursor={{ stroke: GRID }} />
             <Legend wrapperStyle={{ fontSize: 12 }} formatter={legendText} />
-            <Bar
-              dataKey="spent"
-              name={t.reports.spent}
-              fill={ACCENT}
-              maxBarSize={20}
-              radius={[4, 4, 0, 0]}
-              isAnimationActive={false}
-            />
+            {named.map((r, i) => (
+              <Bar
+                key={r.category_id}
+                dataKey={key(r.category_id)}
+                name={r.name}
+                stackId="spent"
+                fill={SERIES[i]}
+                // A thin surface gap between stacked segments.
+                stroke="var(--color-surface)"
+                strokeWidth={1}
+                maxBarSize={24}
+                isAnimationActive={false}
+              />
+            ))}
+            {hasOther && (
+              <Bar
+                dataKey="other"
+                name={t.reports.otherCategories}
+                stackId="spent"
+                fill={OTHER}
+                stroke="var(--color-surface)"
+                strokeWidth={1}
+                maxBarSize={24}
+                isAnimationActive={false}
+              />
+            )}
             <Line
               dataKey="income"
               name={t.reports.income}
@@ -438,10 +487,20 @@ function OverMonths({ report }: { report: SpendingReportOut }) {
       </div>
       <DataTable
         label={t.reports.overMonthsTable}
-        head={[t.reports.month, t.reports.income, t.reports.spent, t.reports.saved, t.reports.rest]}
+        head={[
+          t.reports.month,
+          t.reports.income,
+          ...named.map((r) => r.name),
+          ...(hasOther ? [t.reports.otherCategories] : []),
+          t.reports.spent,
+          t.reports.saved,
+          t.reports.rest,
+        ]}
         rows={report.monthly.map((m) => [
           monthLabel(m.month),
           formatEurWhole(m.income),
+          ...named.map((r) => formatEurWhole(fromCents(amount(m, r.category_id)))),
+          ...(hasOther ? [formatEurWhole(fromCents(otherOf(m)))] : []),
           formatEurWhole(m.spent),
           formatEurWhole(m.saved),
           formatEurSigned(m.rest),

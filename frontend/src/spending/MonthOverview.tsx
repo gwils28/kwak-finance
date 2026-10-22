@@ -9,6 +9,7 @@ import {
 } from "../api/generated";
 import { detailSentence } from "../auth/errors";
 import { Button, ErrorAlert } from "../components/ui";
+import { SpendingPace } from "../dashboard/charts";
 import { useI18n } from "../i18n";
 import { formatDate } from "../lib/dates";
 import {
@@ -63,8 +64,13 @@ export function MonthOverview({ month, isOwner }: { month: string; isOwner: bool
       <ToConfirm month={month} projectedRest={summary.data.projected_rest} />
       <div className="grid gap-6 lg:grid-cols-2">
         <Top summary={summary.data} />
-        <LastLines month={month} />
+        <SpendingPace
+          month={month}
+          cumulative={summary.data.cumulative}
+          target={summary.data.target_total}
+        />
       </div>
+      <LastLines month={month} />
     </div>
   );
 }

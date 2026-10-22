@@ -2968,6 +2968,20 @@ export type SpendingChangesOut = {
 };
 
 /**
+ * SpendingDayOut
+ */
+export type SpendingDayOut = {
+    /**
+     * Day
+     */
+    day: string;
+    /**
+     * Spent
+     */
+    spent: string;
+};
+
+/**
  * SpendingFiguresOut
  */
 export type SpendingFiguresOut = {
@@ -3077,6 +3091,10 @@ export type SpendingMonthChangesOut = {
 export type SpendingMonthOut = {
     average: SpendingFiguresOut | null;
     changes: SpendingMonthChangesOut;
+    /**
+     * Cumulative
+     */
+    cumulative: Array<SpendingDayOut>;
     figures: SpendingFiguresOut;
     /**
      * Income Carried
@@ -3092,6 +3110,10 @@ export type SpendingMonthOut = {
      * Projected Rest
      */
     projected_rest: string;
+    /**
+     * Target Total
+     */
+    target_total: string | null;
     /**
      * To Confirm
      */

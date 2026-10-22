@@ -189,3 +189,40 @@ def test_the_year_to_date(owner_client: TestClient) -> None:
     (savings,) = year["savings"]
     assert (savings["target_to_date"], savings["spent_to_date"]) == ("1200.00", "500.00")
     assert (year["totals"]["income"], year["totals"]["spent"]) == ("2000.00", "950.00")
+
+
+def test_the_month_adds_up_its_spending_day_by_day(owner_client: TestClient) -> None:
+    """F-DSH-5: every day of the month, savings left out, against the targets added up."""
+    _october(owner_client)
+    _line(owner_client, "Groceries", "-50.00", day="2026-10-20")
+    _target(owner_client, "Groceries", "2026-01", "400.00")
+    _target(owner_client, "Home", "2026-01", "150.00")
+    month = _get(owner_client, "/month", month="2026-10")
+
+    days = month["cumulative"]
+    assert len(days) == 31
+    assert days[0] == {"day": "2026-10-01", "spent": "0.00"}
+    assert days[4] == {"day": "2026-10-05", "spent": "500.00"}
+    assert days[19] == {"day": "2026-10-20", "spent": "550.00"}
+    assert days[-1]["spent"] == month["figures"]["spent"] == "550.00"
+    # A split line counts its expense parts on its day, its savings part never.
+    categories = _categories(owner_client)
+    split = {
+        "day": "2026-10-25",
+        "label": "Supermarket",
+        "amount": "-100.00",
+        "split": {
+            "parts": [{"category_id": categories["Groceries"], "amount": "-30.00"}],
+            "rest_category_id": categories["Savings"],
+        },
+    }
+    response = owner_client.post("/api/spending/lines", json=split, headers=csrf(owner_client))
+    assert response.status_code == 201, response.text
+    days = _get(owner_client, "/month", month="2026-10")["cumulative"]
+    assert days[23]["spent"] == "550.00"
+    assert days[24]["spent"] == days[-1]["spent"] == "580.00"
+    assert month["target_total"] == "550.00"
+    assert _get(owner_client, "/month", month="2026-09")["target_total"] == "550.00"
+    _target(owner_client, "Groceries", "2026-01", None)
+    _target(owner_client, "Home", "2026-01", None)
+    assert _get(owner_client, "/month", month="2026-09")["target_total"] is None

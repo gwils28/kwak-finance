@@ -26,3 +26,13 @@ test("goal colours survive the build in both themes", () => {
   expect(goalKeys(block("@theme static {"))).toEqual(keys);
   expect(goalKeys(block(':root[data-theme="dark"] {'))).toEqual(keys);
 });
+
+const spendKeys = (css: string) =>
+  [...css.matchAll(/--color-spend-([a-z0-9-]+):/g)].map((m) => m[1]).sort();
+
+test("spending category colours survive the build in both themes", () => {
+  const keys = ["1", "2", "3", "4", "5", "6", "other"];
+  expect(spendKeys(block("@theme static {"))).toEqual(keys);
+  // Grey in both themes: the dark one keeps the light one's.
+  expect(spendKeys(block(':root[data-theme="dark"] {'))).toEqual(keys.slice(0, 6));
+});

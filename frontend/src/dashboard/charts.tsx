@@ -15,11 +15,10 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import type { DayPoint } from "../api/generated";
 import { useI18n } from "../i18n";
 import { formatDate } from "../lib/dates";
 import { formatEurWhole } from "../lib/money";
-import { daysInMonth, thisMonth } from "../lib/months";
+import { daysInMonth, monthLabel, thisMonth } from "../lib/months";
 
 export const ACCENT = "var(--color-chart-accent)";
 export const CONTEXT = "var(--color-chart-context)";
@@ -139,7 +138,8 @@ export function SpendingPace({
   target,
 }: {
   month: string;
-  cumulative: DayPoint[];
+  /** Spent from the first of the month to each day. */
+  cumulative: { day: string; spent: string }[];
   target: string | null;
 }) {
   const { t } = useI18n();
@@ -154,7 +154,7 @@ export function SpendingPace({
   }));
   return (
     <Card
-      title={t.dashboard.pace}
+      title={month === thisMonth() ? t.dashboard.pace : t.dashboard.paceOf(monthLabel(month))}
       subtitle={
         target === null ? t.dashboard.noTarget : t.dashboard.againstBudget(formatEurWhole(target))
       }
@@ -206,7 +206,8 @@ export function SpendingPace({
             ? [t.dashboard.day, t.dashboard.spentSoFar]
             : [t.dashboard.day, t.dashboard.spentSoFar, t.dashboard.budgetPace]
         }
-        rows={cumulative.map((p, i) => {
+        // The days to come have no spending yet: the table stops at today, as the line does.
+        rows={cumulative.slice(0, today).map((p, i) => {
           const row = [formatDate(p.day), formatEurWhole(p.spent)];
           const expected = pace(i);
           return expected === null ? row : [...row, formatEurWhole(expected)];

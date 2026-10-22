@@ -373,3 +373,69 @@ test("a custom period that has not started is not asked for", async () => {
   expect(screen.getByRole("alert")).toHaveTextContent(/choose a first month that has started/);
   expect(asked.length).toBe(count);
 });
+
+test("the monthly chart stacks the six largest categories, the rest as other, each with its column", async () => {
+  const names = ["Housing", "Groceries", "Transport", "Children", "Health", "Leisure", "Gifts"];
+  const rows = names.map((name, i) =>
+    row("spending", `c${i}`, name, { amount: String(700 - i * 100), share: null }),
+  );
+  api(() => ({
+    ...report,
+    months: 2,
+    rows,
+    monthly: ["2026-01", "2026-02"].map((month) => ({
+      month,
+      income: "3000.00",
+      spent: "280.00",
+      saved: "0.00",
+      rest: "2720.00",
+      by_category: names.map((name, i) => ({
+        category_id: `c${i}`,
+        name,
+        spent: String(70 - i * 10),
+      })),
+    })),
+  }));
+  render(<TestApp path="/reports" />);
+
+  const chart = await screen.findByRole("region", { name: "Month by month" });
+  const table = within(chart).getByRole("table", {
+    name: "Income, spending, savings and rest by month",
+  });
+  const [head, january] = within(table).getAllByRole("row");
+  expect(plain(head?.textContent ?? "")).toBe(
+    "MonthIncomeHousingGroceriesTransportChildrenHealthLeisureOther categoriesSpendingSavedRest",
+  );
+  // Gifts (10) is the seventh: it goes into "Other categories".
+  expect(plain(january?.textContent ?? "")).toBe(
+    "Jan 2026€3,000€70€60€50€40€30€20€10€280€0+€2,720",
+  );
+});
+
+test("a category with nothing this period takes no colour, and no other column without a rest", async () => {
+  api(() => ({
+    ...report,
+    months: 2,
+    rows: [
+      row("spending", "c0", "Housing", { amount: "100.00" }),
+      row("spending", "c1", "Groceries", { amount: "0.00", previous: "50.00" }),
+    ],
+    monthly: ["2026-01", "2026-02"].map((month) => ({
+      month,
+      income: "3000.00",
+      spent: "50.00",
+      saved: "0.00",
+      rest: "2950.00",
+      by_category: [{ category_id: "c0", name: "Housing", spent: "50.00" }],
+    })),
+  }));
+  render(<TestApp path="/reports" />);
+
+  const chart = await screen.findByRole("region", { name: "Month by month" });
+  const table = within(chart).getByRole("table", {
+    name: "Income, spending, savings and rest by month",
+  });
+  const [head, january] = within(table).getAllByRole("row");
+  expect(plain(head?.textContent ?? "")).toBe("MonthIncomeHousingSpendingSavedRest");
+  expect(plain(january?.textContent ?? "")).toBe("Jan 2026€3,000€50€50€0+€2,950");
+});

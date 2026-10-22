@@ -5,9 +5,11 @@ Lines are signed (negative is spent or put aside); the figures are positive amou
 
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
+from datetime import date, timedelta
 from decimal import Decimal
 from uuid import UUID
 
+from kwak_core.budget import Month
 from kwak_core.categories import CategoryKind
 
 ZERO = Decimal(0)
@@ -57,3 +59,13 @@ def month_figures(
         else:
             spent -= piece.amount
     return MonthFigures(income, spent, saved)
+
+
+def cumulative_by_day(spent: Mapping[date, Decimal], month: Month) -> list[tuple[date, Decimal]]:
+    """The month's spending added up day by day (F-DSH-5), every day of the month."""
+    day, end, total, out = month.first_day(), month.next().first_day(), ZERO, []
+    while day < end:
+        total += spent.get(day, ZERO)
+        out.append((day, total))
+        day += timedelta(days=1)
+    return out
