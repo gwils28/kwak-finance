@@ -106,18 +106,21 @@ export function DataTable({
         <thead className="text-left text-muted">
           <tr>
             {head.map((h, i) => (
-              <th key={h} className={`py-1 font-medium ${i > 0 ? "text-right" : ""}`}>
+              // biome-ignore lint/suspicious/noArrayIndexKey: headers can repeat (two goals of one name)
+              <th key={i} className={`py-1 font-medium ${i > 0 ? "text-right" : ""}`}>
                 {h}
               </th>
             ))}
           </tr>
         </thead>
         <tbody>
-          {rows.map((row) => (
-            <tr key={row[0]} className="border-t border-border">
+          {rows.map((row, r) => (
+            // biome-ignore lint/suspicious/noArrayIndexKey: rows are a static table, not reordered
+            <tr key={r} className="border-t border-border">
               {row.map((cell, i) => (
                 <td
-                  key={`${row[0]}-${head[i]}`}
+                  // biome-ignore lint/suspicious/noArrayIndexKey: cells are positional
+                  key={i}
                   className={`tabular py-1 ${i > 0 ? "text-right" : ""}`}
                 >
                   {cell}

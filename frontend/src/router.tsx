@@ -9,8 +9,10 @@ import {
 } from "@tanstack/react-router";
 import { AppLayout } from "./AppLayout";
 import { ActivityPage } from "./activity/ActivityPage";
+import type { Scope } from "./api/generated";
 import { LoginPage } from "./auth/LoginPage";
 import { meQuery } from "./auth/session";
+import { AnalysisPage as GoalAnalysisPage } from "./goals/AnalysisPage";
 import { GoalPage } from "./goals/GoalPage";
 import { GoalsPage } from "./goals/GoalsPage";
 import { GuidePage } from "./guide/GuidePage";
@@ -122,6 +124,19 @@ const goalsRoute = createRoute({
   component: GoalsPage,
 });
 
+const goalAnalysisRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: "/goals/analysis",
+  validateSearch: (search: Record<string, unknown>): { scope?: Scope } =>
+    SCOPES.includes(search.scope as Scope) ? { scope: search.scope as Scope } : {},
+  component: function GoalAnalysis() {
+    const { scope } = goalAnalysisRoute.useSearch();
+    return <GoalAnalysisPage key={scope ?? "household"} initialScope={scope} />;
+  },
+});
+
+const SCOPES: Scope[] = ["household", "mine", "joint"];
+
 const goalRoute = createRoute({
   getParentRoute: () => appRoute,
   path: "/goals/$goalId",
@@ -175,6 +190,7 @@ const routeTree = rootRoute.addChildren([
     wealthRoute,
     wealthAnalysisRoute,
     goalsRoute,
+    goalAnalysisRoute,
     goalRoute,
     reportsRoute,
     membersRoute,

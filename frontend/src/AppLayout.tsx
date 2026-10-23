@@ -10,8 +10,8 @@ import { Logo } from "./components/Logo";
 import { useI18n } from "./i18n";
 
 /**
- * Three spaces: spending (the everyday pages) and wealth with their tabs, apart since wealth is
- * followed monthly rather than daily, and goals, one page without tabs. The overview, a summary of the whole app, is the app's
+ * Three spaces, each with its tabs: spending (the everyday pages), wealth, apart since it is
+ * followed monthly rather than daily, and goals. The overview, a summary of the whole app, is the app's
  * name; the household pages (accounts, categories, members…) are in the account menu. A new
  * page adds its tab to its space.
  */
@@ -25,9 +25,14 @@ const SPACES = {
     { to: "/wealth", label: "wealthTracking", exact: true },
     { to: "/wealth/analysis", label: "wealthAnalysis", exact: false },
   ],
+  // The pyramid's tab stays marked on each goal's page.
+  goals: [
+    { to: "/goals", label: "goalsPyramid", exact: false },
+    { to: "/goals/analysis", label: "goalsAnalysis", exact: false },
+  ],
 } as const;
 
-type Space = keyof typeof SPACES | "goals";
+type Space = keyof typeof SPACES;
 
 /** Where each switch leads: the space's most used page. */
 const SWITCH = [
@@ -45,6 +50,17 @@ function placeOf(pathname: string): Space | null {
   if (under("/goals")) return "goals";
   if (under("/spending/categories")) return null;
   return SPENDING_PAGES.some(under) ? "spending" : null;
+}
+
+/** A tab is marked on its pages (its own only when `exact`), but not on a sibling tab's
+ * nested under it. */
+function tabHere(to: string, pathname: string, exact: boolean): boolean {
+  if (pathname !== to && (exact || !pathname.startsWith(`${to}/`))) return false;
+  const siblings = Object.values(SPACES)
+    .flat()
+    .map((tab) => tab.to as string)
+    .filter((other) => other !== to && other.startsWith(`${to}/`));
+  return !siblings.some((other) => pathname === other || pathname.startsWith(`${other}/`));
 }
 
 const SPACE =
@@ -111,23 +127,26 @@ export function AppLayout() {
               </Link>
             ))}
           </nav>
-          {(place === "spending" || place === "wealth") && (
+          {place !== null && (
             <nav
               aria-label={t.nav.mainLabel}
               className="-mx-4 order-last flex w-[calc(100%+2rem)] gap-6 self-stretch overflow-x-auto border-t border-border px-4 md:order-none md:mx-0 md:w-auto md:border-t-0 md:px-0"
             >
-              {SPACES[place].map(({ to, label, exact }) => (
-                <Link
-                  key={to}
-                  to={to}
-                  activeOptions={{ exact }}
-                  className={TAB}
-                  activeProps={{ className: "border-accent text-fg" }}
-                  inactiveProps={{ className: "border-transparent text-muted" }}
-                >
-                  {t.nav[label]}
-                </Link>
-              ))}
+              {SPACES[place].map(({ to, label, exact }) => {
+                // The router marks the exact page only; the tab marks itself on its own pages.
+                const here = tabHere(to, pathname, exact);
+                return (
+                  <Link
+                    key={to}
+                    to={to}
+                    activeOptions={{ exact: true }}
+                    aria-current={here ? "page" : undefined}
+                    className={`${TAB} ${here ? "border-accent text-fg" : "border-transparent text-muted"}`}
+                  >
+                    {t.nav[label]}
+                  </Link>
+                );
+              })}
             </nav>
           )}
           <div className="ml-auto flex items-center gap-3">
