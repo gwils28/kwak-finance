@@ -12,7 +12,7 @@ import {
 import { Button, ErrorAlert } from "../components/ui";
 import { useI18n } from "../i18n";
 import { numberFormat } from "../lib/locale";
-import { formatEurWhole } from "../lib/money";
+import { formatEurWhole, formatPercent } from "../lib/money";
 import { monthLabel, shiftMonth } from "../lib/months";
 import { GOALS_KEY } from "./shared";
 
@@ -37,6 +37,15 @@ function useSaid(point: PointOut, data: GoalAnalysisOut): Said {
   const goal = point.goal_name ?? "";
   const f = point.figures;
   const amount = formatEurWhole(point.amount ?? "0");
+  const subjectLink = point.subject_id && (
+    <Link
+      to="/goals/$goalId"
+      params={{ goalId: point.subject_id }}
+      className="text-accent hover:underline"
+    >
+      {a.openGoal}
+    </Link>
+  );
   const goalLink = point.goal_id && (
     <Link
       to="/goals/$goalId"
@@ -146,7 +155,62 @@ function useSaid(point: PointOut, data: GoalAnalysisOut): Said {
         options: [a.noGainOptions(text(f.required) ? eur(f.required) : null)],
         link: goalLink,
       };
+    case "short_risk":
+      return {
+        fact: `${a.shortRisk(goal, amount, Number(f.months ?? 0))} ${a.shortRiskLoss(eur(f.loss))}`,
+        options: [a.shortRiskOption],
+        link: goalLink,
+      };
+    case "losing_value":
+      return { fact: a.losingValue(goal, amount), why: a.losingValueWhy, link: goalLink };
+    case "eroding":
+      return {
+        fact: a.eroding(goal, amount, a.years(Number(f.months ?? 0))),
+        options: [a.erodingOption],
+        link: goalLink,
+      };
+    case "not_indexed":
+      return {
+        fact: a.notIndexed(
+          goal,
+          amount,
+          a.years(Number(f.months ?? 0)),
+          eur(f.indexed),
+          formatPercent(data.inflation),
+        ),
+        options: [a.notIndexedOption],
+        link: goalLink,
+      };
+    case "idle":
+      return {
+        fact: a.idle(amount),
+        why: a.idleWhy,
+        options:
+          point.subject_name && text(f.set_aside)
+            ? [a.idleSetAside(eur(f.set_aside), point.subject_name)]
+            : undefined,
+        link: subjectLink,
+      };
+    case "capstone":
+      return point.subject_name
+        ? {
+            fact: a.capstoneGoal(point.subject_name, amount),
+            options: [a.capstoneMonthly(eur(f.monthly), Number(f.months ?? 3))],
+            link: subjectLink,
+          }
+        : { fact: a.capstoneFund(formatPercent(text(f.progress) ?? "0"), amount) };
+    case "left_over":
+      return {
+        fact: a.leftOver(amount),
+        options: [a.leftOverOption],
+        link: (
+          <Link to="/goals" className="text-accent hover:underline">
+            {g.newGoal}
+          </Link>
+        ),
+      };
     default:
+      // Rules still to come (costly debt, debt payments, ceilings) say no more than their goal.
       return { fact: goal };
   }
 }

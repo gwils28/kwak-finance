@@ -17,10 +17,17 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import type { ForwardOut, GoalAnalysisOut, StatusRowOut, TimelineOut } from "../api/generated";
+import type {
+  ForwardOut,
+  GoalAnalysisOut,
+  RiskPointOut,
+  StatusRowOut,
+  TimelineOut,
+  Zone,
+} from "../api/generated";
 import { AXIS, Card, DataTable, GRID, legendText, TOOLTIP } from "../dashboard/charts";
 import { useI18n } from "../i18n";
-import { formatEurWhole } from "../lib/money";
+import { formatEurWhole, formatPercent, formatRateSigned } from "../lib/money";
 import { monthLabel, shiftMonth } from "../lib/months";
 import { StatusChip, tierColour } from "./shared";
 
@@ -417,6 +424,188 @@ export function StatusGrid({ data }: { data: GoalAnalysisOut }) {
           </tbody>
         </table>
       </div>
+    </Card>
+  );
+}
+
+const RISK_H = 300;
+const RISK_PAD = { left: 64, right: 40, top: 24, bottom: 48 };
+/** Points keep clear of the axes and their labels. */
+const INSET = 16;
+const RISK_MONTHS = 120;
+const AMBER = "var(--color-secondary-500)";
+
+/** Each zone's ring: its colour and its dash, so colour is never the only cue. */
+const RING: Record<Zone, { colour: string; dash?: string } | null> = {
+  none: null,
+  red_short: { colour: OVER },
+  amber_glide: { colour: AMBER, dash: "6 3" },
+  red_eroding: { colour: OVER },
+};
+
+/** F-ANA-4: each funded goal by the months left to its deadline and the weighted volatility of
+ * its lines, over the zones; goals without a deadline are listed under it. */
+export function RiskChart({ data }: { data: GoalAnalysisOut }) {
+  const { t } = useI18n();
+  const a = t.goalAnalysis;
+  const points: RiskPointOut[] = data.risk;
+  if (points.length === 0) return null;
+  const dated = points.filter((p) => p.months_left !== null);
+  const undated = points.filter((p) => p.months_left === null);
+  const top = Math.max(0.3, ...dated.map((p) => Number(p.volatility) * 1.1));
+  const x = (months: number) =>
+    RISK_PAD.left +
+    INSET +
+    ((W - RISK_PAD.left - RISK_PAD.right - 2 * INSET) *
+      Math.min(RISK_MONTHS, Math.max(0, months))) /
+      RISK_MONTHS;
+  const y = (sigma: number) =>
+    RISK_PAD.top + (RISK_H - RISK_PAD.top - RISK_PAD.bottom - INSET) * (1 - sigma / top);
+  const bottom = RISK_H - RISK_PAD.bottom;
+  const left = RISK_PAD.left;
+  const right = W - RISK_PAD.right;
+  const xTicks = [0, 12, 24, 36, 48, 60, 72, 84, 96, 108, 120];
+  const yTicks = [0, 0.05, 0.1, 0.2, 0.3, 0.4, 0.6].filter((v) => v <= top);
+  const percent = (value: string | null) => (value === null ? "—" : formatPercent(value));
+  return (
+    <Card title={a.risk} subtitle={a.riskHelp(formatPercent(data.inflation))}>
+      <div className="overflow-x-auto">
+        <svg
+          viewBox={`0 0 ${W} ${RISK_H}`}
+          className="w-full min-w-[640px]"
+          role="img"
+          aria-label={a.riskLabel}
+        >
+          {/* The zones (F-ANA-4): near and volatile, the glide path, far and eroding. */}
+          <rect
+            x={left}
+            y={RISK_PAD.top}
+            width={x(24) - left}
+            height={y(0.05) - RISK_PAD.top}
+            fill={OVER}
+            fillOpacity={0.2}
+          />
+          <rect
+            x={x(24)}
+            y={RISK_PAD.top}
+            width={x(60) - x(24)}
+            height={bottom - RISK_PAD.top}
+            fill={AMBER}
+            fillOpacity={0.14}
+          />
+          <rect
+            x={x(96)}
+            y={RISK_PAD.top}
+            width={right - x(96)}
+            height={bottom - RISK_PAD.top}
+            fill={OVER}
+            fillOpacity={0.12}
+          />
+          {yTicks.map((v) => (
+            <g key={v}>
+              <line x1={left} x2={right} y1={y(v)} y2={y(v)} stroke={GRID} />
+              <text
+                x={RISK_PAD.left - 8}
+                y={y(v) + 4}
+                textAnchor="end"
+                className="tabular fill-muted text-[11px]"
+              >
+                {formatPercent(v)}
+              </text>
+            </g>
+          ))}
+          {xTicks.map((m) => (
+            <text
+              key={m}
+              x={x(m)}
+              y={bottom + 18}
+              textAnchor={m === 0 ? "start" : m === RISK_MONTHS ? "end" : "middle"}
+              className="tabular fill-muted text-[11px]"
+            >
+              {m === RISK_MONTHS ? `${m}+` : m}
+            </text>
+          ))}
+          <text x={x(60)} y={RISK_H - 4} textAnchor="middle" className="fill-muted text-[11px]">
+            {a.monthsAxis}
+          </text>
+          <text x={RISK_PAD.left} y={10} className="fill-muted text-[11px]">
+            {a.volatilityAxis}
+          </text>
+          {dated.map((p) => {
+            const cx = x(p.months_left ?? 0);
+            const cy = y(Number(p.volatility));
+            const ring = p.zone ? RING[p.zone] : null;
+            return (
+              <g key={p.goal_id}>
+                {ring && (
+                  <circle
+                    cx={cx}
+                    cy={cy}
+                    r={11}
+                    fill="none"
+                    stroke={ring.colour}
+                    strokeWidth={3}
+                    strokeDasharray={ring.dash}
+                  />
+                )}
+                {p.losing && (
+                  <circle
+                    cx={cx}
+                    cy={cy}
+                    r={15}
+                    fill="none"
+                    stroke={FG}
+                    strokeWidth={1.5}
+                    strokeDasharray="1 3"
+                  />
+                )}
+                <circle
+                  cx={cx}
+                  cy={cy}
+                  r={7}
+                  fill={tierColour(p.tier)}
+                  stroke={FG}
+                  strokeWidth={1}
+                />
+                <text
+                  x={cx + (cx > W - 160 ? -14 : 14)}
+                  y={cy + 4}
+                  textAnchor={cx > W - 160 ? "end" : "start"}
+                  className="fill-fg text-[12px]"
+                >
+                  {p.name.length > 24 ? `${p.name.slice(0, 23)}…` : p.name}
+                </text>
+              </g>
+            );
+          })}
+        </svg>
+      </div>
+      {undated.length > 0 && (
+        <p className="text-sm text-muted">
+          {a.noDeadlineGoals}{" "}
+          {undated
+            .map(
+              (p) =>
+                `${p.name} (${a.volatility.toLowerCase()} ${percent(p.volatility)}, ${a.realReturn.toLowerCase()} ${formatRateSigned(p.real_return)})`,
+            )
+            .join(" · ")}
+        </p>
+      )}
+      <DataTable
+        label={a.riskTable}
+        head={[a.goal, a.monthsLeft, a.volatility, a.realReturn, a.riskyShare, a.loss, a.zoneLabel]}
+        rows={points.map((p) => [
+          p.name,
+          p.months_left === null ? a.noDeadline : String(p.months_left),
+          percent(p.volatility),
+          formatRateSigned(p.real_return),
+          percent(p.risky_share),
+          p.loss === null ? "—" : formatRateSigned(p.loss),
+          [p.zone && p.zone !== "none" ? a.zone[p.zone] : null, p.losing ? a.losing : null]
+            .filter(Boolean)
+            .join(", ") || "—",
+        ])}
+      />
     </Card>
   );
 }

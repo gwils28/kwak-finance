@@ -197,7 +197,9 @@ def test_the_loss_in_one_outcome_in_ten_matches_the_lognormal() -> None:
     ("months", "sigma", "volatile", "real", "expected"),
     [
         (12, "0.16", "1", "0.05", Zone.RED_SHORT),
-        (24, "0.05", "1", "0", Zone.NONE),
+        (12, "0", "0.5", "-0.1", Zone.RED_SHORT),  # on equipment: risky though not volatile
+        (12, "0", "0.1", "0", Zone.NONE),
+        (24, "0.05", "0", "0", Zone.NONE),  # 5 %: not above, so not volatile
         (48, "0.16", "0.5", "0.05", Zone.NONE),
         (48, "0.16", "0.7", "0.05", Zone.AMBER_GLIDE),
         (120, "0", "0", "-0.003", Zone.RED_ERODING),

@@ -52,6 +52,11 @@ const WHOLE_EUR: Intl.NumberFormatOptions = { ...EUR, maximumFractionDigits: 0 }
 const SIGNED_EUR: Intl.NumberFormatOptions = { ...WHOLE_EUR, signDisplay: "exceptZero" };
 const PERCENT: Intl.NumberFormatOptions = { style: "percent", maximumFractionDigits: 0 };
 const SIGNED_PERCENT: Intl.NumberFormatOptions = { ...PERCENT, signDisplay: "exceptZero" };
+const SIGNED_RATE: Intl.NumberFormatOptions = {
+  ...SIGNED_PERCENT,
+  minimumFractionDigits: 1,
+  maximumFractionDigits: 1,
+};
 
 // API amounts are decimal strings; Intl formats them exactly.
 type Num = string | number;
@@ -74,4 +79,10 @@ export function formatPercent(ratio: Num): string {
 /** A signed ratio: "0.2" -> "+20 %". */
 export function formatPercentSigned(ratio: Num): string {
   return numberFormat(SIGNED_PERCENT).format(ratio as Intl.StringNumericLiteral);
+}
+
+/** A small yearly rate, to a tenth of a point, signed: "-0.003" -> "-0.3 %", "0.05" ->
+ * "+5.0 %", where a whole percent would read 0 and hide that it is negative. */
+export function formatRateSigned(ratio: Num): string {
+  return numberFormat(SIGNED_RATE).format(ratio as Intl.StringNumericLiteral);
 }

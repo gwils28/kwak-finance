@@ -7,6 +7,7 @@ import {
   formatEurSigned,
   formatEurWhole,
   formatPercent,
+  formatRateSigned,
   fromCents,
   isZero,
   parseEurInput,
@@ -79,4 +80,13 @@ test("cents keep sums of amounts exact", () => {
   expect(toCents("0.1")).toBe(10);
   expect(fromCents(toCents("-84.30") - toCents("-60.00") - toCents("-15.50"))).toBe("-8.80");
   expect(fromCents(5)).toBe("0.05");
+});
+
+test("a small rate keeps its decimal and its sign", () => {
+  setCurrentLanguage("en");
+  expect(formatRateSigned("-0.003")).toBe("-0.3%");
+  expect(formatRateSigned("0.05")).toBe("+5.0%");
+  setCurrentLanguage("fr");
+  expect(formatRateSigned("-0.003").replace(/[  ]/g, " ")).toBe("-0,3 %");
+  setCurrentLanguage("en");
 });

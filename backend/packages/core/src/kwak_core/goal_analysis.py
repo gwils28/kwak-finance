@@ -228,8 +228,11 @@ class Zone(enum.StrEnum):
 
 
 def zone(months_left: int, volatility: Decimal, volatile_share: Decimal, real: Decimal) -> Zone:
+    """`volatile_share`: the goal's share on volatile or illiquid lines, which R3 judges too,
+    so a near goal on equipment is red though its volatility is nil."""
     if months_left <= SHORT_RISK_MONTHS:
-        return Zone.RED_SHORT if volatility > VOLATILE else Zone.NONE
+        risky = volatility > VOLATILE or volatile_share > SHORT_RISK_SHARE
+        return Zone.RED_SHORT if risky else Zone.NONE
     if months_left <= GLIDE_MONTHS:
         return Zone.AMBER_GLIDE if volatile_share > glide_limit(months_left) else Zone.NONE
     if months_left > ERODING_MONTHS and real <= 0:

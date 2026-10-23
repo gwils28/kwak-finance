@@ -5,7 +5,7 @@ import { ScopeSelect } from "../components/ScopeSelect";
 import { ErrorAlert } from "../components/ui";
 import { useI18n } from "../i18n";
 import { monthLabel } from "../lib/months";
-import { Forward, StatusGrid, Timeline } from "./AnalysisCharts";
+import { Forward, RiskChart, StatusGrid, Timeline } from "./AnalysisCharts";
 import { Points } from "./Points";
 import { GOALS_KEY } from "./shared";
 
@@ -65,6 +65,7 @@ export function AnalysisPage({ initialScope = "household" }: { initialScope?: Sc
                 scoped={scope !== "household"}
               />
               <Timeline data={data} />
+              <RiskChart data={data} />
               <StatusGrid data={data} />
             </>
           )}

@@ -1,4 +1,4 @@
-import type { Severity } from "../api/generated";
+import type { Severity, Zone } from "../api/generated";
 
 export const goalAnalysisEn = {
   title: "Goals analysis",
@@ -21,7 +21,7 @@ export const goalAnalysisEn = {
   pointsLink: (n: number) => (n === 1 ? "1 point to look at" : `${n} points to look at`),
   noPoint: "Nothing to look at: your goals are in order.",
   more: (n: number) => (n === 1 ? "1 more point" : `${n} more points`),
-  fewer: "Show fewer",
+  fewer: "Show less",
   snooze: "Remind me next month",
   dismiss: "Hide until it worsens",
   showHidden: "Show hidden points again",
@@ -92,6 +92,59 @@ export const goalAnalysisEn = {
       ? `One option is to relaunch it (${required} a month keeps the date), to postpone it or to cancel it.`
       : "One option is to relaunch it, to postpone it or to cancel it.",
   openGoal: "Open the goal",
+  years: (months: number) => {
+    const n = Math.round(months / 12);
+    return n === 1 ? "1 year" : `${n} years`;
+  },
+  shortRisk: (goal: string, amount: string, months: number) =>
+    `${amount} of ${goal} sits on volatile or illiquid lines, ${months === 1 ? "1 month" : `${months} months`} from its deadline.`,
+  shortRiskLoss: (loss: string) => `One time in ten, about ${loss} less at the deadline.`,
+  shortRiskOption: "Consider funding it from lines with little volatility as the deadline nears.",
+  losingValue: (goal: string, amount: string) =>
+    `${amount} of ${goal} sits in a category that loses value every year.`,
+  losingValueWhy: "One option is to fund the goal from lines that keep their value.",
+  eroding: (goal: string, amount: string, years: string) =>
+    `Over ${years}, inflation would take about ${amount} from ${goal}: its lines earn no more than prices rise.`,
+  erodingOption:
+    "Consider categories with a higher expected return (stocks, bonds), which trade certainty for expected return.",
+  notIndexed: (goal: string, target: string, years: string, indexed: string, inflation: string) =>
+    `${goal}'s target, ${target}, is in today's euros: in ${years}, at ${inflation} inflation a year, it is about ${indexed}.`,
+  notIndexedOption: "One option is to raise the target to keep its buying power.",
+  idle: (amount: string) =>
+    `Your current accounts hold ${amount} more than a month of income and spending, free of every goal.`,
+  idleWhy: "Money left on a current account loses to inflation every year.",
+  idleSetAside: (amount: string, goal: string) =>
+    `Consider setting ${amount} aside for ${goal} (an adjustment of its envelope, which moves no money), and moving it to a savings line.`,
+  capstoneFund: (progress: string, amount: string) =>
+    `Emergency fund at ${progress}: ${amount} to go before your pleasure goals can unlock.`,
+  capstoneGoal: (goal: string, amount: string) =>
+    `${amount} more on ${goal} would make it ahead and unlock your pleasure goals.`,
+  capstoneMonthly: (amount: string, months: number) => `Or ${amount} a month for ${months} months.`,
+  leftOver: (amount: string) =>
+    `Your plan leaves ${amount} a month unallocated, and no goal is behind.`,
+  leftOverOption: "One option is a new goal.",
+  // Horizon and risk (F-ANA-4)
+  risk: "Horizon and risk",
+  riskHelp: (inflation: string) =>
+    `Each goal by the months left to its deadline and the volatility of its lines, weighted by what it holds on each (an upper bound: in a crash, holdings fall together). Near and volatile is red; between 2 and 5 years, a goal should move off volatile lines step by step (amber, dashed ring); far and earning no more than inflation (${inflation} a year) is red too; a dotted ring marks a goal partly in a category that loses value.`,
+  riskLabel: "Goals by horizon and risk",
+  riskTable: "Goals' horizon and risk",
+  monthsLeft: "Months left",
+  volatility: "Volatility",
+  realReturn: "Real return",
+  riskyShare: "On volatile lines",
+  loss: "One time in ten, at the deadline",
+  zoneLabel: "Zone",
+  zone: {
+    none: "—",
+    red_short: "Near and volatile",
+    amber_glide: "Above the glide path",
+    red_eroding: "Eroding",
+  } satisfies Record<Zone, string>,
+  losing: "losing value",
+  noDeadlineGoals: "Without a deadline:",
+  monthsAxis: "Months to the deadline",
+  volatilityAxis: "Volatility",
   // Required effort against capacity (F-ANA-2)
   forward: "Required effort against capacity",
   forwardHelp:
@@ -221,6 +274,59 @@ export const goalAnalysisFr: typeof goalAnalysisEn = {
       ? `Une option est de le relancer (${required} par mois permettent de tenir la date), de le repousser ou de l'annuler.`
       : "Une option est de le relancer, de le repousser ou de l'annuler.",
   openGoal: "Ouvrir l'objectif",
+  years: (months) => {
+    const n = Math.round(months / 12);
+    return n === 1 ? "1 an" : `${n} ans`;
+  },
+  shortRisk: (goal, amount, months) =>
+    `${amount} de ${goal} sont sur des lignes volatiles ou peu liquides, à ${months} mois de son échéance.`,
+  shortRiskLoss: (loss) => `Une fois sur dix, environ ${loss} de moins à l'échéance.`,
+  shortRiskOption:
+    "Envisager de le financer par des lignes peu volatiles à mesure que l'échéance approche.",
+  losingValue: (goal, amount) =>
+    `${amount} de ${goal} sont dans une catégorie qui perd de la valeur chaque année.`,
+  losingValueWhy: "Une option est de le financer par des lignes qui gardent leur valeur.",
+  eroding: (goal, amount, years) =>
+    `Sur ${years}, l'inflation prendrait environ ${amount} à ${goal} : ses lignes ne rapportent pas plus que la hausse des prix.`,
+  erodingOption:
+    "Envisager des catégories au rendement attendu plus élevé (actions, obligations), qui échangent de la certitude contre du rendement attendu.",
+  notIndexed: (goal, target, years, indexed, inflation) =>
+    `La cible de ${goal}, ${target}, est en euros d'aujourd'hui : dans ${years}, à ${inflation} d'inflation par an, elle vaut environ ${indexed}.`,
+  notIndexedOption: "Une option est de relever la cible pour garder son pouvoir d'achat.",
+  idle: (amount) =>
+    `Vos comptes courants contiennent ${amount} de plus qu'un mois de revenus et de dépenses, libres de tout objectif.`,
+  idleWhy: "L'argent laissé sur un compte courant perd face à l'inflation chaque année.",
+  idleSetAside: (amount, goal) =>
+    `Envisager de mettre ${amount} de côté pour ${goal} (un ajustement de son enveloppe, qui ne déplace pas d'argent), et de les placer sur un livret.`,
+  capstoneFund: (progress, amount) =>
+    `Épargne de précaution à ${progress} : encore ${amount} avant que vos objectifs plaisir puissent se débloquer.`,
+  capstoneGoal: (goal, amount) =>
+    `${amount} de plus sur ${goal} le mettraient en avance et débloqueraient vos objectifs plaisir.`,
+  capstoneMonthly: (amount, months) => `Ou ${amount} par mois pendant ${months} mois.`,
+  leftOver: (amount) =>
+    `Votre plan laisse ${amount} par mois non alloués, et aucun objectif n'est en retard.`,
+  leftOverOption: "Une option est un nouvel objectif.",
+  risk: "Horizon et risque",
+  riskHelp: (inflation) =>
+    `Chaque objectif selon les mois avant son échéance et la volatilité de ses lignes, pondérée par ce qu'il détient sur chacune (une borne haute : dans un krach, tout baisse ensemble). Proche et volatil, c'est rouge ; entre 2 et 5 ans, un objectif devrait quitter les lignes volatiles pas à pas (ambre, anneau en tirets) ; lointain et ne rapportant pas plus que l'inflation (${inflation} par an), c'est rouge aussi ; un anneau en pointillés signale un objectif en partie dans une catégorie qui perd de la valeur.`,
+  riskLabel: "Objectifs par horizon et risque",
+  riskTable: "Horizon et risque des objectifs",
+  monthsLeft: "Mois restants",
+  volatility: "Volatilité",
+  realReturn: "Rendement réel",
+  riskyShare: "Sur lignes volatiles",
+  loss: "Une fois sur dix, à l'échéance",
+  zoneLabel: "Zone",
+  zone: {
+    none: "—",
+    red_short: "Proche et volatil",
+    amber_glide: "Au-dessus de la trajectoire",
+    red_eroding: "Grignoté",
+  },
+  losing: "perd de la valeur",
+  noDeadlineGoals: "Sans échéance :",
+  monthsAxis: "Mois avant l'échéance",
+  volatilityAxis: "Volatilité",
   forward: "Effort requis face à la capacité",
   forwardHelp:
     "Ce que chaque objectif demande chaque mois pour atteindre sa cible à temps, empilé, face à ce que vous pouvez épargner. Les efforts requis ne comptent pas les rendements des lignes : ils sont prudents pour les objectifs lointains.",
