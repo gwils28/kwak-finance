@@ -61,6 +61,8 @@ The React app is the product. Dash is used only for **exploratory analytics page
 
 The first Dash page is the **wealth projection** (spec §4.11): `kwak_core.projection` holds the assumptions, their defaults, the starting point and the allocation, in `Decimal`; `kwak_analytics.montecarlo` draws the paths with numpy (`numpy.random.Generator` from a fixed seed), in floating point, and returns percentiles rounded back to `Decimal` cents. If a Dash page becomes a core feature, it is rewritten in React on top of a dedicated API endpoint.
 
+The **goals analysis** (spec §4.12) is React, not Dash: `kwak_core.goal_analysis` computes the reference month, the forward efforts, the goals' weights, volatilities and real returns, the status history and the points to look at (pure, every threshold a named constant); the chance of reaching each goal reuses `kwak_analytics.montecarlo` and is served by the API with the other views.
+
 ### Infrastructure
 
 - Docker Compose services: `caddy`, `api`, `worker`, `db` (Postgres 17), `backup`; then `ollama` (phase 6).
@@ -103,8 +105,8 @@ The first Dash page is the **wealth projection** (spec §4.11): `kwak_core.proje
 
 - `household` (warn_at, wealth_start, precaution_share, goal_capacity), `user` (table `app_user`: `user` is reserved in Postgres; + encrypted TOTP seed), `recovery_code` (SHA-256 only), `user_session` (only the SHA-256 of the cookie token is stored), `invite` (single-use, 7 days, token hashed), `auth_failure` (failed login/TOTP attempts, kept 24 h for rate limiting), `audit_event` (the activity log; `private_to` hides an entry about a private wealth line or goal from the other members)
 - spending, entered by hand since v1.0: `spending_category` (one level, expense, savings or income, one_off, position), `spending_line` (day, label, amount, category_id or its parts, fixed_expense_id, entered_by_id; `created_at` is when it was entered; the month's income is the sum of its income lines), `spending_line_part`, `fixed_expense` (frequency, day, first and last month, paused), `fixed_skip`, `spending_target` (a category's monthly target or savings objective from a month on, NULL for none). The accounts, imports, transactions, transfers, rules, recurring items and budget plans of v0 were dropped (migration c77a847d28b5).
-- wealth: `wealth_category` (asset or debt, colour, position), `wealth_line` (owner, visibility, opened and closed months), `wealth_value` (a line's value entered for a month, carried forward)
-- goals: `goal` (target, deadline, precaution, permanent, pleasure, owner, visibility, closed_as; the tier follows the deadline), `goal_funding` (a wealth line's envelope: opening amount, share of the rises), `goal_adjustment` (an envelope set by hand from a month)
+- wealth: `wealth_category` (asset or debt, colour, position), `wealth_line` (owner, visibility, opened and closed months, regulated type for a savings account), `wealth_value` (a line's value entered for a month, carried forward)
+- goals: `goal` (target, deadline, precaution, permanent, pleasure, owner, visibility, closed_as; the tier follows the deadline), `goal_funding` (a wealth line's envelope: opening amount, share of the rises), `goal_adjustment` (an envelope set by hand from a month), `goal_notice_dismissal` (a member's snoozed or dismissed point to look at: rule, goal or line, until month or severity and amount when dismissed)
 - later phases, not built: `instrument`, `price`, `position_operation`; `property`, `loan` (+ generated `loan_schedule`), `use_asset`, `valuation`
 
 Conventions: UUIDv7 primary keys, `created_at` / `updated_at` in UTC (`timestamptz`), booking dates as `date`, money as `NUMERIC` mapped to `Decimal`, quantities as `NUMERIC(28,10)`.
