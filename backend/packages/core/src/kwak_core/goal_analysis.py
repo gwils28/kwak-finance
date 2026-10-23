@@ -152,6 +152,28 @@ class LineRisk:
         return self.volatile or self.illiquid
 
 
+DEFAULT_RISKS: Mapping[str, LineRisk] = {
+    "savings": LineRisk(ret=Decimal("0.017")),
+    "current": LineRisk(current=True),
+    "stocks": LineRisk(ret=Decimal("0.07"), volatility=Decimal("0.16")),
+    "crypto": LineRisk(ret=Decimal("0.08"), volatility=Decimal("0.6")),
+    "bonds": LineRisk(ret=Decimal("0.03"), volatility=Decimal("0.06")),
+    "private-equity": LineRisk(ret=Decimal("0.06"), volatility=Decimal("0.25"), illiquid=True),
+    "gold": LineRisk(ret=Decimal("0.03"), volatility=Decimal("0.15")),
+    "real-estate": LineRisk(ret=Decimal("0.025"), volatility=Decimal("0.08"), illiquid=True),
+    "equipment": LineRisk(ret=Decimal("-0.15"), illiquid=True),
+    "exotic": LineRisk(volatility=Decimal("0.2"), illiquid=True),
+}
+"""The projection's defaults (F-SIM-1) for the default categories, by their preset (the
+default colour key, kept whatever colour the category takes), until the household's own
+assumptions exist."""
+
+
+def risk_of(preset: str | None) -> LineRisk:
+    """A category added later, without a preset, starts at 0 % ± 0, liquid."""
+    return DEFAULT_RISKS.get(preset, LineRisk()) if preset else LineRisk()
+
+
 def weights(held: Mapping[UUID, Decimal], shares: Mapping[UUID, int]) -> dict[UUID, Decimal]:
     """A goal's weight on each line: what its envelope holds there over its value, or for a
     goal holding nothing yet its shares of the rises, normalised."""

@@ -6,6 +6,7 @@ from hypothesis import given
 from hypothesis import strategies as st
 from kwak_core.budget import Month
 from kwak_core.goal_analysis import (
+    DEFAULT_RISKS,
     Dismissal,
     GoalFacts,
     LineRisk,
@@ -23,6 +24,7 @@ from kwak_core.goal_analysis import (
     overcommitted_notices,
     precaution_notices,
     reference_month,
+    risk_of,
     select,
     stale_lines,
     unfunded_notices,
@@ -32,6 +34,7 @@ from kwak_core.goal_analysis import (
 )
 from kwak_core.goals import GoalStatus, Line, Tier, add_months, track
 from kwak_core.money import quantize
+from kwak_core.wealth import DEFAULT_WEALTH_CATEGORIES
 
 D = Decimal
 OCT = Month(2026, 10)
@@ -569,3 +572,14 @@ def test_some_points_are_never_hidden(rule: Rule) -> None:
     notice = _n(rule, Severity.WARNING)
     assert not hidden(notice, Dismissal(until=Month(2027, 1)), OCT)
     assert not hidden(notice, Dismissal(severity=Severity.WARNING, amount=D(100)), OCT)
+
+
+def test_each_default_category_has_its_projection_defaults() -> None:
+    """F-SIM-1's defaults, by the category's preset, until the household sets its own."""
+    assert {c.colour for c in DEFAULT_WEALTH_CATEGORIES} - {"debts"} == set(DEFAULT_RISKS)
+    assert DEFAULT_RISKS["stocks"] == LineRisk(ret=D("0.07"), volatility=D("0.16"))
+    assert DEFAULT_RISKS["current"].current
+    assert not DEFAULT_RISKS["savings"].risky
+    assert all(DEFAULT_RISKS[k].illiquid for k in ("real-estate", "private-equity", "equipment"))
+    assert DEFAULT_RISKS["equipment"].volatile  # it loses value
+    assert risk_of(None) == risk_of("unknown") == LineRisk()
