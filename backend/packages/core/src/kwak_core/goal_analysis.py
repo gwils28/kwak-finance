@@ -19,6 +19,7 @@ from kwak_core.goals import (
     Tier,
     Tracking,
     add_months,
+    gate_of,
     months_between,
     tier_of,
     track,
@@ -53,6 +54,15 @@ PRECAUTION_LOW = 3
 PRECAUTION_SHORT = 6
 SHOWN = 3
 WORSENS = Decimal("1.25")
+DEFAULT_INFLATION = Decimal("0.02")
+"""The projection's default (F-SIM-1), until the household's own assumptions exist."""
+SHORT_RISK_SHARE = Decimal("0.1")
+SHORT_RISK_FLOOR = Decimal(500)
+ERODING_FLOOR = Decimal(5000)
+NOT_INDEXED_MONTHS = 60
+IDLE_FIXED_MONTHS = 4
+LEFT_OVER_FLOOR = Decimal(50)
+CAPSTONE_MONTHS = 3
 
 
 # F-ANA-1: the reference month
@@ -345,6 +355,8 @@ class Notice:
     """The lines it is about, for R0."""
     figures: Mapping[str, Figure] = field(default_factory=dict)
     postponements: tuple[Postponement, ...] = ()
+    subject: UUID | None = None
+    """A goal the point names without belonging to it (R7, R8)."""
 
     @property
     def key(self) -> tuple[Rule, UUID | None, UUID | None]:
@@ -591,6 +603,232 @@ def no_gain_notices(goals: Sequence[GoalFacts]) -> list[Notice]:
             )
         )
     return out
+
+
+def _risky(g: GoalFacts, risks: Mapping[UUID, LineRisk]) -> Decimal:
+    return sum((v for k, v in g.held.items() if risks[k].risky), ZERO)
+
+
+def short_risk_notices(goals: Sequence[GoalFacts], risks: Mapping[UUID, LineRisk]) -> list[Notice]:
+    """R3: a goal near its deadline on volatile or illiquid lines, and the glide path."""
+    out = []
+    for g in _dated(goals):
+        months = g.now.months_left or 0
+        value = g.now.value
+        risky = _risky(g, risks)
+        if value <= 0 or months > GLIDE_MONTHS or not g.now.remaining:
+            continue
+        share = risky / value
+        if months <= SHORT_RISK_MONTHS:
+            if share <= SHORT_RISK_SHARE or risky <= SHORT_RISK_FLOOR:
+                continue
+            severity = Severity.WARNING
+        elif share > glide_limit(months):
+            severity = Severity.INFO
+        else:
+            continue
+        w = weights(g.held, g.shares)
+        ret = weighted(w, {k: risks[k].ret for k in w})
+        sigma = weighted(w, {k: risks[k].volatility for k in w})
+        loss = -loss_one_in_ten(ret, sigma, max(1, months)) * value
+        out.append(
+            Notice(
+                Rule.SHORT_RISK,
+                severity,
+                goal=g.id,
+                amount=risky,
+                deadline=g.deadline,
+                figures={
+                    "loss": quantize(max(ZERO, loss)),
+                    "months": months,
+                },
+            )
+        )
+    return out
+
+
+def losing_value_notices(
+    goals: Sequence[GoalFacts], risks: Mapping[UUID, LineRisk]
+) -> list[Notice]:
+    """R3b: more than a tenth of a goal in a category that loses value."""
+    out = []
+    for g in goals:
+        w = weights(g.held, g.shares)
+        if not w or not losing_value(w, risks):
+            continue
+        losing = sum((v for k, v in g.held.items() if risks[k].ret < 0), ZERO)
+        if losing <= 0:
+            continue
+        out.append(
+            Notice(Rule.LOSING_VALUE, Severity.INFO, goal=g.id, amount=losing, deadline=g.deadline)
+        )
+    return out
+
+
+def eroding_notices(
+    goals: Sequence[GoalFacts], risks: Mapping[UUID, LineRisk], *, inflation: Decimal
+) -> list[Notice]:
+    """R4: a long goal on lines that earn no more than inflation."""
+    out = []
+    for g in _dated(goals):
+        months = g.now.months_left or 0
+        w = weights(g.held, g.shares)
+        if months <= ERODING_MONTHS or not w or g.now.value + g.now.remaining < ERODING_FLOOR:
+            continue
+        ret = weighted(w, {k: risks[k].ret for k in w})
+        if ret - inflation > 0:
+            continue
+        years = Decimal(months) / 12
+        erosion = quantize(g.now.value * (1 - ((1 + ret) / (1 + inflation)) ** years))
+        if erosion <= 0:
+            continue
+        out.append(
+            Notice(
+                Rule.ERODING,
+                Severity.INFO,
+                goal=g.id,
+                amount=erosion,
+                deadline=g.deadline,
+                figures={"months": months},
+            )
+        )
+    return out
+
+
+def not_indexed_notices(goals: Sequence[GoalFacts], *, inflation: Decimal) -> list[Notice]:
+    """R10: a target in today's euros, more than five years away."""
+    out = []
+    for g in _dated(goals):
+        months = g.now.months_left or 0
+        if months <= NOT_INDEXED_MONTHS or not g.now.remaining:
+            continue
+        out.append(
+            Notice(
+                Rule.NOT_INDEXED,
+                Severity.INFO,
+                goal=g.id,
+                amount=g.target,
+                deadline=g.deadline,
+                figures={
+                    "indexed": quantize(g.target * (1 + inflation) ** (Decimal(months) / 12)),
+                    "months": months,
+                },
+            )
+        )
+    return out
+
+
+def idle_notices(
+    goals: Sequence[GoalFacts],
+    *,
+    current_free: Decimal,
+    income: Decimal,
+    spending: Decimal,
+    history_months: int,
+    monthly_fixed: Decimal,
+) -> list[Notice]:
+    """R7: more on the current accounts, free of every goal, than a month's income and spending
+    (next month's salary sits there at the end of a month). Spending counts as an amount,
+    whatever its sign."""
+    threshold = (
+        income + abs(spending)
+        if history_months >= MIN_CAPACITY_MONTHS
+        else IDLE_FIXED_MONTHS * monthly_fixed
+    )
+    excess = current_free - threshold
+    if threshold <= 0 or excess <= 0:
+        return []
+    behind = sorted(
+        (g for g in _dated(goals) if g.now.status is GoalStatus.BEHIND),
+        key=lambda g: g.deadline or g.start,
+    )
+    short = [g for g in goals if g.precaution and g.now.remaining]
+    if behind:
+        subject, gap = behind[0], -(behind[0].now.months[-1].gap or ZERO)
+    elif short:
+        subject, gap = short[0], short[0].now.remaining
+    else:
+        subject, gap = None, ZERO
+    return [
+        Notice(
+            Rule.IDLE,
+            Severity.WARNING if subject else Severity.INFO,
+            amount=quantize(excess),
+            subject=subject.id if subject else None,
+            figures={"set_aside": quantize(min(excess, gap)) if subject else None},
+        )
+    ]
+
+
+def _to_ahead(expected: Decimal, value: Decimal, target: Decimal, band: Decimal) -> Decimal:
+    """The fewest whole euros that make a goal ahead (strictly above its expected value and
+    the band, kwak_core.budget.budget_status) or reached, which counts as ahead too."""
+    above = Decimal(math.floor(expected * (1 + band) - value) + 1)
+    return max(ZERO, min(above, Decimal(math.ceil(target - value))))
+
+
+def capstone_notices(goals: Sequence[GoalFacts], *, band: Decimal = DEFAULT_BAND) -> list[Notice]:
+    """R8: how close the capstone is, when there are pleasure goals to unlock. The goals given
+    are the scope's: in *mine* and *joint* the capstone's own reckoning (F-GOAL-10); in the
+    household, everyone's together. The one-off amount makes one goal ahead now; "monthly" is
+    what it would take each month, in all, to be ahead in three months."""
+    if not any(g.pleasure for g in goals):
+        return []
+    precautions = [g for g in goals if g.precaution]
+    dated = _dated(goals)
+    gate = gate_of(((g.now.value, g.target) for g in precautions), (g.now.status for g in dated))
+    if gate.precaution is None:
+        return []
+    if gate.precaution < 1:
+        missing = sum((g.now.remaining for g in precautions), ZERO)
+        return [
+            Notice(
+                Rule.CAPSTONE,
+                Severity.GOOD,
+                amount=missing,
+                figures={"progress": gate.precaution.quantize(Decimal("0.01"))},
+            )
+        ]
+    if gate.needed - gate.ahead != 1:
+        return []
+    options = []
+    for g in dated:
+        if g.now.status not in (GoalStatus.ON, GoalStatus.BEHIND):
+            continue
+        expected = g.now.months[-1].expected or ZERO
+        once = _to_ahead(expected, g.now.value, g.target, band)
+        months = max(1, g.now.months_left or 1)
+        later = expected + (g.target - expected) * min(CAPSTONE_MONTHS, months) / months
+        # In all, a month for three months, from what it holds now.
+        monthly = Decimal(
+            math.ceil(_to_ahead(later, g.now.value, g.target, band) / CAPSTONE_MONTHS)
+        )
+        options.append((once, g.deadline or g.start, g, monthly))
+    if not options:
+        return []
+    once, _, g, monthly = min(options, key=lambda o: (o[0], o[1]))
+    return [
+        Notice(
+            Rule.CAPSTONE,
+            Severity.GOOD,
+            amount=once,
+            subject=g.id,
+            figures={"monthly": monthly, "months": CAPSTONE_MONTHS},
+        )
+    ]
+
+
+def left_over_notices(
+    goals: Sequence[GoalFacts], *, unallocated: Decimal, capacity_months: int
+) -> list[Notice]:
+    """R14: the plan leaves capacity over, and no goal is behind."""
+    if (
+        capacity_months < MIN_CAPACITY_MONTHS
+        or unallocated <= LEFT_OVER_FLOOR
+        or any(g.now.status is GoalStatus.BEHIND for g in goals)
+    ):
+        return []
+    return [Notice(Rule.LEFT_OVER, Severity.GOOD, amount=quantize(unallocated))]
 
 
 # Order, one per goal, dismissal (invariant §8.36)
