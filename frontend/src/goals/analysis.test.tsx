@@ -313,3 +313,138 @@ test("the timeline marks each goal's dates, and an arrow for those beyond it", a
   expect(svg.querySelectorAll("path")).toHaveLength(1); // Été's date at the plan
   expect(within(svg).getByText("Beyond the chart: see the table")).toBeInTheDocument();
 });
+
+const second: GoalAnalysisOut = {
+  ...analysis,
+  risk: [
+    {
+      goal_id: "g-summer",
+      name: "Été",
+      tier: "short",
+      months_left: 12,
+      volatility: "0.1600",
+      real_return: "0.0500",
+      risky_share: "1.0000",
+      zone: "red_short",
+      loss: "-0.1253",
+      losing: false,
+    },
+    {
+      goal_id: "g-car",
+      name: "Voiture",
+      tier: "long",
+      months_left: 120,
+      volatility: "0.0000",
+      real_return: "-0.0030",
+      risky_share: "0.0000",
+      zone: "red_eroding",
+      loss: "0.1830",
+      losing: false,
+    },
+    {
+      goal_id: "g-rum",
+      name: "Rhum",
+      tier: "pleasure",
+      months_left: null,
+      volatility: "0.0000",
+      real_return: "-0.0030",
+      risky_share: "0.0000",
+      zone: null,
+      loss: null,
+      losing: false,
+    },
+  ],
+  points: {
+    shown: [
+      point({
+        rule: "short_risk",
+        goal_id: "g-summer",
+        goal_name: "Été",
+        amount: "3000.00",
+        figures: { loss: "376.00", months: 12 },
+      }),
+      point({
+        rule: "idle",
+        severity: "warning",
+        amount: "2000.00",
+        subject_id: "g-summer",
+        subject_name: "Été",
+        figures: { set_aside: "400.00" },
+      }),
+      point({
+        rule: "capstone",
+        severity: "good",
+        amount: "11.00",
+        subject_id: "g-car",
+        subject_name: "Voiture",
+        figures: { monthly: "109.00", months: 3 },
+      }),
+    ],
+    more: [
+      point({
+        rule: "not_indexed",
+        severity: "info",
+        goal_id: "g-car",
+        goal_name: "Voiture",
+        amount: "30000.00",
+        figures: { indexed: "36569.83", months: 120 },
+      }),
+      point({
+        rule: "eroding",
+        severity: "info",
+        goal_id: "g-car",
+        goal_name: "Voiture",
+        amount: "290.26",
+        figures: { months: 120 },
+      }),
+      point({ rule: "left_over", severity: "good", amount: "80.00" }),
+    ],
+  },
+};
+
+test("the second batch of points reads its figures, and the risk chart its zones", async () => {
+  api(owner, second);
+  render(<TestApp path="/goals/analysis" />);
+  const points = await screen.findByRole("region", { name: "Points to look at" });
+  const text = () => plain(points.textContent);
+  expect(text()).toContain(
+    "€3,000 of Été sits on volatile or illiquid lines, 12 months from its deadline. One time in ten, about €376 less at the deadline.",
+  );
+  expect(text()).toContain(
+    "Consider setting €400 aside for Été (an adjustment of its envelope, which moves no money)",
+  );
+  expect(text()).toContain(
+    "€11 more on Voiture would make it ahead and unlock your pleasure goals.",
+  );
+  expect(text()).toContain("Or €109 a month for 3 months.");
+  await userEvent.setup().click(screen.getByRole("button", { name: "3 more points" }));
+  expect(text()).toContain(
+    "Voiture's target, €30,000, is in today's euros: in 10 years, at 2% inflation a year, it is about €36,570.",
+  );
+  expect(text()).toContain("Over 10 years, inflation would take about €290 from Voiture");
+  expect(text()).toContain("Your plan leaves €80 a month unallocated, and no goal is behind.");
+
+  const risk = screen.getByRole("region", { name: "Horizon and risk" });
+  expect(within(risk).getByRole("img", { name: "Goals by horizon and risk" })).toBeInTheDocument();
+  expect(plain(risk.textContent)).toContain("Without a deadline: Rhum");
+  const rows = within(within(risk).getByRole("table", { name: "Goals' horizon and risk" }))
+    .getAllByRole("row")
+    .map((r) => plain(r.textContent));
+  expect(rows[1]).toBe("Été1216%+5.0%100%-12.5%Near and volatile");
+  expect(rows[2]).toBe("Voiture1200%-0.3%0%+18.3%Eroding");
+});
+
+test("the second batch reads in French", async () => {
+  api({ ...owner, language: "fr" }, second);
+  render(<TestApp path="/goals/analysis" language="fr" />);
+  const points = await screen.findByRole("region", { name: "Points d'attention" });
+  expect(plain(points.textContent)).toContain(
+    "3 000 € de Été sont sur des lignes volatiles ou peu liquides, à 12 mois de son échéance. Une fois sur dix, environ 376 € de moins à l'échéance.",
+  );
+  expect(plain(points.textContent)).toContain(
+    "11 € de plus sur Voiture le mettraient en avance et débloqueraient vos objectifs plaisir.",
+  );
+  expect(screen.getByRole("region", { name: "Horizon et risque" })).toHaveTextContent(
+    "Proche et volatil",
+  );
+});
