@@ -4,7 +4,7 @@ from uuid import UUID, uuid4
 import pytest
 from hypothesis import given
 from hypothesis import strategies as st
-from kwak_core.budget import Month
+from kwak_core.budget import DEFAULT_BAND, Month
 from kwak_core.goal_analysis import (
     DEFAULT_RISKS,
     Dismissal,
@@ -14,18 +14,26 @@ from kwak_core.goal_analysis import (
     Rule,
     Severity,
     Zone,
+    _to_ahead,
     behind_notices,
+    capstone_notices,
     data_notices,
+    eroding_notices,
     forward_efforts,
     hidden,
     history,
+    idle_notices,
+    left_over_notices,
+    losing_value_notices,
     loss_one_in_ten,
     no_gain_notices,
+    not_indexed_notices,
     overcommitted_notices,
     precaution_notices,
     reference_month,
     risk_of,
     select,
+    short_risk_notices,
     stale_lines,
     unfunded_notices,
     weighted,
@@ -583,3 +591,202 @@ def test_each_default_category_has_its_projection_defaults() -> None:
     assert all(DEFAULT_RISKS[k].illiquid for k in ("real-estate", "private-equity", "equipment"))
     assert DEFAULT_RISKS["equipment"].volatile  # it loses value
     assert risk_of(None) == risk_of("unknown") == LineRisk()
+
+
+# F-ANA-8, second batch
+
+
+STOCKS = LineRisk(ret=D("0.07"), volatility=D("0.16"))
+LIVRET = LineRisk(ret=D("0.017"))
+CURRENT = LineRisk(current=True)
+EQUIPMENT = LineRisk(ret=D("-0.15"), illiquid=True)
+
+
+def _held(value: str, months: int, held: dict[UUID, Decimal], target: str = "10000") -> GoalFacts:
+    return _facts(
+        target,
+        [value],
+        deadline=add_months(OCT, months),
+        start=OCT,
+        held=held,
+        shares=dict.fromkeys(held, 50),
+    )
+
+
+def test_a_short_goal_on_volatile_lines_is_a_warning_with_its_loss() -> None:
+    goal = _held("4000", 18, {A: D(3000), B: D(1000)})
+    (notice,) = short_risk_notices([goal], {A: STOCKS, B: LIVRET})
+    assert (notice.rule, notice.severity, notice.amount) == (
+        Rule.SHORT_RISK,
+        Severity.WARNING,
+        D(3000),
+    )
+    loss = notice.figures["loss"]
+    assert isinstance(loss, Decimal)
+    assert D(300) < loss < D(700)  # one outcome in ten, in euros
+
+
+@pytest.mark.parametrize(
+    ("months", "risky", "severity"),
+    [
+        (18, "400", None),  # 10 % of the goal: not above
+        (40, "2000", Severity.INFO),  # 50 % against the 44 % allowed 40 months out
+        (40, "1000", None),
+        (48, "3000", Severity.INFO),  # 75 % against 67 %
+        (72, "4000", None),  # beyond five years: no glide path
+    ],
+)
+def test_the_glide_path(months: int, risky: str, severity: Severity | None) -> None:
+    goal = _held("4000", months, {A: D(risky), B: D(4000) - D(risky)})
+    notices = short_risk_notices([goal], {A: STOCKS, B: LIVRET})
+    assert [n.severity for n in notices] == ([severity] if severity else [])
+
+
+def test_a_category_losing_value() -> None:
+    goal = _held("4000", 30, {A: D(500), B: D(3500)})
+    (notice,) = losing_value_notices([goal], {A: EQUIPMENT, B: LIVRET})
+    assert (notice.rule, notice.severity, notice.amount) == (
+        Rule.LOSING_VALUE,
+        Severity.INFO,
+        D(500),
+    )
+    assert (
+        losing_value_notices(
+            [_held("4000", 30, {A: D(300), B: D(3700)})], {A: EQUIPMENT, B: LIVRET}
+        )
+        == []
+    )
+
+
+def test_a_long_goal_on_livrets_erodes() -> None:
+    goal = _held("10000", 120, {A: D(10000)}, target="30000")
+    (notice,) = eroding_notices([goal], {A: LIVRET}, inflation=D("0.02"))
+    assert (notice.rule, notice.severity) == (Rule.ERODING, Severity.INFO)
+    assert notice.amount == D("290.26")  # 10,000 x (1 - (1.017 / 1.02)^10)
+    assert eroding_notices([goal], {A: STOCKS}, inflation=D("0.02")) == []
+    short = _held("10000", 90, {A: D(10000)}, target="30000")
+    assert eroding_notices([short], {A: LIVRET}, inflation=D("0.02")) == []
+
+
+def test_a_small_long_goal_is_left_alone() -> None:
+    goal = _held("100", 120, {A: D(100)}, target="4000")
+    assert eroding_notices([goal], {A: LIVRET}, inflation=D("0.02")) == []
+
+
+def test_a_far_target_is_not_indexed() -> None:
+    goal = _held("0", 120, {}, target="30000")
+    (notice,) = not_indexed_notices([goal], inflation=D("0.02"))
+    assert (notice.rule, notice.amount) == (Rule.NOT_INDEXED, D(30000))
+    assert notice.figures["indexed"] == D("36569.83")  # 30,000 x 1.02^10
+    assert not_indexed_notices([_held("0", 60, {}, target="30000")], inflation=D("0.02")) == []
+
+
+def test_idle_money_on_current_accounts() -> None:
+    start = add_months(OCT, -5)
+    behind = _facts(
+        "1200",
+        ["0", "100", "100", "100", "100", "100"],
+        deadline=add_months(start, 12),
+        start=start,
+    )
+    fine = _due("1200", 12)
+    kwargs = {"income": D(3000), "spending": D(2000), "history_months": 6, "monthly_fixed": D(900)}
+    (notice,) = idle_notices([behind, fine], current_free=D(6000), **kwargs)
+    assert (notice.rule, notice.severity, notice.amount) == (Rule.IDLE, Severity.WARNING, D(1000))
+    assert notice.subject == behind.id
+    assert notice.figures["set_aside"] == D(400)  # what it is behind, under the excess
+    (calm,) = idle_notices([fine], current_free=D(6000), **kwargs)
+    assert (calm.severity, calm.subject) == (Severity.INFO, None)
+    assert idle_notices([fine], current_free=D(5000), **kwargs) == []
+    # with little history, four months of fixed expenses
+    assert (
+        idle_notices(
+            [fine],
+            current_free=D(3700),
+            income=D(0),
+            spending=D(0),
+            history_months=1,
+            monthly_fixed=D(900),
+        )
+        != []
+    )
+
+
+def test_the_capstone_one_goal_away() -> None:
+    start = add_months(OCT, -2)
+    fund = _facts("1000", ["1000", "1000", "1000"], deadline=None, start=start, precaution=True)
+    ahead = _facts("1200", ["0", "300", "600"], deadline=add_months(start, 12), start=start)
+    near = _facts("1200", ["0", "100", "200"], deadline=add_months(start, 12), start=start)
+    rum = _facts("150", ["0", "0", "0"], deadline=None, start=start)
+    rum = GoalFacts(**{**rum.__dict__, "pleasure": True})
+    (notice,) = capstone_notices([fund, ahead, near, rum])
+    assert (notice.rule, notice.severity, notice.subject) == (Rule.CAPSTONE, Severity.GOOD, near.id)
+    # expected 200, ahead above 210: 11 more, the fewest whole euros
+    assert notice.amount == D(11)
+    # in three months expected 500, ahead above 525: 325 more, 109 a month
+    assert notice.figures["monthly"] == D(109)
+
+
+def test_the_capstone_waits_for_the_emergency_fund() -> None:
+    start = add_months(OCT, -2)
+    fund = _facts("1000", ["600", "700", "820"], deadline=None, start=start, precaution=True)
+    rum = _facts("150", ["0", "0", "0"], deadline=None, start=start)
+    rum = GoalFacts(**{**rum.__dict__, "pleasure": True})
+    (notice,) = capstone_notices([fund, rum])
+    assert (notice.amount, notice.figures["progress"]) == (D(180), D("0.82"))
+    assert capstone_notices([fund]) == []  # no pleasure goal, nothing to unlock
+
+
+def test_capacity_left_over_is_good_news() -> None:
+    goals = [_due("1200", 12)]
+    (notice,) = left_over_notices(goals, unallocated=D(80), capacity_months=6)
+    assert (notice.rule, notice.severity, notice.amount) == (Rule.LEFT_OVER, Severity.GOOD, D(80))
+    assert left_over_notices(goals, unallocated=D(50), capacity_months=6) == []
+    assert left_over_notices(goals, unallocated=D(80), capacity_months=2) == []
+
+
+@given(
+    st.decimals(0, 50_000, places=2),
+    st.integers(97, 400),
+    st.decimals(D("-0.2"), D("0.02"), places=3),
+)
+def test_erosion_never_exceeds_the_value(value: Decimal, months: int, ret: Decimal) -> None:
+    goal = _held(str(value), months, {A: value}, target="60000")
+    for notice in eroding_notices([goal], {A: LineRisk(ret=ret)}, inflation=D("0.02")):
+        assert notice.amount is not None
+        assert D(0) <= notice.amount <= value
+
+
+@given(st.decimals(1, 50_000, places=2), st.integers(1, 60))
+def test_a_goal_on_safe_lines_is_never_at_short_risk(value: Decimal, months: int) -> None:
+    goal = _held(str(value), months, {A: value}, target="60000")
+    assert short_risk_notices([goal], {A: LIVRET}) == []
+
+
+def test_the_capstone_counts_a_reached_goal_as_ahead() -> None:
+    """Near its deadline, reaching the target is enough: no need to go past it."""
+    start = add_months(OCT, -2)
+    fund = _facts("1000", ["1000", "1000", "1000"], deadline=None, start=start, precaution=True)
+    ahead = _facts("1200", ["0", "600", "1200"], deadline=add_months(start, 4), start=start)
+    due = _facts("1000", ["0", "500", "900"], deadline=OCT, start=start)
+    rum = _facts("150", ["0", "0", "0"], deadline=None, start=start)
+    rum = GoalFacts(**{**rum.__dict__, "pleasure": True})
+    (notice,) = capstone_notices([fund, ahead, due, rum])
+    assert (notice.subject, notice.amount) == (due.id, D(100))
+
+
+@given(
+    st.decimals(0, 20_000, places=2),
+    st.decimals(1, 20_000, places=2),
+    st.decimals(0, 30_000, places=2),
+)
+def test_the_amount_to_ahead_is_the_fewest_euros(
+    expected: Decimal, target: Decimal, value: Decimal
+) -> None:
+    amount = _to_ahead(expected, value, target, DEFAULT_BAND)
+
+    def ahead(v: Decimal) -> bool:
+        return v >= target or v > expected * (1 + DEFAULT_BAND)
+
+    assert ahead(value + amount)
+    assert amount == 0 or not ahead(value + amount - 1)
