@@ -298,3 +298,136 @@ def test_the_capacity_views_take_the_households_goals_in_every_scope(
     assert mine_only["reference"] == "2026-10"
     assert [b["name"] for b in mine_only["timeline"]] == ["Été"]
     assert _analysis(owner_client, scope="joint")["reference"] == "2026-09"
+
+
+def _stocks(client: TestClient) -> str:
+    line = _line(client, "Stocks", "PEA")
+    for month, amount in (("2026-09", "3000.00"), ("2026-10", "3000.00")):
+        assert _value(client, line, month, amount).status_code == 204
+    return line
+
+
+def test_a_near_goal_on_stocks_sits_in_the_red_zone(owner_client: TestClient) -> None:
+    _capacity(owner_client, "300.00")
+    pea = _stocks(owner_client)
+    _goal(
+        owner_client,
+        name="Voiture",
+        target="6000.00",
+        deadline="2027-10",
+        start="2026-09",
+        fundings=[{"line_id": pea, "share": 100, "opening": "3000.00"}],
+    )
+    out = _analysis(owner_client)
+    [point] = out["risk"]
+    assert (point["name"], point["months_left"], point["zone"]) == ("Voiture", 12, "red_short")
+    assert (point["volatility"], point["risky_share"]) == ("0.1600", "1.0000")
+    assert point["real_return"] == "0.0500"  # 7 % less the 2 % inflation
+    assert -0.2 < float(point["loss"]) < -0.05
+    assert out["inflation"] == "0.0200"
+    [risk] = [
+        p for p in [*out["points"]["shown"], *out["points"]["more"]] if p["rule"] == "short_risk"
+    ]
+    assert (risk["severity"], risk["amount"]) == ("warning", "3000.00")
+    assert float(risk["figures"]["loss"]) > 0
+
+
+def test_idle_money_names_the_goal_behind(owner_client: TestClient) -> None:
+    categories = {c["name"]: c["id"] for c in owner_client.get("/api/spending/categories").json()}
+    for month in ("2026-07", "2026-08", "2026-09"):
+        for category, amount in (("Salaries", "2000.00"), ("Groceries", "-1000.00")):
+            body = {
+                "day": f"{month}-10",
+                "label": "x",
+                "amount": amount,
+                "category_id": categories[category],
+            }
+            response = owner_client.post(
+                "/api/spending/lines", json=body, headers=csrf(owner_client)
+            )
+            assert response.status_code == 201, response.text
+    current = _line(owner_client, "Current accounts", "Compte courant")
+    for month in ("2026-09", "2026-10"):
+        assert _value(owner_client, current, month, "5000.00").status_code == 204
+    livret = _livret(owner_client, ("2026-09", "2026-10"))
+    _goal(
+        owner_client,
+        name="Été",
+        target="1200.00",
+        deadline="2027-06",
+        start="2026-09",
+        fundings=[{"line_id": livret, "share": 100}],
+    )
+    points = [
+        *_analysis(owner_client)["points"]["shown"],
+        *_analysis(owner_client)["points"]["more"],
+    ]
+    [idle] = [p for p in points if p["rule"] == "idle"]
+    # 5,000 free on the current account, against 2,000 + 1,000 a month
+    assert idle["amount"] == "2000.00"
+
+
+def test_a_far_target_is_indexed_and_capacity_left_over_is_good_news(
+    owner_client: TestClient,
+) -> None:
+    _capacity(owner_client, "2000.00")
+    livret = _livret(owner_client, ("2026-09", "2026-10"))
+    _goal(
+        owner_client,
+        name="Études",
+        target="30000.00",
+        deadline="2036-10",
+        start="2026-10",
+        fundings=[{"line_id": livret, "share": 100}],
+    )
+    points = _analysis(owner_client)["points"]
+    rules = {p["rule"]: p for p in [*points["shown"], *points["more"]]}
+    assert rules["not_indexed"]["figures"]["indexed"] == "36569.83"
+    assert rules["left_over"]["severity"] == "good"
+
+
+def _spending(client: TestClient) -> None:
+    categories = {c["name"]: c["id"] for c in client.get("/api/spending/categories").json()}
+    for month in ("2026-07", "2026-08", "2026-09"):
+        for category, amount in (("Salaries", "2000.00"), ("Groceries", "-1000.00")):
+            body = {
+                "day": f"{month}-10",
+                "label": "x",
+                "amount": amount,
+                "category_id": categories[category],
+            }
+            response = client.post("/api/spending/lines", json=body, headers=csrf(client))
+            assert response.status_code == 201, response.text
+
+
+def test_idle_money_never_shows_another_members_private_goal(
+    client: TestClient, clock: Clock, owner: User, member: User
+) -> None:
+    clock.now = TODAY
+    log_in(client, clock)
+    _spending(client)
+    joint = _line(client, "Current accounts", "Compte joint", "joint")
+    for month in ("2026-09", "2026-10"):
+        assert _value(client, joint, month, "9000.00").status_code == 204
+    log_in(client, clock, "member@example.com")
+    [before] = [p for p in _all_points(client) if p["rule"] == "idle"]
+    log_in(client, clock)
+    _goal(
+        client,
+        name="Secret",
+        visibility="private",
+        target="5000.00",
+        deadline="2027-06",
+        start="2026-09",
+        fundings=[{"line_id": joint, "share": 100, "opening": "4000.00"}],
+    )
+    [mine] = [p for p in _all_points(client) if p["rule"] == "idle"]
+    assert mine["amount"] == "2000.00"  # 9,000 - 4,000 set aside - 3,000 a month
+    log_in(client, clock, "member@example.com")
+    [after] = [p for p in _all_points(client) if p["rule"] == "idle"]
+    assert after["amount"] == before["amount"] == "6000.00"
+
+
+def _all_points(client: TestClient) -> list[dict[str, Any]]:
+    points = _analysis(client)["points"]
+    return [*points["shown"], *points["more"]]
