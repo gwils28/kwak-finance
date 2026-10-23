@@ -540,6 +540,11 @@
           "forward": {
             "$ref": "#/components/schemas/ForwardOut"
           },
+          "inflation": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Inflation",
+            "type": "string"
+          },
           "month": {
             "title": "Month",
             "type": "string"
@@ -557,6 +562,13 @@
               }
             ],
             "title": "Reference"
+          },
+          "risk": {
+            "items": {
+              "$ref": "#/components/schemas/RiskPointOut"
+            },
+            "title": "Risk",
+            "type": "array"
           },
           "statuses": {
             "items": {
@@ -582,6 +594,8 @@
           "forward",
           "timeline",
           "statuses",
+          "risk",
+          "inflation",
           "points"
         ],
         "title": "GoalAnalysisOut",
@@ -2149,6 +2163,29 @@
           },
           "severity": {
             "$ref": "#/components/schemas/Severity"
+          },
+          "subject_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subject Id"
+          },
+          "subject_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subject Name"
           }
         },
         "required": [
@@ -2162,6 +2199,8 @@
           "deadline",
           "figures",
           "postponements",
+          "subject_id",
+          "subject_name",
           "hideable"
         ],
         "title": "PointOut",
@@ -2399,6 +2438,89 @@
         ],
         "title": "ReportSection",
         "type": "string"
+      },
+      "RiskPointOut": {
+        "description": "A funded goal on the horizon and risk chart (F-ANA-4).",
+        "properties": {
+          "goal_id": {
+            "format": "uuid",
+            "title": "Goal Id",
+            "type": "string"
+          },
+          "losing": {
+            "title": "Losing",
+            "type": "boolean"
+          },
+          "loss": {
+            "anyOf": [
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Loss"
+          },
+          "months_left": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Months Left"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "real_return": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Real Return",
+            "type": "string"
+          },
+          "risky_share": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Risky Share",
+            "type": "string"
+          },
+          "tier": {
+            "$ref": "#/components/schemas/Tier"
+          },
+          "volatility": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Volatility",
+            "type": "string"
+          },
+          "zone": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Zone"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "goal_id",
+          "name",
+          "tier",
+          "months_left",
+          "volatility",
+          "real_return",
+          "risky_share",
+          "zone",
+          "loss",
+          "losing"
+        ],
+        "title": "RiskPointOut",
+        "type": "object"
       },
       "Role": {
         "enum": [
@@ -4613,6 +4735,16 @@
         ],
         "title": "WealthValueIn",
         "type": "object"
+      },
+      "Zone": {
+        "enum": [
+          "none",
+          "red_short",
+          "amber_glide",
+          "red_eroding"
+        ],
+        "title": "Zone",
+        "type": "string"
       }
     }
   },

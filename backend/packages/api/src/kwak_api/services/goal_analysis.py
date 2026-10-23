@@ -14,7 +14,7 @@ from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
 from kwak_api.models import Goal, GoalNoticeDismissal, Household, User, WealthLine
-from kwak_api.services import goals, spending_budget
+from kwak_api.services import goals, spending_budget, wealth
 
 
 class NoSuchPointError(Exception):
@@ -25,6 +25,22 @@ class NoSuchPointError(Exception):
 class Analyzed:
     goal: Goal
     facts: ga.GoalFacts
+
+
+@dataclass
+class RiskPoint:
+    """A goal on the horizon and risk chart (F-ANA-4)."""
+
+    goal: Goal
+    months_left: int | None
+    """None for a goal without a deadline, listed under the chart."""
+    volatility: Decimal
+    real_return: Decimal
+    risky_share: Decimal
+    zone: ga.Zone | None
+    loss: Decimal | None
+    """The envelope's change in one outcome in ten at the deadline, a share of it."""
+    losing: bool
 
 
 @dataclass
@@ -49,20 +65,107 @@ class Analysis:
     notices: list[ga.Notice]
     selection: ga.Selection
     lines: dict[UUID, WealthLine]
+    risk: list[RiskPoint]
+    """The scope's funded goals on the horizon and risk chart."""
+    inflation: Decimal
 
 
 def _month(day: date | None) -> Month | None:
     return Month.of(day) if day else None
 
 
-def _capacity_months(db: Session, household_id: UUID, this_month: Month) -> int:
-    """The complete months the capacity is measured over (F-GOAL-6)."""
-    return len(
-        spending_budget.counted(
-            month_range(core.add_months(this_month, -core.EFFORT_MONTHS), this_month.previous()),
-            spending_budget.first_month(db, household_id),
-        )
+@dataclass
+class Flows:
+    """The household's average month over the complete months the capacity is measured on."""
+
+    months: int
+    income: Decimal
+    spending: Decimal
+    """Spent, as a positive amount."""
+
+
+def _flows(db: Session, household_id: UUID, this_month: Month) -> Flows:
+    months = spending_budget.counted(
+        month_range(core.add_months(this_month, -core.EFFORT_MONTHS), this_month.previous()),
+        spending_budget.first_month(db, household_id),
     )
+    figures = list(
+        spending_budget.figures_by_month(
+            db, household_id, months, spending_budget.kinds(db, household_id)
+        ).values()
+    )
+    n = len(figures)
+    if not n:
+        return Flows(0, Decimal(0), Decimal(0))
+    return Flows(
+        n,
+        sum((f.income for f in figures), Decimal(0)) / n,
+        abs(sum((f.spent for f in figures), Decimal(0)) / n),
+    )
+
+
+def _risk_points(
+    analyzed: list[Analyzed], risks: dict[UUID, ga.LineRisk], inflation: Decimal
+) -> list[RiskPoint]:
+    out = []
+    for a in analyzed:
+        f = a.facts
+        w = ga.weights(f.held, f.shares)
+        if not w:
+            continue
+        sigma = ga.weighted(w, {k: risks[k].volatility for k in w})
+        ret = ga.weighted(w, {k: risks[k].ret for k in w})
+        risky = sum((w[k] for k in w if risks[k].risky), Decimal(0))
+        months = 0 if f.precaution else f.now.months_left
+        dated = months is not None and not f.pleasure
+        out.append(
+            RiskPoint(
+                a.goal,
+                months if dated else None,
+                sigma,
+                ret - inflation,
+                risky,
+                ga.zone(months, sigma, risky, ret - inflation)
+                if dated and months is not None and not f.precaution
+                else None,
+                ga.loss_one_in_ten(ret, sigma, max(1, months))
+                if dated and months is not None
+                else None,
+                ga.losing_value(w, risks),
+            )
+        )
+    return out
+
+
+def _current_free(
+    db: Session,
+    viewer: User,
+    scope: Scope,
+    env: core.Envelopes,
+    month: Month,
+    seen: list[Goal],
+) -> Decimal:
+    """What the current accounts in scope hold beyond the envelopes of the goals the viewer
+    sees (R7), as their free part is shown (F-GOAL-3): another member's private goals stay
+    out of it."""
+    lines = [
+        line
+        for line in wealth.visible_lines(db, viewer)
+        if ga.risk_of(line.category.preset).current
+        and in_scope(scope, owner_id=line.owner_id, visibility=line.visibility, viewer_id=viewer.id)
+    ]
+    values = goals.line_values(db, {line.id for line in lines})
+    k = env.months.index(month) if month in env.months else None
+    total = Decimal(0)
+    for line in lines:
+        worth = core.line_worth(core.Line(values.get(line.id, {}), _month(line.closed_from)), month)
+        held = (
+            sum((env.held(g.id, line.id)[k] for g in seen), Decimal(0))
+            if k is not None
+            else Decimal(0)
+        )
+        total += worth - held
+    return total
 
 
 def _facts(
@@ -182,11 +285,9 @@ def analysis(
         if row.goal_capacity is not None
         else goals.capacity(db, viewer, this_month)
     )
-    capacity_months = (
-        core.EFFORT_MONTHS
-        if capacity_set
-        else _capacity_months(db, viewer.household_id, this_month)
-    )
+    flows = _flows(db, viewer.household_id, this_month)
+    capacity_months = core.EFFORT_MONTHS if capacity_set else flows.months
+    inflation = ga.DEFAULT_INFLATION
     facts = [a.facts for a in household]
     household_plan = _plan(facts, cap, row.precaution_share)
     bands = {
@@ -221,6 +322,22 @@ def analysis(
         ),
         *ga.behind_notices(scope_facts),
         *ga.no_gain_notices(scope_facts),
+        *ga.short_risk_notices(scope_facts, risks),
+        *ga.losing_value_notices(scope_facts, risks),
+        *ga.eroding_notices(scope_facts, risks, inflation=inflation),
+        *ga.not_indexed_notices(scope_facts, inflation=inflation),
+        *ga.idle_notices(
+            scope_facts,
+            current_free=_current_free(db, viewer, scope, env, reference or this_month, visible),
+            income=flows.income,
+            spending=flows.spending,
+            history_months=flows.months,
+            monthly_fixed=monthly_fixed,
+        ),
+        *ga.capstone_notices(scope_facts, band=band),
+        *ga.left_over_notices(
+            facts, unallocated=household_plan.unallocated, capacity_months=capacity_months
+        ),
     ]
     return Analysis(
         this_month,
@@ -237,6 +354,8 @@ def analysis(
         notices,
         ga.select(notices, _dismissals(db, viewer), reference or this_month),
         {k: line_rows[k] for k in lines},
+        _risk_points(_tiered(scoped, this_month), risks, inflation),
+        inflation,
     )
 
 

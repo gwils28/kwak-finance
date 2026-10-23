@@ -299,6 +299,10 @@ export type GoalAnalysisOut = {
     capacity_set: boolean;
     forward: ForwardOut;
     /**
+     * Inflation
+     */
+    inflation: string;
+    /**
      * Month
      */
     month: string;
@@ -307,6 +311,10 @@ export type GoalAnalysisOut = {
      * Reference
      */
     reference: string | null;
+    /**
+     * Risk
+     */
+    risk: Array<RiskPointOut>;
     /**
      * Statuses
      */
@@ -1141,6 +1149,14 @@ export type PointOut = {
     postponements: Array<PostponementOut>;
     rule: Rule;
     severity: Severity;
+    /**
+     * Subject Id
+     */
+    subject_id: string | null;
+    /**
+     * Subject Name
+     */
+    subject_name: string | null;
 };
 
 /**
@@ -1278,6 +1294,48 @@ export type RecoveryCodesOut = {
  * ReportSection
  */
 export type ReportSection = 'income' | 'spending' | 'savings';
+
+/**
+ * RiskPointOut
+ *
+ * A funded goal on the horizon and risk chart (F-ANA-4).
+ */
+export type RiskPointOut = {
+    /**
+     * Goal Id
+     */
+    goal_id: string;
+    /**
+     * Losing
+     */
+    losing: boolean;
+    /**
+     * Loss
+     */
+    loss: string | null;
+    /**
+     * Months Left
+     */
+    months_left: number | null;
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Real Return
+     */
+    real_return: string;
+    /**
+     * Risky Share
+     */
+    risky_share: string;
+    tier: Tier;
+    /**
+     * Volatility
+     */
+    volatility: string;
+    zone: Zone | null;
+};
 
 /**
  * Role
@@ -2442,6 +2500,11 @@ export type WealthValueIn = {
      */
     amount: number | string;
 };
+
+/**
+ * Zone
+ */
+export type Zone = 'none' | 'red_short' | 'amber_glide' | 'red_eroding';
 
 export type ActivityLogData = {
     body?: never;

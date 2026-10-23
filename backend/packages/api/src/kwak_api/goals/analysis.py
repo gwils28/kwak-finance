@@ -110,7 +110,31 @@ class PointOut(BaseModel):
     figures: dict[str, Decimal | int | bool | str | None]
     """The rule's figures: months as YYYY-MM."""
     postponements: list[PostponementOut]
+    subject_id: UUID | None
+    """A goal the point names without belonging to it (idle money, the capstone)."""
+    subject_name: str | None
     hideable: bool
+
+
+class RiskPointOut(BaseModel):
+    """A funded goal on the horizon and risk chart (F-ANA-4)."""
+
+    goal_id: UUID
+    name: str
+    tier: core.Tier
+    months_left: int | None
+    """Null for a goal without a deadline, listed under the chart; 0 for the precaution."""
+    volatility: Decimal
+    """Weighted over its lines, a share (0.16 for 16 %)."""
+    real_return: Decimal
+    """Weighted over its lines, less the inflation, a share."""
+    risky_share: Decimal
+    """Its share on volatile or illiquid lines."""
+    zone: ga.Zone | None
+    loss: Decimal | None
+    """Its envelope's change in one outcome in ten at the deadline, a share (negative: a loss)."""
+    losing: bool
+    """More than a tenth in a category that loses value."""
 
 
 class PointsOut(BaseModel):
@@ -130,6 +154,9 @@ class GoalAnalysisOut(BaseModel):
     forward: ForwardOut
     timeline: list[TimelineOut]
     statuses: list[StatusRowOut]
+    risk: list[RiskPointOut]
+    inflation: Decimal
+    """The yearly inflation assumed, a share."""
     points: PointsOut
 
 
@@ -139,6 +166,10 @@ def _text(month: Month | None) -> str | None:
 
 def _money(value: Decimal | None) -> Decimal | None:
     return None if value is None else quantize(value)
+
+
+def _share(value: Decimal) -> Decimal:
+    return value.quantize(Decimal("0.0001"))
 
 
 def _figure(value: ga.Figure) -> Decimal | int | bool | str | None:
@@ -187,6 +218,8 @@ def goal_analysis(
                 )
                 for p in n.postponements
             ],
+            subject_id=n.subject,
+            subject_name=names.get(n.subject) if n.subject else None,
             hideable=n.rule not in ga.NEVER_HIDDEN,
         )
 
@@ -244,6 +277,22 @@ def goal_analysis(
             )
             for x in a.goals
         ],
+        risk=[
+            RiskPointOut(
+                goal_id=p.goal.id,
+                name=p.goal.name,
+                tier=tiers[p.goal.id],
+                months_left=p.months_left,
+                volatility=_share(p.volatility),
+                real_return=_share(p.real_return),
+                risky_share=_share(p.risky_share),
+                zone=p.zone,
+                loss=_share(p.loss) if p.loss is not None else None,
+                losing=p.losing,
+            )
+            for p in a.risk
+        ],
+        inflation=_share(a.inflation),
         points=PointsOut(
             shown=[point(n) for n in a.selection.shown],
             more=[point(n) for n in a.selection.more],

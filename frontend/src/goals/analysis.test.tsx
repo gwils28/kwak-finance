@@ -27,6 +27,8 @@ const point = (fields: Partial<PointOut>): PointOut => ({
   deadline: null,
   figures: {},
   postponements: [],
+  subject_id: null,
+  subject_name: null,
   hideable: true,
   ...fields,
 });
@@ -42,6 +44,8 @@ const analysis: GoalAnalysisOut = {
   capacity: "250.00",
   capacity_set: false,
   capacity_months: 6,
+  inflation: "0.0200",
+  risk: [],
   forward: {
     reference: "2026-09",
     months,

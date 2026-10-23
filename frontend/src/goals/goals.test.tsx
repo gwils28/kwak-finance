@@ -204,6 +204,8 @@ const noPoints: GoalAnalysisOut = {
   capacity: "0.00",
   capacity_set: false,
   capacity_months: 6,
+  inflation: "0.0200",
+  risk: [],
   forward: { reference: "2026-10", months: [], bands: [], totals: [], over: 0, peak: "0.00" },
   timeline: [],
   statuses: [],
@@ -600,6 +602,8 @@ test("the pyramid counts the points to look at and leads to them", async () => {
     deadline: null,
     figures: {},
     postponements: [],
+    subject_id: null,
+    subject_name: null,
     hideable: true,
   };
   api(owner, goals, { ...noPoints, points: { shown: [unfunded], more: [unfunded] } });
