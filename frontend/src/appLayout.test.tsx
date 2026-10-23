@@ -137,7 +137,7 @@ test("the wealth space has its own tabs: monthly tracking and analysis", async (
   );
 });
 
-test("the goals space has no tabs", async () => {
+test("the goals space has its pyramid and its analysis", async () => {
   fakeApi({
     "GET /api/auth/me": () => Response.json(owner),
     "PATCH /api/auth/me": (body) => Response.json({ ...owner, ...(body as object) }),
@@ -146,7 +146,13 @@ test("the goals space has no tabs", async () => {
 
   const spaces = await screen.findByRole("navigation", { name: "Spaces" });
   expect(within(spaces).getByRole("link", { name: "Goals" })).toHaveAttribute("aria-current");
-  expect(screen.queryByRole("navigation", { name: "Main" })).toBeNull();
+  const tabs = screen.getByRole("navigation", { name: "Main" });
+  expect(
+    within(tabs)
+      .getAllByRole("link")
+      .map((l) => l.textContent),
+  ).toEqual(["Pyramid", "Analysis"]);
+  expect(within(tabs).getByRole("link", { name: "Pyramid" })).toHaveClass("border-accent");
 });
 
 test("the overview is the app's name, apart from every space", async () => {

@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
-import type { GoalDetailOut, GoalOut, GoalsOut } from "../api/generated";
+import type { GoalAnalysisOut, GoalDetailOut, GoalOut, GoalsOut } from "../api/generated";
 import { translateApiMessage } from "../auth/errors";
 import { setCurrentLanguage } from "../lib/locale";
 import { fakeApi, owner } from "../test/fakeApi";
@@ -198,10 +198,23 @@ const withRum: GoalsOut = {
   goals: [...goals.goals, rum],
 };
 
-function api(me: object = owner, data: GoalsOut = goals) {
+const noPoints: GoalAnalysisOut = {
+  month: "2026-10",
+  reference: "2026-10",
+  capacity: "0.00",
+  capacity_set: false,
+  capacity_months: 6,
+  forward: { reference: "2026-10", months: [], bands: [], totals: [], over: 0, peak: "0.00" },
+  timeline: [],
+  statuses: [],
+  points: { shown: [], more: [] },
+};
+
+function api(me: object = owner, data: GoalsOut = goals, analysis = noPoints) {
   return fakeApi({
     "GET /api/auth/me": () => Response.json(me),
     "GET /api/goals": () => Response.json(data),
+    "GET /api/goals/analysis": () => Response.json(analysis),
     "GET /api/goals/g-summer": () => Response.json(detail),
     "GET /api/goals/lines": () =>
       Response.json([
@@ -573,4 +586,31 @@ test("an envelope is adjusted by hand on the goal's page, and its adjustment rem
       calls.find((c) => c.route === "PUT /api/goals/g-summer/envelopes/l-ldds/2026-10")?.body,
     ).toEqual({ amount: "500.00" }),
   );
+});
+
+test("the pyramid counts the points to look at and leads to them", async () => {
+  const unfunded = {
+    rule: "unfunded" as const,
+    severity: "warning" as const,
+    goal_id: "g-japan",
+    goal_name: "Voyage au Japon",
+    line_id: null,
+    lines: [],
+    amount: "6000.00",
+    deadline: null,
+    figures: {},
+    postponements: [],
+    hideable: true,
+  };
+  api(owner, goals, { ...noPoints, points: { shown: [unfunded], more: [unfunded] } });
+  render(<TestApp path="/goals" />);
+  const link = await screen.findByRole("link", { name: "2 points to look at" });
+  expect(link).toHaveAttribute("href", "/goals/analysis?scope=household");
+});
+
+test("the pyramid shows no link when there is nothing to look at", async () => {
+  api();
+  render(<TestApp path="/goals" />);
+  expect(await screen.findByRole("heading", { level: 1, name: "Goals" })).toBeInTheDocument();
+  expect(screen.queryByRole("link", { name: /points? to look at/ })).toBeNull();
 });

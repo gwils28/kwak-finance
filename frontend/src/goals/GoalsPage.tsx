@@ -8,6 +8,7 @@ import { Button, ErrorAlert } from "../components/ui";
 import { useI18n } from "../i18n";
 import { formatEurWhole } from "../lib/money";
 import { monthLabel, shiftMonth } from "../lib/months";
+import { goalAnalysisQuery } from "./AnalysisPage";
 import { EffortPlan } from "./EffortPlan";
 import { GoalCard } from "./GoalCard";
 import { GoalForm } from "./GoalForm";
@@ -36,6 +37,11 @@ export function GoalsPage() {
   // Archived and cancelled goals stay out of sight until asked for (F-GOAL-8).
   const [showClosed, setShowClosed] = useState(false);
   const query = useQuery(goalsQuery(scope));
+  // The points to look at are counted here and read on the Analysis tab (F-ANA-8).
+  const analysis = useQuery(goalAnalysisQuery(scope, 24));
+  const points = analysis.data
+    ? analysis.data.points.shown.length + analysis.data.points.more.length
+    : 0;
   const data = query.data;
   const precaution = data?.goals.filter((goal) => goal.precaution && goal.status === "fill_first");
   const missing = precaution?.reduce((sum, goal) => sum + Number(goal.remaining), 0) ?? 0;
@@ -63,6 +69,17 @@ export function GoalsPage() {
       {panel === "new" && <GoalForm onDone={() => setPanel(null)} />}
       {panel === "settings" && (
         <GoalSettings isOwner={user.role === "owner"} onDone={() => setPanel(null)} />
+      )}
+      {points > 0 && (
+        <p className="text-sm">
+          <Link
+            to="/goals/analysis"
+            search={{ scope }}
+            className="font-medium text-accent hover:underline"
+          >
+            {t.goalAnalysis.pointsLink(points)} <span aria-hidden="true">→</span>
+          </Link>
+        </p>
       )}
       {query.isError && <ErrorAlert message={g.loadFailed} />}
       {query.isPending && <p className="text-sm text-muted">{t.common.loading}</p>}
