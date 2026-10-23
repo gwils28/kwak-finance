@@ -49,6 +49,9 @@ class WealthCategory(UUIDPrimaryKey, Timestamps, Base):
     kind: Mapped[WealthKind] = mapped_column(_string_enum(WealthKind, "wealth_kind"))
     colour: Mapped[str] = mapped_column(String(20))
     """The key of its `wealth-<key>` colour token."""
+    preset: Mapped[str | None] = mapped_column(String(20))
+    """Which default category it is (its default colour key), whatever its name and colour
+    become: the projection's defaults follow it (F-SIM-1). None for a category added later."""
     position: Mapped[int] = mapped_column(Integer)
     """Its row in the matrix, from the top."""
 

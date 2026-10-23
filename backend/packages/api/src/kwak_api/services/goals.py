@@ -120,7 +120,7 @@ def check_line_visibility(db: Session, line: WealthLine, visibility: Visibility)
         check_funding(funding.goal, line, visibility)
 
 
-def _values(db: Session, line_ids: set[UUID]) -> dict[UUID, dict[Month, Decimal]]:
+def line_values(db: Session, line_ids: set[UUID]) -> dict[UUID, dict[Month, Decimal]]:
     out: dict[UUID, dict[Month, Decimal]] = defaultdict(dict)
     if line_ids:
         for line_id, month, amount in db.execute(
@@ -187,7 +187,7 @@ def envelopes(db: Session, household_id: UUID, this_month: Month) -> core.Envelo
     """
     goals = _household_goals(db, household_id)
     line_rows = {f.line_id: f.line for g in goals for f in g.fundings}
-    values = _values(db, set(line_rows))
+    values = line_values(db, set(line_rows))
     lines = {
         line_id: core.Line(
             values.get(line_id, {}),
@@ -278,7 +278,7 @@ def lines_free(db: Session, viewer: User, today: date) -> list[LineFree]:
     lines = [
         line for line in wealth.visible_lines(db, viewer) if line.category.kind is WealthKind.ASSET
     ]
-    values = _values(db, {line.id for line in lines})
+    values = line_values(db, {line.id for line in lines})
     out = []
     for line in lines:
         worth = core.line_worth(

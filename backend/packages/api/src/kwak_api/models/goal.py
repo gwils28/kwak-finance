@@ -126,3 +126,27 @@ class GoalAdjustment(UUIDPrimaryKey, Base):
     )
     month: Mapped[date] = mapped_column(Date)
     amount: Mapped[Decimal] = mapped_column(Numeric(14, 2))
+
+
+class GoalNoticeDismissal(UUIDPrimaryKey, Base):
+    """A member's choice on a point to look at (spec §4.12, F-ANA-8): snoozed until a month, or
+    dismissed as it stood, until it worsens. Each member's own."""
+
+    __tablename__ = "goal_notice_dismissal"
+    __table_args__ = (
+        UniqueConstraint(
+            "user_id", "rule", "goal_id", "line_id", postgresql_nulls_not_distinct=True
+        ),
+        CheckConstraint("(until IS NULL) <> (severity IS NULL)", name="snoozed_or_dismissed"),
+        CheckConstraint("extract(day from until) = 1", name="until_month"),
+    )
+
+    user_id: Mapped[UUID] = mapped_column(ForeignKey("app_user.id", ondelete="CASCADE"))
+    rule: Mapped[str] = mapped_column(String(30))
+    goal_id: Mapped[UUID | None] = mapped_column(ForeignKey("goal.id", ondelete="CASCADE"))
+    line_id: Mapped[UUID | None] = mapped_column(ForeignKey("wealth_line.id", ondelete="CASCADE"))
+    until: Mapped[date | None] = mapped_column(Date)
+    """Snoozed: hidden while the reference month is before this one."""
+    severity: Mapped[str | None] = mapped_column(String(10))
+    """Dismissed: the point's severity then, and its main amount below."""
+    amount: Mapped[Decimal | None] = mapped_column(Numeric(14, 2))

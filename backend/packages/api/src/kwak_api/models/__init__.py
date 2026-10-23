@@ -2,7 +2,13 @@
 
 from kwak_api.models.audit import AuditEvent
 from kwak_api.models.auth_failure import AuthFailure
-from kwak_api.models.goal import ClosedAs, Goal, GoalAdjustment, GoalFunding
+from kwak_api.models.goal import (
+    ClosedAs,
+    Goal,
+    GoalAdjustment,
+    GoalFunding,
+    GoalNoticeDismissal,
+)
 from kwak_api.models.household import Household, Role, User
 from kwak_api.models.invite import Invite
 from kwak_api.models.recovery_code import RecoveryCode
@@ -26,6 +32,7 @@ __all__ = [
     "Goal",
     "GoalAdjustment",
     "GoalFunding",
+    "GoalNoticeDismissal",
     "Household",
     "Invite",
     "RecoveryCode",

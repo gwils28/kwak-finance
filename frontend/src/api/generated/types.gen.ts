@@ -198,6 +198,66 @@ export type FixedStatus = 'to_confirm' | 'confirmed' | 'skipped';
 export type FlowKind = 'income' | 'spending' | 'saved' | 'from_savings' | 'unallocated' | 'deficit';
 
 /**
+ * ForwardBandOut
+ */
+export type ForwardBandOut = {
+    /**
+     * Amount
+     */
+    amount: string;
+    /**
+     * Deadline
+     */
+    deadline: string | null;
+    /**
+     * Goal Id
+     */
+    goal_id: string;
+    /**
+     * Months
+     */
+    months: number;
+    /**
+     * Name
+     */
+    name: string;
+    tier: Tier;
+};
+
+/**
+ * ForwardOut
+ *
+ * Required effort against capacity (F-ANA-2), over the household's goals, from the
+ * household's reference month.
+ */
+export type ForwardOut = {
+    /**
+     * Bands
+     */
+    bands: Array<ForwardBandOut>;
+    /**
+     * Months
+     */
+    months: Array<string>;
+    /**
+     * Over
+     */
+    over: number;
+    /**
+     * Peak
+     */
+    peak: string;
+    /**
+     * Reference
+     */
+    reference: string | null;
+    /**
+     * Totals
+     */
+    totals: Array<string>;
+};
+
+/**
  * GoalAdjustmentIn
  */
 export type GoalAdjustmentIn = {
@@ -219,6 +279,42 @@ export type GoalAdjustmentOut = {
      * Month
      */
     month: string;
+};
+
+/**
+ * GoalAnalysisOut
+ */
+export type GoalAnalysisOut = {
+    /**
+     * Capacity
+     */
+    capacity: string;
+    /**
+     * Capacity Months
+     */
+    capacity_months: number;
+    /**
+     * Capacity Set
+     */
+    capacity_set: boolean;
+    forward: ForwardOut;
+    /**
+     * Month
+     */
+    month: string;
+    points: PointsOut;
+    /**
+     * Reference
+     */
+    reference: string | null;
+    /**
+     * Statuses
+     */
+    statuses: Array<StatusRowOut>;
+    /**
+     * Timeline
+     */
+    timeline: Array<TimelineOut>;
 };
 
 /**
@@ -967,6 +1063,128 @@ export type PasswordConfirmation = {
 };
 
 /**
+ * PointHideIn
+ */
+export type PointHideIn = {
+    /**
+     * Action
+     */
+    action: 'snooze' | 'dismiss';
+    /**
+     * Goal Id
+     */
+    goal_id?: string | null;
+    /**
+     * Line Id
+     */
+    line_id?: string | null;
+    rule: Rule;
+};
+
+/**
+ * PointLineOut
+ */
+export type PointLineOut = {
+    /**
+     * Line Id
+     */
+    line_id: string;
+    /**
+     * Name
+     */
+    name: string;
+};
+
+/**
+ * PointOut
+ *
+ * A point to look at (F-ANA-8): figures and options, never advice.
+ */
+export type PointOut = {
+    /**
+     * Amount
+     */
+    amount: string | null;
+    /**
+     * Deadline
+     */
+    deadline: string | null;
+    /**
+     * Figures
+     */
+    figures: {
+        [key: string]: string | number | boolean | string | null;
+    };
+    /**
+     * Goal Id
+     */
+    goal_id: string | null;
+    /**
+     * Goal Name
+     */
+    goal_name: string | null;
+    /**
+     * Hideable
+     */
+    hideable: boolean;
+    /**
+     * Line Id
+     */
+    line_id: string | null;
+    /**
+     * Lines
+     */
+    lines: Array<PointLineOut>;
+    /**
+     * Postponements
+     */
+    postponements: Array<PostponementOut>;
+    rule: Rule;
+    severity: Severity;
+};
+
+/**
+ * PointsOut
+ */
+export type PointsOut = {
+    /**
+     * More
+     */
+    more: Array<PointOut>;
+    /**
+     * Shown
+     */
+    shown: Array<PointOut>;
+};
+
+/**
+ * PostponementOut
+ */
+export type PostponementOut = {
+    /**
+     * Deadline
+     */
+    deadline: string;
+    /**
+     * Goal Id
+     */
+    goal_id: string;
+    /**
+     * Lower By
+     */
+    lower_by: string;
+    /**
+     * Months
+     */
+    months: number;
+    /**
+     * Name
+     */
+    name: string;
+    tier: Tier;
+};
+
+/**
  * PrecautionProposalOut
  */
 export type PrecautionProposalOut = {
@@ -1067,6 +1285,13 @@ export type ReportSection = 'income' | 'spending' | 'savings';
 export type Role = 'owner' | 'member';
 
 /**
+ * Rule
+ *
+ * The rules, in the order their points are shown within a severity.
+ */
+export type Rule = 'data' | 'precaution_none' | 'precaution_low' | 'precaution_risky' | 'unfunded' | 'overcommitted' | 'short_risk' | 'behind' | 'no_gain' | 'costly_debt' | 'precaution_current' | 'idle' | 'ceiling' | 'debt_payments' | 'eroding' | 'losing_value' | 'not_indexed' | 'capstone' | 'left_over';
+
+/**
  * Scope
  *
  * Which wealth lines and goals a view covers (F-WLT-5, F-GOAL-7).
@@ -1116,6 +1341,11 @@ export type SettingsPatch = {
      */
     wealth_start?: string | null;
 };
+
+/**
+ * Severity
+ */
+export type Severity = 'warning' | 'info' | 'good';
 
 /**
  * Side
@@ -1736,11 +1966,84 @@ export type SplitIn = {
 };
 
 /**
+ * StatusMonthOut
+ */
+export type StatusMonthOut = {
+    /**
+     * Month
+     */
+    month: string;
+    status: GoalStatus;
+};
+
+/**
+ * StatusRowOut
+ *
+ * A goal's statuses month by month (F-ANA-6), with today's target and deadline.
+ */
+export type StatusRowOut = {
+    /**
+     * Goal Id
+     */
+    goal_id: string;
+    /**
+     * Months
+     */
+    months: Array<StatusMonthOut>;
+    /**
+     * Name
+     */
+    name: string;
+    tier: Tier;
+};
+
+/**
  * Tier
  *
  * The pyramid's levels, from its foundation up.
  */
 export type Tier = 'precaution' | 'short' | 'medium' | 'long' | 'pleasure';
+
+/**
+ * TimelineOut
+ *
+ * A goal's bar on the timeline (F-ANA-3).
+ */
+export type TimelineOut = {
+    /**
+     * At Plan
+     */
+    at_plan: string | null;
+    /**
+     * Deadline
+     */
+    deadline: string | null;
+    /**
+     * Enough History
+     */
+    enough_history: boolean;
+    /**
+     * Estimated
+     */
+    estimated: string | null;
+    /**
+     * Goal Id
+     */
+    goal_id: string;
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Never
+     */
+    never: boolean;
+    /**
+     * Start
+     */
+    start: string;
+    tier: Tier;
+};
 
 /**
  * TotpCode
@@ -2460,6 +2763,91 @@ export type CreateGoalResponses = {
 };
 
 export type CreateGoalResponse = CreateGoalResponses[keyof CreateGoalResponses];
+
+export type GoalAnalysisData = {
+    body?: never;
+    path?: never;
+    query?: {
+        scope?: Scope;
+        /**
+         * Horizon
+         *
+         * Months shown ahead, 12 to 60
+         */
+        horizon?: number;
+    };
+    url: '/api/goals/analysis';
+};
+
+export type GoalAnalysisErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type GoalAnalysisError = GoalAnalysisErrors[keyof GoalAnalysisErrors];
+
+export type GoalAnalysisResponses = {
+    /**
+     * Successful Response
+     */
+    200: GoalAnalysisOut;
+};
+
+export type GoalAnalysisResponse = GoalAnalysisResponses[keyof GoalAnalysisResponses];
+
+export type ShowHiddenData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/goals/analysis/hidden';
+};
+
+export type ShowHiddenErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ShowHiddenError = ShowHiddenErrors[keyof ShowHiddenErrors];
+
+export type ShowHiddenResponses = {
+    /**
+     * Successful Response
+     */
+    204: void;
+};
+
+export type ShowHiddenResponse = ShowHiddenResponses[keyof ShowHiddenResponses];
+
+export type HidePointData = {
+    body: PointHideIn;
+    path?: never;
+    query?: {
+        scope?: Scope;
+    };
+    url: '/api/goals/analysis/hidden';
+};
+
+export type HidePointErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type HidePointError = HidePointErrors[keyof HidePointErrors];
+
+export type HidePointResponses = {
+    /**
+     * Successful Response
+     */
+    204: void;
+};
+
+export type HidePointResponse = HidePointResponses[keyof HidePointResponses];
 
 export type GoalLinesData = {
     body?: never;

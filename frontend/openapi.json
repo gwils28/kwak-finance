@@ -377,6 +377,109 @@
         "title": "FlowKind",
         "type": "string"
       },
+      "ForwardBandOut": {
+        "properties": {
+          "amount": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Amount",
+            "type": "string"
+          },
+          "deadline": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Deadline"
+          },
+          "goal_id": {
+            "format": "uuid",
+            "title": "Goal Id",
+            "type": "string"
+          },
+          "months": {
+            "title": "Months",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "tier": {
+            "$ref": "#/components/schemas/Tier"
+          }
+        },
+        "required": [
+          "goal_id",
+          "name",
+          "tier",
+          "deadline",
+          "amount",
+          "months"
+        ],
+        "title": "ForwardBandOut",
+        "type": "object"
+      },
+      "ForwardOut": {
+        "description": "Required effort against capacity (F-ANA-2), over the household's goals, from the\nhousehold's reference month.",
+        "properties": {
+          "bands": {
+            "items": {
+              "$ref": "#/components/schemas/ForwardBandOut"
+            },
+            "title": "Bands",
+            "type": "array"
+          },
+          "months": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Months",
+            "type": "array"
+          },
+          "over": {
+            "title": "Over",
+            "type": "integer"
+          },
+          "peak": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Peak",
+            "type": "string"
+          },
+          "reference": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reference"
+          },
+          "totals": {
+            "items": {
+              "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+              "type": "string"
+            },
+            "title": "Totals",
+            "type": "array"
+          }
+        },
+        "required": [
+          "reference",
+          "months",
+          "bands",
+          "totals",
+          "over",
+          "peak"
+        ],
+        "title": "ForwardOut",
+        "type": "object"
+      },
       "GoalAdjustmentIn": {
         "properties": {
           "amount": {
@@ -417,6 +520,71 @@
           "amount"
         ],
         "title": "GoalAdjustmentOut",
+        "type": "object"
+      },
+      "GoalAnalysisOut": {
+        "properties": {
+          "capacity": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Capacity",
+            "type": "string"
+          },
+          "capacity_months": {
+            "title": "Capacity Months",
+            "type": "integer"
+          },
+          "capacity_set": {
+            "title": "Capacity Set",
+            "type": "boolean"
+          },
+          "forward": {
+            "$ref": "#/components/schemas/ForwardOut"
+          },
+          "month": {
+            "title": "Month",
+            "type": "string"
+          },
+          "points": {
+            "$ref": "#/components/schemas/PointsOut"
+          },
+          "reference": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reference"
+          },
+          "statuses": {
+            "items": {
+              "$ref": "#/components/schemas/StatusRowOut"
+            },
+            "title": "Statuses",
+            "type": "array"
+          },
+          "timeline": {
+            "items": {
+              "$ref": "#/components/schemas/TimelineOut"
+            },
+            "title": "Timeline",
+            "type": "array"
+          }
+        },
+        "required": [
+          "month",
+          "reference",
+          "capacity",
+          "capacity_set",
+          "capacity_months",
+          "forward",
+          "timeline",
+          "statuses",
+          "points"
+        ],
+        "title": "GoalAnalysisOut",
         "type": "object"
       },
       "GoalDetailOut": {
@@ -1809,6 +1977,259 @@
         "title": "PasswordConfirmation",
         "type": "object"
       },
+      "PointHideIn": {
+        "properties": {
+          "action": {
+            "enum": [
+              "snooze",
+              "dismiss"
+            ],
+            "title": "Action",
+            "type": "string"
+          },
+          "goal_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Goal Id"
+          },
+          "line_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Line Id"
+          },
+          "rule": {
+            "$ref": "#/components/schemas/Rule"
+          }
+        },
+        "required": [
+          "rule",
+          "action"
+        ],
+        "title": "PointHideIn",
+        "type": "object"
+      },
+      "PointLineOut": {
+        "properties": {
+          "line_id": {
+            "format": "uuid",
+            "title": "Line Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "line_id",
+          "name"
+        ],
+        "title": "PointLineOut",
+        "type": "object"
+      },
+      "PointOut": {
+        "description": "A point to look at (F-ANA-8): figures and options, never advice.",
+        "properties": {
+          "amount": {
+            "anyOf": [
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Amount"
+          },
+          "deadline": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Deadline"
+          },
+          "figures": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "title": "Figures",
+            "type": "object"
+          },
+          "goal_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Goal Id"
+          },
+          "goal_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Goal Name"
+          },
+          "hideable": {
+            "title": "Hideable",
+            "type": "boolean"
+          },
+          "line_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Line Id"
+          },
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/PointLineOut"
+            },
+            "title": "Lines",
+            "type": "array"
+          },
+          "postponements": {
+            "items": {
+              "$ref": "#/components/schemas/PostponementOut"
+            },
+            "title": "Postponements",
+            "type": "array"
+          },
+          "rule": {
+            "$ref": "#/components/schemas/Rule"
+          },
+          "severity": {
+            "$ref": "#/components/schemas/Severity"
+          }
+        },
+        "required": [
+          "rule",
+          "severity",
+          "goal_id",
+          "goal_name",
+          "line_id",
+          "lines",
+          "amount",
+          "deadline",
+          "figures",
+          "postponements",
+          "hideable"
+        ],
+        "title": "PointOut",
+        "type": "object"
+      },
+      "PointsOut": {
+        "properties": {
+          "more": {
+            "items": {
+              "$ref": "#/components/schemas/PointOut"
+            },
+            "title": "More",
+            "type": "array"
+          },
+          "shown": {
+            "items": {
+              "$ref": "#/components/schemas/PointOut"
+            },
+            "title": "Shown",
+            "type": "array"
+          }
+        },
+        "required": [
+          "shown",
+          "more"
+        ],
+        "title": "PointsOut",
+        "type": "object"
+      },
+      "PostponementOut": {
+        "properties": {
+          "deadline": {
+            "title": "Deadline",
+            "type": "string"
+          },
+          "goal_id": {
+            "format": "uuid",
+            "title": "Goal Id",
+            "type": "string"
+          },
+          "lower_by": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Lower By",
+            "type": "string"
+          },
+          "months": {
+            "title": "Months",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "tier": {
+            "$ref": "#/components/schemas/Tier"
+          }
+        },
+        "required": [
+          "goal_id",
+          "name",
+          "months",
+          "deadline",
+          "tier",
+          "lower_by"
+        ],
+        "title": "PostponementOut",
+        "type": "object"
+      },
       "PrecautionProposalOut": {
         "properties": {
           "amount": {
@@ -1987,6 +2408,32 @@
         "title": "Role",
         "type": "string"
       },
+      "Rule": {
+        "description": "The rules, in the order their points are shown within a severity.",
+        "enum": [
+          "data",
+          "precaution_none",
+          "precaution_low",
+          "precaution_risky",
+          "unfunded",
+          "overcommitted",
+          "short_risk",
+          "behind",
+          "no_gain",
+          "costly_debt",
+          "precaution_current",
+          "idle",
+          "ceiling",
+          "debt_payments",
+          "eroding",
+          "losing_value",
+          "not_indexed",
+          "capstone",
+          "left_over"
+        ],
+        "title": "Rule",
+        "type": "string"
+      },
       "Scope": {
         "description": "Which wealth lines and goals a view covers (F-WLT-5, F-GOAL-7).",
         "enum": [
@@ -2105,6 +2552,15 @@
         },
         "title": "SettingsPatch",
         "type": "object"
+      },
+      "Severity": {
+        "enum": [
+          "warning",
+          "info",
+          "good"
+        ],
+        "title": "Severity",
+        "type": "string"
       },
       "Side": {
         "enum": [
@@ -3287,6 +3743,55 @@
         "title": "SplitIn",
         "type": "object"
       },
+      "StatusMonthOut": {
+        "properties": {
+          "month": {
+            "title": "Month",
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/GoalStatus"
+          }
+        },
+        "required": [
+          "month",
+          "status"
+        ],
+        "title": "StatusMonthOut",
+        "type": "object"
+      },
+      "StatusRowOut": {
+        "description": "A goal's statuses month by month (F-ANA-6), with today's target and deadline.",
+        "properties": {
+          "goal_id": {
+            "format": "uuid",
+            "title": "Goal Id",
+            "type": "string"
+          },
+          "months": {
+            "items": {
+              "$ref": "#/components/schemas/StatusMonthOut"
+            },
+            "title": "Months",
+            "type": "array"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "tier": {
+            "$ref": "#/components/schemas/Tier"
+          }
+        },
+        "required": [
+          "goal_id",
+          "name",
+          "tier",
+          "months"
+        ],
+        "title": "StatusRowOut",
+        "type": "object"
+      },
       "Tier": {
         "description": "The pyramid's levels, from its foundation up.",
         "enum": [
@@ -3298,6 +3803,81 @@
         ],
         "title": "Tier",
         "type": "string"
+      },
+      "TimelineOut": {
+        "description": "A goal's bar on the timeline (F-ANA-3).",
+        "properties": {
+          "at_plan": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "At Plan"
+          },
+          "deadline": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Deadline"
+          },
+          "enough_history": {
+            "title": "Enough History",
+            "type": "boolean"
+          },
+          "estimated": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Estimated"
+          },
+          "goal_id": {
+            "format": "uuid",
+            "title": "Goal Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "never": {
+            "title": "Never",
+            "type": "boolean"
+          },
+          "start": {
+            "title": "Start",
+            "type": "string"
+          },
+          "tier": {
+            "$ref": "#/components/schemas/Tier"
+          }
+        },
+        "required": [
+          "goal_id",
+          "name",
+          "tier",
+          "start",
+          "deadline",
+          "estimated",
+          "never",
+          "enough_history",
+          "at_plan"
+        ],
+        "title": "TimelineOut",
+        "type": "object"
       },
       "TotpCode": {
         "properties": {
@@ -4741,6 +5321,182 @@
           }
         },
         "summary": "Create Goal",
+        "tags": [
+          "goals"
+        ]
+      }
+    },
+    "/api/goals/analysis": {
+      "get": {
+        "description": "The goals at the reference month: against the capacity, on a timeline, month by month,\nand the points to look at (spec \u00a74.12).",
+        "operationId": "goalAnalysis",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "scope",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/Scope",
+              "default": "household"
+            }
+          },
+          {
+            "description": "Months shown ahead, 12 to 60",
+            "in": "query",
+            "name": "horizon",
+            "required": false,
+            "schema": {
+              "default": 24,
+              "description": "Months shown ahead, 12 to 60",
+              "maximum": 60,
+              "minimum": 12,
+              "title": "Horizon",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "kwak_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Kwak Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GoalAnalysisOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Goal Analysis",
+        "tags": [
+          "goals"
+        ]
+      }
+    },
+    "/api/goals/analysis/hidden": {
+      "delete": {
+        "description": "Show again every point the viewer snoozed or dismissed.",
+        "operationId": "showHidden",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "kwak_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Kwak Session"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Show Hidden",
+        "tags": [
+          "goals"
+        ]
+      },
+      "post": {
+        "description": "The viewer's own choice: the other members still see the point.",
+        "operationId": "hidePoint",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "scope",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/Scope",
+              "default": "household"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "kwak_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Kwak Session"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PointHideIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Hide Point",
         "tags": [
           "goals"
         ]

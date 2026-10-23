@@ -42,6 +42,7 @@ def seed_defaults(db: Session, household_id: UUID, language: Language = Language
             name=default.names.name(language),
             kind=default.kind,
             colour=default.colour,
+            preset=default.colour,
             position=position,
         )
         for position, default in enumerate(DEFAULT_WEALTH_CATEGORIES)

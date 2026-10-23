@@ -8,6 +8,7 @@ from sqlalchemy.orm import sessionmaker
 from kwak_api.audit.routes import router as audit_router
 from kwak_api.auth.routes import router as auth_router
 from kwak_api.db import make_engine
+from kwak_api.goals.analysis import router as goal_analysis_router
 from kwak_api.goals.routes import router as goals_router
 from kwak_api.household.routes import router as household_router
 from kwak_api.settings import Settings
@@ -51,6 +52,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(household_router)
     app.include_router(audit_router)
     app.include_router(wealth_router)
+    app.include_router(goal_analysis_router)  # before /api/goals/{goal_id}
     app.include_router(goals_router)
     app.include_router(spending_router)
     app.include_router(spending_budget_router)
