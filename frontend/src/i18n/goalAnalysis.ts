@@ -1,4 +1,5 @@
 import type { Severity, Zone } from "../api/generated";
+import { de } from "./frenchDe";
 
 export const goalAnalysisEn = {
   title: "Goals analysis",
@@ -261,10 +262,10 @@ export const goalAnalysisFr: typeof goalAnalysisEn = {
   precautionLowWhy:
     "Les charges fixes laissent de côté les courses et le quotidien ; avec un seul revenu ou un revenu d'indépendant, on peut vouloir davantage.",
   precautionRisky: (goal, amount) =>
-    `${amount} de ${goal} sont sur des lignes volatiles ou peu liquides.`,
+    `${amount} ${de(goal)} sont sur des lignes volatiles ou peu liquides.`,
   precautionRiskyWhy:
     "Une épargne de précaution doit être là, entière, le jour où on en a besoin. Une option est de la garder sur des livrets.",
-  precautionCurrent: (goal, amount) => `${amount} de ${goal} sont sur un compte courant.`,
+  precautionCurrent: (goal, amount) => `${amount} ${de(goal)} sont sur un compte courant.`,
   precautionCurrentWhy:
     "Ils sont disponibles et garantis, mais ne rapportent rien et se mêlent à vos dépenses. Une option est un livret.",
   unfunded: (goal) => `${goal} n'a aucune ligne de financement : il ne peut jamais avancer.`,
@@ -300,19 +301,19 @@ export const goalAnalysisFr: typeof goalAnalysisEn = {
     return n === 1 ? "1 an" : `${n} ans`;
   },
   shortRisk: (goal, amount, months) =>
-    `${amount} de ${goal} sont sur des lignes volatiles ou peu liquides, à ${months} mois de son échéance.`,
+    `${amount} ${de(goal)} sont sur des lignes volatiles ou peu liquides, à ${months} mois de son échéance.`,
   shortRiskLoss: (loss) => `Une fois sur dix, environ ${loss} de moins à l'échéance.`,
   shortRiskOption:
     "Envisager de le financer par des lignes peu volatiles à mesure que l'échéance approche.",
   losingValue: (goal, amount) =>
-    `${amount} de ${goal} sont dans une catégorie qui perd de la valeur chaque année.`,
+    `${amount} ${de(goal)} sont dans une catégorie qui perd de la valeur chaque année.`,
   losingValueWhy: "Une option est de le financer par des lignes qui gardent leur valeur.",
   eroding: (goal, amount, years) =>
     `Sur ${years}, l'inflation prendrait environ ${amount} à ${goal} : ses lignes ne rapportent pas plus que la hausse des prix.`,
   erodingOption:
     "Envisager des catégories au rendement attendu plus élevé (actions, obligations), qui échangent de la certitude contre du rendement attendu.",
   notIndexed: (goal, target, years, indexed, inflation) =>
-    `La cible de ${goal}, ${target}, est en euros d'aujourd'hui : dans ${years}, à ${inflation} d'inflation par an, elle vaut environ ${indexed}.`,
+    `La cible ${de(goal)}, ${target}, est en euros d'aujourd'hui : dans ${years}, à ${inflation} d'inflation par an, elle vaut environ ${indexed}.`,
   notIndexedOption: "Une option est de relever la cible pour garder son pouvoir d'achat.",
   idle: (amount) =>
     `Vos comptes courants contiennent ${amount} de plus qu'un mois de revenus et de dépenses, libres de tout objectif.`,

@@ -443,6 +443,50 @@ const RING: Record<Zone, { colour: string; dash?: string } | null> = {
   red_eroding: { colour: OVER },
 };
 
+const LABEL_W = 160;
+const LABEL_H = 14;
+const LABEL_GAP = 14;
+/** The widest mark around a point: the dotted ring of a goal losing value. */
+const DOT_R = 15;
+const LABEL_STEPS = 10;
+
+type Labelled = { x: number; y: number; flip?: boolean };
+
+/** Each label's y, kept off the other labels and the points (rings included) and within the
+ * plot: by its point when it can, else the nearest free line above, then below, the highest
+ * label first; in the points' order. A label is written rightwards from its point, or
+ * leftwards when `flip`. */
+export function spreadLabels(points: Labelled[], plot: { top: number; bottom: number }): number[] {
+  const span = (p: Labelled): [number, number] =>
+    p.flip
+      ? [p.x - LABEL_GAP - LABEL_W, p.x - LABEL_GAP]
+      : [p.x + LABEL_GAP, p.x + LABEL_GAP + LABEL_W];
+  const across = ([a, b]: [number, number], [c, d]: [number, number]) => a < d && c < b;
+  const placed: { span: [number, number]; y: number }[] = [];
+  const out = new Array<number>(points.length);
+  const order = points.map((_, i) => i).sort((i, j) => (points[i]?.y ?? 0) - (points[j]?.y ?? 0));
+  for (const i of order) {
+    const p = points[i] as Labelled;
+    const own = span(p);
+    const free = (y: number) =>
+      y - LABEL_H / 2 >= plot.top &&
+      y + LABEL_H / 2 <= plot.bottom &&
+      placed.every((q) => !across(q.span, own) || Math.abs(q.y - y) >= LABEL_H) &&
+      points.every(
+        (q) =>
+          q === p ||
+          !across([q.x - DOT_R, q.x + DOT_R], own) ||
+          Math.abs(q.y - y) >= LABEL_H / 2 + DOT_R,
+      );
+    const offsets = [0];
+    for (let k = 1; k <= LABEL_STEPS; k++) offsets.push(-k * 16, k * 16);
+    const y = p.y + (offsets.find((o) => free(p.y + o)) ?? 0);
+    placed.push({ span: own, y });
+    out[i] = y;
+  }
+  return out;
+}
+
 /** F-ANA-4: each funded goal by the months left to its deadline and the weighted volatility of
  * its lines, over the zones; goals without a deadline are listed under it. */
 export function RiskChart({ data }: { data: GoalAnalysisOut }) {
@@ -467,6 +511,15 @@ export function RiskChart({ data }: { data: GoalAnalysisOut }) {
   const xTicks = [0, 12, 24, 36, 48, 60, 72, 84, 96, 108, 120];
   const yTicks = [0, 0.05, 0.1, 0.2, 0.3, 0.4, 0.6].filter((v) => v <= top);
   const percent = (value: string | null) => (value === null ? "—" : formatPercent(value));
+  // Goals at the same horizon and volatility (an emergency fund and a near goal on livrets)
+  // would write their names over each other.
+  const labelY = spreadLabels(
+    dated.map((p) => {
+      const cx = x(p.months_left ?? 0);
+      return { x: cx, y: y(Number(p.volatility)), flip: cx > W - 160 };
+    }),
+    { top: RISK_PAD.top, bottom: RISK_H - RISK_PAD.bottom },
+  );
   return (
     <Card title={a.risk} subtitle={a.riskHelp(formatPercent(data.inflation))}>
       <div className="overflow-x-auto">
@@ -567,11 +620,38 @@ export function RiskChart({ data }: { data: GoalAnalysisOut }) {
                   stroke={FG}
                   strokeWidth={1}
                 />
+              </g>
+            );
+          })}
+          {/* The labels after every point, so no point covers a label. */}
+          {dated.map((p, k) => {
+            const cx = x(p.months_left ?? 0);
+            const flip = cx > W - 160;
+            const cy = y(Number(p.volatility));
+            const ly = labelY[k] ?? cy;
+            const lx = cx + (flip ? -LABEL_GAP : LABEL_GAP);
+            return (
+              <g key={p.goal_id}>
+                {/* A label moved off its point keeps a thin leader to it. */}
+                {ly !== cy && (
+                  <line
+                    x1={cx}
+                    y1={cy}
+                    x2={lx + (flip ? 4 : -4)}
+                    y2={ly}
+                    stroke="var(--color-muted)"
+                    strokeWidth={1}
+                  />
+                )}
                 <text
-                  x={cx + (cx > W - 160 ? -14 : 14)}
-                  y={cy + 4}
-                  textAnchor={cx > W - 160 ? "end" : "start"}
+                  x={lx}
+                  y={ly + 4}
+                  textAnchor={flip ? "end" : "start"}
                   className="fill-fg text-[12px]"
+                  stroke={SURFACE}
+                  strokeWidth={3}
+                  strokeLinejoin="round"
+                  paintOrder="stroke"
                 >
                   {p.name.length > 24 ? `${p.name.slice(0, 23)}…` : p.name}
                 </text>

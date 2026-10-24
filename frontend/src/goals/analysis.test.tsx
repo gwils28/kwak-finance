@@ -448,7 +448,7 @@ test("the second batch reads in French", async () => {
   render(<TestApp path="/goals/analysis" language="fr" />);
   const points = await screen.findByRole("region", { name: "Points d'attention" });
   expect(plain(points.textContent)).toContain(
-    "3 000 € de Été sont sur des lignes volatiles ou peu liquides, à 12 mois de son échéance. Une fois sur dix, environ 376 € de moins à l'échéance.",
+    "3 000 € d'Été sont sur des lignes volatiles ou peu liquides, à 12 mois de son échéance. Une fois sur dix, environ 376 € de moins à l'échéance.",
   );
   expect(plain(points.textContent)).toContain(
     "11 € de plus sur Voiture le mettraient en avance et débloqueraient vos objectifs plaisir.",
