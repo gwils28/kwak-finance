@@ -25,6 +25,7 @@ from kwak_core.goals import (
     track,
 )
 from kwak_core.money import quantize
+from kwak_core.wealth import CEILINGS, RegulatedType
 
 ZERO = Decimal(0)
 VOLATILE = Decimal("0.05")
@@ -63,6 +64,7 @@ NOT_INDEXED_MONTHS = 60
 IDLE_FIXED_MONTHS = 4
 LEFT_OVER_FLOOR = Decimal(50)
 CAPSTONE_MONTHS = 3
+CEILING_MARGIN = Decimal(500)
 
 
 # F-ANA-1: the reference month
@@ -243,6 +245,67 @@ def zone(months_left: int, volatility: Decimal, volatile_share: Decimal, real: D
 def losing_value(w: Mapping[UUID, Decimal], risks: Mapping[UUID, LineRisk]) -> bool:
     """More than 10 % of the goal in a category whose return is below 0."""
     return sum((w[k] for k in w if risks[k].ret < 0), ZERO) > LOSING_SHARE
+
+
+# F-ANA-5: where the goals' money sits
+
+LEFT_OUT = frozenset({"real-estate", "equipment"})
+"""The presets the chart leaves out unless asked: wealth the goals seldom sit on."""
+
+
+@dataclass(frozen=True)
+class SankeyLine:
+    """An asset line at the reference month."""
+
+    id: UUID
+    category: UUID
+    value: Decimal
+    preset: str | None = None
+    """Its category's (kwak_core.wealth.DEFAULT_WEALTH_CATEGORIES colour key)."""
+
+
+@dataclass(frozen=True)
+class Placement:
+    categories: dict[UUID, Decimal]
+    """Category -> its lines' total: the flows into the lines."""
+    lines: dict[UUID, Decimal]
+    held: dict[tuple[UUID, UUID], Decimal]
+    """(goal, line) -> what the goal's envelope holds there."""
+    free: dict[UUID, Decimal]
+    """Line -> its free part, which holds the envelopes of goals the viewer does not see."""
+    elsewhere: dict[UUID, Decimal]
+    """Goal -> what it holds on the lines left out."""
+
+
+def placement(
+    lines: Sequence[SankeyLine],
+    held: Mapping[tuple[UUID, UUID], Decimal],
+    *,
+    all_assets: bool = False,
+) -> Placement:
+    """Categories to lines to the envelopes of the goals seen, and each line's free part
+    (invariant §8.34). Empty lines are left out, and real estate and equipment unless asked:
+    what a goal holds there is in `elsewhere`."""
+    for ln in lines:
+        if sum((a for (_, k), a in held.items() if k == ln.id), ZERO) > ln.value:
+            raise ValueError(f"envelopes hold more than line {ln.id} is worth")
+    kept = [ln for ln in lines if ln.value > 0 and (all_assets or ln.preset not in LEFT_OUT)]
+    ids = {ln.id for ln in kept}
+    flows: dict[tuple[UUID, UUID], Decimal] = {}
+    elsewhere: dict[UUID, Decimal] = {}
+    for (goal, line), amount in held.items():
+        if amount <= 0:
+            continue
+        if line in ids:
+            flows[(goal, line)] = amount
+        else:
+            elsewhere[goal] = elsewhere.get(goal, ZERO) + amount
+    categories: dict[UUID, Decimal] = {}
+    free: dict[UUID, Decimal] = {}
+    for ln in kept:
+        categories[ln.category] = categories.get(ln.category, ZERO) + ln.value
+        free[ln.id] = ln.value - sum((a for (_, k), a in flows.items() if k == ln.id), ZERO)
+    return Placement(categories, {ln.id: ln.value for ln in kept}, flows, free, elsewhere)
 
 
 # F-ANA-6: status by month
@@ -761,6 +824,38 @@ def idle_notices(
             figures={"set_aside": quantize(min(excess, gap)) if subject else None},
         )
     ]
+
+
+def ceiling_notices(
+    goals: Sequence[GoalFacts], regulated: Mapping[UUID, tuple[RegulatedType, Decimal]]
+) -> list[Notice]:
+    """R6: a regulated line near its ceiling that an open goal takes rises from. `regulated`:
+    line -> its type and value at the reference month. A reached goal takes no more rises. The
+    subject is the goal with the largest share of its rises, the nearest deadline first."""
+    out = []
+    for line, (kind, value) in regulated.items():
+        ceiling = CEILINGS[kind]
+        if value < ceiling - CEILING_MARGIN:
+            continue
+        funded = [g for g in goals if g.shares.get(line, 0) > 0 and g.now.remaining > 0]
+        if not funded:
+            continue
+        subject = min(
+            funded,
+            key=lambda g: (-g.shares[line], g.deadline is None, g.deadline or g.start),
+        )
+        out.append(
+            Notice(
+                Rule.CEILING,
+                Severity.INFO,
+                line=line,
+                amount=value,
+                deadline=subject.deadline,
+                subject=subject.id,
+                figures={"ceiling": ceiling, "room": max(ZERO, ceiling - value)},
+            )
+        )
+    return out
 
 
 def _to_ahead(expected: Decimal, value: Decimal, target: Decimal, band: Decimal) -> Decimal:
