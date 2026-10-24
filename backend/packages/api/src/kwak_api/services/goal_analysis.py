@@ -38,6 +38,8 @@ class RiskPoint:
     volatility: Decimal
     real_return: Decimal
     risky_share: Decimal
+    allowed_share: Decimal | None
+    """The volatile share the glide path allows, 25 to 60 months out (F-ANA-4)."""
     zone: ga.Zone | None
     loss: Decimal | None
     """The envelope's change in one outcome in ten at the deadline, a share of it."""
@@ -140,6 +142,9 @@ def _risk_points(
                 sigma,
                 ret - inflation,
                 risky,
+                ga.glide_limit(months)
+                if dated and months is not None and ga.SHORT_RISK_MONTHS < months <= ga.GLIDE_MONTHS
+                else None,
                 ga.zone(months, sigma, risky, ret - inflation)
                 if dated and months is not None and not f.precaution
                 else None,

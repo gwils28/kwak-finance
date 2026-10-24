@@ -4,7 +4,7 @@
  * one tier are told apart by their label and a hatch, never by a new hue. Every chart has its
  * table.
  */
-import { useId } from "react";
+import { type ReactNode, useId } from "react";
 import {
   Area,
   CartesianGrid,
@@ -456,13 +456,20 @@ type Labelled = { x: number; y: number; flip?: boolean };
  * plot: by its point when it can, else the nearest free line above, then below, the highest
  * label first; in the points' order. A label is written rightwards from its point, or
  * leftwards when `flip`. */
-export function spreadLabels(points: Labelled[], plot: { top: number; bottom: number }): number[] {
+export function spreadLabels(
+  points: Labelled[],
+  plot: { top: number; bottom: number },
+  reserved: { x0: number; x1: number; y: number }[] = [],
+): number[] {
   const span = (p: Labelled): [number, number] =>
     p.flip
       ? [p.x - LABEL_GAP - LABEL_W, p.x - LABEL_GAP]
       : [p.x + LABEL_GAP, p.x + LABEL_GAP + LABEL_W];
   const across = ([a, b]: [number, number], [c, d]: [number, number]) => a < d && c < b;
-  const placed: { span: [number, number]; y: number }[] = [];
+  const placed: { span: [number, number]; y: number }[] = reserved.map((r) => ({
+    span: [r.x0, r.x1],
+    y: r.y,
+  }));
   const out = new Array<number>(points.length);
   const order = points.map((_, i) => i).sort((i, j) => (points[i]?.y ?? 0) - (points[j]?.y ?? 0));
   for (const i of order) {
@@ -487,11 +494,101 @@ export function spreadLabels(points: Labelled[], plot: { top: number; bottom: nu
   return out;
 }
 
+/** A zone of concern: its tint and diagonal stripes, so it differs from the plain glide path
+ * by its texture as well as its colour; the near zone's stripes at 45°, the far one's at 135°. */
+function ZoneHatch({ id, opacity, angle }: { id: string; opacity: number; angle: 45 | 135 }) {
+  return (
+    <pattern
+      id={id}
+      width="8"
+      height="8"
+      patternUnits="userSpaceOnUse"
+      patternTransform={`rotate(${angle})`}
+    >
+      <rect width="8" height="8" fill={OVER} fillOpacity={opacity} />
+      <line x1="0" y1="0" x2="0" y2="8" stroke={OVER} strokeWidth="2" strokeOpacity="0.45" />
+    </pattern>
+  );
+}
+
+function Swatch({ children }: { children: ReactNode }) {
+  return (
+    <svg width="34" height="16" viewBox="0 0 34 16" aria-hidden="true" className="shrink-0">
+      {children}
+    </svg>
+  );
+}
+
+/** What each area and each ring of the horizon and risk chart means: the areas are guides by
+ * horizon, the rings the verdicts. */
+function RiskLegend({ inflation }: { inflation: string }) {
+  const { t } = useI18n();
+  const a = t.goalAnalysis;
+  const id = useId();
+  const ring = (cx: number, colour: string, dash?: string, width = 2) => (
+    <circle
+      cx={cx}
+      cy={8}
+      r={5}
+      fill="none"
+      stroke={colour}
+      strokeWidth={width}
+      strokeDasharray={dash}
+    />
+  );
+  const items: [ReactNode, string][] = [
+    [
+      <g key="s">
+        <defs>
+          <ZoneHatch id={`${id}-s`} opacity={0.2} angle={45} />
+        </defs>
+        <rect width="34" height="16" rx="2" fill={`url(#${id}-s)`} />
+      </g>,
+      a.legendShort,
+    ],
+    [<rect key="g" width="34" height="16" rx="2" fill={AMBER} fillOpacity={0.14} />, a.legendGlide],
+    [
+      <g key="e">
+        <defs>
+          <ZoneHatch id={`${id}-e`} opacity={0.12} angle={135} />
+        </defs>
+        <rect width="34" height="16" rx="2" fill={`url(#${id}-e)`} />
+      </g>,
+      a.legendEroding(inflation),
+    ],
+    [
+      <g key="r">
+        {ring(6, OVER)}
+        {ring(17, AMBER, "3 2")}
+        {ring(28, FG, "1 2", 1.5)}
+      </g>,
+      a.legendRings,
+    ],
+  ];
+  return (
+    <div className="flex flex-col gap-1.5">
+      <p id={`${id}-legend`} className="text-xs font-semibold text-fg">
+        {a.legendLabel}
+      </p>
+      <ul aria-labelledby={`${id}-legend`} className="flex flex-col gap-1.5 text-xs text-muted">
+        {items.map(([mark, text]) => (
+          <li key={text} className="flex items-start gap-2">
+            <Swatch>{mark}</Swatch>
+            <span>{text}</span>
+          </li>
+        ))}
+        <li className="pl-[42px] font-medium text-fg">{a.legendAreas}</li>
+      </ul>
+    </div>
+  );
+}
+
 /** F-ANA-4: each funded goal by the months left to its deadline and the weighted volatility of
  * its lines, over the zones; goals without a deadline are listed under it. */
 export function RiskChart({ data }: { data: GoalAnalysisOut }) {
   const { t } = useI18n();
   const a = t.goalAnalysis;
+  const hatch = useId();
   const points: RiskPointOut[] = data.risk;
   if (points.length === 0) return null;
   const dated = points.filter((p) => p.months_left !== null);
@@ -513,15 +610,23 @@ export function RiskChart({ data }: { data: GoalAnalysisOut }) {
   const percent = (value: string | null) => (value === null ? "—" : formatPercent(value));
   // Goals at the same horizon and volatility (an emergency fund and a near goal on livrets)
   // would write their names over each other.
+  // Each zone names itself at its top left, and the goals' labels keep off those names.
+  const zoneY = RISK_PAD.top + 12;
+  const zoneLabels = [
+    { x: left + 4, text: a.zoneArea.short },
+    { x: x(24) + 4, text: a.zoneArea.glide },
+    { x: x(96) + 4, text: a.zoneArea.eroding },
+  ];
   const labelY = spreadLabels(
     dated.map((p) => {
       const cx = x(p.months_left ?? 0);
       return { x: cx, y: y(Number(p.volatility)), flip: cx > W - 160 };
     }),
     { top: RISK_PAD.top, bottom: RISK_H - RISK_PAD.bottom },
+    zoneLabels.map((z) => ({ x0: z.x, x1: z.x + z.text.length * 6, y: zoneY })),
   );
   return (
-    <Card title={a.risk} subtitle={a.riskHelp(formatPercent(data.inflation))}>
+    <Card title={a.risk} subtitle={a.riskHelp}>
       <div className="overflow-x-auto">
         <svg
           viewBox={`0 0 ${W} ${RISK_H}`}
@@ -529,14 +634,18 @@ export function RiskChart({ data }: { data: GoalAnalysisOut }) {
           role="img"
           aria-label={a.riskLabel}
         >
-          {/* The zones (F-ANA-4): near and volatile, the glide path, far and eroding. */}
+          {/* The zones (F-ANA-4): near and volatile, the glide path, far and eroding; the two
+          of concern striped. */}
+          <defs>
+            <ZoneHatch id={`${hatch}-s`} opacity={0.2} angle={45} />
+            <ZoneHatch id={`${hatch}-e`} opacity={0.12} angle={135} />
+          </defs>
           <rect
             x={left}
             y={RISK_PAD.top}
             width={x(24) - left}
             height={y(0.05) - RISK_PAD.top}
-            fill={OVER}
-            fillOpacity={0.2}
+            fill={`url(#${hatch}-s)`}
           />
           <rect
             x={x(24)}
@@ -551,9 +660,22 @@ export function RiskChart({ data }: { data: GoalAnalysisOut }) {
             y={RISK_PAD.top}
             width={right - x(96)}
             height={bottom - RISK_PAD.top}
-            fill={OVER}
-            fillOpacity={0.12}
+            fill={`url(#${hatch}-e)`}
           />
+          {zoneLabels.map((z) => (
+            <text
+              key={z.text}
+              x={z.x}
+              y={zoneY + 4}
+              className="fill-fg text-[11px] font-medium"
+              stroke={SURFACE}
+              strokeWidth={3}
+              strokeLinejoin="round"
+              paintOrder="stroke"
+            >
+              {z.text}
+            </text>
+          ))}
           {yTicks.map((v) => (
             <g key={v}>
               <line x1={left} x2={right} y1={y(v)} y2={y(v)} stroke={GRID} />
@@ -660,6 +782,7 @@ export function RiskChart({ data }: { data: GoalAnalysisOut }) {
           })}
         </svg>
       </div>
+      <RiskLegend inflation={formatPercent(data.inflation)} />
       {undated.length > 0 && (
         <p className="text-sm text-muted">
           {a.noDeadlineGoals}{" "}
@@ -673,13 +796,23 @@ export function RiskChart({ data }: { data: GoalAnalysisOut }) {
       )}
       <DataTable
         label={a.riskTable}
-        head={[a.goal, a.monthsLeft, a.volatility, a.realReturn, a.riskyShare, a.loss, a.zoneLabel]}
+        head={[
+          a.goal,
+          a.monthsLeft,
+          a.volatility,
+          a.realReturn,
+          a.riskyShare,
+          a.allowedShare,
+          a.loss,
+          a.zoneLabel,
+        ]}
         rows={points.map((p) => [
           p.name,
           p.months_left === null ? a.noDeadline : String(p.months_left),
           percent(p.volatility),
           formatRateSigned(p.real_return),
           percent(p.risky_share),
+          percent(p.allowed_share),
           p.loss === null ? "—" : formatRateSigned(p.loss),
           [p.zone && p.zone !== "none" ? a.zone[p.zone] : null, p.losing ? a.losing : null]
             .filter(Boolean)

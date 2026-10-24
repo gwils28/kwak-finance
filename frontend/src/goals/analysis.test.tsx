@@ -334,6 +334,7 @@ const second: GoalAnalysisOut = {
       volatility: "0.1600",
       real_return: "0.0500",
       risky_share: "1.0000",
+      allowed_share: null,
       zone: "red_short",
       loss: "-0.1253",
       losing: false,
@@ -346,8 +347,22 @@ const second: GoalAnalysisOut = {
       volatility: "0.0000",
       real_return: "-0.0030",
       risky_share: "0.0000",
+      allowed_share: null,
       zone: "red_eroding",
       loss: "0.1830",
+      losing: false,
+    },
+    {
+      goal_id: "g-home",
+      name: "Apport",
+      tier: "medium",
+      months_left: 40,
+      volatility: "0.0800",
+      real_return: "0.0300",
+      risky_share: "0.5000",
+      allowed_share: "0.4444",
+      zone: "amber_glide",
+      loss: "-0.0900",
       losing: false,
     },
     {
@@ -358,6 +373,7 @@ const second: GoalAnalysisOut = {
       volatility: "0.0000",
       real_return: "-0.0030",
       risky_share: "0.0000",
+      allowed_share: null,
       zone: null,
       loss: null,
       losing: false,
@@ -439,8 +455,29 @@ test("the second batch of points reads its figures, and the risk chart its zones
   const rows = within(within(risk).getByRole("table", { name: "Goals' horizon and risk" }))
     .getAllByRole("row")
     .map((r) => plain(r.textContent));
-  expect(rows[1]).toBe("Été1216%+5.0%100%-12.5%Near and volatile");
-  expect(rows[2]).toBe("Voiture1200%-0.3%0%+18.3%Eroding");
+  expect(rows[0]).toContain("Allowed on volatile lines");
+  expect(rows[1]).toBe("Été1216%+5.0%100%—-12.5%Near and volatile");
+  expect(rows[2]).toBe("Voiture1200%-0.3%0%—+18.3%Eroding");
+  expect(rows[3]).toBe("Apport408%+3.0%50%44%-9.0%Above the glide path");
+
+  // The legend says what each area and each ring means.
+  expect(within(risk).getByText("How to read the chart")).toBeVisible();
+  // Each zone says what it is, on the chart itself.
+  const chart = within(risk).getByRole("img", { name: "Goals by horizon and risk" });
+  for (const name of ["Near and volatile", "Glide path", "Far and eroding"]) {
+    expect(within(chart).getByText(name)).toBeInTheDocument();
+  }
+  const legend = within(risk).getByRole("list", { name: "How to read the chart" });
+  const items = within(legend)
+    .getAllByRole("listitem")
+    .map((li) => plain(li.textContent));
+  expect(items).toEqual([
+    "Up to 2 years, volatility above 5%: near and volatile, a fall would have no time to recover.",
+    "2 to 5 years: the share on volatile or illiquid lines should shrink step by step, from all of it 5 years out to none 2 years out (the table gives each goal's share allowed).",
+    "Beyond 8 years: the lines should earn more than inflation (2% a year).",
+    "Solid ring: near and volatile, or eroding. Dashed ring: above the glide path. Dotted ring: partly in a category that loses value.",
+    "The areas are guides by horizon: only a ring says a goal needs a look.",
+  ]);
 });
 
 test("the second batch reads in French", async () => {
@@ -453,8 +490,18 @@ test("the second batch reads in French", async () => {
   expect(plain(points.textContent)).toContain(
     "11 € de plus sur Voiture le mettraient en avance et débloqueraient vos objectifs plaisir.",
   );
-  expect(screen.getByRole("region", { name: "Horizon et risque" })).toHaveTextContent(
-    "Proche et volatil",
+  const risk = screen.getByRole("region", { name: "Horizon et risque" });
+  expect(risk).toHaveTextContent("Proche et volatil");
+  const chartFr = within(risk).getByRole("img", { name: "Objectifs par horizon et risque" });
+  for (const name of ["Proche et volatil", "Trajectoire de sortie", "Lointain et grignoté"]) {
+    expect(within(chartFr).getByText(name)).toBeInTheDocument();
+  }
+  const legend = within(risk).getByRole("list", { name: "Comment lire le graphique" });
+  expect(plain(legend.textContent)).toContain(
+    "Les aires sont des repères d'horizon : seul un anneau signale un objectif à regarder.",
+  );
+  expect(plain(within(risk).getAllByRole("row")[3]?.textContent ?? "")).toBe(
+    "Apport408 %+3,0 %50 %44 %-9,0 %Au-dessus de la trajectoire",
   );
 });
 

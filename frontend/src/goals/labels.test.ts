@@ -60,3 +60,11 @@ test("a label written leftwards, near the right edge, avoids what is on its left
   );
   expect(ys[0]).not.toBe(100);
 });
+
+test("a label keeps off the zones' own labels", () => {
+  const reserved = [{ x0: 100, x1: 220, y: 20 }];
+  const [y] = spreadLabels([{ x: 90, y: 22 }], box, reserved);
+  expect(Math.abs((y ?? 0) - 20)).toBeGreaterThanOrEqual(14);
+  // Elsewhere the reserved box changes nothing.
+  expect(spreadLabels([{ x: 400, y: 22 }], box, reserved)).toEqual([22]);
+});

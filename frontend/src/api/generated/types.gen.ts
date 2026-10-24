@@ -1314,6 +1314,10 @@ export type ReportSection = 'income' | 'spending' | 'savings';
  */
 export type RiskPointOut = {
     /**
+     * Allowed Share
+     */
+    allowed_share: string | null;
+    /**
      * Goal Id
      */
     goal_id: string;
