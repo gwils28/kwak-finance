@@ -28,6 +28,7 @@ import { FixedPage } from "./spending/FixedPage";
 import { GridPage, parseGridSearch } from "./spending/GridPage";
 import { WealthAnalysisPage } from "./wealth/WealthAnalysisPage";
 import { WealthPage } from "./wealth/WealthPage";
+import { WealthProjectionPage } from "./wealth/WealthProjectionPage";
 
 const rootRoute = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   component: Outlet,
@@ -118,6 +119,12 @@ const wealthAnalysisRoute = createRoute({
   component: WealthAnalysisPage,
 });
 
+const wealthProjectionRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: "/wealth/projection",
+  component: WealthProjectionPage,
+});
+
 const goalsRoute = createRoute({
   getParentRoute: () => appRoute,
   path: "/goals",
@@ -189,6 +196,7 @@ const routeTree = rootRoute.addChildren([
     budgetRoute,
     wealthRoute,
     wealthAnalysisRoute,
+    wealthProjectionRoute,
     goalsRoute,
     goalAnalysisRoute,
     goalRoute,

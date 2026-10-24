@@ -37,12 +37,19 @@ ignore = []
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["S101", "S105", "S106"]
+# User-visible strings keep their typography (en dashes), as the frontend's i18n files.
+"packages/api/src/kwak_api/dash/i18n.py" = ["RUF001"]
 
 [tool.mypy]
 strict = true
 python_version = "3.13"
 packages = ["kwak_core", "kwak_api", "kwak_analytics"]
 plugins = ["pydantic.mypy"]
+
+[[tool.mypy.overrides]]
+# Plotly ships no type hints; only the Dash pages use it.
+module = ["plotly.*"]
+ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

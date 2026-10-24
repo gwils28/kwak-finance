@@ -182,24 +182,30 @@ class Matrix:
     result: WealthMatrix
 
 
+def _input(line: WealthLine, values: dict[UUID, dict[Month, Decimal]]) -> LineInput:
+    return LineInput(
+        line.id,
+        line.category_id,
+        values.get(line.id, {}),
+        line.owner_id,
+        line.visibility,
+        closed_from=Month.of(line.closed_from) if line.closed_from else None,
+    )
+
+
 def _line_views(db: Session, viewer: User) -> list[LineView]:
     lines = visible_lines(db, viewer)
     values = _values(db, lines)
-    return [
-        LineView(
-            LineInput(
-                line.id,
-                line.category_id,
-                values.get(line.id, {}),
-                line.owner_id,
-                line.visibility,
-                closed_from=Month.of(line.closed_from) if line.closed_from else None,
-            ),
-            line.name,
-            line.owner.display_name,
-        )
-        for line in lines
-    ]
+    return [LineView(_input(line, values), line.name, line.owner.display_name) for line in lines]
+
+
+def scoped_lines(db: Session, viewer: User, scope: Scope) -> list[tuple[WealthLine, LineInput]]:
+    """The lines a view of `scope` covers, with their values."""
+    lines = visible_lines(db, viewer)
+    values = _values(db, lines)
+    inputs = {line.id: _input(line, values) for line in lines}
+    kept = {i.id for i in in_scope(list(inputs.values()), scope, viewer.id)}
+    return [(line, inputs[line.id]) for line in lines if line.id in kept]
 
 
 def matrix(db: Session, viewer: User, months: list[Month], scope: Scope) -> Matrix:
@@ -220,17 +226,7 @@ def lines_to_update(
     manual = visible_lines(db, viewer)
     values = _values(db, manual)
     by_id = {line.id: line for line in manual}
-    inputs = [
-        LineInput(
-            line.id,
-            line.category_id,
-            values.get(line.id, {}),
-            line.owner_id,
-            line.visibility,
-            closed_from=Month.of(line.closed_from) if line.closed_from else None,
-        )
-        for line in manual
-    ]
+    inputs = [_input(line, values) for line in manual]
     order = {c.id: c.position for c in categories(db, viewer.household_id)}
     listed = to_update(
         sorted(inputs, key=lambda i: (order.get(i.category_id, 0), by_id[i.id].name)), month

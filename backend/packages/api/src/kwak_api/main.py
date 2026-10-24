@@ -7,7 +7,9 @@ from sqlalchemy.orm import sessionmaker
 
 from kwak_api.audit.routes import router as audit_router
 from kwak_api.auth.routes import router as auth_router
+from kwak_api.dash.app import create_dash
 from kwak_api.db import make_engine
+from kwak_api.deps import db_scope, get_now
 from kwak_api.goals.analysis import router as goal_analysis_router
 from kwak_api.goals.routes import router as goals_router
 from kwak_api.household.routes import router as household_router
@@ -48,6 +50,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.settings = settings
     # The engine connects lazily, on the first request that needs the database.
     app.state.sessionmaker = sessionmaker(make_engine(settings.database_url))
+    # The Dash pages open their own sessions; tests replace both.
+    app.state.db_scope = lambda: db_scope(app.state.sessionmaker)
+    app.state.clock = get_now
     app.include_router(router)
     app.include_router(auth_router)
     app.include_router(household_router)
@@ -59,6 +64,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(spending_router)
     app.include_router(spending_budget_router)
     app.include_router(spending_report_router)
+    app.mount("/dash", create_dash(app.state))
     return app
 
 
