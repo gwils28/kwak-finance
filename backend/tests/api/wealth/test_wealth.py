@@ -464,3 +464,81 @@ def test_a_batch_with_a_bad_amount_saves_nothing(owner_client: TestClient) -> No
         == 422
     )
     assert _matrix(owner_client, start="2026-12", end="2026-12")["gross"] == ["0.00"]
+
+
+def _patch_line(client: TestClient, line: str, **fields: Any) -> Any:
+    return client.patch(f"/api/wealth/lines/{line}", json=fields, headers=csrf(client))
+
+
+def test_a_savings_line_can_have_a_regulated_type(owner_client: TestClient) -> None:
+    body = {
+        "category_id": _categories(owner_client)["Savings accounts"]["id"],
+        "name": "Livret A",
+        "visibility": "private",
+        "regulated_type": "livret_a",
+    }
+    response = owner_client.post("/api/wealth/lines", json=body, headers=csrf(owner_client))
+    assert response.status_code == 201, response.text
+    line = response.json()
+    assert line["regulated_type"] == "livret_a"
+    changed = _patch_line(owner_client, line["id"], regulated_type="ldds")
+    assert changed.json()["regulated_type"] == "ldds"
+    cleared = _patch_line(owner_client, line["id"], regulated_type=None)
+    assert cleared.json()["regulated_type"] is None
+    plain = _line(owner_client, "Savings accounts", "Livret bancaire")
+    assert (
+        next(x for x in owner_client.get("/api/wealth/lines").json() if x["id"] == plain)[
+            "regulated_type"
+        ]
+        is None
+    )
+
+
+def test_a_regulated_type_needs_a_personal_savings_line(owner_client: TestClient) -> None:
+    categories = _categories(owner_client)
+
+    def create(category: str, visibility: str) -> int:
+        body = {
+            "category_id": categories[category]["id"],
+            "name": "x",
+            "visibility": visibility,
+            "regulated_type": "lep",
+        }
+        status: int = owner_client.post(
+            "/api/wealth/lines", json=body, headers=csrf(owner_client)
+        ).status_code
+        return status
+
+    assert create("Savings accounts", "joint") == 422
+    assert create("Stocks", "shared") == 422
+    line = _line(owner_client, "Savings accounts", "LDDS")
+    assert _patch_line(owner_client, line, regulated_type="ldds").status_code == 200
+    joint = _patch_line(owner_client, line, visibility="joint")
+    assert joint.status_code == 422
+    assert "joint" in joint.json()["detail"]
+    moved = _patch_line(owner_client, line, category_id=categories["Stocks"]["id"])
+    assert moved.status_code == 422
+    both = _patch_line(owner_client, line, visibility="joint", regulated_type=None)
+    assert both.status_code == 200, both.text
+    assert (both.json()["visibility"], both.json()["regulated_type"]) == ("joint", None)
+
+
+def test_only_the_owner_makes_a_regulated_line_joint(
+    client: TestClient, clock: Clock, owner: User, member: User
+) -> None:
+    clock.now = TODAY
+    log_in(client, clock)
+    line = _line(client, "Savings accounts", "Livret A")
+    assert _patch_line(client, line, regulated_type="livret_a").status_code == 200
+    log_in(client, clock, "member@example.com")
+    assert _patch_line(client, line, visibility="joint").status_code == 403
+
+
+def test_a_line_moved_into_savings_takes_a_regulated_type_at_once(
+    owner_client: TestClient,
+) -> None:
+    line = _line(owner_client, "Current accounts", "Livret A")
+    savings = _categories(owner_client)["Savings accounts"]["id"]
+    moved = _patch_line(owner_client, line, category_id=savings, regulated_type="livret_a")
+    assert moved.status_code == 200, moved.text
+    assert moved.json()["regulated_type"] == "livret_a"

@@ -3,7 +3,7 @@ from decimal import Decimal
 from uuid import UUID
 
 from kwak_core.visibility import Visibility
-from kwak_core.wealth import WealthKind
+from kwak_core.wealth import RegulatedType, WealthKind
 from sqlalchemy import (
     CheckConstraint,
     Date,
@@ -22,7 +22,9 @@ from kwak_api.db import Base, Timestamps, UUIDPrimaryKey
 from kwak_api.models.household import User
 
 
-def _string_enum(enum_type: type[WealthKind] | type[Visibility], name: str) -> Enum:
+def _string_enum(
+    enum_type: type[WealthKind] | type[Visibility] | type[RegulatedType], name: str
+) -> Enum:
     """VARCHAR + CHECK (not a native enum), so adding a value is a plain migration."""
     return Enum(
         enum_type,
@@ -71,6 +73,10 @@ class WealthLine(UUIDPrimaryKey, Timestamps, Base):
     visibility: Mapped[Visibility] = mapped_column(_string_enum(Visibility, "visibility"))
     closed_from: Mapped[date | None] = mapped_column(Date)
     """The first month (its first day) the line no longer holds anything."""
+    regulated_type: Mapped[RegulatedType | None] = mapped_column(
+        _string_enum(RegulatedType, "regulated_type")
+    )
+    """A regulated savings account's (F-WLT-2): a Savings-accounts line, never a joint one."""
 
     category: Mapped[WealthCategory] = relationship()
     owner: Mapped[User] = relationship()

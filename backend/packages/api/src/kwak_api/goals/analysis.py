@@ -104,11 +104,13 @@ class PointOut(BaseModel):
     goal_id: UUID | None
     goal_name: str | None
     line_id: UUID | None
+    line_name: str | None
+    """The line it is about (a regulated ceiling)."""
     lines: list[PointLineOut]
     amount: Decimal | None
     deadline: str | None
     figures: dict[str, Decimal | int | bool | str | None]
-    """The rule's figures: months as YYYY-MM."""
+    """The rule's figures: months as YYYY-MM; a ceiling's `regulated` type."""
     postponements: list[PostponementOut]
     subject_id: UUID | None
     """A goal the point names without belonging to it (idle money, the capstone)."""
@@ -137,6 +139,52 @@ class RiskPointOut(BaseModel):
     """More than a tenth in a category that loses value."""
 
 
+class SankeyCategoryOut(BaseModel):
+    category_id: UUID
+    name: str
+    colour: str
+    """Its `wealth-<key>` colour token."""
+    amount: Decimal
+
+
+class SankeyLineOut(BaseModel):
+    line_id: UUID
+    name: str
+    category_id: UUID
+    amount: Decimal
+    free: Decimal
+    """Beyond the envelopes of the goals the viewer sees: it may hold others' goals."""
+
+
+class SankeyFlowOut(BaseModel):
+    goal_id: UUID
+    name: str
+    tier: core.Tier
+    line_id: UUID
+    amount: Decimal
+
+
+class SankeyElsewhereOut(BaseModel):
+    """What a goal holds on lines left out of the chart (real estate, equipment)."""
+
+    goal_id: UUID
+    name: str
+    tier: core.Tier
+    amount: Decimal
+
+
+class SankeyOut(BaseModel):
+    """Where the goals' money sits (F-ANA-5): gross assets, debts not shown."""
+
+    month: str
+    all_assets: bool
+    """Real estate and equipment shown too."""
+    categories: list[SankeyCategoryOut]
+    lines: list[SankeyLineOut]
+    flows: list[SankeyFlowOut]
+    elsewhere: list[SankeyElsewhereOut]
+
+
 class PointsOut(BaseModel):
     shown: list[PointOut]
     more: list[PointOut]
@@ -157,6 +205,7 @@ class GoalAnalysisOut(BaseModel):
     risk: list[RiskPointOut]
     inflation: Decimal
     """The yearly inflation assumed, a share."""
+    sankey: SankeyOut
     points: PointsOut
 
 
@@ -187,14 +236,25 @@ def goal_analysis(
     now: Now,
     scope: Scope = Scope.HOUSEHOLD,
     horizon: Horizon = ga.DEFAULT_HORIZON,
+    all_assets: Annotated[
+        bool, Query(description="Real estate and equipment in the Sankey")
+    ] = False,
 ) -> GoalAnalysisOut:
     """The goals at the reference month: against the capacity, on a timeline, month by month,
     and the points to look at (spec §4.12)."""
-    a = service.analysis(db, user_session.user, scope, now.date(), DEFAULT_BAND, horizon)
+    a = service.analysis(
+        db, user_session.user, scope, now.date(), DEFAULT_BAND, horizon, all_assets=all_assets
+    )
     reference = a.reference or a.this_month
     names = {x.goal.id: x.goal.name for x in a.household}
     tiers = {x.goal.id: goals.tier(x.goal, a.this_month) for x in a.household}
     deadlines = {x.goal.id: x.facts.deadline for x in a.household}
+
+    def figures(n: ga.Notice) -> dict[str, Decimal | int | bool | str | None]:
+        out = {k: _figure(v) for k, v in n.figures.items()}
+        if n.rule is ga.Rule.CEILING and n.line is not None:
+            out["regulated"] = a.lines[n.line].regulated_type
+        return out
 
     def point(n: ga.Notice) -> PointOut:
         return PointOut(
@@ -203,10 +263,11 @@ def goal_analysis(
             goal_id=n.goal,
             goal_name=names.get(n.goal) if n.goal else None,
             line_id=n.line,
+            line_name=a.lines[n.line].name if n.line else None,
             lines=[PointLineOut(line_id=k, name=a.lines[k].name) for k in n.lines],
             amount=_money(n.amount),
             deadline=_text(n.deadline),
-            figures={k: _figure(v) for k, v in n.figures.items()},
+            figures=figures(n),
             postponements=[
                 PostponementOut(
                     goal_id=p.goal,
@@ -222,6 +283,21 @@ def goal_analysis(
             subject_name=names.get(n.subject) if n.subject else None,
             hideable=n.rule not in ga.NEVER_HIDDEN,
         )
+
+    sk = a.sankey
+    shown = sorted(
+        (sk.lines[k] for k in sk.placement.lines),
+        key=lambda line: (line.category.position, line.name.lower()),
+    )
+    categories = sorted(
+        {line.category.id: line.category for line in shown}.values(), key=lambda c: c.position
+    )
+    goal_order = sk.goals
+    line_order = [line.id for line in shown]
+    flows = sorted(
+        sk.placement.held.items(),
+        key=lambda kv: (goal_order.index(kv[0][0]), line_order.index(kv[0][1])),
+    )
 
     order = sorted(
         a.forward.bands,
@@ -293,6 +369,40 @@ def goal_analysis(
             for p in a.risk
         ],
         inflation=_share(a.inflation),
+        sankey=SankeyOut(
+            month=str(sk.month),
+            all_assets=sk.all_assets,
+            categories=[
+                SankeyCategoryOut(
+                    category_id=c.id,
+                    name=c.name,
+                    colour=c.colour,
+                    amount=quantize(sk.placement.categories[c.id]),
+                )
+                for c in categories
+            ],
+            lines=[
+                SankeyLineOut(
+                    line_id=line.id,
+                    name=line.name,
+                    category_id=line.category_id,
+                    amount=quantize(sk.placement.lines[line.id]),
+                    free=quantize(sk.placement.free[line.id]),
+                )
+                for line in shown
+            ],
+            flows=[
+                SankeyFlowOut(
+                    goal_id=g, name=names[g], tier=tiers[g], line_id=line, amount=quantize(amount)
+                )
+                for (g, line), amount in flows
+            ],
+            elsewhere=[
+                SankeyElsewhereOut(goal_id=g, name=names[g], tier=tiers[g], amount=quantize(amount))
+                for g in goal_order
+                if (amount := sk.placement.elsewhere.get(g))
+            ],
+        ),
         points=PointsOut(
             shown=[point(n) for n in a.selection.shown],
             more=[point(n) for n in a.selection.more],
