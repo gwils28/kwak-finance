@@ -333,6 +333,32 @@ def test_a_near_goal_on_stocks_sits_in_the_red_zone(owner_client: TestClient) ->
     assert float(risk["figures"]["loss"]) > 0
 
 
+def test_the_households_assumptions_replace_the_defaults(owner_client: TestClient) -> None:
+    """F-ANA-1: once the household sets its own (F-SIM-1), goals are judged on them."""
+    _capacity(owner_client, "300.00")
+    pea = _stocks(owner_client)
+    _goal(
+        owner_client,
+        name="Voiture",
+        target="6000.00",
+        deadline="2027-10",
+        start="2026-09",
+        fundings=[{"line_id": pea, "share": 100, "opening": "3000.00"}],
+    )
+    stocks = _categories(owner_client)["Stocks"]["id"]
+    for path, body in (
+        (f"/api/projection/categories/{stocks}", {"ret": "0.05", "volatility": "0.04"}),
+        ("/api/projection/inflation", {"inflation": "0.03"}),
+    ):
+        response = owner_client.put(path, json=body, headers=csrf(owner_client))
+        assert response.status_code == 200, response.text
+    out = _analysis(owner_client)
+    [point] = out["risk"]
+    assert (point["volatility"], point["real_return"]) == ("0.0400", "0.0200")
+    assert point["zone"] != "red_short"  # 4 % is not volatile
+    assert out["inflation"] == "0.0300"
+
+
 def test_idle_money_names_the_goal_behind(owner_client: TestClient) -> None:
     categories = {c["name"]: c["id"] for c in owner_client.get("/api/spending/categories").json()}
     for month in ("2026-07", "2026-08", "2026-09"):

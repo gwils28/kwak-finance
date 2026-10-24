@@ -15,7 +15,7 @@ from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
 from kwak_api.models import Goal, GoalNoticeDismissal, Household, User, WealthLine
-from kwak_api.services import goals, spending_budget, wealth
+from kwak_api.services import goals, projection, spending_budget, wealth
 
 
 class NoSuchPointError(Exception):
@@ -171,7 +171,7 @@ def _current_free(
     lines = [
         line
         for line in wealth.visible_lines(db, viewer)
-        if ga.risk_of(line.category.preset).current
+        if projection.risk(line.category).current
         and in_scope(scope, owner_id=line.owner_id, visibility=line.visibility, viewer_id=viewer.id)
     ]
     values = goals.line_values(db, {line.id for line in lines})
@@ -251,7 +251,7 @@ def _facts(
     start = Month.of(goal.start)
     last = max(start, reference) if reference is not None else this_month
     k0, k = env.months.index(start), env.months.index(last)
-    risks = {f.line_id: ga.risk_of(f.line.category.preset) for f in goal.fundings}
+    risks = {f.line_id: projection.risk(f.line.category) for f in goal.fundings}
     held = {f.line_id: env.held(goal.id, f.line_id)[k] for f in goal.fundings}
     shares = {f.line_id: f.share for f in goal.fundings}
     w = ga.weights(held, shares)
@@ -369,7 +369,7 @@ def analysis(
     )
     flows = _flows(db, viewer.household_id, this_month)
     capacity_months = core.EFFORT_MONTHS if capacity_set else flows.months
-    inflation = ga.DEFAULT_INFLATION
+    inflation = projection.inflation(row)
     facts = [a.facts for a in household]
     household_plan = _plan(facts, cap, row.precaution_share)
     bands = {
@@ -386,7 +386,7 @@ def analysis(
     )
 
     scope_facts = [a.facts for a in scoped]
-    risks = {k: ga.risk_of(line.category.preset) for k, line in line_rows.items()}
+    risks = {k: projection.risk(line.category) for k, line in line_rows.items()}
     monthly_fixed = core.fixed_expenses(
         (i.frequency, -i.amount) for i in goals.fixed_items(db, viewer, today)
     )

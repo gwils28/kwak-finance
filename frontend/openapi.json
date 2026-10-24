@@ -1,6 +1,42 @@
 {
   "components": {
     "schemas": {
+      "AssumptionsOut": {
+        "properties": {
+          "categories": {
+            "items": {
+              "$ref": "#/components/schemas/CategoryAssumptionOut"
+            },
+            "title": "Categories",
+            "type": "array"
+          },
+          "debts": {
+            "items": {
+              "$ref": "#/components/schemas/DebtOut"
+            },
+            "title": "Debts",
+            "type": "array"
+          },
+          "default_inflation": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Default Inflation",
+            "type": "string"
+          },
+          "inflation": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Inflation",
+            "type": "string"
+          }
+        },
+        "required": [
+          "inflation",
+          "default_inflation",
+          "categories",
+          "debts"
+        ],
+        "title": "AssumptionsOut",
+        "type": "object"
+      },
       "AuditAction": {
         "enum": [
           "signed_in",
@@ -144,6 +180,115 @@
         "title": "BudgetStatus",
         "type": "string"
       },
+      "CategoryAssumptionIn": {
+        "properties": {
+          "ret": {
+            "anyOf": [
+              {
+                "exclusiveMaximum": 10.0,
+                "exclusiveMinimum": -10.0,
+                "type": "number"
+              },
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              }
+            ],
+            "title": "Ret"
+          },
+          "volatility": {
+            "anyOf": [
+              {
+                "exclusiveMaximum": 10.0,
+                "exclusiveMinimum": -10.0,
+                "type": "number"
+              },
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              }
+            ],
+            "title": "Volatility"
+          }
+        },
+        "required": [
+          "ret",
+          "volatility"
+        ],
+        "title": "CategoryAssumptionIn",
+        "type": "object"
+      },
+      "CategoryAssumptionOut": {
+        "properties": {
+          "colour": {
+            "title": "Colour",
+            "type": "string"
+          },
+          "default_ret": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Default Ret",
+            "type": "string"
+          },
+          "default_volatility": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Default Volatility",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "median_growth": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Median Growth",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "own": {
+            "title": "Own",
+            "type": "boolean"
+          },
+          "preset": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Preset"
+          },
+          "ret": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Ret",
+            "type": "string"
+          },
+          "volatility": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Volatility",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "colour",
+          "preset",
+          "ret",
+          "volatility",
+          "default_ret",
+          "default_volatility",
+          "median_growth",
+          "own"
+        ],
+        "title": "CategoryAssumptionOut",
+        "type": "object"
+      },
       "CategoryKind": {
         "enum": [
           "expense",
@@ -160,6 +305,131 @@
         ],
         "title": "ClosedAs",
         "type": "string"
+      },
+      "DebtOut": {
+        "properties": {
+          "grows": {
+            "title": "Grows",
+            "type": "boolean"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "insurance": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Insurance",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "owed": {
+            "anyOf": [
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owed"
+          },
+          "owner_name": {
+            "title": "Owner Name",
+            "type": "string"
+          },
+          "payment": {
+            "anyOf": [
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Payment"
+          },
+          "rate": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Rate",
+            "type": "string"
+          },
+          "visibility": {
+            "$ref": "#/components/schemas/Visibility"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "owner_name",
+          "visibility",
+          "owed",
+          "payment",
+          "rate",
+          "insurance",
+          "grows"
+        ],
+        "title": "DebtOut",
+        "type": "object"
+      },
+      "DebtTermsIn": {
+        "properties": {
+          "insurance": {
+            "anyOf": [
+              {
+                "exclusiveMaximum": 1000000000000.0,
+                "type": "number"
+              },
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              }
+            ],
+            "default": "0",
+            "title": "Insurance"
+          },
+          "payment": {
+            "anyOf": [
+              {
+                "exclusiveMaximum": 1000000000000.0,
+                "type": "number"
+              },
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Payment"
+          },
+          "rate": {
+            "anyOf": [
+              {
+                "exclusiveMaximum": 10.0,
+                "exclusiveMinimum": -10.0,
+                "type": "number"
+              },
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              }
+            ],
+            "default": "0",
+            "title": "Rate"
+          }
+        },
+        "required": [
+          "payment"
+        ],
+        "title": "DebtTermsIn",
+        "type": "object"
       },
       "FixedFrequency": {
         "enum": [
@@ -1508,6 +1778,32 @@
           "version"
         ],
         "title": "Health",
+        "type": "object"
+      },
+      "InflationIn": {
+        "properties": {
+          "inflation": {
+            "anyOf": [
+              {
+                "exclusiveMaximum": 10.0,
+                "exclusiveMinimum": -10.0,
+                "type": "number"
+              },
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Inflation"
+          }
+        },
+        "required": [
+          "inflation"
+        ],
+        "title": "InflationIn",
         "type": "object"
       },
       "InviteAccept": {
@@ -6808,6 +7104,310 @@
         "summary": "Revoke Invite",
         "tags": [
           "household"
+        ]
+      }
+    },
+    "/api/projection/assumptions": {
+      "get": {
+        "operationId": "getAssumptions",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "kwak_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Kwak Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssumptionsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Assumptions",
+        "tags": [
+          "projection"
+        ]
+      }
+    },
+    "/api/projection/categories/{category_id}": {
+      "delete": {
+        "description": "Back to the default of its preset.",
+        "operationId": "restoreCategoryAssumption",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "category_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Category Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "kwak_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Kwak Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssumptionsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Restore Category Assumption",
+        "tags": [
+          "projection"
+        ]
+      },
+      "put": {
+        "operationId": "setCategoryAssumption",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "category_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Category Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "kwak_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Kwak Session"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CategoryAssumptionIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssumptionsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Set Category Assumption",
+        "tags": [
+          "projection"
+        ]
+      }
+    },
+    "/api/projection/debts/{line_id}": {
+      "put": {
+        "operationId": "setDebtTerms",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "line_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Line Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "kwak_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Kwak Session"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DebtTermsIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssumptionsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Set Debt Terms",
+        "tags": [
+          "projection"
+        ]
+      }
+    },
+    "/api/projection/inflation": {
+      "put": {
+        "operationId": "setInflation",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "kwak_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Kwak Session"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InflationIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssumptionsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Set Inflation",
+        "tags": [
+          "projection"
         ]
       }
     },

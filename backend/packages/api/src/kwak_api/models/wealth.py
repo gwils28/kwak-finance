@@ -44,6 +44,13 @@ class WealthCategory(UUIDPrimaryKey, Timestamps, Base):
         Index(
             "uq_wealth_category_household_name", "household_id", text("lower(name)"), unique=True
         ),
+        CheckConstraint(
+            "(expected_return IS NULL) = (volatility IS NULL)", name="assumption_whole"
+        ),
+        CheckConstraint(
+            "expected_return > -1 AND expected_return <= 1 AND volatility BETWEEN 0 AND 2",
+            name="assumption_range",
+        ),
     )
 
     household_id: Mapped[UUID] = mapped_column(ForeignKey("household.id"), index=True)
@@ -56,6 +63,10 @@ class WealthCategory(UUIDPrimaryKey, Timestamps, Base):
     become: the projection's defaults follow it (F-SIM-1). None for a category added later."""
     position: Mapped[int] = mapped_column(Integer)
     """Its row in the matrix, from the top."""
+    expected_return: Mapped[Decimal | None] = mapped_column(Numeric(4, 3))
+    """The projection's expected annual return, the arithmetic mean (F-SIM-1); with the
+    volatility, NULL for the preset's default."""
+    volatility: Mapped[Decimal | None] = mapped_column(Numeric(4, 3))
 
 
 class WealthLine(UUIDPrimaryKey, Timestamps, Base):
@@ -64,6 +75,9 @@ class WealthLine(UUIDPrimaryKey, Timestamps, Base):
     __tablename__ = "wealth_line"
     __table_args__ = (
         CheckConstraint("extract(day from closed_from) = 1", name="closed_from_month"),
+        CheckConstraint("debt_payment >= 0", name="debt_payment_positive"),
+        CheckConstraint("debt_rate BETWEEN 0 AND 1", name="debt_rate_range"),
+        CheckConstraint("debt_insurance >= 0", name="debt_insurance_positive"),
     )
 
     household_id: Mapped[UUID] = mapped_column(ForeignKey("household.id"), index=True)
@@ -77,6 +91,13 @@ class WealthLine(UUIDPrimaryKey, Timestamps, Base):
         _string_enum(RegulatedType, "regulated_type")
     )
     """A regulated savings account's (F-WLT-2): a Savings-accounts line, never a joint one."""
+    debt_payment: Mapped[Decimal | None] = mapped_column(Numeric(14, 2))
+    """A debt line's monthly payment, borrower insurance excluded (F-SIM-1); NULL: not set, the
+    projection keeps the debt as owed."""
+    debt_rate: Mapped[Decimal] = mapped_column(Numeric(5, 4), server_default=text("0"))
+    """The annual nominal rate, not the APR."""
+    debt_insurance: Mapped[Decimal] = mapped_column(Numeric(14, 2), server_default=text("0"))
+    """The borrower insurance a month: it repays nothing."""
 
     category: Mapped[WealthCategory] = relationship()
     owner: Mapped[User] = relationship()
