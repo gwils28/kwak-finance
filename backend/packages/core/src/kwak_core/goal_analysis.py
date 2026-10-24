@@ -8,7 +8,7 @@ state figures and options, never advice, and move nothing.
 import enum
 import math
 from collections.abc import Iterable, Mapping, Sequence
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from decimal import Decimal
 from uuid import UUID
 
@@ -56,8 +56,6 @@ PRECAUTION_LOW = 3
 PRECAUTION_SHORT = 6
 SHOWN = 3
 WORSENS = Decimal("1.25")
-DEFAULT_INFLATION = projection.DEFAULT_INFLATION
-"""The projection's default (F-SIM-1), until the household's own assumptions exist."""
 SHORT_RISK_SHARE = Decimal("0.1")
 SHORT_RISK_FLOOR = Decimal(500)
 ERODING_FLOOR = Decimal(5000)
@@ -183,9 +181,13 @@ default colour key, kept whatever colour the category takes), until the househol
 assumptions exist."""
 
 
-def risk_of(preset: str | None) -> LineRisk:
-    """A category added later, without a preset, starts at 0 % ± 0, liquid."""
-    return DEFAULT_RISKS.get(preset, LineRisk()) if preset else LineRisk()
+def risk_of(preset: str | None, assumption: projection.Assumption | None = None) -> LineRisk:
+    """A category added later, without a preset, starts at 0 % ± 0, liquid; the household's
+    own `assumption` replaces the return and volatility, never the liquidity."""
+    risk = DEFAULT_RISKS.get(preset, LineRisk()) if preset else LineRisk()
+    if assumption is None:
+        return risk
+    return replace(risk, ret=assumption.ret, volatility=assumption.volatility)
 
 
 def weights(held: Mapping[UUID, Decimal], shares: Mapping[UUID, int]) -> dict[UUID, Decimal]:

@@ -2,7 +2,7 @@
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { AcceptInviteData, AcceptInviteErrors, AcceptInviteResponses, ActivityLogData, ActivityLogErrors, ActivityLogResponses, AdjustEnvelopeData, AdjustEnvelopeErrors, AdjustEnvelopeResponses, CreateFixedData, CreateFixedErrors, CreateFixedResponses, CreateGoalData, CreateGoalErrors, CreateGoalResponses, CreateInviteData, CreateInviteErrors, CreateInviteResponses, CreateLineData, CreateLineErrors, CreateLineResponses, CreateSpendingCategoryData, CreateSpendingCategoryErrors, CreateSpendingCategoryResponses, CreateWealthCategoryData, CreateWealthCategoryErrors, CreateWealthCategoryResponses, CreateWealthLineData, CreateWealthLineErrors, CreateWealthLineResponses, DeleteFixedData, DeleteFixedErrors, DeleteFixedResponses, DeleteGoalData, DeleteGoalErrors, DeleteGoalResponses, DeleteLineData, DeleteLineErrors, DeleteLineResponses, DeleteSpendingCategoryData, DeleteSpendingCategoryErrors, DeleteSpendingCategoryResponses, DeleteWealthCategoryData, DeleteWealthCategoryErrors, DeleteWealthCategoryResponses, DeleteWealthLineData, DeleteWealthLineErrors, DeleteWealthLineResponses, GetGoalData, GetGoalErrors, GetGoalResponses, GetSettingsData, GetSettingsErrors, GetSettingsResponses, GoalAnalysisData, GoalAnalysisErrors, GoalAnalysisResponses, GoalLinesData, GoalLinesErrors, GoalLinesResponses, HealthData, HealthResponses, HidePointData, HidePointErrors, HidePointResponses, LabelSuggestionsData, LabelSuggestionsErrors, LabelSuggestionsResponses, ListFixedData, ListFixedErrors, ListFixedResponses, ListGoalsData, ListGoalsErrors, ListGoalsResponses, ListInvitesData, ListInvitesErrors, ListInvitesResponses, ListMembersData, ListMembersErrors, ListMembersResponses, ListSpendingCategoriesData, ListSpendingCategoriesErrors, ListSpendingCategoriesResponses, ListTargetsData, ListTargetsErrors, ListTargetsResponses, ListWealthCategoriesData, ListWealthCategoriesErrors, ListWealthCategoriesResponses, ListWealthLinesData, ListWealthLinesErrors, ListWealthLinesResponses, LoginData, LoginErrors, LoginResponses, LogoutData, LogoutErrors, LogoutResponses, MeData, MeErrors, MeResponses, MonthLinesData, MonthLinesErrors, MonthLinesResponses, MonthOccurrencesData, MonthOccurrencesErrors, MonthOccurrencesResponses, MonthSummaryData, MonthSummaryErrors, MonthSummaryResponses, PrecautionProposalData, PrecautionProposalErrors, PrecautionProposalResponses, PreviewInviteData, PreviewInviteErrors, PreviewInviteResponses, RecoveryData, RecoveryErrors, RecoveryResponses, RegenerateRecoveryCodesData, RegenerateRecoveryCodesErrors, RegenerateRecoveryCodesResponses, RemoveAdjustmentData, RemoveAdjustmentErrors, RemoveAdjustmentResponses, RemoveTargetData, RemoveTargetErrors, RemoveTargetResponses, RemoveWealthValueData, RemoveWealthValueErrors, RemoveWealthValueResponses, ReplaceFixedData, ReplaceFixedErrors, ReplaceFixedResponses, ReplaceLineData, ReplaceLineErrors, ReplaceLineResponses, RestoreSpendingCategoriesData, RestoreSpendingCategoriesErrors, RestoreSpendingCategoriesResponses, RevokeInviteData, RevokeInviteErrors, RevokeInviteResponses, SetTargetData, SetTargetErrors, SetTargetResponses, SetWealthValueData, SetWealthValueErrors, SetWealthValueResponses, ShowHiddenData, ShowHiddenErrors, ShowHiddenResponses, SkipOccurrenceData, SkipOccurrenceErrors, SkipOccurrenceResponses, SpendingMatrixData, SpendingMatrixErrors, SpendingMatrixResponses, SpendingReportData, SpendingReportErrors, SpendingReportResponses, SpendingYearData, SpendingYearErrors, SpendingYearResponses, TotpConfirmData, TotpConfirmErrors, TotpConfirmResponses, TotpSetupData, TotpSetupErrors, TotpSetupResponses, TotpVerifyData, TotpVerifyErrors, TotpVerifyResponses, UnderstandQuickLineData, UnderstandQuickLineErrors, UnderstandQuickLineResponses, UnskipOccurrenceData, UnskipOccurrenceErrors, UnskipOccurrenceResponses, UpdateGoalData, UpdateGoalErrors, UpdateGoalResponses, UpdateMeData, UpdateMeErrors, UpdateMeResponses, UpdateSettingsData, UpdateSettingsErrors, UpdateSettingsResponses, UpdateSpendingCategoryData, UpdateSpendingCategoryErrors, UpdateSpendingCategoryResponses, UpdateWealthCategoryData, UpdateWealthCategoryErrors, UpdateWealthCategoryResponses, UpdateWealthLineData, UpdateWealthLineErrors, UpdateWealthLineResponses, UpdateWealthMonthData, UpdateWealthMonthErrors, UpdateWealthMonthResponses, WealthLinesToUpdateData, WealthLinesToUpdateErrors, WealthLinesToUpdateResponses, WealthMatrixData, WealthMatrixErrors, WealthMatrixResponses } from './types.gen';
+import type { AcceptInviteData, AcceptInviteErrors, AcceptInviteResponses, ActivityLogData, ActivityLogErrors, ActivityLogResponses, AdjustEnvelopeData, AdjustEnvelopeErrors, AdjustEnvelopeResponses, CreateFixedData, CreateFixedErrors, CreateFixedResponses, CreateGoalData, CreateGoalErrors, CreateGoalResponses, CreateInviteData, CreateInviteErrors, CreateInviteResponses, CreateLineData, CreateLineErrors, CreateLineResponses, CreateSpendingCategoryData, CreateSpendingCategoryErrors, CreateSpendingCategoryResponses, CreateWealthCategoryData, CreateWealthCategoryErrors, CreateWealthCategoryResponses, CreateWealthLineData, CreateWealthLineErrors, CreateWealthLineResponses, DeleteFixedData, DeleteFixedErrors, DeleteFixedResponses, DeleteGoalData, DeleteGoalErrors, DeleteGoalResponses, DeleteLineData, DeleteLineErrors, DeleteLineResponses, DeleteSpendingCategoryData, DeleteSpendingCategoryErrors, DeleteSpendingCategoryResponses, DeleteWealthCategoryData, DeleteWealthCategoryErrors, DeleteWealthCategoryResponses, DeleteWealthLineData, DeleteWealthLineErrors, DeleteWealthLineResponses, GetAssumptionsData, GetAssumptionsErrors, GetAssumptionsResponses, GetGoalData, GetGoalErrors, GetGoalResponses, GetSettingsData, GetSettingsErrors, GetSettingsResponses, GoalAnalysisData, GoalAnalysisErrors, GoalAnalysisResponses, GoalLinesData, GoalLinesErrors, GoalLinesResponses, HealthData, HealthResponses, HidePointData, HidePointErrors, HidePointResponses, LabelSuggestionsData, LabelSuggestionsErrors, LabelSuggestionsResponses, ListFixedData, ListFixedErrors, ListFixedResponses, ListGoalsData, ListGoalsErrors, ListGoalsResponses, ListInvitesData, ListInvitesErrors, ListInvitesResponses, ListMembersData, ListMembersErrors, ListMembersResponses, ListSpendingCategoriesData, ListSpendingCategoriesErrors, ListSpendingCategoriesResponses, ListTargetsData, ListTargetsErrors, ListTargetsResponses, ListWealthCategoriesData, ListWealthCategoriesErrors, ListWealthCategoriesResponses, ListWealthLinesData, ListWealthLinesErrors, ListWealthLinesResponses, LoginData, LoginErrors, LoginResponses, LogoutData, LogoutErrors, LogoutResponses, MeData, MeErrors, MeResponses, MonthLinesData, MonthLinesErrors, MonthLinesResponses, MonthOccurrencesData, MonthOccurrencesErrors, MonthOccurrencesResponses, MonthSummaryData, MonthSummaryErrors, MonthSummaryResponses, PrecautionProposalData, PrecautionProposalErrors, PrecautionProposalResponses, PreviewInviteData, PreviewInviteErrors, PreviewInviteResponses, RecoveryData, RecoveryErrors, RecoveryResponses, RegenerateRecoveryCodesData, RegenerateRecoveryCodesErrors, RegenerateRecoveryCodesResponses, RemoveAdjustmentData, RemoveAdjustmentErrors, RemoveAdjustmentResponses, RemoveTargetData, RemoveTargetErrors, RemoveTargetResponses, RemoveWealthValueData, RemoveWealthValueErrors, RemoveWealthValueResponses, ReplaceFixedData, ReplaceFixedErrors, ReplaceFixedResponses, ReplaceLineData, ReplaceLineErrors, ReplaceLineResponses, RestoreCategoryAssumptionData, RestoreCategoryAssumptionErrors, RestoreCategoryAssumptionResponses, RestoreSpendingCategoriesData, RestoreSpendingCategoriesErrors, RestoreSpendingCategoriesResponses, RevokeInviteData, RevokeInviteErrors, RevokeInviteResponses, SetCategoryAssumptionData, SetCategoryAssumptionErrors, SetCategoryAssumptionResponses, SetDebtTermsData, SetDebtTermsErrors, SetDebtTermsResponses, SetInflationData, SetInflationErrors, SetInflationResponses, SetTargetData, SetTargetErrors, SetTargetResponses, SetWealthValueData, SetWealthValueErrors, SetWealthValueResponses, ShowHiddenData, ShowHiddenErrors, ShowHiddenResponses, SkipOccurrenceData, SkipOccurrenceErrors, SkipOccurrenceResponses, SpendingMatrixData, SpendingMatrixErrors, SpendingMatrixResponses, SpendingReportData, SpendingReportErrors, SpendingReportResponses, SpendingYearData, SpendingYearErrors, SpendingYearResponses, TotpConfirmData, TotpConfirmErrors, TotpConfirmResponses, TotpSetupData, TotpSetupErrors, TotpSetupResponses, TotpVerifyData, TotpVerifyErrors, TotpVerifyResponses, UnderstandQuickLineData, UnderstandQuickLineErrors, UnderstandQuickLineResponses, UnskipOccurrenceData, UnskipOccurrenceErrors, UnskipOccurrenceResponses, UpdateGoalData, UpdateGoalErrors, UpdateGoalResponses, UpdateMeData, UpdateMeErrors, UpdateMeResponses, UpdateSettingsData, UpdateSettingsErrors, UpdateSettingsResponses, UpdateSpendingCategoryData, UpdateSpendingCategoryErrors, UpdateSpendingCategoryResponses, UpdateWealthCategoryData, UpdateWealthCategoryErrors, UpdateWealthCategoryResponses, UpdateWealthLineData, UpdateWealthLineErrors, UpdateWealthLineResponses, UpdateWealthMonthData, UpdateWealthMonthErrors, UpdateWealthMonthResponses, WealthLinesToUpdateData, WealthLinesToUpdateErrors, WealthLinesToUpdateResponses, WealthMatrixData, WealthMatrixErrors, WealthMatrixResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -308,6 +308,54 @@ export const acceptInvite = <ThrowOnError extends boolean = false>(options: Opti
  * Revoke Invite
  */
 export const revokeInvite = <ThrowOnError extends boolean = false>(options: Options<RevokeInviteData, ThrowOnError>): RequestResult<RevokeInviteResponses, RevokeInviteErrors, ThrowOnError> => (options.client ?? client).delete<RevokeInviteResponses, RevokeInviteErrors, ThrowOnError>({ url: '/api/invites/{invite_id}', ...options });
+
+/**
+ * Get Assumptions
+ */
+export const getAssumptions = <ThrowOnError extends boolean = false>(options?: Options<GetAssumptionsData, ThrowOnError>): RequestResult<GetAssumptionsResponses, GetAssumptionsErrors, ThrowOnError> => (options?.client ?? client).get<GetAssumptionsResponses, GetAssumptionsErrors, ThrowOnError>({ url: '/api/projection/assumptions', ...options });
+
+/**
+ * Restore Category Assumption
+ *
+ * Back to the default of its preset.
+ */
+export const restoreCategoryAssumption = <ThrowOnError extends boolean = false>(options: Options<RestoreCategoryAssumptionData, ThrowOnError>): RequestResult<RestoreCategoryAssumptionResponses, RestoreCategoryAssumptionErrors, ThrowOnError> => (options.client ?? client).delete<RestoreCategoryAssumptionResponses, RestoreCategoryAssumptionErrors, ThrowOnError>({ url: '/api/projection/categories/{category_id}', ...options });
+
+/**
+ * Set Category Assumption
+ */
+export const setCategoryAssumption = <ThrowOnError extends boolean = false>(options: Options<SetCategoryAssumptionData, ThrowOnError>): RequestResult<SetCategoryAssumptionResponses, SetCategoryAssumptionErrors, ThrowOnError> => (options.client ?? client).put<SetCategoryAssumptionResponses, SetCategoryAssumptionErrors, ThrowOnError>({
+    url: '/api/projection/categories/{category_id}',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Set Debt Terms
+ */
+export const setDebtTerms = <ThrowOnError extends boolean = false>(options: Options<SetDebtTermsData, ThrowOnError>): RequestResult<SetDebtTermsResponses, SetDebtTermsErrors, ThrowOnError> => (options.client ?? client).put<SetDebtTermsResponses, SetDebtTermsErrors, ThrowOnError>({
+    url: '/api/projection/debts/{line_id}',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Set Inflation
+ */
+export const setInflation = <ThrowOnError extends boolean = false>(options: Options<SetInflationData, ThrowOnError>): RequestResult<SetInflationResponses, SetInflationErrors, ThrowOnError> => (options.client ?? client).put<SetInflationResponses, SetInflationErrors, ThrowOnError>({
+    url: '/api/projection/inflation',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
 
 /**
  * List Spending Categories

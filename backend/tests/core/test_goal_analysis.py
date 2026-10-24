@@ -45,6 +45,7 @@ from kwak_core.goal_analysis import (
 )
 from kwak_core.goals import GoalStatus, Line, Tier, add_months, track
 from kwak_core.money import quantize
+from kwak_core.projection import Assumption
 from kwak_core.wealth import DEFAULT_WEALTH_CATEGORIES, RegulatedType
 
 D = Decimal
@@ -929,3 +930,14 @@ def test_each_line_and_goal_adds_up(
         if all_assets:
             assert g not in flows.elsewhere
     assert sum(flows.categories.values(), D(0)) == sum(flows.lines.values(), D(0))
+
+
+def test_the_households_assumption_replaces_the_default_but_not_the_kind() -> None:
+    """Once the household sets a category's return and volatility (F-SIM-1), the goals are
+    judged on them; liquidity and the current account still follow the preset."""
+    own = Assumption(D("0.05"), D("0.1"))
+    assert risk_of("real-estate", own) == LineRisk(
+        ret=D("0.05"), volatility=D("0.1"), illiquid=True
+    )
+    assert risk_of("current", Assumption(D("0.01"), D(0))).current
+    assert risk_of(None, own) == LineRisk(ret=D("0.05"), volatility=D("0.1"))

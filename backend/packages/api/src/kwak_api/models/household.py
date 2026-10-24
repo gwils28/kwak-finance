@@ -29,6 +29,7 @@ class Household(UUIDPrimaryKey, Timestamps, Base):
         CheckConstraint("extract(day from wealth_start) = 1", name="wealth_start_month"),
         CheckConstraint("precaution_share BETWEEN 0.5 AND 1", name="precaution_share_range"),
         CheckConstraint("goal_capacity >= 0", name="goal_capacity_positive"),
+        CheckConstraint("inflation BETWEEN -0.05 AND 0.2", name="inflation_range"),
     )
 
     name: Mapped[str] = mapped_column(String(100))
@@ -40,6 +41,8 @@ class Household(UUIDPrimaryKey, Timestamps, Base):
     precaution_share: Mapped[Decimal] = mapped_column(Numeric(3, 2), server_default=text("0.70"))
     # F-GOAL-6: the monthly capacity set by hand; NULL: the average income minus spending.
     goal_capacity: Mapped[Decimal | None] = mapped_column(Numeric(14, 2))
+    # F-SIM-1: the yearly inflation the projection assumes; NULL: the default (2 %).
+    inflation: Mapped[Decimal | None] = mapped_column(Numeric(4, 3))
 
     users: Mapped[list["User"]] = relationship(back_populates="household")
 

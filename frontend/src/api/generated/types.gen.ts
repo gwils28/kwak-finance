@@ -5,6 +5,28 @@ export type ClientOptions = {
 };
 
 /**
+ * AssumptionsOut
+ */
+export type AssumptionsOut = {
+    /**
+     * Categories
+     */
+    categories: Array<CategoryAssumptionOut>;
+    /**
+     * Debts
+     */
+    debts: Array<DebtOut>;
+    /**
+     * Default Inflation
+     */
+    default_inflation: string;
+    /**
+     * Inflation
+     */
+    inflation: string;
+};
+
+/**
  * AuditAction
  */
 export type AuditAction = 'signed_in' | 'sign_in_failed' | 'signed_out' | 'recovery_codes_renewed' | 'invite_created' | 'invite_revoked' | 'member_joined' | 'settings_changed' | 'wealth_line_deleted' | 'wealth_category_deleted' | 'goal_deleted' | 'spending_line_deleted' | 'spending_category_deleted' | 'fixed_expense_deleted' | 'categories_restored';
@@ -68,6 +90,66 @@ export type AuditPage = {
 export type BudgetStatus = 'under' | 'on' | 'over' | 'ahead' | 'behind' | 'none';
 
 /**
+ * CategoryAssumptionIn
+ */
+export type CategoryAssumptionIn = {
+    /**
+     * Ret
+     */
+    ret: number | string;
+    /**
+     * Volatility
+     */
+    volatility: number | string;
+};
+
+/**
+ * CategoryAssumptionOut
+ */
+export type CategoryAssumptionOut = {
+    /**
+     * Colour
+     */
+    colour: string;
+    /**
+     * Default Ret
+     */
+    default_ret: string;
+    /**
+     * Default Volatility
+     */
+    default_volatility: string;
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Median Growth
+     */
+    median_growth: string;
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Own
+     */
+    own: boolean;
+    /**
+     * Preset
+     */
+    preset: string | null;
+    /**
+     * Ret
+     */
+    ret: string;
+    /**
+     * Volatility
+     */
+    volatility: string;
+};
+
+/**
  * CategoryKind
  */
 export type CategoryKind = 'expense' | 'income' | 'savings';
@@ -76,6 +158,63 @@ export type CategoryKind = 'expense' | 'income' | 'savings';
  * ClosedAs
  */
 export type ClosedAs = 'archived' | 'cancelled';
+
+/**
+ * DebtOut
+ */
+export type DebtOut = {
+    /**
+     * Grows
+     */
+    grows: boolean;
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Insurance
+     */
+    insurance: string;
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Owed
+     */
+    owed: string | null;
+    /**
+     * Owner Name
+     */
+    owner_name: string;
+    /**
+     * Payment
+     */
+    payment: string | null;
+    /**
+     * Rate
+     */
+    rate: string;
+    visibility: Visibility;
+};
+
+/**
+ * DebtTermsIn
+ */
+export type DebtTermsIn = {
+    /**
+     * Insurance
+     */
+    insurance?: number | string;
+    /**
+     * Payment
+     */
+    payment: number | string | null;
+    /**
+     * Rate
+     */
+    rate?: number | string;
+};
 
 /**
  * FixedFrequency
@@ -783,6 +922,16 @@ export type Health = {
      * Version
      */
     version: string;
+};
+
+/**
+ * InflationIn
+ */
+export type InflationIn = {
+    /**
+     * Inflation
+     */
+    inflation: number | string | null;
 };
 
 /**
@@ -3528,6 +3677,146 @@ export type RevokeInviteResponses = {
 };
 
 export type RevokeInviteResponse = RevokeInviteResponses[keyof RevokeInviteResponses];
+
+export type GetAssumptionsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/projection/assumptions';
+};
+
+export type GetAssumptionsErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type GetAssumptionsError = GetAssumptionsErrors[keyof GetAssumptionsErrors];
+
+export type GetAssumptionsResponses = {
+    /**
+     * Successful Response
+     */
+    200: AssumptionsOut;
+};
+
+export type GetAssumptionsResponse = GetAssumptionsResponses[keyof GetAssumptionsResponses];
+
+export type RestoreCategoryAssumptionData = {
+    body?: never;
+    path: {
+        /**
+         * Category Id
+         */
+        category_id: string;
+    };
+    query?: never;
+    url: '/api/projection/categories/{category_id}';
+};
+
+export type RestoreCategoryAssumptionErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type RestoreCategoryAssumptionError = RestoreCategoryAssumptionErrors[keyof RestoreCategoryAssumptionErrors];
+
+export type RestoreCategoryAssumptionResponses = {
+    /**
+     * Successful Response
+     */
+    200: AssumptionsOut;
+};
+
+export type RestoreCategoryAssumptionResponse = RestoreCategoryAssumptionResponses[keyof RestoreCategoryAssumptionResponses];
+
+export type SetCategoryAssumptionData = {
+    body: CategoryAssumptionIn;
+    path: {
+        /**
+         * Category Id
+         */
+        category_id: string;
+    };
+    query?: never;
+    url: '/api/projection/categories/{category_id}';
+};
+
+export type SetCategoryAssumptionErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type SetCategoryAssumptionError = SetCategoryAssumptionErrors[keyof SetCategoryAssumptionErrors];
+
+export type SetCategoryAssumptionResponses = {
+    /**
+     * Successful Response
+     */
+    200: AssumptionsOut;
+};
+
+export type SetCategoryAssumptionResponse = SetCategoryAssumptionResponses[keyof SetCategoryAssumptionResponses];
+
+export type SetDebtTermsData = {
+    body: DebtTermsIn;
+    path: {
+        /**
+         * Line Id
+         */
+        line_id: string;
+    };
+    query?: never;
+    url: '/api/projection/debts/{line_id}';
+};
+
+export type SetDebtTermsErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type SetDebtTermsError = SetDebtTermsErrors[keyof SetDebtTermsErrors];
+
+export type SetDebtTermsResponses = {
+    /**
+     * Successful Response
+     */
+    200: AssumptionsOut;
+};
+
+export type SetDebtTermsResponse = SetDebtTermsResponses[keyof SetDebtTermsResponses];
+
+export type SetInflationData = {
+    body: InflationIn;
+    path?: never;
+    query?: never;
+    url: '/api/projection/inflation';
+};
+
+export type SetInflationErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type SetInflationError = SetInflationErrors[keyof SetInflationErrors];
+
+export type SetInflationResponses = {
+    /**
+     * Successful Response
+     */
+    200: AssumptionsOut;
+};
+
+export type SetInflationResponse = SetInflationResponses[keyof SetInflationResponses];
 
 export type ListSpendingCategoriesData = {
     body?: never;
