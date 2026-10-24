@@ -4402,6 +4402,17 @@
           "position": {
             "title": "Position",
             "type": "integer"
+          },
+          "preset": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Preset"
           }
         },
         "required": [
@@ -4409,7 +4420,8 @@
           "name",
           "kind",
           "colour",
-          "position"
+          "position",
+          "preset"
         ],
         "title": "WealthCategoryOut",
         "type": "object"

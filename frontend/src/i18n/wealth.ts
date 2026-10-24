@@ -1,3 +1,5 @@
+import type { RegulatedType } from "../api/generated";
+
 export const wealthEn = {
   title: "Wealth",
   intro:
@@ -33,6 +35,17 @@ export const wealthEn = {
     private: "Only me",
     joint: "Joint (the household's)",
   },
+  regulated: "Regulated account",
+  regulatedNone: "None",
+  regulatedTypes: {
+    livret_a: "Livret A",
+    ldds: "LDDS",
+    lep: "LEP",
+    pel: "PEL",
+    livret_jeune: "Livret jeune",
+  } satisfies Record<RegulatedType, string>,
+  regulatedHelp:
+    "A regulated account has a deposit ceiling, which the goals analysis watches. It is a person's own, so a joint line cannot have one.",
   closedFrom: "Closed from",
   closedHelp: "Sold or repaid: the line keeps its history and leaves the months after.",
   reopen: "Reopen",
@@ -154,6 +167,17 @@ export const wealthFr: typeof wealthEn = {
     private: "Moi seulement",
     joint: "Commune (au foyer)",
   },
+  regulated: "Livret réglementé",
+  regulatedNone: "Aucun",
+  regulatedTypes: {
+    livret_a: "Livret A",
+    ldds: "LDDS",
+    lep: "LEP",
+    pel: "PEL",
+    livret_jeune: "Livret jeune",
+  },
+  regulatedHelp:
+    "Un livret réglementé a un plafond de dépôts, que l'analyse des objectifs surveille. Il est personnel : une ligne commune ne peut pas en avoir.",
   closedFrom: "Clôturée à partir de",
   closedHelp: "Vendue ou remboursée : la ligne garde son historique et quitte les mois suivants.",
   reopen: "Rouvrir",

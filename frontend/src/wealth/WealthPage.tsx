@@ -5,6 +5,7 @@ import {
   deleteWealthLine,
   listWealthCategories,
   listWealthLines,
+  type RegulatedType,
   removeWealthValue,
   setWealthValue,
   updateWealthLine,
@@ -374,13 +375,63 @@ function VisibilitySelect({
   );
 }
 
+const REGULATED: RegulatedType[] = ["livret_a", "ldds", "lep", "pel", "livret_jeune"];
+
+/** Whether a line may have a regulated type: a savings account's, never a joint one (F-WLT-2). */
+function useRegulable(category: string, visibility: Visibility): boolean | undefined {
+  const categories = useCategories();
+  // Unknown until the categories load: the forms then leave the type as it is.
+  if (!categories.data) return undefined;
+  const preset = categories.data.find((c) => c.id === category)?.preset;
+  return preset === "savings" && visibility !== "joint";
+}
+
+function RegulatedSelect({
+  value,
+  onChange,
+}: {
+  value: RegulatedType | null;
+  onChange: (v: RegulatedType | null) => void;
+}) {
+  const { t } = useI18n();
+  const id = useId();
+  return (
+    <label htmlFor={id} className={labelClass}>
+      {t.wealth.regulated}
+      <select
+        id={id}
+        className={fieldClass}
+        value={value ?? ""}
+        onChange={(e) => onChange((e.target.value || null) as RegulatedType | null)}
+      >
+        <option value="">{t.wealth.regulatedNone}</option>
+        {REGULATED.map((r) => (
+          <option key={r} value={r}>
+            {t.wealth.regulatedTypes[r]}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+}
+
 function AddLine({ onDone }: { onDone: () => void }) {
   const { t } = useI18n();
   const [category, setCategory] = useState("");
   const [name, setName] = useState("");
   const [visibility, setVisibility] = useState<Visibility>("shared");
+  const [regulated, setRegulated] = useState<RegulatedType | null>(null);
+  const regulable = useRegulable(category, visibility);
   const save = useSave(
-    () => createWealthLine({ body: { category_id: category, name: name.trim(), visibility } }),
+    () =>
+      createWealthLine({
+        body: {
+          category_id: category,
+          name: name.trim(),
+          visibility,
+          regulated_type: regulable ? regulated : null,
+        },
+      }),
     onDone,
   );
   const submit = (event: FormEvent) => {
@@ -406,7 +457,9 @@ function AddLine({ onDone }: { onDone: () => void }) {
           onChange={(e) => setName(e.target.value)}
         />
         <VisibilitySelect value={visibility} onChange={setVisibility} />
+        {regulable && <RegulatedSelect value={regulated} onChange={setRegulated} />}
       </div>
+      {regulable && <p className="text-xs text-muted">{t.wealth.regulatedHelp}</p>}
     </Frame>
   );
 }
@@ -431,7 +484,12 @@ function EditLineForm({ line, onDone }: { line: WealthLineOut; onDone: () => voi
   const [category, setCategory] = useState(line.category_id);
   const [visibility, setVisibility] = useState<Visibility>(line.visibility);
   const [closedFrom, setClosedFrom] = useState(line.closed_from ?? "");
+  const [regulated, setRegulated] = useState<RegulatedType | null>(line.regulated_type);
   const isOwner = line.owner_id === user.id;
+  // A regulated account is its owner's to name; moving the line out of savings accounts or
+  // making it joint clears it.
+  const allowed = useRegulable(category, isOwner ? visibility : line.visibility);
+  const regulable = isOwner && allowed === true;
   const [confirming, setConfirming] = useState(false);
   const save = useSave(
     () =>
@@ -442,6 +500,9 @@ function EditLineForm({ line, onDone }: { line: WealthLineOut; onDone: () => voi
           category_id: category,
           ...(isOwner ? { visibility } : {}),
           closed_from: isMonth(closedFrom) ? closedFrom : null,
+          ...(isOwner && allowed !== undefined
+            ? { regulated_type: regulable ? regulated : null }
+            : {}),
         },
       }),
     onDone,
@@ -486,6 +547,7 @@ function EditLineForm({ line, onDone }: { line: WealthLineOut; onDone: () => voi
         />
         <CategorySelect value={category} onChange={setCategory} />
         {isOwner && <VisibilitySelect value={visibility} onChange={setVisibility} />}
+        {regulable && <RegulatedSelect value={regulated} onChange={setRegulated} />}
         <label htmlFor={closedId} className={labelClass}>
           {t.wealth.closedFrom}
           <input
@@ -504,6 +566,7 @@ function EditLineForm({ line, onDone }: { line: WealthLineOut; onDone: () => voi
         )}
       </div>
       <p className="text-xs text-muted">{t.wealth.closedHelp}</p>
+      {regulable && <p className="text-xs text-muted">{t.wealth.regulatedHelp}</p>}
       {isOwner && <p className="text-xs text-muted">{t.wealth.deleteHelp}</p>}
     </Frame>
   );
