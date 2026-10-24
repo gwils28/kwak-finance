@@ -293,15 +293,20 @@ def lines_free(db: Session, viewer: User, today: date) -> list[LineFree]:
     return out
 
 
+def capacity_months(db: Session, household_id: UUID, this_month: Month) -> list[Month]:
+    """The last complete months the capacity is measured on, from the first one with a line."""
+    return spending_budget.counted(
+        month_range(core.add_months(this_month, -core.EFFORT_MONTHS), this_month.previous()),
+        spending_budget.first_month(db, household_id),
+    )
+
+
 def capacity(db: Session, viewer: User, this_month: Month) -> Decimal:
     """The household's average monthly income minus spending over the last complete months,
     from the first one with a line: the same in every scope (F-GOAL-6). Savings
     lines stay in, since they are what goals are funded from."""
     household_id = viewer.household_id
-    months = spending_budget.counted(
-        month_range(core.add_months(this_month, -core.EFFORT_MONTHS), this_month.previous()),
-        spending_budget.first_month(db, household_id),
-    )
+    months = capacity_months(db, household_id, this_month)
     figures = spending_budget.figures_by_month(
         db, household_id, months, spending_budget.kinds(db, household_id)
     )

@@ -69,6 +69,8 @@ export const wealthEn = {
   sinceStart: (change: string, month: string) => `${change} since ${month}`,
   manageCategories: "Manage categories",
   analysisTitle: "Wealth analysis",
+  projectionTitle: "Wealth projection",
+  projectionFrame: "The projection's charts",
   analysisIntro:
     "How your wealth evolves and how it is spread, over the months you choose. Values are entered on the monthly tracking page.",
   categoriesTitle: "Categories",
@@ -201,6 +203,8 @@ export const wealthFr: typeof wealthEn = {
   sinceStart: (change, month) => `${change} depuis ${month}`,
   manageCategories: "Gérer les catégories",
   analysisTitle: "Analyse du patrimoine",
+  projectionTitle: "Projection du patrimoine",
+  projectionFrame: "Les graphiques de la projection",
   analysisIntro:
     "Comment votre patrimoine évolue et se répartit, sur les mois choisis. Les valeurs se saisissent dans le suivi mensuel.",
   categoriesTitle: "Catégories",

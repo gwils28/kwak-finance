@@ -8,7 +8,7 @@ from uuid import UUID
 
 from kwak_core import goal_analysis as ga
 from kwak_core import goals as core
-from kwak_core.budget import Month, month_range
+from kwak_core.budget import Month
 from kwak_core.visibility import Scope, in_scope
 from kwak_core.wealth import WealthKind
 from sqlalchemy import delete, select
@@ -102,10 +102,7 @@ class Flows:
 
 
 def _flows(db: Session, household_id: UUID, this_month: Month) -> Flows:
-    months = spending_budget.counted(
-        month_range(core.add_months(this_month, -core.EFFORT_MONTHS), this_month.previous()),
-        spending_budget.first_month(db, household_id),
-    )
+    months = goals.capacity_months(db, household_id, this_month)
     figures = list(
         spending_budget.figures_by_month(
             db, household_id, months, spending_budget.kinds(db, household_id)

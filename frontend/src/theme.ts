@@ -1,3 +1,5 @@
+import { useEffect, useState } from "react";
+
 export type Theme = "light" | "dark";
 
 const STORAGE_KEY = "kwak-theme";
@@ -19,4 +21,18 @@ export function applyTheme(theme: Theme): void {
   } catch {
     // Non-critical.
   }
+}
+
+const pageTheme = (): Theme =>
+  document.documentElement.dataset.theme === "dark" ? "dark" : "light";
+
+/** The theme on the page now, following each switch (the toggle sets it on the root). */
+export function useDocumentTheme(): Theme {
+  const [theme, setTheme] = useState<Theme>(pageTheme);
+  useEffect(() => {
+    const observer = new MutationObserver(() => setTheme(pageTheme()));
+    observer.observe(document.documentElement, { attributeFilter: ["data-theme"] });
+    return () => observer.disconnect();
+  }, []);
+  return theme;
 }

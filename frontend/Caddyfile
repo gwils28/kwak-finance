@@ -17,6 +17,11 @@ https://{$KWAK_HOST:localhost}:8443 {
 		reverse_proxy api:8000
 	}
 
+	# The exploratory Dash pages (wealth projection), served by the API behind the session.
+	handle /dash/* {
+		reverse_proxy api:8000
+	}
+
 	handle {
 		root * /srv
 		try_files {path} /index.html
