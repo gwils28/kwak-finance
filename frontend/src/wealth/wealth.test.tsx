@@ -27,6 +27,7 @@ const category = (
   kind: "asset",
   colour,
   position: 0,
+  preset: colour,
   ...extra,
 });
 const categories = [
@@ -112,6 +113,7 @@ const lines = [
     owner_name: "Wilson",
     visibility: "shared",
     closed_from: null,
+    regulated_type: null,
   },
   {
     id: "l-loan",
@@ -121,6 +123,7 @@ const lines = [
     owner_name: "Wilson",
     visibility: "private",
     closed_from: null,
+    regulated_type: null,
   },
 ];
 
@@ -296,6 +299,92 @@ test("a line is added in any category, the bank accounts' ones too", async () =>
     category_id: "c-stocks",
     name: "CTO Trade Republic",
     visibility: "private",
+    regulated_type: null,
+  });
+});
+
+test("a savings line can be a regulated account, never a joint one", async () => {
+  const calls = api({ "POST /api/wealth/lines": () => Response.json(lines[0], { status: 201 }) });
+  render(<TestApp path="/wealth" />);
+  const user = userEvent.setup();
+  await user.click(await screen.findByRole("button", { name: "Add a line" }));
+  const form = screen.getByRole("form", { name: "New line" });
+  expect(within(form).queryByLabelText("Regulated account")).not.toBeInTheDocument();
+  await user.selectOptions(within(form).getByLabelText("Category"), "c-savings");
+  await user.selectOptions(within(form).getByLabelText("Regulated account"), "ldds");
+  await user.selectOptions(within(form).getByLabelText("Who sees it"), "joint");
+  expect(within(form).queryByLabelText("Regulated account")).not.toBeInTheDocument();
+  await user.type(within(form).getByLabelText("Name"), "Commun");
+  await user.click(within(form).getByRole("button", { name: "Save" }));
+  // The type chosen before it became joint is not sent.
+  expect(calls.find((c) => c.route === "POST /api/wealth/lines")?.body).toMatchObject({
+    visibility: "joint",
+    regulated_type: null,
+  });
+  await user.click(await screen.findByRole("button", { name: "Add a line" }));
+  const again = screen.getByRole("form", { name: "New line" });
+  await user.selectOptions(within(again).getByLabelText("Category"), "c-savings");
+  await user.selectOptions(within(again).getByLabelText("Who sees it"), "private");
+  await user.selectOptions(within(again).getByLabelText("Regulated account"), "livret_a");
+  await user.type(within(again).getByLabelText("Name"), "Livret A");
+  await user.click(within(again).getByRole("button", { name: "Save" }));
+  expect(calls.filter((c) => c.route === "POST /api/wealth/lines").at(-1)?.body).toEqual({
+    category_id: "c-savings",
+    name: "Livret A",
+    visibility: "private",
+    regulated_type: "livret_a",
+  });
+});
+
+test("moving a regulated line out of savings accounts clears its type", async () => {
+  const livret = {
+    ...lines[0],
+    id: "l-livret",
+    category_id: "c-savings",
+    name: "Livret A",
+    regulated_type: "livret_a",
+  };
+  const [savings, ...rest] = matrix.categories;
+  const withLivret = {
+    ...matrix,
+    categories: [
+      {
+        ...savings,
+        lines: [
+          {
+            id: "l-livret",
+            name: "Livret A",
+            owner_id: owner.id,
+            owner_name: "Wilson",
+            visibility: "shared",
+            closed_from: null,
+            cells: [cell("1000.00"), cell("1000.00", true), cell("1000.00", true)],
+            share: "0.0800",
+          },
+        ],
+      },
+      ...rest,
+    ],
+  };
+  const calls = api(
+    {
+      "GET /api/auth/me": () => Response.json({ ...owner, language: "fr" }),
+      "GET /api/wealth/lines": () => Response.json([...lines, livret]),
+      "PATCH /api/wealth/lines/l-livret": () => Response.json(livret),
+    },
+    withLivret,
+  );
+  render(<TestApp path="/wealth" language="fr" />);
+  const user = userEvent.setup();
+  await user.click(await screen.findByRole("button", { name: "Modifier Livret A" }));
+  const form = screen.getByRole("form", { name: "Modifier Livret A" });
+  expect(await within(form).findByLabelText("Livret réglementé")).toHaveValue("livret_a");
+  await user.selectOptions(within(form).getByLabelText("Catégorie"), "c-stocks");
+  expect(within(form).queryByLabelText("Livret réglementé")).not.toBeInTheDocument();
+  await user.click(within(form).getByRole("button", { name: "Enregistrer" }));
+  expect(calls.find((c) => c.route === "PATCH /api/wealth/lines/l-livret")?.body).toMatchObject({
+    category_id: "c-stocks",
+    regulated_type: null,
   });
 });
 
@@ -340,9 +429,11 @@ test("another member's line shows its owner, without the owner's controls", asyn
   const theirs = {
     ...lines[0],
     id: "l-theirs",
+    category_id: "c-savings",
     name: "Livret Léa",
     owner_id: "m1",
     owner_name: "Léa",
+    regulated_type: "lep",
   };
   const data = structuredClone(matrix);
   data.categories[2]?.lines.push({
@@ -372,10 +463,12 @@ test("another member's line shows its owner, without the owner's controls", asyn
   const form = await screen.findByRole("form", { name: "Edit Livret Léa" });
   expect(within(form).queryByLabelText("Who sees it")).not.toBeInTheDocument();
   expect(within(form).queryByRole("button", { name: "Delete the line" })).not.toBeInTheDocument();
+  // A regulated account is its owner's to name: theirs keeps its type.
+  expect(within(form).queryByLabelText("Regulated account")).not.toBeInTheDocument();
   await user.click(within(form).getByRole("button", { name: "Save" }));
-  expect(
-    calls.find((c) => c.route === "PATCH /api/wealth/lines/l-theirs")?.body,
-  ).not.toHaveProperty("visibility");
+  const body = calls.find((c) => c.route === "PATCH /api/wealth/lines/l-theirs")?.body;
+  expect(body).not.toHaveProperty("visibility");
+  expect(body).not.toHaveProperty("regulated_type");
 });
 
 test("a negative or unreadable value is refused before sending", async () => {

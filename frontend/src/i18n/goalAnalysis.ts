@@ -123,6 +123,27 @@ export const goalAnalysisEn = {
   leftOver: (amount: string) =>
     `Your plan leaves ${amount} a month unallocated, and no goal is behind.`,
   leftOverOption: "One option is a new goal.",
+  ceiling: (line: string, ceiling: string, room: string) =>
+    room === ""
+      ? `${line} has reached its ${ceiling} ceiling.`
+      : `${line} is ${room} below its ${ceiling} ceiling.`,
+  ceilingGoal: (goal: string) => `${goal} still counts on its rises.`,
+  ceilingWhy: "Deposits above the ceiling are refused; interest can still take it over.",
+  // Where the goals' money sits (F-ANA-5)
+  sankey: "Where the goals' money sits",
+  sankeyHelp: (month: string) =>
+    `Each category's lines at ${month}, and what each line holds for each goal, the rest being free. Gross assets: debts are not shown.`,
+  sankeyLabel: "Categories, lines and the goals' envelopes",
+  sankeyTable: "The goals' envelopes, line by line",
+  free: "Free",
+  freeHelp: "“Free” may hold envelopes of goals you do not see.",
+  allAssets: "Show real estate and equipment",
+  elsewhere: (list: string) => `On lines not shown: ${list}.`,
+  noSankey: "No wealth line has a value at this month.",
+  line: "Line",
+  category: "Category",
+  holds: "Held for",
+  amount: "Amount",
   // Horizon and risk (F-ANA-4)
   risk: "Horizon and risk",
   riskHelp: (inflation: string) =>
@@ -306,6 +327,27 @@ export const goalAnalysisFr: typeof goalAnalysisEn = {
   leftOver: (amount) =>
     `Votre plan laisse ${amount} par mois non alloués, et aucun objectif n'est en retard.`,
   leftOverOption: "Une option est un nouvel objectif.",
+  ceiling: (line, ceiling, room) =>
+    room === ""
+      ? `${line} a atteint son plafond de ${ceiling}.`
+      : `${line} est à ${room} de son plafond de ${ceiling}.`,
+  ceilingGoal: (goal) => `${goal} compte encore sur ses hausses.`,
+  ceilingWhy:
+    "Les dépôts au-delà du plafond sont refusés ; les intérêts peuvent encore le dépasser.",
+  sankey: "Où est l'argent des objectifs",
+  sankeyHelp: (month) =>
+    `Les lignes de chaque catégorie en ${month}, et ce que chaque ligne détient pour chaque objectif, le reste étant libre. Patrimoine brut : les dettes ne sont pas montrées.`,
+  sankeyLabel: "Catégories, lignes et enveloppes des objectifs",
+  sankeyTable: "Les enveloppes des objectifs, ligne par ligne",
+  free: "Libre",
+  freeHelp: "« Libre » peut contenir des enveloppes d'objectifs que vous ne voyez pas.",
+  allAssets: "Afficher l'immobilier et les matériels",
+  elsewhere: (list) => `Sur des lignes non montrées : ${list}.`,
+  noSankey: "Aucune ligne de patrimoine n'a de valeur à ce mois.",
+  line: "Ligne",
+  category: "Catégorie",
+  holds: "Détenu pour",
+  amount: "Montant",
   risk: "Horizon et risque",
   riskHelp: (inflation) =>
     `Chaque objectif selon les mois avant son échéance et la volatilité de ses lignes, pondérée par ce qu'il détient sur chacune (une borne haute : dans un krach, tout baisse ensemble). Proche et volatil, c'est rouge ; entre 2 et 5 ans, un objectif devrait quitter les lignes volatiles pas à pas (ambre, anneau en tirets) ; lointain et ne rapportant pas plus que l'inflation (${inflation} par an), c'est rouge aussi ; un anneau en pointillés signale un objectif en partie dans une catégorie qui perd de la valeur.`,

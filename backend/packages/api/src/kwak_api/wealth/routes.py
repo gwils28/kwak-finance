@@ -85,10 +85,19 @@ class WealthCategoryOut(BaseModel):
     colour: str
     """The key of its `wealth-<key>` colour token."""
     position: int
+    preset: str | None
+    """Which default category it is, whatever its name and colour; null for one added later."""
 
     @classmethod
     def of(cls, c: WealthCategory) -> "WealthCategoryOut":
-        return cls(id=c.id, name=c.name, kind=c.kind, colour=c.colour, position=c.position)
+        return cls(
+            id=c.id,
+            name=c.name,
+            kind=c.kind,
+            colour=c.colour,
+            position=c.position,
+            preset=c.preset,
+        )
 
 
 class WealthCategoryIn(BaseModel):

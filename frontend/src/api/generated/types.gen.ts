@@ -2367,6 +2367,10 @@ export type WealthCategoryOut = {
      * Position
      */
     position: number;
+    /**
+     * Preset
+     */
+    preset: string | null;
 };
 
 /**

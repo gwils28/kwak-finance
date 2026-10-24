@@ -457,3 +457,135 @@ test("the second batch reads in French", async () => {
     "Proche et volatil",
   );
 });
+
+const third: GoalAnalysisOut = {
+  ...analysis,
+  points: {
+    shown: [
+      point({
+        rule: "ceiling",
+        severity: "info",
+        line_id: "l-livret",
+        line_name: "Mon livret",
+        amount: "22600.00",
+        figures: { ceiling: "22950.00", room: "350.00", regulated: "livret_a" },
+        subject_id: "g-summer",
+        subject_name: "Été",
+      }),
+    ],
+    more: [],
+  },
+  sankey: {
+    month: "2026-09",
+    all_assets: false,
+    categories: [
+      {
+        category_id: "c-savings",
+        name: "Savings accounts",
+        colour: "savings",
+        amount: "5000.00",
+      },
+      { category_id: "c-stocks", name: "Stocks", colour: "stocks", amount: "3000.00" },
+    ],
+    lines: [
+      {
+        line_id: "l-livret",
+        name: "Mon livret",
+        category_id: "c-savings",
+        amount: "5000.00",
+        free: "3000.00",
+      },
+      {
+        line_id: "l-pea",
+        name: "PEA",
+        category_id: "c-stocks",
+        amount: "3000.00",
+        free: "2000.00",
+      },
+    ],
+    flows: [
+      { goal_id: "g-summer", name: "Été", tier: "short", line_id: "l-livret", amount: "2000.00" },
+      { goal_id: "g-car", name: "Voiture", tier: "medium", line_id: "l-pea", amount: "1000.00" },
+    ],
+    elsewhere: [{ goal_id: "g-car", name: "Voiture", tier: "medium", amount: "4000.00" }],
+  },
+};
+
+test("a regulated line near its ceiling, and where the goals' money sits", async () => {
+  const asked: URL[] = [];
+  fakeApi({
+    "GET /api/auth/me": () => Response.json(owner),
+    "GET /api/goals/analysis": (_, url) => {
+      asked.push(url);
+      return Response.json(third);
+    },
+  });
+  render(<TestApp path="/goals/analysis" />);
+  const points = await screen.findByRole("region", { name: "Points to look at" });
+  expect(plain(points.textContent)).toContain(
+    "Mon livret (Livret A) is €350 below its €22,950 ceiling. Été still counts on its rises.",
+  );
+  expect(plain(points.textContent)).toContain(
+    "Deposits above the ceiling are refused; interest can still take it over.",
+  );
+
+  const sankey = screen.getByRole("region", { name: "Where the goals' money sits" });
+  expect(within(sankey).getByRole("img", { name: /Categories, lines/ })).toBeInTheDocument();
+  expect(plain(sankey.textContent)).toContain("On lines not shown: Voiture €4,000.");
+  const rows = within(
+    within(sankey).getByRole("table", { name: "The goals' envelopes, line by line" }),
+  )
+    .getAllByRole("row")
+    .map((r) => plain(r.textContent));
+  expect(rows.slice(1)).toEqual([
+    "Savings accountsMon livretÉté€2,000",
+    "Savings accountsMon livretFree€3,000",
+    "StocksPEAVoiture€1,000",
+    "StocksPEAFree€2,000",
+  ]);
+  expect(asked.at(-1)?.searchParams.get("all_assets")).toBe("false");
+  const box = within(sankey).getByRole("checkbox", { name: "Show real estate and equipment" });
+  await userEvent.setup().click(box);
+  // Ticked at once, before the answer comes back.
+  expect(box).toBeChecked();
+  await vi.waitFor(() => expect(asked.at(-1)?.searchParams.get("all_assets")).toBe("true"));
+});
+
+test("a full regulated line, and a Sankey with nothing to show", async () => {
+  const [ceiling] = third.points.shown;
+  api(owner, {
+    ...third,
+    points: {
+      shown: [
+        {
+          ...(ceiling as PointOut),
+          figures: { ceiling: "1600.00", room: "0.00", regulated: "livret_jeune" },
+          line_name: "Livret jeune",
+        },
+      ],
+      more: [],
+    },
+    sankey: { ...third.sankey, categories: [], lines: [], flows: [], elsewhere: [] },
+  });
+  render(<TestApp path="/goals/analysis" />);
+  const points = await screen.findByRole("region", { name: "Points to look at" });
+  expect(plain(points.textContent)).toContain("Livret jeune has reached its €1,600 ceiling.");
+  const sankey = screen.getByRole("region", { name: "Where the goals' money sits" });
+  expect(sankey).toHaveTextContent("No wealth line has a value at this month.");
+  expect(within(sankey).queryByRole("img")).not.toBeInTheDocument();
+});
+
+test("the ceiling and the Sankey read in French", async () => {
+  api({ ...owner, language: "fr" }, third);
+  render(<TestApp path="/goals/analysis" language="fr" />);
+  const points = await screen.findByRole("region", { name: "Points d'attention" });
+  expect(plain(points.textContent)).toContain(
+    "Mon livret (Livret A) est à 350 € de son plafond de 22 950 €. Été compte encore sur ses hausses.",
+  );
+  const sankey = screen.getByRole("region", { name: "Où est l'argent des objectifs" });
+  expect(plain(sankey.textContent)).toContain("Les lignes de chaque catégorie en sept. 2026");
+  expect(plain(sankey.textContent)).toContain("Sur des lignes non montrées : Voiture 4 000 €.");
+  expect(plain(sankey.textContent)).toContain(
+    "« Libre » peut contenir des enveloppes d'objectifs que vous ne voyez pas.",
+  );
+});

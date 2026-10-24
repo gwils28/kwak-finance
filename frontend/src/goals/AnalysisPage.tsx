@@ -6,30 +6,37 @@ import { ErrorAlert } from "../components/ui";
 import { useI18n } from "../i18n";
 import { monthLabel } from "../lib/months";
 import { Forward, RiskChart, StatusGrid, Timeline } from "./AnalysisCharts";
+import { MoneySankey } from "./MoneySankey";
 import { Points } from "./Points";
 import { GOALS_KEY } from "./shared";
 
 const labelClass = "flex flex-col gap-1 text-sm font-medium";
 const fieldClass = "rounded-md border border-border bg-surface px-3 py-2";
 
-export function goalAnalysisQuery(scope: Scope, horizon: number) {
+export function goalAnalysisQuery(scope: Scope, horizon: number, allAssets = false) {
   return {
-    queryKey: [...GOALS_KEY, "analysis", scope, horizon],
+    queryKey: [...GOALS_KEY, "analysis", scope, horizon, allAssets],
     queryFn: async () =>
-      (await goalAnalysis({ query: { scope, horizon }, throwOnError: true })).data,
+      (
+        await goalAnalysis({
+          query: { scope, horizon, all_assets: allAssets },
+          throwOnError: true,
+        })
+      ).data,
     placeholderData: keepPreviousData,
   };
 }
 
 /** The goals space's Analysis tab (spec §4.12): the points to look at, then the goals against
- * the capacity, on a timeline and month by month. */
+ * the capacity, on a timeline, by risk, where their money sits and month by month. */
 export function AnalysisPage({ initialScope = "household" }: { initialScope?: Scope }) {
   const { t } = useI18n();
   const a = t.goalAnalysis;
   // The Pyramid's link carries its scope, so the points counted there are the ones shown.
   const [scope, setScope] = useState<Scope>(initialScope);
   const [horizon, setHorizon] = useState(24);
-  const query = useQuery(goalAnalysisQuery(scope, horizon));
+  const [allAssets, setAllAssets] = useState(false);
+  const query = useQuery(goalAnalysisQuery(scope, horizon, allAssets));
   const data = query.data;
   const none = data && data.timeline.length === 0 && data.forward.bands.length === 0;
   return (
@@ -66,6 +73,7 @@ export function AnalysisPage({ initialScope = "household" }: { initialScope?: Sc
               />
               <Timeline data={data} />
               <RiskChart data={data} />
+              <MoneySankey sankey={data.sankey} allAssets={allAssets} onAllAssets={setAllAssets} />
               <StatusGrid data={data} />
             </>
           )}

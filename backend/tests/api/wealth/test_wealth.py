@@ -54,6 +54,7 @@ def test_a_new_household_has_the_default_categories(owner_client: TestClient) ->
         "kind": "debt",
         "colour": "debts",
         "position": 10,
+        "preset": "debts",
     }
 
 

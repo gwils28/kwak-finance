@@ -5,6 +5,7 @@ import {
   type GoalAnalysisOut,
   hidePoint,
   type PointOut,
+  type RegulatedType,
   type Scope,
   type Severity,
   showHidden,
@@ -209,8 +210,22 @@ function useSaid(point: PointOut, data: GoalAnalysisOut): Said {
           </Link>
         ),
       };
+    case "ceiling": {
+      const kind = text(f.regulated);
+      const type = kind ? t.wealth.regulatedTypes[kind as RegulatedType] : null;
+      const name = point.line_name ?? "";
+      const line = type && type !== name ? `${name} (${type})` : name;
+      const room = Number(f.room ?? 0) > 0 ? eur(f.room) : "";
+      return {
+        fact: `${a.ceiling(line, eur(f.ceiling), room)}${
+          point.subject_name ? ` ${a.ceilingGoal(point.subject_name)}` : ""
+        }`,
+        why: a.ceilingWhy,
+        link: subjectLink,
+      };
+    }
     default:
-      // Rules still to come (costly debt, debt payments, ceilings) say no more than their goal.
+      // Rules still to come (costly debt, debt payments) say no more than their goal.
       return { fact: goal };
   }
 }
