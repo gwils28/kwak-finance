@@ -209,6 +209,14 @@ const noPoints: GoalAnalysisOut = {
   forward: { reference: "2026-10", months: [], bands: [], totals: [], over: 0, peak: "0.00" },
   timeline: [],
   statuses: [],
+  sankey: {
+    month: "2026-10",
+    all_assets: false,
+    categories: [],
+    lines: [],
+    flows: [],
+    elsewhere: [],
+  },
   points: { shown: [], more: [] },
 };
 
@@ -597,6 +605,7 @@ test("the pyramid counts the points to look at and leads to them", async () => {
     goal_id: "g-japan",
     goal_name: "Voyage au Japon",
     line_id: null,
+    line_name: null,
     lines: [],
     amount: "6000.00",
     deadline: null,

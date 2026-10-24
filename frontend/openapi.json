@@ -570,6 +570,9 @@
             "title": "Risk",
             "type": "array"
           },
+          "sankey": {
+            "$ref": "#/components/schemas/SankeyOut"
+          },
           "statuses": {
             "items": {
               "$ref": "#/components/schemas/StatusRowOut"
@@ -596,6 +599,7 @@
           "statuses",
           "risk",
           "inflation",
+          "sankey",
           "points"
         ],
         "title": "GoalAnalysisOut",
@@ -2144,6 +2148,17 @@
             ],
             "title": "Line Id"
           },
+          "line_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Line Name"
+          },
           "lines": {
             "items": {
               "$ref": "#/components/schemas/PointLineOut"
@@ -2194,6 +2209,7 @@
           "goal_id",
           "goal_name",
           "line_id",
+          "line_name",
           "lines",
           "amount",
           "deadline",
@@ -2430,6 +2446,18 @@
         "title": "RecoveryCodesOut",
         "type": "object"
       },
+      "RegulatedType": {
+        "description": "A French regulated savings account (F-WLT-2).",
+        "enum": [
+          "livret_a",
+          "ldds",
+          "lep",
+          "pel",
+          "livret_jeune"
+        ],
+        "title": "RegulatedType",
+        "type": "string"
+      },
       "ReportSection": {
         "enum": [
           "income",
@@ -2555,6 +2583,189 @@
         ],
         "title": "Rule",
         "type": "string"
+      },
+      "SankeyCategoryOut": {
+        "properties": {
+          "amount": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Amount",
+            "type": "string"
+          },
+          "category_id": {
+            "format": "uuid",
+            "title": "Category Id",
+            "type": "string"
+          },
+          "colour": {
+            "title": "Colour",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "category_id",
+          "name",
+          "colour",
+          "amount"
+        ],
+        "title": "SankeyCategoryOut",
+        "type": "object"
+      },
+      "SankeyElsewhereOut": {
+        "description": "What a goal holds on lines left out of the chart (real estate, equipment).",
+        "properties": {
+          "amount": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Amount",
+            "type": "string"
+          },
+          "goal_id": {
+            "format": "uuid",
+            "title": "Goal Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "tier": {
+            "$ref": "#/components/schemas/Tier"
+          }
+        },
+        "required": [
+          "goal_id",
+          "name",
+          "tier",
+          "amount"
+        ],
+        "title": "SankeyElsewhereOut",
+        "type": "object"
+      },
+      "SankeyFlowOut": {
+        "properties": {
+          "amount": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Amount",
+            "type": "string"
+          },
+          "goal_id": {
+            "format": "uuid",
+            "title": "Goal Id",
+            "type": "string"
+          },
+          "line_id": {
+            "format": "uuid",
+            "title": "Line Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "tier": {
+            "$ref": "#/components/schemas/Tier"
+          }
+        },
+        "required": [
+          "goal_id",
+          "name",
+          "tier",
+          "line_id",
+          "amount"
+        ],
+        "title": "SankeyFlowOut",
+        "type": "object"
+      },
+      "SankeyLineOut": {
+        "properties": {
+          "amount": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Amount",
+            "type": "string"
+          },
+          "category_id": {
+            "format": "uuid",
+            "title": "Category Id",
+            "type": "string"
+          },
+          "free": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Free",
+            "type": "string"
+          },
+          "line_id": {
+            "format": "uuid",
+            "title": "Line Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "line_id",
+          "name",
+          "category_id",
+          "amount",
+          "free"
+        ],
+        "title": "SankeyLineOut",
+        "type": "object"
+      },
+      "SankeyOut": {
+        "description": "Where the goals' money sits (F-ANA-5): gross assets, debts not shown.",
+        "properties": {
+          "all_assets": {
+            "title": "All Assets",
+            "type": "boolean"
+          },
+          "categories": {
+            "items": {
+              "$ref": "#/components/schemas/SankeyCategoryOut"
+            },
+            "title": "Categories",
+            "type": "array"
+          },
+          "elsewhere": {
+            "items": {
+              "$ref": "#/components/schemas/SankeyElsewhereOut"
+            },
+            "title": "Elsewhere",
+            "type": "array"
+          },
+          "flows": {
+            "items": {
+              "$ref": "#/components/schemas/SankeyFlowOut"
+            },
+            "title": "Flows",
+            "type": "array"
+          },
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/SankeyLineOut"
+            },
+            "title": "Lines",
+            "type": "array"
+          },
+          "month": {
+            "title": "Month",
+            "type": "string"
+          }
+        },
+        "required": [
+          "month",
+          "all_assets",
+          "categories",
+          "lines",
+          "flows",
+          "elsewhere"
+        ],
+        "title": "SankeyOut",
+        "type": "object"
       },
       "Scope": {
         "description": "Which wealth lines and goals a view covers (F-WLT-5, F-GOAL-7).",
@@ -4285,6 +4496,16 @@
             "title": "Name",
             "type": "string"
           },
+          "regulated_type": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RegulatedType"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "visibility": {
             "$ref": "#/components/schemas/Visibility",
             "default": "shared"
@@ -4333,6 +4554,16 @@
             "title": "Owner Name",
             "type": "string"
           },
+          "regulated_type": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RegulatedType"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "visibility": {
             "$ref": "#/components/schemas/Visibility"
           }
@@ -4344,7 +4575,8 @@
           "owner_id",
           "owner_name",
           "visibility",
-          "closed_from"
+          "closed_from",
+          "regulated_type"
         ],
         "title": "WealthLineOut",
         "type": "object"
@@ -4388,6 +4620,16 @@
               }
             ],
             "title": "Name"
+          },
+          "regulated_type": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RegulatedType"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "visibility": {
             "anyOf": [
@@ -5484,6 +5726,18 @@
               "minimum": 12,
               "title": "Horizon",
               "type": "integer"
+            }
+          },
+          {
+            "description": "Real estate and equipment in the Sankey",
+            "in": "query",
+            "name": "all_assets",
+            "required": false,
+            "schema": {
+              "default": false,
+              "description": "Real estate and equipment in the Sankey",
+              "title": "All Assets",
+              "type": "boolean"
             }
           },
           {
@@ -8487,7 +8741,7 @@
         ]
       },
       "patch": {
-        "description": "Anyone who sees a line edits it; only its owner changes who sees it.",
+        "description": "Anyone who sees a line edits it; only its owner changes who sees it. A regulated type\nstays valid: moving the line out of Savings accounts or making it joint is refused unless\nthe same change clears it.",
         "operationId": "updateWealthLine",
         "parameters": [
           {

@@ -315,6 +315,7 @@ export type GoalAnalysisOut = {
      * Risk
      */
     risk: Array<RiskPointOut>;
+    sankey: SankeyOut;
     /**
      * Statuses
      */
@@ -1140,6 +1141,10 @@ export type PointOut = {
      */
     line_id: string | null;
     /**
+     * Line Name
+     */
+    line_name: string | null;
+    /**
      * Lines
      */
     lines: Array<PointLineOut>;
@@ -1291,6 +1296,13 @@ export type RecoveryCodesOut = {
 };
 
 /**
+ * RegulatedType
+ *
+ * A French regulated savings account (F-WLT-2).
+ */
+export type RegulatedType = 'livret_a' | 'ldds' | 'lep' | 'pel' | 'livret_jeune';
+
+/**
  * ReportSection
  */
 export type ReportSection = 'income' | 'spending' | 'savings';
@@ -1348,6 +1360,130 @@ export type Role = 'owner' | 'member';
  * The rules, in the order their points are shown within a severity.
  */
 export type Rule = 'data' | 'precaution_none' | 'precaution_low' | 'precaution_risky' | 'unfunded' | 'overcommitted' | 'short_risk' | 'behind' | 'no_gain' | 'costly_debt' | 'precaution_current' | 'idle' | 'ceiling' | 'debt_payments' | 'eroding' | 'losing_value' | 'not_indexed' | 'capstone' | 'left_over';
+
+/**
+ * SankeyCategoryOut
+ */
+export type SankeyCategoryOut = {
+    /**
+     * Amount
+     */
+    amount: string;
+    /**
+     * Category Id
+     */
+    category_id: string;
+    /**
+     * Colour
+     */
+    colour: string;
+    /**
+     * Name
+     */
+    name: string;
+};
+
+/**
+ * SankeyElsewhereOut
+ *
+ * What a goal holds on lines left out of the chart (real estate, equipment).
+ */
+export type SankeyElsewhereOut = {
+    /**
+     * Amount
+     */
+    amount: string;
+    /**
+     * Goal Id
+     */
+    goal_id: string;
+    /**
+     * Name
+     */
+    name: string;
+    tier: Tier;
+};
+
+/**
+ * SankeyFlowOut
+ */
+export type SankeyFlowOut = {
+    /**
+     * Amount
+     */
+    amount: string;
+    /**
+     * Goal Id
+     */
+    goal_id: string;
+    /**
+     * Line Id
+     */
+    line_id: string;
+    /**
+     * Name
+     */
+    name: string;
+    tier: Tier;
+};
+
+/**
+ * SankeyLineOut
+ */
+export type SankeyLineOut = {
+    /**
+     * Amount
+     */
+    amount: string;
+    /**
+     * Category Id
+     */
+    category_id: string;
+    /**
+     * Free
+     */
+    free: string;
+    /**
+     * Line Id
+     */
+    line_id: string;
+    /**
+     * Name
+     */
+    name: string;
+};
+
+/**
+ * SankeyOut
+ *
+ * Where the goals' money sits (F-ANA-5): gross assets, debts not shown.
+ */
+export type SankeyOut = {
+    /**
+     * All Assets
+     */
+    all_assets: boolean;
+    /**
+     * Categories
+     */
+    categories: Array<SankeyCategoryOut>;
+    /**
+     * Elsewhere
+     */
+    elsewhere: Array<SankeyElsewhereOut>;
+    /**
+     * Flows
+     */
+    flows: Array<SankeyFlowOut>;
+    /**
+     * Lines
+     */
+    lines: Array<SankeyLineOut>;
+    /**
+     * Month
+     */
+    month: string;
+};
 
 /**
  * Scope
@@ -2282,6 +2418,7 @@ export type WealthLineIn = {
      * Name
      */
     name: string;
+    regulated_type?: RegulatedType | null;
     visibility?: Visibility;
 };
 
@@ -2313,6 +2450,7 @@ export type WealthLineOut = {
      * Owner Name
      */
     owner_name: string;
+    regulated_type: RegulatedType | null;
     visibility: Visibility;
 };
 
@@ -2334,6 +2472,7 @@ export type WealthLinePatch = {
      * Name
      */
     name?: string | null;
+    regulated_type?: RegulatedType | null;
     visibility?: Visibility | null;
 };
 
@@ -2838,6 +2977,12 @@ export type GoalAnalysisData = {
          * Months shown ahead, 12 to 60
          */
         horizon?: number;
+        /**
+         * All Assets
+         *
+         * Real estate and equipment in the Sankey
+         */
+        all_assets?: boolean;
     };
     url: '/api/goals/analysis';
 };

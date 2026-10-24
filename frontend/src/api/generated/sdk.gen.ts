@@ -585,7 +585,9 @@ export const deleteWealthLine = <ThrowOnError extends boolean = false>(options: 
 /**
  * Update Wealth Line
  *
- * Anyone who sees a line edits it; only its owner changes who sees it.
+ * Anyone who sees a line edits it; only its owner changes who sees it. A regulated type
+ * stays valid: moving the line out of Savings accounts or making it joint is refused unless
+ * the same change clears it.
  */
 export const updateWealthLine = <ThrowOnError extends boolean = false>(options: Options<UpdateWealthLineData, ThrowOnError>): RequestResult<UpdateWealthLineResponses, UpdateWealthLineErrors, ThrowOnError> => (options.client ?? client).patch<UpdateWealthLineResponses, UpdateWealthLineErrors, ThrowOnError>({
     url: '/api/wealth/lines/{line_id}',

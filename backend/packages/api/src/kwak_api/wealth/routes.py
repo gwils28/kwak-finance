@@ -10,7 +10,16 @@ from kwak_core.budget import Month, month_range
 from kwak_core.goals import GoalError
 from kwak_core.money import quantize, require_cents
 from kwak_core.visibility import Scope, Visibility
-from kwak_core.wealth import WEALTH_COLOURS, Cell, WealthKind, WealthValueError, check_value
+from kwak_core.wealth import (
+    WEALTH_COLOURS,
+    Cell,
+    RegulatedType,
+    RegulatedTypeError,
+    WealthKind,
+    WealthValueError,
+    check_regulated,
+    check_value,
+)
 from pydantic import AfterValidator, BaseModel, Field, StringConstraints
 
 from kwak_api.auth.routes import CurrentSession, Db, Now
@@ -165,6 +174,7 @@ class WealthLineOut(BaseModel):
     owner_name: str
     visibility: Visibility
     closed_from: str | None
+    regulated_type: RegulatedType | None
 
     @classmethod
     def of(cls, line: WealthLine) -> "WealthLineOut":
@@ -176,6 +186,7 @@ class WealthLineOut(BaseModel):
             owner_name=line.owner.display_name,
             visibility=line.visibility,
             closed_from=str(Month.of(line.closed_from)) if line.closed_from else None,
+            regulated_type=line.regulated_type,
         )
 
 
@@ -183,6 +194,8 @@ class WealthLineIn(BaseModel):
     category_id: UUID
     name: LineName
     visibility: Visibility = Visibility.SHARED
+    regulated_type: RegulatedType | None = None
+    """A Savings-accounts line's, not a joint one's (F-WLT-2)."""
 
 
 class WealthLinePatch(BaseModel):
@@ -193,6 +206,8 @@ class WealthLinePatch(BaseModel):
     visibility: Visibility | None = None
     closed_from: MonthText | None = None
     """YYYY-MM, the first month it no longer holds anything; null to reopen it."""
+    regulated_type: RegulatedType | None = None
+    """Null clears it."""
 
 
 def _line(db: Db, user_session: CurrentSession, line_id: UUID) -> WealthLine:
@@ -209,6 +224,15 @@ def _category_of(db: Db, user_session: CurrentSession, category_id: UUID) -> Wea
     return category
 
 
+def _regulated(
+    regulated: RegulatedType | None, category: WealthCategory, visibility: Visibility
+) -> None:
+    try:
+        check_regulated(regulated, preset=category.preset, visibility=visibility)
+    except RegulatedTypeError as exc:
+        raise _unprocessable(str(exc)) from None
+
+
 @router.get("/lines")
 def list_wealth_lines(user_session: CurrentSession, db: Db) -> list[WealthLineOut]:
     """The lines the user can see, closed ones included."""
@@ -220,12 +244,14 @@ def create_wealth_line(body: WealthLineIn, user_session: CurrentSession, db: Db)
     """The user owns the lines they create."""
     user = user_session.user
     category = _category_of(db, user_session, body.category_id)
+    _regulated(body.regulated_type, category, body.visibility)
     line = WealthLine(
         household_id=user.household_id,
         category_id=category.id,
         name=body.name,
         owner_id=user.id,
         visibility=body.visibility,
+        regulated_type=body.regulated_type,
     )
     db.add(line)
     db.flush()
@@ -237,19 +263,34 @@ def create_wealth_line(body: WealthLineIn, user_session: CurrentSession, db: Db)
 def update_wealth_line(
     line_id: UUID, body: WealthLinePatch, user_session: CurrentSession, db: Db
 ) -> WealthLineOut:
-    """Anyone who sees a line edits it; only its owner changes who sees it."""
+    """Anyone who sees a line edits it; only its owner changes who sees it. A regulated type
+    stays valid: moving the line out of Savings accounts or making it joint is refused unless
+    the same change clears it."""
     line = _line(db, user_session, line_id)
     given = body.model_fields_set
-    if body.visibility is not None and body.visibility != line.visibility:
-        if line.owner_id != user_session.user.id:
-            raise HTTPException(status.HTTP_403_FORBIDDEN, "only its owner changes who sees it")
+    moving = body.visibility is not None and body.visibility != line.visibility
+    if moving and line.owner_id != user_session.user.id:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "only its owner changes who sees it")
+    category = (
+        _category_of(db, user_session, body.category_id)
+        if body.category_id is not None
+        else line.category
+    )
+    _regulated(
+        body.regulated_type if "regulated_type" in given else line.regulated_type,
+        category,
+        body.visibility or line.visibility,
+    )
+    if moving and body.visibility is not None:
         try:
             goals.check_line_visibility(db, line, body.visibility)
         except GoalError as exc:
             raise HTTPException(status.HTTP_409_CONFLICT, f"it funds a goal: {exc}") from None
         line.visibility = body.visibility
     if body.category_id is not None:
-        line.category_id = _category_of(db, user_session, body.category_id).id
+        line.category_id = category.id
+    if "regulated_type" in given:
+        line.regulated_type = body.regulated_type
     if body.name is not None:
         line.name = body.name
     if "closed_from" in given:

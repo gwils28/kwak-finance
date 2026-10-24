@@ -8,7 +8,7 @@ from kwak_api.models import User
 
 from tests.api.conftest import Clock, csrf, log_in
 from tests.api.goals.test_goals import TODAY, _goal
-from tests.api.wealth.test_wealth import _line, _value
+from tests.api.wealth.test_wealth import _categories, _line, _value
 
 
 @pytest.fixture
@@ -431,3 +431,193 @@ def test_idle_money_never_shows_another_members_private_goal(
 def _all_points(client: TestClient) -> list[dict[str, Any]]:
     points = _analysis(client)["points"]
     return [*points["shown"], *points["more"]]
+
+
+def _regulated(
+    client: TestClient, kind: str, amount: str, name: str = "Livret A", visibility: str = "shared"
+) -> str:
+    body = {
+        "category_id": _categories(client)["Savings accounts"]["id"],
+        "name": name,
+        "visibility": visibility,
+        "regulated_type": kind,
+    }
+    response = client.post("/api/wealth/lines", json=body, headers=csrf(client))
+    assert response.status_code == 201, response.text
+    line: str = response.json()["id"]
+    for month in ("2026-09", "2026-10"):
+        assert _value(client, line, month, amount).status_code == 204
+    return line
+
+
+def test_a_livret_near_its_ceiling_is_a_point(owner_client: TestClient) -> None:
+    _capacity(owner_client, "300.00")
+    full = _regulated(owner_client, "livret_a", "22600.00")
+    roomy = _regulated(owner_client, "ldds", "9000.00", "LDDS")
+    _goal(
+        owner_client,
+        name="Japon",
+        target="5000.00",
+        deadline="2028-10",
+        start="2026-09",
+        fundings=[{"line_id": full, "share": 50}, {"line_id": roomy, "share": 50}],
+    )
+    [point] = [p for p in _all_points(owner_client) if p["rule"] == "ceiling"]
+    assert (point["severity"], point["line_id"], point["line_name"]) == ("info", full, "Livret A")
+    assert (point["goal_id"], point["subject_name"], point["amount"]) == (
+        None,
+        "Japon",
+        "22600.00",
+    )
+    assert point["figures"] == {"ceiling": "22950.00", "room": "350.00", "regulated": "livret_a"}
+    assert _hide(owner_client, "dismiss", rule="ceiling", line_id=full) == 204
+    assert "ceiling" not in {p["rule"] for p in _all_points(owner_client)}
+
+
+def _held_lines(client: TestClient) -> dict[str, str]:
+    lines = {}
+    for category, name, amount in (
+        ("Savings accounts", "Livret", "5000.00"),
+        ("Real estate", "Maison", "200000.00"),
+        ("Debts", "Crédit", "50000.00"),
+    ):
+        lines[name] = _line(client, category, name)
+        for month in ("2026-09", "2026-10"):
+            assert _value(client, lines[name], month, amount).status_code == 204
+    lines["PEA"] = _stocks(client)
+    return lines
+
+
+def test_where_the_goals_money_sits(owner_client: TestClient) -> None:
+    lines = _held_lines(owner_client)
+    japon = _goal(
+        owner_client,
+        name="Japon",
+        start="2026-09",
+        fundings=[{"line_id": lines["Livret"], "share": 100, "opening": "2000.00"}],
+    )
+    _goal(
+        owner_client,
+        name="Toit",
+        start="2026-09",
+        target="20000.00",
+        fundings=[
+            {"line_id": lines["PEA"], "share": 100, "opening": "1000.00"},
+            {"line_id": lines["Maison"], "share": 100, "opening": "4000.00"},
+        ],
+    )
+    sankey = _analysis(owner_client)["sankey"]
+    assert (sankey["month"], sankey["all_assets"]) == ("2026-10", False)
+    assert [(c["name"], c["amount"], c["colour"]) for c in sankey["categories"]] == [
+        ("Savings accounts", "5000.00", "savings"),
+        ("Stocks", "3000.00", "stocks"),
+    ]
+    assert [(x["name"], x["amount"], x["free"]) for x in sankey["lines"]] == [
+        ("Livret", "5000.00", "3000.00"),
+        ("PEA", "3000.00", "2000.00"),
+    ]
+    assert [(f["name"], f["line_id"], f["amount"]) for f in sankey["flows"]] == [
+        ("Japon", lines["Livret"], "2000.00"),
+        ("Toit", lines["PEA"], "1000.00"),
+    ]
+    assert sankey["flows"][0]["goal_id"] == japon["id"]
+    assert [(e["name"], e["amount"]) for e in sankey["elsewhere"]] == [("Toit", "4000.00")]
+
+    every = _analysis(owner_client, all_assets="true")["sankey"]
+    assert every["all_assets"] is True
+    assert [c["name"] for c in every["categories"]] == ["Savings accounts", "Stocks", "Real estate"]
+    assert every["elsewhere"] == []
+    assert ("Toit", lines["Maison"], "4000.00") in [
+        (f["name"], f["line_id"], f["amount"]) for f in every["flows"]
+    ]
+
+
+def test_the_sankey_keeps_another_members_private_goal_in_the_free_part(
+    client: TestClient, clock: Clock, owner: User, member: User
+) -> None:
+    clock.now = TODAY
+    log_in(client, clock)
+    lines = _held_lines(client)
+    hidden_line = _line(client, "Stocks", "Mon CTO", "private")
+    for month in ("2026-09", "2026-10"):
+        assert _value(client, hidden_line, month, "700.00").status_code == 204
+    _goal(
+        client,
+        name="Secret",
+        visibility="private",
+        start="2026-09",
+        fundings=[{"line_id": lines["Livret"], "share": 100, "opening": "1500.00"}],
+    )
+    mine = _analysis(client)["sankey"]
+    assert [f["name"] for f in mine["flows"]] == ["Secret"]
+    log_in(client, clock, "member@example.com")
+    theirs = _analysis(client)["sankey"]
+    assert theirs["flows"] == theirs["elsewhere"] == []
+    assert [(c["name"], c["amount"]) for c in theirs["categories"]] == [
+        ("Savings accounts", "5000.00"),
+        ("Stocks", "3000.00"),
+    ]
+    assert [(x["name"], x["free"]) for x in theirs["lines"]] == [
+        ("Livret", "5000.00"),
+        ("PEA", "3000.00"),
+    ]
+
+
+def test_a_private_livret_near_its_ceiling_stays_its_owners(
+    client: TestClient, clock: Clock, owner: User, member: User
+) -> None:
+    clock.now = TODAY
+    log_in(client, clock)
+    line = _regulated(client, "livret_a", "22800.00", "Mon livret", "private")
+    _goal(
+        client,
+        name="Secret",
+        visibility="private",
+        target="30000.00",
+        start="2026-09",
+        fundings=[{"line_id": line, "share": 100}],
+    )
+    assert "ceiling" in {p["rule"] for p in _all_points(client)}
+    log_in(client, clock, "member@example.com")
+    assert "ceiling" not in {p["rule"] for p in _all_points(client)}
+    assert "Mon livret" not in client.get("/api/goals/analysis").text
+
+
+def test_a_goal_across_scopes_adds_up_in_each(owner_client: TestClient) -> None:
+    livret = _line(owner_client, "Savings accounts", "Livret")
+    joint = _line(owner_client, "Current accounts", "Compte joint", "joint")
+    for line in (livret, joint):
+        for month in ("2026-09", "2026-10"):
+            assert _value(owner_client, line, month, "5000.00").status_code == 204
+    _goal(
+        owner_client,
+        name="Japon",
+        start="2026-09",
+        fundings=[
+            {"line_id": livret, "share": 50, "opening": "2000.00"},
+            {"line_id": joint, "share": 50, "opening": "1000.00"},
+        ],
+    )
+    mine = _analysis(owner_client, scope="mine")["sankey"]
+    assert [(f["name"], f["amount"]) for f in mine["flows"]] == [("Japon", "2000.00")]
+    assert [(e["name"], e["amount"]) for e in mine["elsewhere"]] == [("Japon", "1000.00")]
+    joint_view = _analysis(owner_client, scope="joint")["sankey"]
+    assert [(f["name"], f["amount"]) for f in joint_view["flows"]] == [("Japon", "1000.00")]
+    assert [(e["name"], e["amount"]) for e in joint_view["elsewhere"]] == [("Japon", "2000.00")]
+
+
+def test_the_sankey_without_goals_and_with_a_closed_line(owner_client: TestClient) -> None:
+    livret = _line(owner_client, "Savings accounts", "Livret")
+    old = _line(owner_client, "Stocks", "Ancien PEA")
+    for line in (livret, old):
+        assert _value(owner_client, line, "2026-09", "1000.00").status_code == 204
+    response = owner_client.patch(
+        f"/api/wealth/lines/{old}", json={"closed_from": "2026-10"}, headers=csrf(owner_client)
+    )
+    assert response.status_code == 200, response.text
+    sankey = _analysis(owner_client)["sankey"]
+    assert sankey["month"] == "2026-10"
+    assert [(x["name"], x["amount"], x["free"]) for x in sankey["lines"]] == [
+        ("Livret", "1000.00", "1000.00")
+    ]
+    assert sankey["flows"] == sankey["elsewhere"] == []

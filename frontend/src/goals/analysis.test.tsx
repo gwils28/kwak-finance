@@ -22,6 +22,7 @@ const point = (fields: Partial<PointOut>): PointOut => ({
   goal_id: null,
   goal_name: null,
   line_id: null,
+  line_name: null,
   lines: [],
   amount: null,
   deadline: null,
@@ -40,6 +41,14 @@ const months = Array.from({ length: 24 }, (_, k) => {
 
 const analysis: GoalAnalysisOut = {
   month: "2026-10",
+  sankey: {
+    month: "2026-09",
+    all_assets: false,
+    categories: [],
+    lines: [],
+    flows: [],
+    elsewhere: [],
+  },
   reference: "2026-09",
   capacity: "250.00",
   capacity_set: false,

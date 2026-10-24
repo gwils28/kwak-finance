@@ -10,6 +10,7 @@ from kwak_core import goal_analysis as ga
 from kwak_core import goals as core
 from kwak_core.budget import Month, month_range
 from kwak_core.visibility import Scope, in_scope
+from kwak_core.wealth import WealthKind
 from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
@@ -44,6 +45,19 @@ class RiskPoint:
 
 
 @dataclass
+class Sankey:
+    """Where the goals' money sits (F-ANA-5), at the scope's reference month."""
+
+    month: Month
+    all_assets: bool
+    placement: ga.Placement
+    lines: dict[UUID, WealthLine]
+    """The asset lines in scope, the ones left out included."""
+    goals: list[UUID]
+    """The goals drawn, in the pyramid's order."""
+
+
+@dataclass
 class Analysis:
     this_month: Month
     reference: Month | None
@@ -68,6 +82,7 @@ class Analysis:
     risk: list[RiskPoint]
     """The scope's funded goals on the horizon and risk chart."""
     inflation: Decimal
+    sankey: Sankey
 
 
 def _month(day: date | None) -> Month | None:
@@ -168,6 +183,61 @@ def _current_free(
     return total
 
 
+def _sankey(
+    db: Session,
+    viewer: User,
+    scope: Scope,
+    env: core.Envelopes,
+    month: Month,
+    seen: list[Goal],
+    in_view: set[UUID],
+    *,
+    all_assets: bool,
+) -> Sankey:
+    """The asset lines in scope and the envelopes on them of every goal the viewer sees, so a
+    free part never counts a goal one can see (another member's private goals stay in it, as on
+    the Goals page). The goals drawn are the scope's and those with money on its lines; what
+    they hold on lines out of scope or left out is `elsewhere`."""
+    rows = {
+        line.id: line
+        for line in wealth.visible_lines(db, viewer)
+        if line.category.kind is WealthKind.ASSET
+        and in_scope(scope, owner_id=line.owner_id, visibility=line.visibility, viewer_id=viewer.id)
+    }
+    values = goals.line_values(db, set(rows))
+    k = env.months.index(month) if month in env.months else None
+    drawn = [
+        g
+        for g in seen
+        if g.id in in_view
+        or (
+            k is not None
+            and any(f.line_id in rows and env.held(g.id, f.line_id)[k] for f in g.fundings)
+        )
+    ]
+    held = (
+        {(g.id, f.line_id): env.held(g.id, f.line_id)[k] for g in drawn for f in g.fundings}
+        if k is not None
+        else {}
+    )
+    placement = ga.placement(
+        [
+            ga.SankeyLine(
+                line.id,
+                line.category_id,
+                core.line_worth(
+                    core.Line(values.get(line.id, {}), _month(line.closed_from)), month
+                ),
+                line.category.preset,
+            )
+            for line in rows.values()
+        ],
+        held,
+        all_assets=all_assets,
+    )
+    return Sankey(month, all_assets, placement, rows, [g.id for g in drawn])
+
+
 def _facts(
     goal: Goal, env: core.Envelopes, reference: Month | None, this_month: Month, band: Decimal
 ) -> ga.GoalFacts:
@@ -253,7 +323,14 @@ def _plan(facts: list[ga.GoalFacts], cap: Decimal, share: Decimal) -> core.Effor
 
 
 def analysis(
-    db: Session, viewer: User, scope: Scope, today: date, band: Decimal, horizon: int
+    db: Session,
+    viewer: User,
+    scope: Scope,
+    today: date,
+    band: Decimal,
+    horizon: int,
+    *,
+    all_assets: bool = False,
 ) -> Analysis:
     """The scope's goals at the scope's reference month; the views against the capacity (the
     forward efforts and R1) over the household's goals, at the household's reference month."""
@@ -308,6 +385,12 @@ def analysis(
     monthly_fixed = core.fixed_expenses(
         (i.frequency, -i.amount) for i in goals.fixed_items(db, viewer, today)
     )
+    at = reference or this_month
+    regulated = {
+        k: (line.regulated_type, core.line_worth(all_lines[k], at))
+        for k, line in line_rows.items()
+        if k in lines and line.regulated_type is not None
+    }
     notices = [
         *ga.data_notices(ga.stale_lines(lines, this_month), capacity_months=capacity_months),
         *ga.precaution_notices(scope_facts, risks, monthly_fixed=monthly_fixed),
@@ -328,12 +411,13 @@ def analysis(
         *ga.not_indexed_notices(scope_facts, inflation=inflation),
         *ga.idle_notices(
             scope_facts,
-            current_free=_current_free(db, viewer, scope, env, reference or this_month, visible),
+            current_free=_current_free(db, viewer, scope, env, at, visible),
             income=flows.income,
             spending=flows.spending,
             history_months=flows.months,
             monthly_fixed=monthly_fixed,
         ),
+        *ga.ceiling_notices(scope_facts, regulated),
         *ga.capstone_notices(scope_facts, band=band),
         *ga.left_over_notices(
             facts, unallocated=household_plan.unallocated, capacity_months=capacity_months
@@ -352,10 +436,20 @@ def analysis(
         bands,
         forward,
         notices,
-        ga.select(notices, _dismissals(db, viewer), reference or this_month),
+        ga.select(notices, _dismissals(db, viewer), at),
         {k: line_rows[k] for k in lines},
         _risk_points(_tiered(scoped, this_month), risks, inflation),
         inflation,
+        _sankey(
+            db,
+            viewer,
+            scope,
+            env,
+            at,
+            [a.goal for a in _tiered(household, this_month)],
+            {g.id for g in in_view},
+            all_assets=all_assets,
+        ),
     )
 
 
