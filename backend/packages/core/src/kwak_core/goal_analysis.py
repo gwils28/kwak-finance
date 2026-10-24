@@ -12,6 +12,7 @@ from dataclasses import dataclass, field
 from decimal import Decimal
 from uuid import UUID
 
+from kwak_core import projection
 from kwak_core.budget import DEFAULT_BAND, Month, month_range
 from kwak_core.goals import (
     GoalStatus,
@@ -55,7 +56,7 @@ PRECAUTION_LOW = 3
 PRECAUTION_SHORT = 6
 SHOWN = 3
 WORSENS = Decimal("1.25")
-DEFAULT_INFLATION = Decimal("0.02")
+DEFAULT_INFLATION = projection.DEFAULT_INFLATION
 """The projection's default (F-SIM-1), until the household's own assumptions exist."""
 SHORT_RISK_SHARE = Decimal("0.1")
 SHORT_RISK_FLOOR = Decimal(500)
@@ -164,17 +165,18 @@ class LineRisk:
         return self.volatile or self.illiquid
 
 
+ILLIQUID = frozenset({"private-equity", "real-estate", "equipment", "exotic"})
+"""Categories that cannot be sold quickly at their value: locked-in funds, a home, things to
+resell, and exotic holdings (wine, art, watches) whose buyers are few."""
+
 DEFAULT_RISKS: Mapping[str, LineRisk] = {
-    "savings": LineRisk(ret=Decimal("0.017")),
-    "current": LineRisk(current=True),
-    "stocks": LineRisk(ret=Decimal("0.07"), volatility=Decimal("0.16")),
-    "crypto": LineRisk(ret=Decimal("0.08"), volatility=Decimal("0.6")),
-    "bonds": LineRisk(ret=Decimal("0.03"), volatility=Decimal("0.06")),
-    "private-equity": LineRisk(ret=Decimal("0.06"), volatility=Decimal("0.25"), illiquid=True),
-    "gold": LineRisk(ret=Decimal("0.03"), volatility=Decimal("0.15")),
-    "real-estate": LineRisk(ret=Decimal("0.025"), volatility=Decimal("0.08"), illiquid=True),
-    "equipment": LineRisk(ret=Decimal("-0.15"), illiquid=True),
-    "exotic": LineRisk(volatility=Decimal("0.2"), illiquid=True),
+    preset: LineRisk(
+        ret=a.ret,
+        volatility=a.volatility,
+        illiquid=preset in ILLIQUID,
+        current=preset == "current",
+    )
+    for preset, a in projection.DEFAULT_ASSUMPTIONS.items()
 }
 """The projection's defaults (F-SIM-1) for the default categories, by their preset (the
 default colour key, kept whatever colour the category takes), until the household's own
