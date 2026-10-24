@@ -214,6 +214,8 @@ def by_category(
     medians = base.outcome.medians_by_category(today=today)
     months = _months(start, len(medians) - 1)
     x = [m.first_day() for m in months]
+    # A thin line of the surface between the layers, as the Analysis tab's stacked bars.
+    edge = {"width": 1, "color": tokens.rgb(theme, "surface")}
     figure = go.Figure()
     for k, category in _shown_categories(categories, medians):
         values = [row[k] for row in medians]
@@ -222,7 +224,7 @@ def by_category(
             y=[float(v) for v in values],
             mode="lines",
             stackgroup="assets",
-            line={"width": 0.5, "color": tokens.rgb(theme, f"wealth-{category.colour}")},
+            line=edge,
             fillcolor=tokens.rgb(theme, f"wealth-{category.colour}"),
             name=category.name,
             customdata=[i18n.money(v, lang) for v in values],
@@ -241,14 +243,17 @@ def by_category(
             y=[-float(v) for v in values],
             mode="lines",
             stackgroup="debts",
-            line={"width": 0.5, "color": tokens.rgb(theme, "wealth-debts")},
+            line=edge,
             fillcolor=tokens.rgb(theme, "wealth-debts"),
             fillpattern=pattern,
             name=name,
             customdata=[i18n.money(-v, lang) for v in values],
             hovertemplate=f"{name}: %{{customdata}}<extra></extra>",
         )
-    return _layout(figure, view, y_title=t(lang, "median"))
+    _layout(figure, view, y_title=t(lang, "median"))
+    # As the wealth Analysis tab: the matrix's order in the legend and the month's label.
+    figure.update_layout(hovermode="x unified", legend={"traceorder": "normal"})
+    return figure
 
 
 def _table(

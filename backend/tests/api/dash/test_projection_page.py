@@ -173,6 +173,10 @@ def test_the_median_by_category_shows_the_debts_below_zero(owner_client: TestCli
     data = out["categories"]["figure"]["data"]
     assert [d["name"] for d in data] == ["Savings accounts", "Debts"]
     assert data[1]["y"][0] == -3000
+    # As the Analysis tab: the category's token, a line of the surface between the layers.
+    assert data[0]["fillcolor"] == "rgb(68,131,53)"  # wealth-savings
+    assert data[0]["line"]["color"] == "rgb(255,255,255)"  # the light surface
+    assert out["categories"]["figure"]["layout"]["legend"]["traceorder"] == "normal"
     assert "together they need not add up" in _text(out["categories-after"]["children"])
 
 
