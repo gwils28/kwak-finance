@@ -10,6 +10,9 @@ from kwak_core.money import quantize
 from kwak_core.projection import (
     DEFAULT_ASSUMPTIONS,
     DEFAULT_INFLATION,
+    FIRST_TAKEN,
+    NEVER_TAKEN,
+    SHORTFALL_RATE,
     Assumption,
     DebtTerms,
     ProjectionError,
@@ -210,6 +213,7 @@ PRESETS = [
     "real-estate",
     "equipment",
     "private-equity",
+    "exotic",
     None,
 ]
 
@@ -232,8 +236,20 @@ def test_the_shares_sum_to_one_and_skip_what_savings_do_not_buy(
     assert all(v >= 0 for v in shares.values())
     kept = [c for c in shares if assets.get(c, D(0)) > 0]
     assert all(
-        presets[c] not in ("current", "real-estate", "equipment", "private-equity") for c in kept
+        presets[c] not in ("current", "real-estate", "equipment", "private-equity", "exotic")
+        for c in kept
     )
+
+
+def test_exotic_holdings_take_no_monthly_savings_and_are_never_sold_for_spending() -> None:
+    """Wine, art and watches are illiquid, as the goals analysis judges them (F-ANA-1)."""
+    wine = uuid4()
+    presets = {SAVINGS: "savings", wine: "exotic"}
+    assert default_allocation({SAVINGS: D(1000), wine: D(5000)}, presets) == {SAVINGS: D(1)}
+    assert "exotic" in NEVER_TAKEN
+    assert {"real-estate", "equipment", "private-equity", "exotic"} == NEVER_TAKEN
+    assert FIRST_TAKEN == ("current", "savings")
+    assert D("0.08") == SHORTFALL_RATE
 
 
 def test_a_scenario_allocation_sums_to_100() -> None:

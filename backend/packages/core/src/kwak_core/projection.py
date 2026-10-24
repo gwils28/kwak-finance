@@ -160,19 +160,30 @@ def starting_point(
 SHARE = Decimal("1e-12")
 """Shares are kept to 12 decimals, so that they add up to exactly 1."""
 
-NOT_ALLOCATED = frozenset({"current", "real-estate", "equipment", "private-equity"})
+NOT_ALLOCATED = frozenset({"current", "real-estate", "equipment", "private-equity", "exotic"})
 """A working balance stays on a current account, and monthly savings buy neither a home,
-equipment nor locked-in private equity unless a scenario's allocation says so."""
+equipment, locked-in private equity nor exotic holdings (wine, art, watches) unless a
+scenario's allocation says so."""
+
+FIRST_TAKEN = ("current", "savings")
+"""Negative savings are taken from current accounts, then savings accounts, then the other
+categories in proportion to what they hold."""
+NEVER_TAKEN = frozenset({"real-estate", "equipment", "private-equity", "exotic"})
+"""The illiquid categories (as F-ANA-1 judges them) are not sold to pay a month's spending."""
+SHORTFALL_RATE = Decimal("0.08")
+"""What is missing once the liquid holdings are spent is borrowed: an overdraft or a consumer
+loan costs several percent a year (up to about 20 %, the usury rate); 8 % a year, a month at a
+time, is a middle estimate the page states."""
 
 
 def default_allocation(
     assets: Mapping[UUID, Decimal], presets: Mapping[UUID, str | None]
 ) -> dict[UUID, Decimal]:
     """The categories' shares of today's gross assets, current accounts, real estate,
-    equipment and private equity left out; the shares sum to exactly 1, the largest taking the
-    rounding. With nothing left to share by, the savings go to Savings accounts, else to
-    Current accounts; without either, the scenario must set its own. `presets`: every asset
-    category of the household."""
+    equipment, private equity and exotic holdings left out; the shares sum to exactly 1, the
+    largest taking the rounding. With nothing left to share by, the savings go to Savings
+    accounts, else to Current accounts; without either, the scenario must set its own.
+    `presets`: every asset category of the household."""
     kept = {c: v for c, v in assets.items() if v > 0 and presets.get(c) not in NOT_ALLOCATED}
     total = sum(kept.values(), ZERO)
     if total > 0:
