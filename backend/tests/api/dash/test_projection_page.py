@@ -228,6 +228,8 @@ def test_the_fan_takes_the_themes_colours() -> None:
     assert figure.data[5].line.dash == "dash"
     assert figure.layout.shapes[0].line.dash == "dot"
     assert figure.layout.yaxis.tickprefix == "€"
+    assert figure.layout.modebar.activecolor == "rgb(115,194,81)"  # primary-400
+    assert figure.layout.hoverlabel.bgcolor == "rgb(24,29,22)"  # the dark surface
 
 
 def test_both_languages_have_the_same_strings() -> None:

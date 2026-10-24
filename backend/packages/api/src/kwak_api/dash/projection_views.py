@@ -68,6 +68,17 @@ def _layout(figure: go.Figure, view: View, *, y_title: str) -> go.Figure:
         },
         separators=", " if lang == "fr" else ".,",
         hovermode="x",
+        # Plotly's own toolbar and labels in the palette too, not its blue and greys.
+        modebar={
+            "bgcolor": "rgba(0,0,0,0)",
+            "color": tokens.rgb(theme, "muted"),
+            "activecolor": tokens.rgb(theme, "primary-400" if theme == "dark" else "primary-600"),
+        },
+        hoverlabel={
+            "bgcolor": tokens.rgb(theme, "surface"),
+            "bordercolor": tokens.rgb(theme, "border"),
+            "font": {"color": tokens.rgb(theme, "fg")},
+        },
         legend={"orientation": "h", "y": -0.15},
         margin={"l": 8, "r": 8, "t": 16, "b": 8},
         xaxis={"gridcolor": grid, "tickformat": "%Y"},
