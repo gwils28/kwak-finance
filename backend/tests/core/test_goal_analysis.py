@@ -12,11 +12,13 @@ from kwak_core.goal_analysis import (
     LineRisk,
     Notice,
     Rule,
+    SankeyLine,
     Severity,
     Zone,
     _to_ahead,
     behind_notices,
     capstone_notices,
+    ceiling_notices,
     data_notices,
     eroding_notices,
     forward_efforts,
@@ -29,6 +31,7 @@ from kwak_core.goal_analysis import (
     no_gain_notices,
     not_indexed_notices,
     overcommitted_notices,
+    placement,
     precaution_notices,
     reference_month,
     risk_of,
@@ -42,7 +45,7 @@ from kwak_core.goal_analysis import (
 )
 from kwak_core.goals import GoalStatus, Line, Tier, add_months, track
 from kwak_core.money import quantize
-from kwak_core.wealth import DEFAULT_WEALTH_CATEGORIES
+from kwak_core.wealth import DEFAULT_WEALTH_CATEGORIES, RegulatedType
 
 D = Decimal
 OCT = Month(2026, 10)
@@ -792,3 +795,137 @@ def test_the_amount_to_ahead_is_the_fewest_euros(
 
     assert ahead(value + amount)
     assert amount == 0 or not ahead(value + amount - 1)
+
+
+# R6: a regulated ceiling near
+
+
+def test_a_livret_near_its_ceiling_funding_a_goal() -> None:
+    small, big = _held("1000", 30, {A: D(1000)}), _held("1000", 40, {A: D(1000)})
+    big = GoalFacts(**{**big.__dict__, "shares": {A: 80}})
+    (notice,) = ceiling_notices(
+        [small, big], {A: (RegulatedType.LIVRET_A, D(22600)), B: (RegulatedType.LDDS, D(9000))}
+    )
+    assert (notice.rule, notice.severity, notice.line, notice.goal) == (
+        Rule.CEILING,
+        Severity.INFO,
+        A,
+        None,
+    )
+    assert notice.subject == big.id  # the goal taking most of its rises
+    assert notice.amount == D(22600)
+    assert notice.figures == {"ceiling": D(22950), "room": D(350)}
+
+
+@pytest.mark.parametrize(
+    ("value", "shown"), [("22449.99", False), ("22450", True), ("23100", True)]
+)
+def test_the_ceiling_margin(value: str, shown: bool) -> None:
+    goal = _held("1000", 30, {A: D(1000)})
+    notices = ceiling_notices([goal], {A: (RegulatedType.LIVRET_A, D(value))})
+    assert [n.figures["room"] for n in notices] == (
+        [max(D(0), D(22950) - D(value))] if shown else []
+    )
+
+
+def test_the_subject_on_equal_shares_is_the_nearest_deadline() -> None:
+    far, near = _held("1000", 40, {A: D(500)}), _held("1000", 20, {A: D(500)})
+    undated = _facts("1000", ["500"], deadline=None, start=OCT, held={A: D(500)}, shares={A: 50})
+    (notice,) = ceiling_notices([undated, far, near], {A: (RegulatedType.LDDS, D(12000))})
+    assert (notice.subject, notice.deadline) == (near.id, near.deadline)
+
+
+def test_a_reached_goal_takes_no_more_rises() -> None:
+    reached = _held("1000", 30, {A: D(1000)}, target="1000")
+    assert ceiling_notices([reached], {A: (RegulatedType.LIVRET_A, D(22900))}) == []
+
+
+def test_a_full_livret_no_goal_draws_on_is_left_alone() -> None:
+    goal = _held("1000", 30, {B: D(1000)})
+    assert ceiling_notices([goal], {A: (RegulatedType.LEP, D(10000))}) == []
+
+
+# F-ANA-5: where the goals' money sits
+
+SAVINGS, STOCKS_CAT, HOUSE = uuid4(), uuid4(), uuid4()
+
+
+def _asset(line: UUID, category: UUID, value: str, preset: str | None) -> SankeyLine:
+    return SankeyLine(line, category, D(value), preset)
+
+
+def test_the_goals_money_line_by_line() -> None:
+    trip, car = uuid4(), uuid4()
+    flows = placement(
+        [
+            _asset(A, SAVINGS, "5000", "savings"),
+            _asset(B, STOCKS_CAT, "8000", "stocks"),
+            _asset(C, HOUSE, "200000", "real-estate"),
+            _asset(uuid4(), STOCKS_CAT, "0", "stocks"),
+        ],
+        {(trip, A): D(2000), (car, A): D(1000), (car, B): D(3000)},
+    )
+    assert flows.categories == {SAVINGS: D(5000), STOCKS_CAT: D(8000)}
+    assert flows.lines == {A: D(5000), B: D(8000)}  # real estate and empty lines left out
+    assert flows.held == {(trip, A): D(2000), (car, A): D(1000), (car, B): D(3000)}
+    assert flows.free == {A: D(2000), B: D(5000)}
+    assert flows.elsewhere == {}
+    every = placement([_asset(C, HOUSE, "200000", "real-estate")], {}, all_assets=True)
+    assert every.free == {C: D(200000)}
+
+
+def test_what_a_goal_holds_on_lines_left_out() -> None:
+    home = uuid4()
+    lines = [_asset(A, SAVINGS, "1000", "savings"), _asset(C, HOUSE, "200000", "real-estate")]
+    flows = placement(lines, {(home, A): D(1000), (home, C): D(3000)})
+    assert (flows.held, flows.elsewhere) == ({(home, A): D(1000)}, {home: D(3000)})
+    every = placement(lines, {(home, A): D(1000), (home, C): D(3000)}, all_assets=True)
+    assert (every.held[(home, C)], every.elsewhere) == (D(3000), {})
+
+
+@pytest.mark.parametrize("value", ["100", "0"])
+def test_envelopes_cannot_hold_more_than_their_line(value: str) -> None:
+    with pytest.raises(ValueError, match="more than"):
+        placement([_asset(A, SAVINGS, value, "savings")], {(uuid4(), A): D(101)})
+
+
+@given(
+    st.lists(
+        st.tuples(
+            st.decimals(0, 100_000, places=2),
+            st.sampled_from(["savings", "stocks", "real-estate", "equipment", None]),
+        ),
+        min_size=1,
+        max_size=5,
+    ),
+    st.lists(st.tuples(st.integers(0, 4), st.integers(0, 2), st.integers(0, 100)), max_size=10),
+    st.booleans(),
+)
+def test_each_line_and_goal_adds_up(
+    values: list[tuple[Decimal, str | None]],
+    claims: list[tuple[int, int, int]],
+    all_assets: bool,
+) -> None:
+    """Invariant §8.34."""
+    lines = [_asset(uuid4(), SAVINGS, str(v), preset) for v, preset in values]
+    goals = [uuid4() for _ in range(3)]
+    held: dict[tuple[UUID, UUID], Decimal] = {}
+    for i, g, pct in claims:
+        if i >= len(lines):
+            continue
+        line = lines[i]
+        room = line.value - sum((a for (_, ln), a in held.items() if ln == line.id), D(0))
+        key = (goals[g], line.id)
+        held[key] = held.get(key, D(0)) + quantize(room * pct / 100)
+    flows = placement(lines, held, all_assets=all_assets)
+    for line in lines:
+        if line.id in flows.lines:
+            out = sum((a for (_, ln), a in flows.held.items() if ln == line.id), D(0))
+            assert out + flows.free[line.id] == flows.lines[line.id] == line.value
+    for g in goals:
+        mine = sum((a for (goal, _), a in held.items() if goal == g), D(0))
+        shown = sum((a for (goal, _), a in flows.held.items() if goal == g), D(0))
+        assert shown + flows.elsewhere.get(g, D(0)) == mine
+        if all_assets:
+            assert g not in flows.elsewhere
+    assert sum(flows.categories.values(), D(0)) == sum(flows.lines.values(), D(0))

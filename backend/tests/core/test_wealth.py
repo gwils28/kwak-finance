@@ -8,11 +8,15 @@ from kwak_core.budget import Month, month_range
 from kwak_core.users import Language
 from kwak_core.visibility import Scope, Visibility
 from kwak_core.wealth import (
+    CEILINGS,
     DEFAULT_WEALTH_CATEGORIES,
     CategoryInput,
     LineInput,
+    RegulatedType,
+    RegulatedTypeError,
     WealthKind,
     WealthValueError,
+    check_regulated,
     check_value,
     in_scope,
     line_cell,
@@ -213,3 +217,33 @@ def test_the_household_is_mine_plus_joint_plus_what_others_share(
     ]
     household = net(in_scope(lines, Scope.HOUSEHOLD, ME))
     assert household == [sum(column, D(0)) for column in zip(*parts, strict=True)]
+
+
+# F-WLT-2: regulated savings accounts
+
+
+def test_the_regulated_ceilings() -> None:
+    assert {
+        RegulatedType.LIVRET_A: D(22950),
+        RegulatedType.LDDS: D(12000),
+        RegulatedType.LEP: D(10000),
+        RegulatedType.PEL: D(61200),
+        RegulatedType.LIVRET_JEUNE: D(1600),
+    } == CEILINGS
+
+
+@pytest.mark.parametrize("visibility", [Visibility.PRIVATE, Visibility.SHARED])
+def test_a_personal_savings_line_can_be_regulated(visibility: Visibility) -> None:
+    check_regulated(RegulatedType.LIVRET_A, preset="savings", visibility=visibility)
+    check_regulated(None, preset="stocks", visibility=Visibility.JOINT)
+
+
+def test_a_joint_line_cannot_be_regulated() -> None:
+    with pytest.raises(RegulatedTypeError, match="joint"):
+        check_regulated(RegulatedType.LDDS, preset="savings", visibility=Visibility.JOINT)
+
+
+@pytest.mark.parametrize("preset", ["current", "stocks", None])
+def test_only_a_savings_line_can_be_regulated(preset: str | None) -> None:
+    with pytest.raises(RegulatedTypeError, match="savings"):
+        check_regulated(RegulatedType.PEL, preset=preset, visibility=Visibility.PRIVATE)

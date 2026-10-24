@@ -12,6 +12,7 @@ import enum
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from decimal import Decimal
+from types import MappingProxyType
 from uuid import UUID
 
 from kwak_core.budget import Month
@@ -61,6 +62,46 @@ DEFAULT_WEALTH_CATEGORIES: tuple[DefaultWealthCategory, ...] = (
 
 WEALTH_COLOURS = frozenset(c.colour for c in DEFAULT_WEALTH_CATEGORIES)
 """The colour keys a category can take (§7)."""
+
+
+class RegulatedType(enum.StrEnum):
+    """A French regulated savings account (F-WLT-2)."""
+
+    LIVRET_A = "livret_a"
+    LDDS = "ldds"
+    LEP = "lep"
+    PEL = "pel"
+    LIVRET_JEUNE = "livret_jeune"
+
+
+CEILINGS: Mapping[RegulatedType, Decimal] = MappingProxyType(
+    {
+        RegulatedType.LIVRET_A: Decimal(22950),
+        RegulatedType.LDDS: Decimal(12000),
+        RegulatedType.LEP: Decimal(10000),
+        RegulatedType.PEL: Decimal(61200),
+        RegulatedType.LIVRET_JEUNE: Decimal(1600),
+    }
+)
+"""The deposit ceilings as of October 2026 (§4.12, R6): interest can take a balance above."""
+
+SAVINGS_PRESET = "savings"
+
+
+class RegulatedTypeError(ValueError):
+    """A regulated type a line cannot have."""
+
+
+def check_regulated(
+    regulated: RegulatedType | None, *, preset: str | None, visibility: Visibility
+) -> None:
+    """Only a Savings-accounts line, and a person's own: a joint line cannot have one."""
+    if regulated is None:
+        return
+    if preset != SAVINGS_PRESET:
+        raise RegulatedTypeError("only a savings accounts line can have a regulated type")
+    if visibility is Visibility.JOINT:
+        raise RegulatedTypeError("a joint line cannot have a regulated type: it is a person's own")
 
 
 def check_value(amount: Decimal) -> None:
