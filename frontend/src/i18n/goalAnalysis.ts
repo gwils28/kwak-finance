@@ -147,8 +147,20 @@ export const goalAnalysisEn = {
   amount: "Amount",
   // Horizon and risk (F-ANA-4)
   risk: "Horizon and risk",
-  riskHelp: (inflation: string) =>
-    `Each goal by the months left to its deadline and the volatility of its lines, weighted by what it holds on each (an upper bound: in a crash, holdings fall together). Near and volatile is red; between 2 and 5 years, a goal should move off volatile lines step by step (amber, dashed ring); far and earning no more than inflation (${inflation} a year) is red too; a dotted ring marks a goal partly in a category that loses value.`,
+  riskHelp:
+    "Each goal by the months left to its deadline and the volatility of its lines, weighted by what it holds on each (an upper bound: in a crash, holdings fall together).",
+  legendLabel: "How to read the chart",
+  zoneArea: { short: "Near and volatile", glide: "Glide path", eroding: "Far and eroding" },
+  legendShort:
+    "Up to 2 years, volatility above 5%: near and volatile, a fall would have no time to recover.",
+  legendGlide:
+    "2 to 5 years: the share on volatile or illiquid lines should shrink step by step, from all of it 5 years out to none 2 years out (the table gives each goal's share allowed).",
+  legendEroding: (inflation: string) =>
+    `Beyond 8 years: the lines should earn more than inflation (${inflation} a year).`,
+  legendRings:
+    "Solid ring: near and volatile, or eroding. Dashed ring: above the glide path. Dotted ring: partly in a category that loses value.",
+  legendAreas: "The areas are guides by horizon: only a ring says a goal needs a look.",
+  allowedShare: "Allowed on volatile lines",
   riskLabel: "Goals by horizon and risk",
   riskTable: "Goals' horizon and risk",
   monthsLeft: "Months left",
@@ -350,8 +362,25 @@ export const goalAnalysisFr: typeof goalAnalysisEn = {
   holds: "Détenu pour",
   amount: "Montant",
   risk: "Horizon et risque",
-  riskHelp: (inflation) =>
-    `Chaque objectif selon les mois avant son échéance et la volatilité de ses lignes, pondérée par ce qu'il détient sur chacune (une borne haute : dans un krach, tout baisse ensemble). Proche et volatil, c'est rouge ; entre 2 et 5 ans, un objectif devrait quitter les lignes volatiles pas à pas (ambre, anneau en tirets) ; lointain et ne rapportant pas plus que l'inflation (${inflation} par an), c'est rouge aussi ; un anneau en pointillés signale un objectif en partie dans une catégorie qui perd de la valeur.`,
+  riskHelp:
+    "Chaque objectif selon les mois avant son échéance et la volatilité de ses lignes, pondérée par ce qu'il détient sur chacune (une borne haute : dans un krach, tout baisse ensemble).",
+  legendLabel: "Comment lire le graphique",
+  zoneArea: {
+    short: "Proche et volatil",
+    glide: "Trajectoire de sortie",
+    eroding: "Lointain et grignoté",
+  },
+  legendShort:
+    "Jusqu'à 2 ans, volatilité au-dessus de 5 % : proche et volatil, une baisse n'aurait pas le temps d'être rattrapée.",
+  legendGlide:
+    "De 2 à 5 ans : la part sur des lignes volatiles ou peu liquides devrait baisser pas à pas, de la totalité à 5 ans à rien à 2 ans (le tableau donne la part tolérée de chaque objectif).",
+  legendEroding: (inflation) =>
+    `Au-delà de 8 ans : les lignes devraient rapporter plus que l'inflation (${inflation} par an).`,
+  legendRings:
+    "Anneau plein : proche et volatil, ou grignoté. Anneau en tirets : au-dessus de la trajectoire. Anneau en pointillés : en partie dans une catégorie qui perd de la valeur.",
+  legendAreas:
+    "Les aires sont des repères d'horizon : seul un anneau signale un objectif à regarder.",
+  allowedShare: "Tolérée sur lignes volatiles",
   riskLabel: "Objectifs par horizon et risque",
   riskTable: "Horizon et risque des objectifs",
   monthsLeft: "Mois restants",

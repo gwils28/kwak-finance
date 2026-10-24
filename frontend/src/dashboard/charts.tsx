@@ -102,34 +102,37 @@ export function DataTable({
   return (
     <details className="text-sm">
       <summary className="cursor-pointer text-muted">{t.common.showData}</summary>
-      <table aria-label={label} className="mt-2 w-full">
-        <thead className="text-left text-muted">
-          <tr>
-            {head.map((h, i) => (
-              // biome-ignore lint/suspicious/noArrayIndexKey: headers can repeat (two goals of one name)
-              <th key={i} className={`py-1 font-medium ${i > 0 ? "text-right" : ""}`}>
-                {h}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row, r) => (
-            // biome-ignore lint/suspicious/noArrayIndexKey: rows are a static table, not reordered
-            <tr key={r} className="border-t border-border">
-              {row.map((cell, i) => (
-                <td
-                  // biome-ignore lint/suspicious/noArrayIndexKey: cells are positional
-                  key={i}
-                  className={`tabular py-1 ${i > 0 ? "text-right" : ""}`}
-                >
-                  {cell}
-                </td>
+      {/* A wide table scrolls in its card, never the page. */}
+      <div className="mt-2 overflow-x-auto">
+        <table aria-label={label} className="w-full">
+          <thead className="text-left text-muted">
+            <tr>
+              {head.map((h, i) => (
+                // biome-ignore lint/suspicious/noArrayIndexKey: headers can repeat (two goals of one name)
+                <th key={i} className={`py-1 font-medium ${i > 0 ? "pl-3 text-right" : ""}`}>
+                  {h}
+                </th>
               ))}
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {rows.map((row, r) => (
+              // biome-ignore lint/suspicious/noArrayIndexKey: rows are a static table, not reordered
+              <tr key={r} className="border-t border-border">
+                {row.map((cell, i) => (
+                  <td
+                    // biome-ignore lint/suspicious/noArrayIndexKey: cells are positional
+                    key={i}
+                    className={`tabular py-1 ${i > 0 ? "pl-3 text-right" : ""}`}
+                  >
+                    {cell}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </details>
   );
 }

@@ -2470,6 +2470,18 @@
       "RiskPointOut": {
         "description": "A funded goal on the horizon and risk chart (F-ANA-4).",
         "properties": {
+          "allowed_share": {
+            "anyOf": [
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Allowed Share"
+          },
           "goal_id": {
             "format": "uuid",
             "title": "Goal Id",
@@ -2543,6 +2555,7 @@
           "volatility",
           "real_return",
           "risky_share",
+          "allowed_share",
           "zone",
           "loss",
           "losing"

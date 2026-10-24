@@ -132,6 +132,8 @@ class RiskPointOut(BaseModel):
     """Weighted over its lines, less the inflation, a share."""
     risky_share: Decimal
     """Its share on volatile or illiquid lines."""
+    allowed_share: Decimal | None
+    """The share the glide path allows, 25 to 60 months out; null elsewhere."""
     zone: ga.Zone | None
     loss: Decimal | None
     """Its envelope's change in one outcome in ten at the deadline, a share (negative: a loss)."""
@@ -362,6 +364,7 @@ def goal_analysis(
                 volatility=_share(p.volatility),
                 real_return=_share(p.real_return),
                 risky_share=_share(p.risky_share),
+                allowed_share=_share(p.allowed_share) if p.allowed_share is not None else None,
                 zone=p.zone,
                 loss=_share(p.loss) if p.loss is not None else None,
                 losing=p.losing,

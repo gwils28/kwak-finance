@@ -322,6 +322,7 @@ def test_a_near_goal_on_stocks_sits_in_the_red_zone(owner_client: TestClient) ->
     [point] = out["risk"]
     assert (point["name"], point["months_left"], point["zone"]) == ("Voiture", 12, "red_short")
     assert (point["volatility"], point["risky_share"]) == ("0.1600", "1.0000")
+    assert point["allowed_share"] is None  # 12 months out: no glide path, the red zone judges it
     assert point["real_return"] == "0.0500"  # 7 % less the 2 % inflation
     assert -0.2 < float(point["loss"]) < -0.05
     assert out["inflation"] == "0.0200"
@@ -621,3 +622,19 @@ def test_the_sankey_without_goals_and_with_a_closed_line(owner_client: TestClien
         ("Livret", "1000.00", "1000.00")
     ]
     assert sankey["flows"] == sankey["elsewhere"] == []
+
+
+def test_a_goal_on_the_glide_path_says_the_share_allowed(owner_client: TestClient) -> None:
+    _capacity(owner_client, "300.00")
+    pea = _stocks(owner_client)
+    _goal(
+        owner_client,
+        name="Voiture",
+        target="9000.00",
+        deadline="2030-02",  # 40 months after the reference month
+        start="2026-09",
+        fundings=[{"line_id": pea, "share": 100, "opening": "3000.00"}],
+    )
+    [point] = _analysis(owner_client)["risk"]
+    assert point["months_left"] == 40
+    assert point["allowed_share"] == "0.4444"  # (40 - 24) / 36
