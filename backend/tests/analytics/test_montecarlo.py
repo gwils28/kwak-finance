@@ -293,3 +293,13 @@ def test_paths_and_months_are_bounded() -> None:
 def test_amounts_are_rounded_half_up_to_the_cent() -> None:
     s = _scenario([_category("savings", "0.125", share="1")], 1)
     assert simulate(s, paths=1).percentiles(today=False)[0][50] == D("0.13")
+
+
+def test_the_shortfall_has_its_own_median_month_by_month() -> None:
+    """The stacked chart draws it below zero next to the debts (F-SIM-5)."""
+    livret = _category("savings", "300", share="1")
+    s = Scenario([livret], [D(-500), D(0)], [D(0)] * 2, D(0), D("0.12"))
+    out = simulate(s, paths=3)
+    owed = 200 * (1 + float(SHORTFALL_RATE) / 12)
+    assert out.shortfall_median(today=False) == [D(0), D("200.00"), D(f"{owed:.2f}")]
+    assert out.shortfall_median()[2] == D(f"{owed / 1.12 ** (2 / 12):.2f}")

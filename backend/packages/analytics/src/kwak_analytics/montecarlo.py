@@ -118,6 +118,11 @@ class Outcome:
         m = self.category_median / self._unit(today)[:, None]
         return [[_cents(float(v)) for v in row] for row in m]
 
+    def shortfall_median(self, *, today: bool = True) -> list[Decimal]:
+        """The Shortfall's median month by month, as owed (positive)."""
+        m = np.median(self.shortfall, axis=1) / self._unit(today)
+        return [_cents(float(v)) for v in m]
+
     def _threshold(self, amount: Decimal, today: bool) -> Floats:
         """The amount in each month's current euros: an amount in today's euros grows with the
         inflation, so switching the unit changes no chance (invariant §8.28)."""

@@ -13,6 +13,7 @@ from kwak_core import goal_analysis as ga
 from kwak_core import projection as core
 from kwak_core.budget import Month
 from kwak_core.goals import EFFORT_MONTHS
+from kwak_core.money import quantize
 from kwak_core.projection import DEFAULT_INFLATION, Assumption, DebtTerms, assumption_of
 from kwak_core.visibility import Scope
 from kwak_core.wealth import CategoryInput, WealthKind, line_cell
@@ -190,9 +191,22 @@ def scenario(b: Basis, *, years: int, what_if: WhatIf = BASE) -> mc.Scenario:
     )
 
 
-def run(b: Basis, *, years: int, what_if: WhatIf = BASE, seed: int = mc.DEFAULT_SEED) -> mc.Outcome:
+@dataclass(frozen=True)
+class Run:
+    scenario: mc.Scenario
+    outcome: mc.Outcome
+
+    def debts(self, *, today: bool = True) -> list[Decimal]:
+        """What the debt lines owe month by month, from the start: the same on every path."""
+        owed = [self.scenario.start_debts, *self.scenario.debts]
+        rate = self.scenario.inflation
+        return [quantize(core.to_today(d, t, rate)) if today else d for t, d in enumerate(owed)]
+
+
+def run(b: Basis, *, years: int, what_if: WhatIf = BASE, seed: int = mc.DEFAULT_SEED) -> Run:
     """The same draws for every scenario of a visit: their differences come from the
     assumptions only (F-SIM-4)."""
     if not MIN_YEARS <= years <= MAX_YEARS:
         raise core.ProjectionError(f"the horizon is from {MIN_YEARS} to {MAX_YEARS} years")
-    return mc.simulate(scenario(b, years=years, what_if=what_if), seed=seed)
+    chosen = scenario(b, years=years, what_if=what_if)
+    return Run(chosen, mc.simulate(chosen, seed=seed))

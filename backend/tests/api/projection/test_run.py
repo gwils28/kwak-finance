@@ -82,7 +82,7 @@ def test_with_no_volatility_every_outcome_is_the_compounded_path(
     livret = _line(owner_client, "Savings accounts", "Livret A")
     _value(owner_client, livret, "2026-12", "10000.00")
 
-    outcome = projection.run(_basis(session, owner), years=1)
+    outcome = projection.run(_basis(session, owner), years=1).outcome
     assert outcome.months == 12
     [last] = outcome.percentiles(today=False)[-1:]
     assert set(last.values()) == {D("10170.00")}  # 1.7 % a year, all percentiles equal
@@ -108,9 +108,10 @@ def test_a_repaid_debt_frees_its_payment_for_the_savings(
     assert basis.start.net == D("9000.00")
     savings = next(iter(basis.start.assets))
     flat = projection.WhatIf(assumptions={savings: FLAT}, inflation=D(0))
-    outcome = projection.run(basis, years=1, what_if=flat)
+    run = projection.run(basis, years=1, what_if=flat)
     # Repaid in two months, then 500 a month joins the savings for ten months.
-    assert outcome.percentiles()[-1][50] == D("15000.00")
+    assert run.outcome.percentiles()[-1][50] == D("15000.00")
+    assert run.debts()[:4] == [D("1000.00"), D("500.00"), D(0), D(0)]
 
 
 def test_a_what_if_changes_the_savings_and_the_allocation(
@@ -127,7 +128,7 @@ def test_a_what_if_changes_the_savings_and_the_allocation(
         assumptions={gold: FLAT},
         inflation=D(0),
     )
-    outcome = projection.run(basis, years=1, what_if=what_if)
+    outcome = projection.run(basis, years=1, what_if=what_if).outcome
     ids = [c.id for c in basis.categories]
     assert dict(zip(ids, outcome.medians_by_category()[-1], strict=True))[gold] == D("1200.00")
 
