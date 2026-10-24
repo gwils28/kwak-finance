@@ -104,7 +104,7 @@ EN: Mapping[str, str] = {
     "assumption_line": "{category}: {ret} a year ± {vol}, a median growth of {median} a year",
     "inflation_line": "Inflation: {rate} a year.",
     "allocation_line": "Savings go to: {shares}.",
-    "assumptions_where": "The base uses the household's assumptions, the defaults until changed.",
+    "assumptions_where": "The base uses the household's assumptions, set under the charts.",
     "changes_line": "What-if {n}: {changes}.",
     "change_savings": "savings of {amount} a month",
     "change_inflation": "inflation of {rate}",
@@ -239,10 +239,7 @@ FR: Mapping[str, str] = {
     ),
     "inflation_line": "Inflation : {rate} par an.",
     "allocation_line": "L'épargne va à : {shares}.",
-    "assumptions_where": (
-        "La base utilise les hypothèses du foyer, celles par défaut tant qu'elles ne sont pas "
-        "changées."
-    ),
+    "assumptions_where": "La base utilise les hypothèses du foyer, réglées sous les graphiques.",
     "changes_line": "Et si {n} : {changes}.",
     "change_savings": "épargne de {amount} par mois",
     "change_inflation": "inflation de {rate}",

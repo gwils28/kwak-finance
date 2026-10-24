@@ -7,10 +7,13 @@ import {
   formatEurSigned,
   formatEurWhole,
   formatPercent,
+  formatRate,
   formatRateSigned,
   fromCents,
   isZero,
   parseEurInput,
+  parsePercentInput,
+  percentInput,
   toCents,
 } from "./money";
 
@@ -89,4 +92,23 @@ test("a small rate keeps its decimal and its sign", () => {
   setCurrentLanguage("fr");
   expect(formatRateSigned("-0.003").replace(/[  ]/g, " ")).toBe("-0,3 %");
   setCurrentLanguage("en");
+});
+
+test("a share reads as a percentage in an input and back, without a float", () => {
+  expect([percentInput("0.065"), percentInput("-0.150"), percentInput("0.0325")]).toEqual([
+    "6.5",
+    "-15",
+    "3.25",
+  ]);
+  expect([
+    parsePercentInput("6.5"),
+    parsePercentInput("-15"),
+    parsePercentInput("3,25", 2),
+  ]).toEqual(["0.065", "-0.15", "0.0325"]);
+  expect(parsePercentInput("6.55", 1)).toBeNull(); // to 0.1 % at most
+  expect(parsePercentInput("3.25", 2)).toBe("0.0325");
+  expect([parsePercentInput("abc"), parsePercentInput("")]).toEqual([null, null]);
+  setCurrentLanguage("fr");
+  expect(percentInput("0.065")).toBe("6,5");
+  expect(plain(formatRate("0.058"))).toBe("5,8 %");
 });

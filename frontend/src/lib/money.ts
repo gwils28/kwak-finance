@@ -86,3 +86,42 @@ export function formatPercentSigned(ratio: Num): string {
 export function formatRateSigned(ratio: Num): string {
   return numberFormat(SIGNED_RATE).format(ratio as Intl.StringNumericLiteral);
 }
+
+const RATE: Intl.NumberFormatOptions = { style: "percent", maximumFractionDigits: 2 };
+
+/** A yearly rate to a hundredth of a point at most: "0.058" -> "5.8 %", "0.0325" -> "3.25 %". */
+export function formatRate(ratio: Num): string {
+  return numberFormat(RATE).format(ratio as Intl.StringNumericLiteral);
+}
+
+/** Moves a decimal string's point by `shift` places (right when positive), exactly. */
+function shiftPoint(text: string, shift: number): string {
+  const negative = text.startsWith("-");
+  const [units = "", fraction = ""] = text.replace(/^[+-]/, "").split(".");
+  const digits = units + fraction;
+  const point = units.length + shift;
+  const padded = point < 0 ? "0".repeat(-point) + digits : digits.padEnd(point, "0");
+  const at = Math.max(point, 0);
+  const whole = padded.slice(0, at).replace(/^0+(?=\d)/, "") || "0";
+  const rest = padded.slice(at).replace(/0+$/, "");
+  const value = rest ? `${whole}.${rest}` : whole;
+  return negative && /[1-9]/.test(value) ? `-${value}` : value;
+}
+
+/** "0.065" -> "6.5" ("6,5" in French): a share as the percentage typed in an input. */
+export function percentInput(share: string): string {
+  const percent = shiftPoint(share, 2);
+  return currentLanguage() === "fr" ? percent.replace(".", ",") : percent;
+}
+
+/** "6,5" -> "0.065": a typed percentage as a share, to `places` decimals of a percent at
+ * most; null if it is not a number or is more precise. */
+export function parsePercentInput(text: string, places = 1): string | null {
+  const compact = text
+    .replace(/[\s\u00a0\u202f%]/g, "")
+    .replace(",", ".")
+    .replace("−", "-");
+  const match = /^[+-]?\d+(?:\.(\d+))?$/.exec(compact);
+  if (!match || (match[1] ?? "").replace(/0+$/, "").length > places) return null;
+  return shiftPoint(compact.replace(/^\+/, ""), -2);
+}
