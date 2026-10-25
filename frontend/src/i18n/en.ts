@@ -2,6 +2,7 @@ import { activityEn } from "./activity";
 import { authEn, navEn } from "./auth";
 import { commonEn, errorsEn } from "./common";
 import { dashboardEn } from "./dashboard";
+import { demoEn } from "./demo";
 import { goalAnalysisEn } from "./goalAnalysis";
 import { goalsEn } from "./goals";
 import { guideEn } from "./guide";
@@ -26,6 +27,7 @@ export const en = {
   overview: overviewEn,
   reports: reportsEn,
   activity: activityEn,
+  demo: demoEn,
   wealth: wealthEn,
   goals: goalsEn,
   goalAnalysis: goalAnalysisEn,

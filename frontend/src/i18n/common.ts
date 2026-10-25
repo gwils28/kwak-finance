@@ -108,6 +108,11 @@ export const API_MESSAGES_FR: Record<string, string> = {
   "missing or invalid CSRF token": "jeton de sécurité manquant ou invalide : rechargez la page",
   "no pending invitation with this id": "aucune invitation en attente",
   "not authenticated": "non connecté",
+  "not available in the demo": "pas disponible dans la démo",
+  "open the demo first": "ouvrez d'abord la démo",
+  "the demo was just generated: wait a minute":
+    "la démo vient d'être générée : attendez une minute",
+  "this page shows another household: reload it": "cette page montre un autre foyer : rechargez-la",
   "no TOTP setup in progress": "aucune configuration de la double authentification en cours",
   "only the household owner can do this": "seul le propriétaire du foyer peut faire cela",
   "second factor required": "double authentification requise",

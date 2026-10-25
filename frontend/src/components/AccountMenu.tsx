@@ -20,17 +20,23 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
 }
 
 /**
- * The signed-in user's menu: household settings (categories, members, activity log),
+ * The signed-in user's menu: household settings (categories, members, activity log, the demo),
  * language, theme and sign-out, so the header keeps its tabs for the everyday pages.
  */
 export function AccountMenu({
   name,
   email,
+  inDemo,
+  onDemo,
   onLanguageChange,
   onSignOut,
 }: {
   name: string;
   email: string;
+  /** In the demo, its members are fictitious: the members page is left out (F-ADM-5). */
+  inDemo: boolean;
+  /** Open the demo, or leave it when in it. */
+  onDemo: () => void;
   onLanguageChange: (language: Language) => void;
   onSignOut: () => void;
 }) {
@@ -98,7 +104,8 @@ export function AccountMenu({
         >
           <div className="px-4 py-3">
             <p className="truncate font-semibold">{name}</p>
-            <p className="truncate text-sm text-muted">{email}</p>
+            {/* The demo members' addresses are technical: none to show. */}
+            {!inDemo && <p className="truncate text-sm text-muted">{email}</p>}
           </div>
 
           <Section title={t.nav.household}>
@@ -106,14 +113,27 @@ export function AccountMenu({
               <Icon name="tag" className="size-4 text-muted" />
               {t.nav.categories}
             </Link>
-            <Link to="/members" className={ITEM} onClick={close}>
-              <Icon name="users" className="size-4 text-muted" />
-              {t.nav.members}
-            </Link>
+            {!inDemo && (
+              <Link to="/members" className={ITEM} onClick={close}>
+                <Icon name="users" className="size-4 text-muted" />
+                {t.nav.members}
+              </Link>
+            )}
             <Link to="/activity" className={ITEM} onClick={close}>
               <Icon name="history" className="size-4 text-muted" />
               {t.nav.activity}
             </Link>
+            <button
+              type="button"
+              className={ITEM}
+              onClick={() => {
+                close();
+                onDemo();
+              }}
+            >
+              <Icon name="flask" className="size-4 text-muted" />
+              {inDemo ? t.demo.leave : t.demo.open}
+            </button>
           </Section>
 
           <Section title={t.nav.preferences}>

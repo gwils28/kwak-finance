@@ -25,7 +25,7 @@ export type GuideSection = {
 export const guideEn = {
   title: "Using Kwak Finance",
   intro:
-    "Kwak Finance keeps your household's spending, budget, wealth and goals in one place, on your own computer. This guide walks through each page. The app's name, at the top left, leads to the overview, the summary of the whole app. Next to it, “Spending”, “Wealth” and “Goals” switch between three spaces: the everyday pages (lines, budget, reports), the wealth (monthly tracking, analysis, projection, retirement) and your financial goals (pyramid, analysis), each with its tabs. Categories, members, the activity log, language and theme are in the menu under your name, next to this guide. To install, start or update the app, see “How to run the app” at the bottom of every page.",
+    "Kwak Finance keeps your household's spending, budget, wealth and goals in one place, on your own computer. This guide walks through each page. The app's name, at the top left, leads to the overview, the summary of the whole app. Next to it, “Spending”, “Wealth” and “Goals” switch between three spaces: the everyday pages (lines, budget, reports), the wealth (monthly tracking, analysis, projection, retirement) and your financial goals (pyramid, analysis), each with its tabs. Categories, members, the activity log, the demo, language and theme are in the menu under your name, next to this guide. To install, start or update the app, see “How to run the app” at the bottom of every page.",
   contents: "Contents",
   sections: [
     {
@@ -144,6 +144,15 @@ export const guideEn = {
       ],
       link: { to: "/members", label: "Open the members" },
     },
+    {
+      id: "demo",
+      title: "The demo",
+      paragraphs: [
+        "Many pages need months of history before they say much: the budget matrix, the year, the reports, the wealth charts, the goals' analysis, the projection and the retirement. To see them at work before your own data has that history, choose “Open the demo” in the menu under your name: it opens a fictitious household, a couple with a child and three years of lines, fixed expenses, targets, wealth, goals and retirement plans, dated up to today.",
+        "While you are in it, a banner says so at the top of every page, and every page shows the demo instead of your household, which is untouched. You can change anything to try it; the demo is shared by every member and keeps the changes until someone resets it, so never enter real figures there. Members, invitations, your password, second factor and recovery codes are left out of the demo.",
+        "“Back to my household”, on the banner or in the menu, takes you back; signing out does too. “Reset the demo” deletes it, with everyone's changes, and generates it again from today, after a confirmation.",
+      ],
+    },
   ] satisfies GuideSection[],
   checklist: {
     title: "Getting started",
@@ -165,7 +174,7 @@ export const guideEn = {
 export const guideFr: typeof guideEn = {
   title: "Utiliser Kwak Finance",
   intro:
-    "Kwak Finance réunit les dépenses, le budget, le patrimoine et les objectifs de votre foyer, sur votre propre ordinateur. Ce guide parcourt chaque page. Le nom de l'application, en haut à gauche, mène à la vue d'ensemble, le résumé de toute l'application. À côté, « Dépenses », « Patrimoine » et « Objectifs » passent d'un espace à l'autre : les pages du quotidien (lignes, budget, rapports), le patrimoine (suivi mensuel, analyse, projection, retraite) et vos objectifs financiers (pyramide, analyse), chacun avec ses onglets. Les catégories, les membres, le journal d'activité, la langue et le thème sont dans le menu à votre nom, à côté de ce guide. Pour installer, lancer ou mettre à jour l'application, voyez « Lancer et arrêter l'application » en bas de chaque page.",
+    "Kwak Finance réunit les dépenses, le budget, le patrimoine et les objectifs de votre foyer, sur votre propre ordinateur. Ce guide parcourt chaque page. Le nom de l'application, en haut à gauche, mène à la vue d'ensemble, le résumé de toute l'application. À côté, « Dépenses », « Patrimoine » et « Objectifs » passent d'un espace à l'autre : les pages du quotidien (lignes, budget, rapports), le patrimoine (suivi mensuel, analyse, projection, retraite) et vos objectifs financiers (pyramide, analyse), chacun avec ses onglets. Les catégories, les membres, le journal d'activité, la démo, la langue et le thème sont dans le menu à votre nom, à côté de ce guide. Pour installer, lancer ou mettre à jour l'application, voyez « Lancer et arrêter l'application » en bas de chaque page.",
   contents: "Sommaire",
   sections: [
     {
@@ -283,6 +292,15 @@ export const guideFr: typeof guideEn = {
         "Sur la même page, le propriétaire peut fixer le début du patrimoine : la page Patrimoine s'ouvre sur les 12 derniers mois à partir de ce mois au plus tôt, pour un historique qui remonte plus loin que celui des dépenses. Sans lui, elle s'ouvre sur les 12 derniers mois. Le budget, la vue d'ensemble et les rapports partent de votre première ligne.",
       ],
       link: { to: "/members", label: "Ouvrir les membres" },
+    },
+    {
+      id: "demo",
+      title: "La démo",
+      paragraphs: [
+        "Beaucoup de pages ont besoin de mois d'historique pour dire quelque chose : la matrice du budget, l'année, les rapports, les graphiques du patrimoine, l'analyse des objectifs, la projection et la retraite. Pour les voir à l'œuvre avant que vos données aient cet historique, choisissez « Ouvrir la démo » dans le menu à votre nom : elle ouvre un foyer fictif, un couple avec un enfant et trois ans de lignes, de dépenses fixes, de cibles, de patrimoine, d'objectifs et de retraites, datés jusqu'à aujourd'hui.",
+        "Tant que vous y êtes, un bandeau le rappelle en haut de chaque page, et chaque page montre la démo au lieu de votre foyer, qui n'est pas touché. Vous pouvez tout y modifier pour essayer ; la démo est partagée par tous les membres et garde les modifications jusqu'à ce que quelqu'un la réinitialise : n'y saisissez jamais de vrais chiffres. Les membres, les invitations, votre mot de passe, la double authentification et les codes de secours restent hors de la démo.",
+        "« Revenir à mon foyer », dans le bandeau ou dans le menu, vous ramène chez vous ; se déconnecter aussi. « Réinitialiser la démo » la supprime, avec les modifications de chacun, et la génère à nouveau à partir d'aujourd'hui, après confirmation.",
+      ],
     },
   ],
   checklist: {
