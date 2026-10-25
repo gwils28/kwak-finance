@@ -19,7 +19,9 @@ from kwak_core.goal_analysis import (
     behind_notices,
     capstone_notices,
     ceiling_notices,
+    costly_debt_notices,
     data_notices,
+    debt_payment_notices,
     eroding_notices,
     forward_efforts,
     hidden,
@@ -941,3 +943,40 @@ def test_the_households_assumption_replaces_the_default_but_not_the_kind() -> No
     )
     assert risk_of("current", Assumption(D("0.01"), D(0))).current
     assert risk_of(None, own) == LineRisk(ret=D("0.05"), volatility=D("0.1"))
+
+
+LOAN = uuid4()
+
+
+def test_a_debt_costing_more_than_the_goals_lines_earn() -> None:
+    """R12: a rate above the greater of 6 % and the best return of a goal's line plus 1 point."""
+    goal = _held("1000", 30, {A: D(1000)})
+    risks = {A: LineRisk(ret=D("0.07"), volatility=D("0.16"))}
+    (notice,) = costly_debt_notices(
+        [goal], risks, {LOAN: (D("0.081"), D(5000)), uuid4(): (D("0.079"), D(9000))}
+    )
+    assert (notice.rule, notice.severity, notice.line, notice.amount) == (
+        Rule.COSTLY_DEBT,
+        Severity.INFO,
+        LOAN,
+        D(5000),
+    )
+    assert notice.figures == {"rate": D("0.081"), "threshold": D("0.08")}
+
+
+def test_without_a_goals_line_a_debt_is_costly_above_6_percent() -> None:
+    assert [n.line for n in costly_debt_notices([], {}, {LOAN: (D("0.061"), D(100))})] == [LOAN]
+    assert costly_debt_notices([], {}, {LOAN: (D("0.06"), D(100))}) == []
+    assert costly_debt_notices([], {}, {LOAN: (D("0.2"), D(0))}) == []  # repaid
+
+
+@pytest.mark.parametrize(("payments", "shown"), [("1050", False), ("1050.01", True)])
+def test_debt_payments_above_35_percent_of_income(payments: str, shown: bool) -> None:
+    """R13: the lenders' ceiling in France (HCSF), insurance included."""
+    notices = debt_payment_notices(payments=D(payments), income=D(3000))
+    assert [(n.rule, n.severity, n.amount) for n in notices] == (
+        [(Rule.DEBT_PAYMENTS, Severity.INFO, D(payments))] if shown else []
+    )
+    if shown:
+        assert notices[0].figures["ratio"] == D(payments) / 3000
+    assert debt_payment_notices(payments=D(500), income=D(0)) == []
