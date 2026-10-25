@@ -6,9 +6,11 @@ from datetime import date
 from decimal import Decimal
 from uuid import UUID
 
+from kwak_analytics import goals as engine
 from kwak_core import goal_analysis as ga
 from kwak_core import goals as core
 from kwak_core.budget import Month
+from kwak_core.goals import months_between
 from kwak_core.visibility import Scope, in_scope
 from kwak_core.wealth import WealthKind
 from sqlalchemy import delete, select
@@ -85,6 +87,10 @@ class Analysis:
     """The scope's funded goals on the horizon and risk chart."""
     inflation: Decimal
     sankey: Sankey
+    chances: list["GoalChance"]
+    """The scope's open goals with a deadline, but the precaution and pleasure goals (F-ANA-7)."""
+    precaution_months: int | None
+    """The months the scope's plan takes to fill the precaution."""
 
 
 def _month(day: date | None) -> Month | None:
@@ -305,6 +311,58 @@ def _reference(lines: dict[UUID, core.Line], this_month: Month) -> Month | None:
     return ga.reference_month(lines.values(), this_month, floor=first)
 
 
+@dataclass
+class GoalChance:
+    analyzed: Analyzed
+    months_left: int
+    planned: Decimal
+    """The planned allocation (F-GOAL-6)."""
+    at_plan: engine.GoalChance
+    required: Decimal | None
+    at_required: engine.GoalChance | None
+
+
+def _chances(
+    analyzed: list[Analyzed], plan: core.EffortPlan, line_rows: dict[UUID, WealthLine]
+) -> list[GoalChance]:
+    """F-ANA-7: each envelope on its own lines, receiving the planned allocation, then the
+    required effort, split by its shares of the rises; never the actual effort."""
+    out = []
+    for a in analyzed:
+        f = a.facts
+        if f.deadline is None or f.precaution or f.pleasure or not f.shares:
+            continue
+        if not f.now.remaining:
+            continue
+        months = max(0, months_between(f.reference, f.deadline))
+        total = Decimal(sum(f.shares.values()))
+        lines = [
+            engine.GoalLine(
+                line_rows[k].category_id,
+                projection.assumption(line_rows[k].category),
+                f.held.get(k, Decimal(0)),
+                Decimal(share) / total,
+            )
+            for k, share in f.shares.items()
+        ]
+        planned = plan.allocations.get(f.id, Decimal(0))
+        required = f.now.required
+
+        out.append(
+            GoalChance(
+                a,
+                months,
+                planned,
+                engine.chance_of_goal(lines, target=f.target, monthly=planned, months=months),
+                required,
+                None
+                if required is None
+                else engine.chance_of_goal(lines, target=f.target, monthly=required, months=months),
+            )
+        )
+    return out
+
+
 def _plan(facts: list[ga.GoalFacts], cap: Decimal, share: Decimal) -> core.EffortPlan:
     """The effort plan (F-GOAL-6) over these goals, at the month they are tracked to."""
     return core.effort_plan(
@@ -384,6 +442,21 @@ def analysis(
 
     scope_facts = [a.facts for a in scoped]
     risks = {k: projection.risk(line.category) for k, line in line_rows.items()}
+    seen_debts = projection.debts(db, viewer, this_month)
+    scoped_debts = [
+        line
+        for line, _ in seen_debts
+        if in_scope(scope, owner_id=line.owner_id, visibility=line.visibility, viewer_id=viewer.id)
+    ]
+    owed = {line.id: amount or Decimal(0) for line, amount in seen_debts}
+    payments = sum(
+        (
+            (line.debt_payment or Decimal(0)) + line.debt_insurance
+            for line, amount in seen_debts
+            if line.debt_payment is not None and amount
+        ),
+        Decimal(0),
+    )
     monthly_fixed = core.fixed_expenses(
         (i.frequency, -i.amount) for i in goals.fixed_items(db, viewer, today)
     )
@@ -421,10 +494,15 @@ def analysis(
         ),
         *ga.ceiling_notices(scope_facts, regulated),
         *ga.capstone_notices(scope_facts, band=band),
+        *ga.costly_debt_notices(
+            scope_facts, risks, {line.id: (line.debt_rate, owed[line.id]) for line in scoped_debts}
+        ),
+        *ga.debt_payment_notices(payments=payments, income=flows.income),
         *ga.left_over_notices(
             facts, unallocated=household_plan.unallocated, capacity_months=capacity_months
         ),
     ]
+    scope_plan = _plan(scope_facts, cap, row.precaution_share)
     return Analysis(
         this_month,
         reference,
@@ -434,12 +512,12 @@ def analysis(
         capacity_months,
         _tiered(scoped, this_month),
         household,
-        _plan(scope_facts, cap, row.precaution_share),
+        scope_plan,
         bands,
         forward,
         notices,
         ga.select(notices, _dismissals(db, viewer), at),
-        {k: line_rows[k] for k in lines},
+        {k: line_rows[k] for k in lines} | {line.id: line for line in scoped_debts},
         _risk_points(_tiered(scoped, this_month), risks, inflation),
         inflation,
         _sankey(
@@ -452,6 +530,8 @@ def analysis(
             {g.id for g in in_view},
             all_assets=all_assets,
         ),
+        _chances(_tiered(scoped, this_month), scope_plan, line_rows),
+        scope_plan.months_to_fill,
     )
 
 

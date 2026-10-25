@@ -664,3 +664,71 @@ def test_a_goal_on_the_glide_path_says_the_share_allowed(owner_client: TestClien
     [point] = _analysis(owner_client)["risk"]
     assert point["months_left"] == 40
     assert point["allowed_share"] == "0.4444"  # (40 - 24) / 36
+
+
+def _debt(client: TestClient, rate: str, payment: str, owed: str = "5000.00") -> str:
+    loan = _line(client, "Debts", "Prêt conso")
+    assert _value(client, loan, "2026-10", owed).status_code == 204
+    response = client.put(
+        f"/api/projection/debts/{loan}",
+        json={"payment": payment, "rate": rate, "insurance": "0"},
+        headers=csrf(client),
+    )
+    assert response.status_code == 200, response.text
+    return loan
+
+
+def test_each_goal_has_its_chance_at_the_plan_and_at_the_required_effort(
+    owner_client: TestClient,
+) -> None:
+    """F-ANA-7: a goal on a livret is certain; one on stocks has a chance."""
+    _capacity(owner_client, "500.00")
+    livret = _livret(owner_client, ("2026-09", "2026-10"))
+    pea = _stocks(owner_client)
+    _goal(
+        owner_client,
+        name="Vacances",
+        target="2000.00",
+        deadline="2027-10",
+        start="2026-09",
+        fundings=[{"line_id": livret, "share": 100}],
+    )
+    _goal(
+        owner_client,
+        name="Voiture",
+        target="8000.00",
+        deadline="2028-10",
+        start="2026-09",
+        fundings=[{"line_id": pea, "share": 100, "opening": "3000.00"}],
+    )
+    chances = {c["name"]: c for c in _analysis(owner_client)["chances"]}
+    holiday, car = chances["Vacances"], chances["Voiture"]
+    assert holiday["certain"]
+    assert (holiday["chance_required"], holiday["short_required"]) == ("1.0000", "0.00")
+    assert not car["certain"]
+    assert 0 < float(car["chance_planned"]) < 1
+    assert float(car["required"]) > 0
+    assert car["months_left"] == 24
+
+
+def test_a_costly_debt_and_heavy_payments_are_points_to_look_at(
+    owner_client: TestClient,
+) -> None:
+    """R12 against the goals' best line (stocks, 7 %: above 8 %), R13 above 35 % of income."""
+    _spending(owner_client)  # an income of 2,000 a month
+    pea = _stocks(owner_client)
+    _goal(
+        owner_client,
+        name="Voiture",
+        target="8000.00",
+        deadline="2028-10",
+        start="2026-09",
+        fundings=[{"line_id": pea, "share": 100, "opening": "3000.00"}],
+    )
+    _debt(owner_client, "0.09", "800.00")
+    points = {p["rule"]: p for p in _all_points(owner_client)}
+    costly = points["costly_debt"]
+    assert (costly["line_name"], costly["amount"]) == ("Prêt conso", "5000.00")
+    assert costly["figures"] == {"rate": "0.09", "threshold": "0.08"}
+    payments = points["debt_payments"]
+    assert (payments["amount"], payments["figures"]["ceiling"]) == ("800.00", "0.35")

@@ -436,6 +436,10 @@ export type GoalAnalysisOut = {
      * Capacity Set
      */
     capacity_set: boolean;
+    /**
+     * Chances
+     */
+    chances: Array<GoalChanceOut>;
     forward: ForwardOut;
     /**
      * Inflation
@@ -446,6 +450,10 @@ export type GoalAnalysisOut = {
      */
     month: string;
     points: PointsOut;
+    /**
+     * Precaution Months
+     */
+    precaution_months: number | null;
     /**
      * Reference
      */
@@ -463,6 +471,59 @@ export type GoalAnalysisOut = {
      * Timeline
      */
     timeline: Array<TimelineOut>;
+};
+
+/**
+ * GoalChanceOut
+ *
+ * The chance of reaching a goal by its deadline (F-ANA-7), on the projection's engine.
+ */
+export type GoalChanceOut = {
+    /**
+     * Certain
+     */
+    certain: boolean;
+    /**
+     * Chance Planned
+     */
+    chance_planned: string;
+    /**
+     * Chance Required
+     */
+    chance_required: string | null;
+    /**
+     * Deadline
+     */
+    deadline: string;
+    /**
+     * Goal Id
+     */
+    goal_id: string;
+    /**
+     * Months Left
+     */
+    months_left: number;
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Planned
+     */
+    planned: string;
+    /**
+     * Required
+     */
+    required: string | null;
+    /**
+     * Short Planned
+     */
+    short_planned: string | null;
+    /**
+     * Short Required
+     */
+    short_required: string | null;
+    tier: Tier;
 };
 
 /**

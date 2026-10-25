@@ -187,6 +187,27 @@ class SankeyOut(BaseModel):
     elsewhere: list[SankeyElsewhereOut]
 
 
+class GoalChanceOut(BaseModel):
+    """The chance of reaching a goal by its deadline (F-ANA-7), on the projection's engine."""
+
+    goal_id: UUID
+    name: str
+    tier: core.Tier
+    deadline: str
+    months_left: int
+    certain: bool
+    """No funding line has volatility: reached or short, rather than a chance."""
+    planned: Decimal
+    """The planned allocation a month (F-GOAL-6)."""
+    chance_planned: Decimal
+    """A share of the outcomes, at the planned allocation."""
+    short_planned: Decimal | None
+    """When certain: what the plan leaves missing (0 when reached)."""
+    required: Decimal | None
+    chance_required: Decimal | None
+    short_required: Decimal | None
+
+
 class PointsOut(BaseModel):
     shown: list[PointOut]
     more: list[PointOut]
@@ -208,6 +229,10 @@ class GoalAnalysisOut(BaseModel):
     inflation: Decimal
     """The yearly inflation assumed, a share."""
     sankey: SankeyOut
+    chances: list[GoalChanceOut]
+    """Per goal, not of reaching them all: a crash hits every goal on the same lines."""
+    precaution_months: int | None
+    """The months the scope's plan takes to fill the precaution, shown instead of a chance."""
     points: PointsOut
 
 
@@ -406,6 +431,28 @@ def goal_analysis(
                 if (amount := sk.placement.elsewhere.get(g))
             ],
         ),
+        chances=[
+            GoalChanceOut(
+                goal_id=c.analyzed.goal.id,
+                name=c.analyzed.goal.name,
+                tier=goals.tier(c.analyzed.goal, a.this_month),
+                deadline=str(c.analyzed.facts.deadline),
+                months_left=c.months_left,
+                certain=c.at_plan.certain,
+                planned=quantize(c.planned),
+                chance_planned=_share(c.at_plan.chance),
+                short_planned=quantize(c.at_plan.short) if c.at_plan.certain else None,
+                required=_money(c.required),
+                chance_required=_share(c.at_required.chance) if c.at_required else None,
+                short_required=(
+                    quantize(c.at_required.short)
+                    if c.at_required and c.at_required.certain
+                    else None
+                ),
+            )
+            for c in a.chances
+        ],
+        precaution_months=a.precaution_months,
         points=PointsOut(
             shown=[point(n) for n in a.selection.shown],
             more=[point(n) for n in a.selection.more],
