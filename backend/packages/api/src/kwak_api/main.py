@@ -9,6 +9,7 @@ from kwak_api.audit.routes import router as audit_router
 from kwak_api.auth.routes import router as auth_router
 from kwak_api.dash.app import create_dash
 from kwak_api.db import make_engine
+from kwak_api.demo.routes import router as demo_router
 from kwak_api.deps import db_scope, get_now
 from kwak_api.goals.analysis import router as goal_analysis_router
 from kwak_api.goals.routes import router as goals_router
@@ -57,6 +58,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(router)
     app.include_router(auth_router)
     app.include_router(household_router)
+    app.include_router(demo_router)
     app.include_router(audit_router)
     app.include_router(wealth_router)
     app.include_router(goal_analysis_router)  # before /api/goals/{goal_id}

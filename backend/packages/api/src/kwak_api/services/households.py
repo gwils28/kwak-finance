@@ -32,7 +32,7 @@ def create_household(
     """Create the household and its owner. The caller commits."""
     check_password_policy(password)
     email = normalize_email(email)
-    if session.scalar(select(exists().select_from(Household))):
+    if session.scalar(select(exists().where(Household.is_demo.is_(False)))):
         raise HouseholdAlreadyExistsError("a household already exists")
 
     owner = User(

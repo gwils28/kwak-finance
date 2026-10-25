@@ -2661,6 +2661,10 @@ export type TotpSetupOut = {
  */
 export type UserOut = {
     /**
+     * Demo
+     */
+    demo: boolean;
+    /**
      * Display Name
      */
     display_name: string;
@@ -3299,6 +3303,81 @@ export type TotpVerifyResponses = {
 };
 
 export type TotpVerifyResponse = TotpVerifyResponses[keyof TotpVerifyResponses];
+
+export type EnterData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/demo/enter';
+};
+
+export type EnterErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type EnterError = EnterErrors[keyof EnterErrors];
+
+export type EnterResponses = {
+    /**
+     * Successful Response
+     */
+    200: UserOut;
+};
+
+export type EnterResponse = EnterResponses[keyof EnterResponses];
+
+export type LeaveData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/demo/leave';
+};
+
+export type LeaveErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type LeaveError = LeaveErrors[keyof LeaveErrors];
+
+export type LeaveResponses = {
+    /**
+     * Successful Response
+     */
+    200: UserOut;
+};
+
+export type LeaveResponse = LeaveResponses[keyof LeaveResponses];
+
+export type ResetData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/demo/reset';
+};
+
+export type ResetErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ResetError = ResetErrors[keyof ResetErrors];
+
+export type ResetResponses = {
+    /**
+     * Successful Response
+     */
+    200: UserOut;
+};
+
+export type ResetResponse = ResetResponses[keyof ResetResponses];
 
 export type ListGoalsData = {
     body?: never;

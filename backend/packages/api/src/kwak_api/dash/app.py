@@ -86,7 +86,7 @@ class DashGate:
             )
             if session is None or session.mfa_verified_at is None:
                 return None
-            return session.user_id
+            return session.viewer_id
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         if scope["type"] != "http":
