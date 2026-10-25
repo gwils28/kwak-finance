@@ -1,9 +1,11 @@
 import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useEffect } from "react";
+import { showHousehold } from "./api/client";
 import { logout, updateMe } from "./api/generated";
 import { meQuery } from "./auth/session";
 import { AccountMenu } from "./components/AccountMenu";
+import { DemoBanner, useDemoSwitch } from "./components/DemoBanner";
 import { Footer } from "./components/Footer";
 import { Icon } from "./components/icons";
 import { Logo } from "./components/Logo";
@@ -79,6 +81,14 @@ export function AppLayout() {
   const navigate = useNavigate();
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const place = placeOf(pathname);
+  const demo = useDemoSwitch();
+
+  // Every change names the household shown, so a page left in the demo (or out of it) cannot
+  // write to the other one.
+  useEffect(() => {
+    showHousehold(user.household_id);
+    return () => showHousehold(null);
+  }, [user.household_id]);
 
   // The account's language wins; with none saved yet, keep the browser's and save it.
   useEffect(() => {
@@ -100,7 +110,8 @@ export function AppLayout() {
 
   return (
     <div className="flex min-h-screen flex-col">
-      <header className="sticky top-0 z-10 border-b border-border bg-surface/95 backdrop-blur">
+      {/* Above the tables' sticky headers (z-30), so the account menu opens over them. */}
+      <header className="sticky top-0 z-40 border-b border-border bg-surface/95 backdrop-blur">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-8 px-4 md:h-14 md:flex-nowrap">
           <Link
             to="/"
@@ -165,12 +176,15 @@ export function AppLayout() {
             <AccountMenu
               name={user.display_name}
               email={user.email}
+              inDemo={user.demo}
+              onDemo={user.demo ? demo.leave : demo.open}
               onLanguageChange={saveLanguage}
               onSignOut={signOut}
             />
           </div>
         </div>
       </header>
+      {user.demo && <DemoBanner demo={demo} />}
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-10">
         <Outlet />
       </main>

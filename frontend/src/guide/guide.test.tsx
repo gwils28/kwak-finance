@@ -150,6 +150,7 @@ test("the guide is in the header and has a section per feature", async () => {
     "Goals",
     "Reports",
     "Members and security",
+    "The demo",
   ]);
   expect(entries[4]).toHaveAttribute("href", "#budget");
   const lines = screen.getByRole("region", { name: "Entering lines" });
