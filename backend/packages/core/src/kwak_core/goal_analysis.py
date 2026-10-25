@@ -862,6 +862,56 @@ def ceiling_notices(
     return out
 
 
+COSTLY_DEBT_FLOOR = Decimal("0.06")
+"""A debt above 6 % a year costs more than most savings can earn."""
+COSTLY_DEBT_MARGIN = Decimal("0.01")
+DEBT_RATIO = Decimal("0.35")
+"""The lenders' ceiling on monthly debt payments over income in France (HCSF), insurance
+included."""
+
+
+def costly_debt_notices(
+    goals: Sequence[GoalFacts],
+    risks: Mapping[UUID, LineRisk],
+    debts: Mapping[UUID, tuple[Decimal, Decimal]],
+) -> list[Notice]:
+    """R12: a debt line whose rate is above the greater of 6 % and the best return assumed for
+    a line funding a goal plus 1 point. `debts`: line -> its annual rate and what it owes; a
+    repaid one is left out. Information: it costs more than the goals' lines are assumed to
+    earn."""
+    best = max(
+        (risks[k].ret for g in goals for k in g.shares if k in risks),
+        default=None,
+    )
+    threshold = max(COSTLY_DEBT_FLOOR, best + COSTLY_DEBT_MARGIN if best is not None else ZERO)
+    return [
+        Notice(
+            Rule.COSTLY_DEBT,
+            Severity.INFO,
+            line=line,
+            amount=owed,
+            figures={"rate": rate, "threshold": threshold},
+        )
+        for line, (rate, owed) in debts.items()
+        if owed > 0 and rate > threshold
+    ]
+
+
+def debt_payment_notices(*, payments: Decimal, income: Decimal) -> list[Notice]:
+    """R13: the debts' monthly payments, insurance included, above 35 % of the average monthly
+    income. Information, worth knowing before a home-deposit goal."""
+    if income <= 0 or payments <= income * DEBT_RATIO:
+        return []
+    return [
+        Notice(
+            Rule.DEBT_PAYMENTS,
+            Severity.INFO,
+            amount=payments,
+            figures={"ratio": payments / income, "ceiling": DEBT_RATIO, "income": income},
+        )
+    ]
+
+
 def _to_ahead(expected: Decimal, value: Decimal, target: Decimal, band: Decimal) -> Decimal:
     """The fewest whole euros that make a goal ahead (strictly above its expected value and
     the band, kwak_core.budget.budget_status) or reached, which counts as ahead too."""
