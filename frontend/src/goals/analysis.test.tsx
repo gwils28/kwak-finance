@@ -638,3 +638,78 @@ test("the ceiling and the Sankey read in French", async () => {
     "« Libre » peut contenir des enveloppes d'objectifs que vous ne voyez pas.",
   );
 });
+
+test("each goal's chance, the precaution's months and the debt points", async () => {
+  fakeApi({
+    "GET /api/auth/me": () => Response.json(owner),
+    "GET /api/goals/analysis": () =>
+      Response.json({
+        ...analysis,
+        precaution_months: 5,
+        chances: [
+          {
+            goal_id: "g-car",
+            name: "Voiture",
+            tier: "medium",
+            deadline: "2028-10",
+            months_left: 24,
+            certain: false,
+            planned: "250.00",
+            chance_planned: "0.6230",
+            short_planned: null,
+            required: "300.00",
+            chance_required: "0.9960",
+            short_required: null,
+          },
+          {
+            goal_id: "g-trip",
+            name: "Vacances",
+            tier: "short",
+            deadline: "2027-06",
+            months_left: 8,
+            certain: true,
+            planned: "100.00",
+            chance_planned: "0.0000",
+            short_planned: "200.00",
+            required: "125.00",
+            chance_required: "1.0000",
+            short_required: "0.00",
+          },
+        ],
+        points: {
+          shown: [
+            point({
+              rule: "costly_debt",
+              severity: "info",
+              line_id: "l-loan",
+              line_name: "Prêt conso",
+              amount: "5000.00",
+              figures: { rate: "0.09", threshold: "0.08" },
+            }),
+            point({
+              rule: "debt_payments",
+              severity: "info",
+              amount: "800.00",
+              figures: { ratio: "0.40", ceiling: "0.35", income: "2000.00" },
+            }),
+          ],
+          more: [],
+        },
+      }),
+  });
+  render(<TestApp path="/goals/analysis" />);
+
+  const table = await screen.findByRole("table", { name: "Chance of reaching each goal" });
+  const car = within(table).getByRole("row", { name: /Voiture/ });
+  expect(car).toHaveTextContent("62%");
+  expect(car).toHaveTextContent("more than 99%");
+  expect(car).toHaveTextContent("€250 a month");
+  const trip = within(table).getByRole("row", { name: /Vacances/ });
+  expect(trip).toHaveTextContent("short by €200");
+  expect(trip).toHaveTextContent("reached");
+  expect(screen.getByText("At the plan, the precaution is filled in 5 months.")).toBeVisible();
+  expect(screen.getByText("Prêt conso costs 9% a year, above 8%.")).toBeVisible();
+  expect(
+    screen.getByText("Debt payments of €800 a month take 40% of the average income."),
+  ).toBeVisible();
+});

@@ -130,6 +130,31 @@ export const goalAnalysisEn = {
       : `${line} is ${room} below its ${ceiling} ceiling.`,
   ceilingGoal: (goal: string) => `${goal} still counts on its rises.`,
   ceilingWhy: "Deposits above the ceiling are refused; interest can still take it over.",
+  costlyDebt: (line: string, rate: string, threshold: string) =>
+    `${line} costs ${rate} a year, above ${threshold}.`,
+  costlyDebtWhy: "It costs more than the goals' lines are assumed to earn.",
+  debtPayments: (amount: string, ratio: string) =>
+    `Debt payments of ${amount} a month take ${ratio} of the average income.`,
+  debtPaymentsWhy:
+    "Above 35%, insurance included, lenders in France rarely lend more: worth knowing before a home-deposit goal.",
+  chances: "Chance of reaching each goal",
+  chancesHelp:
+    "Each goal's envelope on its own lines, with the projection's assumptions: the chance it reaches its target at least once by its deadline, at the plan's allocation and at the required effort.",
+  chancesTable: "Chance of reaching each goal",
+  chanceDeadline: "Deadline",
+  chanceAtPlan: "At the plan",
+  chanceAtRequired: "At the required effort",
+  aMonth: (amount: string) => `${amount} a month`,
+  chanceReached: "reached",
+  chanceShort: (amount: string) => `short by ${amount}`,
+  chanceLow: "less than 1%",
+  chanceHigh: "more than 99%",
+  chancesNote:
+    "Chances are per goal, not of reaching them all: a crash hits every goal on the same lines. The free part of the lines is left out, a prudent choice. An estimate, not a forecast.",
+  precautionMonths: (months: number) =>
+    months === 0
+      ? "The precaution is filled."
+      : `At the plan, the precaution is filled in ${months} month${months === 1 ? "" : "s"}.`,
   // Where the goals' money sits (F-ANA-5)
   sankey: "Where the goals' money sits",
   sankeyHelp: (month: string) =>
@@ -347,6 +372,30 @@ export const goalAnalysisFr: typeof goalAnalysisEn = {
   ceilingGoal: (goal) => `${goal} compte encore sur ses hausses.`,
   ceilingWhy:
     "Les dépôts au-delà du plafond sont refusés ; les intérêts peuvent encore le dépasser.",
+  costlyDebt: (line, rate, threshold) => `${line} coûte ${rate} par an, au-dessus de ${threshold}.`,
+  costlyDebtWhy: "Elle coûte plus que ce que les lignes des objectifs sont censées rapporter.",
+  debtPayments: (amount, ratio) =>
+    `Des mensualités de ${amount} par mois prennent ${ratio} du revenu moyen.`,
+  debtPaymentsWhy:
+    "Au-delà de 35 %, assurance comprise, les banques en France prêtent rarement plus : bon à savoir avant un objectif d'apport immobilier.",
+  chances: "Chance d'atteindre chaque objectif",
+  chancesHelp:
+    "L'enveloppe de chaque objectif sur ses propres lignes, avec les hypothèses de la projection : la chance qu'elle atteigne sa cible au moins une fois avant l'échéance, à l'allocation du plan et à l'effort requis.",
+  chancesTable: "Chance d'atteindre chaque objectif",
+  chanceDeadline: "Échéance",
+  chanceAtPlan: "Au plan",
+  chanceAtRequired: "À l'effort requis",
+  aMonth: (amount) => `${amount} par mois`,
+  chanceReached: "atteint",
+  chanceShort: (amount) => `il manque ${amount}`,
+  chanceLow: "moins de 1 %",
+  chanceHigh: "plus de 99 %",
+  chancesNote:
+    "Les chances sont par objectif, pas de tous les atteindre : un krach frappe tous les objectifs des mêmes lignes. La part libre des lignes n'est pas comptée, par prudence. Une estimation, pas une prévision.",
+  precautionMonths: (months) =>
+    months === 0
+      ? "La précaution est remplie."
+      : `Au plan, la précaution est remplie en ${months} mois.`,
   sankey: "Où est l'argent des objectifs",
   sankeyHelp: (month) =>
     `Les lignes de chaque catégorie en ${month}, et ce que chaque ligne détient pour chaque objectif, le reste étant libre. Patrimoine brut : les dettes ne sont pas montrées.`,
