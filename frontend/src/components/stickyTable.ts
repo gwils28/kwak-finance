@@ -1,9 +1,12 @@
 /**
  * Classes for a large table that keeps its header row and its first column in view: the
  * table scrolls inside its own frame both ways, since a page-level sticky header cannot also
- * scroll sideways. Sticky cells need a background, or the rows would show through.
+ * scroll sideways. Sticky cells need a background, or the rows would show through. The frame is
+ * positioned so that absolute descendants (the `sr-only` texts) are clipped by it: otherwise they
+ * stay at their place in the wide table and widen the whole page.
  */
-export const SCROLL_FRAME = "max-h-[75vh] overflow-auto rounded-lg border border-border bg-surface";
+export const SCROLL_FRAME =
+  "relative max-h-[75vh] overflow-auto rounded-lg border border-border bg-surface";
 
 /** A column header: stays at the top, under the corner. */
 export const STICKY_TOP =
