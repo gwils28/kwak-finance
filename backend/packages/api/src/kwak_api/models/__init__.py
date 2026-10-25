@@ -12,6 +12,7 @@ from kwak_api.models.goal import (
 from kwak_api.models.household import Household, Role, User
 from kwak_api.models.invite import Invite
 from kwak_api.models.recovery_code import RecoveryCode
+from kwak_api.models.retirement import MemberRetirement
 from kwak_api.models.session import UserSession
 from kwak_api.models.spending import (
     FixedExpense,
@@ -35,6 +36,7 @@ __all__ = [
     "GoalNoticeDismissal",
     "Household",
     "Invite",
+    "MemberRetirement",
     "RecoveryCode",
     "Role",
     "SpendingCategory",

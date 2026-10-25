@@ -2229,6 +2229,65 @@
         "title": "MonthLinesOut",
         "type": "object"
       },
+      "MyRetirementIn": {
+        "properties": {
+          "birth": {
+            "title": "Birth",
+            "type": "string"
+          },
+          "earnings": {
+            "anyOf": [
+              {
+                "exclusiveMaximum": 1000000000000.0,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              }
+            ],
+            "default": "0",
+            "title": "Earnings"
+          },
+          "pension": {
+            "anyOf": [
+              {
+                "exclusiveMaximum": 1000000000000.0,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              }
+            ],
+            "default": "0",
+            "title": "Pension"
+          },
+          "pension_month": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pension Month"
+          },
+          "retirement": {
+            "title": "Retirement",
+            "type": "string"
+          }
+        },
+        "required": [
+          "birth",
+          "retirement"
+        ],
+        "title": "MyRetirementIn",
+        "type": "object"
+      },
       "PartIn": {
         "properties": {
           "amount": {
@@ -2762,6 +2821,310 @@
         ],
         "title": "ReportSection",
         "type": "string"
+      },
+      "RetirementMemberOut": {
+        "properties": {
+          "age_at_pension": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Age At Pension"
+          },
+          "age_at_retirement": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Age At Retirement"
+          },
+          "birth": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Birth"
+          },
+          "display_name": {
+            "title": "Display Name",
+            "type": "string"
+          },
+          "earnings": {
+            "anyOf": [
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Earnings"
+          },
+          "me": {
+            "title": "Me",
+            "type": "boolean"
+          },
+          "pension": {
+            "anyOf": [
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pension"
+          },
+          "pension_month": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pension Month"
+          },
+          "retirement": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Retirement"
+          },
+          "user_id": {
+            "format": "uuid",
+            "title": "User Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "user_id",
+          "display_name",
+          "me",
+          "birth",
+          "retirement",
+          "earnings",
+          "pension_month",
+          "pension",
+          "age_at_retirement",
+          "age_at_pension"
+        ],
+        "title": "RetirementMemberOut",
+        "type": "object"
+      },
+      "RetirementOut": {
+        "properties": {
+          "members": {
+            "items": {
+              "$ref": "#/components/schemas/RetirementMemberOut"
+            },
+            "title": "Members",
+            "type": "array"
+          },
+          "settings": {
+            "$ref": "#/components/schemas/RetirementSettingsOut"
+          },
+          "spending": {
+            "$ref": "#/components/schemas/RetirementSpendingOut"
+          }
+        },
+        "required": [
+          "members",
+          "settings",
+          "spending"
+        ],
+        "title": "RetirementOut",
+        "type": "object"
+      },
+      "RetirementSettingsOut": {
+        "properties": {
+          "default_horizon_age": {
+            "title": "Default Horizon Age",
+            "type": "integer"
+          },
+          "default_indexation": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Default Indexation",
+            "type": "string"
+          },
+          "default_spending_share": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Default Spending Share",
+            "type": "string"
+          },
+          "horizon_age": {
+            "title": "Horizon Age",
+            "type": "integer"
+          },
+          "indexation": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Indexation",
+            "type": "string"
+          },
+          "spending_amount": {
+            "anyOf": [
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Spending Amount"
+          },
+          "spending_share": {
+            "anyOf": [
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Spending Share"
+          }
+        },
+        "required": [
+          "spending_share",
+          "spending_amount",
+          "indexation",
+          "horizon_age",
+          "default_spending_share",
+          "default_indexation",
+          "default_horizon_age"
+        ],
+        "title": "RetirementSettingsOut",
+        "type": "object"
+      },
+      "RetirementSettingsPatch": {
+        "description": "Only the fields present change; null brings a setting back to its default.",
+        "properties": {
+          "horizon_age": {
+            "anyOf": [
+              {
+                "maximum": 200.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Horizon Age"
+          },
+          "indexation": {
+            "anyOf": [
+              {
+                "exclusiveMaximum": 1.0,
+                "exclusiveMinimum": -1.0,
+                "type": "number"
+              },
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Indexation"
+          },
+          "spending_amount": {
+            "anyOf": [
+              {
+                "exclusiveMaximum": 1000000000000.0,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Spending Amount"
+          },
+          "spending_share": {
+            "anyOf": [
+              {
+                "exclusiveMaximum": 10.0,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Spending Share"
+          }
+        },
+        "title": "RetirementSettingsPatch",
+        "type": "object"
+      },
+      "RetirementSpendingOut": {
+        "properties": {
+          "average": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Average",
+            "type": "string"
+          },
+          "base": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Base",
+            "type": "string"
+          },
+          "debt_payments": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Debt Payments",
+            "type": "string"
+          },
+          "months": {
+            "title": "Months",
+            "type": "integer"
+          },
+          "retirement_spending": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Retirement Spending",
+            "type": "string"
+          }
+        },
+        "required": [
+          "average",
+          "debt_payments",
+          "base",
+          "months",
+          "retirement_spending"
+        ],
+        "title": "RetirementSpendingOut",
+        "type": "object"
       },
       "RiskPointOut": {
         "description": "A funded goal on the horizon and risk chart (F-ANA-4).",
@@ -7408,6 +7771,213 @@
         "summary": "Set Inflation",
         "tags": [
           "projection"
+        ]
+      }
+    },
+    "/api/retirement": {
+      "get": {
+        "operationId": "getRetirement",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "kwak_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Kwak Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RetirementOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Retirement",
+        "tags": [
+          "retirement"
+        ]
+      }
+    },
+    "/api/retirement/me": {
+      "delete": {
+        "operationId": "deleteMyRetirement",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "kwak_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Kwak Session"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete My Retirement",
+        "tags": [
+          "retirement"
+        ]
+      },
+      "put": {
+        "operationId": "setMyRetirement",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "kwak_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Kwak Session"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MyRetirementIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RetirementOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Set My Retirement",
+        "tags": [
+          "retirement"
+        ]
+      }
+    },
+    "/api/retirement/settings": {
+      "patch": {
+        "operationId": "updateRetirementSettings",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "kwak_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Kwak Session"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RetirementSettingsPatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RetirementOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Update Retirement Settings",
+        "tags": [
+          "retirement"
         ]
       }
     },

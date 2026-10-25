@@ -14,6 +14,7 @@ from kwak_api.goals.analysis import router as goal_analysis_router
 from kwak_api.goals.routes import router as goals_router
 from kwak_api.household.routes import router as household_router
 from kwak_api.projection.routes import router as projection_router
+from kwak_api.retirement.routes import router as retirement_router
 from kwak_api.settings import Settings
 from kwak_api.spending.budget import router as spending_budget_router
 from kwak_api.spending.report import router as spending_report_router
@@ -61,6 +62,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(goal_analysis_router)  # before /api/goals/{goal_id}
     app.include_router(goals_router)
     app.include_router(projection_router)
+    app.include_router(retirement_router)
     app.include_router(spending_router)
     app.include_router(spending_budget_router)
     app.include_router(spending_report_router)
