@@ -157,10 +157,75 @@ class Outcome:
         months = np.nonzero(counts >= needed)[0]
         return int(months[0]) if months.size else None
 
+    def ran_out_by(self, share: Decimal) -> int | None:
+        """The first month by which `share` of the outcomes have run out of liquid holdings
+        (a Shortfall); None within the horizon."""
+        counts = np.logical_or.accumulate(self.shortfall > 0, axis=0).sum(axis=1)
+        months = np.nonzero(counts >= float(share) * self.shortfall.shape[1])[0]
+        return int(months[0]) if months.size else None
+
     def shortfall_share(self) -> Decimal:
         """The share of outcomes that run into a Shortfall at some point."""
         hit = (self.shortfall > 0).any(axis=0)
         return Decimal(int(hit.sum())) / Decimal(hit.size)
+
+
+@dataclass(frozen=True)
+class Rules:
+    """How the categories grow and give: their monthly log-return parameters, their shares of
+    the savings, the ones taken first and the ones taken in proportion."""
+
+    mu: Floats
+    sigma: Floats
+    share: Floats
+    first: list[int]
+    pro_rata: npt.NDArray[np.bool_]
+
+
+def rules(categories: Sequence[Category]) -> Rules:
+    params = [monthly_params(c.assumption) for c in categories]
+    presets = [c.preset for c in categories]
+    first = [presets.index(p) for p in FIRST_TAKEN if p in presets]
+    return Rules(
+        mu=np.array([float(m) for m, _ in params]),
+        sigma=np.array([float(s) for _, s in params]),
+        share=np.array([float(c.share) for c in categories]),
+        first=first,
+        pro_rata=np.array(
+            [k not in first and p not in NEVER_TAKEN for k, p in enumerate(presets)], dtype=bool
+        ),
+    )
+
+
+def streams(categories: Sequence[Category], seed: int) -> list[np.random.Generator]:
+    """One stream per category, keyed by its id: a scenario adding a category changes no
+    other's draws."""
+    return [np.random.default_rng(np.random.SeedSequence([seed, c.id.int])) for c in categories]
+
+
+def draw(generators: Sequence[np.random.Generator], paths: int) -> Floats:
+    """A month's standard normal draws, a column per category."""
+    if not generators:
+        return np.zeros((paths, 0))
+    return np.column_stack([g.standard_normal(paths) for g in generators])
+
+
+def withdraw(
+    held: Floats, need: Floats, first: Sequence[int], pro_rata: npt.NDArray[np.bool_]
+) -> tuple[Floats, Floats]:
+    """Takes `need` from the categories taken first, then from the others in proportion; the
+    holdings left and what could not be taken."""
+    need = need.copy()
+    held = held.copy()
+    for k in first:
+        take = np.minimum(held[:, k], need)
+        held[:, k] -= take
+        need -= take
+    pool = (held * pro_rata).sum(axis=1)
+    take = np.minimum(pool, need)
+    ratio = np.divide(take, pool, out=np.zeros_like(pool), where=pool > 0)
+    held = held - held * pro_rata * ratio[:, None]
+    return held, need - take
 
 
 def simulate(
@@ -179,18 +244,8 @@ def simulate(
         raise ValueError("the allocation's shares sum to 1")
     if any(c.start < 0 or not 0 <= c.share <= 1 for c in cats):
         raise ValueError("a category's start is positive and its share from 0 to 1")
-    params = [monthly_params(c.assumption) for c in cats]
-    mu = np.array([float(m) for m, _ in params])
-    sigma = np.array([float(s) for _, s in params])
-    share = np.array([float(c.share) for c in cats])
-    presets = [c.preset for c in cats]
-    first = [presets.index(p) for p in FIRST_TAKEN if p in presets]
-    pro_rata = np.array(
-        [k not in first and p not in NEVER_TAKEN for k, p in enumerate(presets)], dtype=bool
-    )
-
-    # One stream per category, keyed by its id: a scenario adding a category changes no other.
-    streams = [np.random.default_rng(np.random.SeedSequence([seed, c.id.int])) for c in cats]
+    r = rules(cats)
+    generators = streams(cats, seed)
     monthly_rate = float(SHORTFALL_RATE) / 12
     held = np.tile(np.array([float(c.start) for c in cats]), (paths, 1))
     short = np.zeros(paths)
@@ -211,13 +266,9 @@ def simulate(
     record(0)
     for t in range(1, months + 1):
         # Drawn every month, whatever the scenario: every scenario shares the draws.
-        z = (
-            np.column_stack([g.standard_normal(paths) for g in streams])
-            if cats
-            else np.zeros((paths, 0))
-        )
+        z = draw(generators, paths)
         before = held.sum(axis=1)
-        held = held * np.exp(mu + sigma * z)
+        held = held * np.exp(r.mu + r.sigma * z)
         returns = held.sum(axis=1) - before
         interest = short * monthly_rate
         short = short + interest
@@ -230,22 +281,12 @@ def simulate(
             repaid = np.minimum(short, saved)
             short = short - repaid
             added = saved - repaid
-            held = held + added[:, None] * share
+            held = held + added[:, None] * r.share
         else:
             need = np.full(paths, -saved)
-            for k in first:
-                take = np.minimum(held[:, k], need)
-                held[:, k] -= take
-                need -= take
-                taken += take
-            pool = (held * pro_rata).sum(axis=1)
-            take = np.minimum(pool, need)
-            ratio = np.divide(take, pool, out=np.zeros(paths), where=pool > 0)
-            held = held - held * pro_rata * ratio[:, None]
-            need -= take
-            taken += take
-            missing = need
-            short = short + need
+            held, missing = withdraw(held, need, r.first, r.pro_rata)
+            taken = need - missing
+            short = short + missing
         held = np.maximum(held, 0)
         if keep:
             flows.append(Flows(returns, added, taken, missing, interest, repaid))
