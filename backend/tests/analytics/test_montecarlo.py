@@ -303,3 +303,11 @@ def test_the_shortfall_has_its_own_median_month_by_month() -> None:
     owed = 200 * (1 + float(SHORTFALL_RATE) / 12)
     assert out.shortfall_median(today=False) == [D(0), D("200.00"), D(f"{owed:.2f}")]
     assert out.shortfall_median()[2] == D(f"{owed / 1.12 ** (2 / 12):.2f}")
+
+
+def test_the_liquid_holdings_have_their_own_median() -> None:
+    """The retirement fan draws the liquid part apart: the home is never taken (F-RET-4)."""
+    livret = _category("savings", "1000", share="1")
+    house = _category("real-estate", "200000")
+    out = simulate(Scenario([livret, house], [D(100)] * 2, [D(0)] * 2, D(0), D(0)), paths=3)
+    assert out.liquid_medians(today=False) == [D(1000), D(1100), D(1200)]

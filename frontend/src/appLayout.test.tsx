@@ -106,7 +106,7 @@ test("the sign-in page opens with the logo and the app's name", async () => {
   );
 });
 
-test("the wealth space has its own tabs: monthly tracking, analysis and projection", async () => {
+test("the wealth space has its own tabs: tracking, analysis, projection and retirement", async () => {
   fakeApi({
     "GET /api/auth/me": () => Response.json(owner),
     "PATCH /api/auth/me": (body) => Response.json({ ...owner, ...(body as object) }),
@@ -127,7 +127,7 @@ test("the wealth space has its own tabs: monthly tracking, analysis and projecti
     within(main)
       .getAllByRole("link")
       .map((tab) => tab.textContent),
-  ).toEqual(["Monthly tracking", "Analysis", "Projection"]);
+  ).toEqual(["Monthly tracking", "Analysis", "Projection", "Retirement"]);
   expect(within(main).getByRole("link", { name: "Analysis" })).toHaveAttribute(
     "aria-current",
     "page",
