@@ -200,6 +200,8 @@ const withRum: GoalsOut = {
 
 const noPoints: GoalAnalysisOut = {
   month: "2026-10",
+  chances: [],
+  precaution_months: null,
   reference: "2026-10",
   capacity: "0.00",
   capacity_set: false,

@@ -807,6 +807,13 @@
             "title": "Capacity Set",
             "type": "boolean"
           },
+          "chances": {
+            "items": {
+              "$ref": "#/components/schemas/GoalChanceOut"
+            },
+            "title": "Chances",
+            "type": "array"
+          },
           "forward": {
             "$ref": "#/components/schemas/ForwardOut"
           },
@@ -821,6 +828,17 @@
           },
           "points": {
             "$ref": "#/components/schemas/PointsOut"
+          },
+          "precaution_months": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Precaution Months"
           },
           "reference": {
             "anyOf": [
@@ -870,9 +888,114 @@
           "risk",
           "inflation",
           "sankey",
+          "chances",
+          "precaution_months",
           "points"
         ],
         "title": "GoalAnalysisOut",
+        "type": "object"
+      },
+      "GoalChanceOut": {
+        "description": "The chance of reaching a goal by its deadline (F-ANA-7), on the projection's engine.",
+        "properties": {
+          "certain": {
+            "title": "Certain",
+            "type": "boolean"
+          },
+          "chance_planned": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Chance Planned",
+            "type": "string"
+          },
+          "chance_required": {
+            "anyOf": [
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Chance Required"
+          },
+          "deadline": {
+            "title": "Deadline",
+            "type": "string"
+          },
+          "goal_id": {
+            "format": "uuid",
+            "title": "Goal Id",
+            "type": "string"
+          },
+          "months_left": {
+            "title": "Months Left",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "planned": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Planned",
+            "type": "string"
+          },
+          "required": {
+            "anyOf": [
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Required"
+          },
+          "short_planned": {
+            "anyOf": [
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Short Planned"
+          },
+          "short_required": {
+            "anyOf": [
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Short Required"
+          },
+          "tier": {
+            "$ref": "#/components/schemas/Tier"
+          }
+        },
+        "required": [
+          "goal_id",
+          "name",
+          "tier",
+          "deadline",
+          "months_left",
+          "certain",
+          "planned",
+          "chance_planned",
+          "short_planned",
+          "required",
+          "chance_required",
+          "short_required"
+        ],
+        "title": "GoalChanceOut",
         "type": "object"
       },
       "GoalDetailOut": {

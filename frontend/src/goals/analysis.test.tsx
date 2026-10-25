@@ -41,6 +41,8 @@ const months = Array.from({ length: 24 }, (_, k) => {
 
 const analysis: GoalAnalysisOut = {
   month: "2026-10",
+  chances: [],
+  precaution_months: null,
   sankey: {
     month: "2026-09",
     all_assets: false,
