@@ -13,7 +13,7 @@ import {
 import { Button, ErrorAlert } from "../components/ui";
 import { useI18n } from "../i18n";
 import { numberFormat } from "../lib/locale";
-import { formatEurWhole, formatPercent } from "../lib/money";
+import { formatEurWhole, formatPercent, formatRate } from "../lib/money";
 import { monthLabel, shiftMonth } from "../lib/months";
 import { GOALS_KEY } from "./shared";
 
@@ -224,8 +224,21 @@ function useSaid(point: PointOut, data: GoalAnalysisOut): Said {
         link: subjectLink,
       };
     }
+    case "costly_debt":
+      return {
+        fact: a.costlyDebt(
+          point.line_name ?? "",
+          formatRate(text(f.rate) ?? "0"),
+          formatRate(text(f.threshold) ?? "0"),
+        ),
+        why: a.costlyDebtWhy,
+      };
+    case "debt_payments":
+      return {
+        fact: a.debtPayments(amount, formatPercent(text(f.ratio) ?? "0")),
+        why: a.debtPaymentsWhy,
+      };
     default:
-      // Rules still to come (costly debt, debt payments) say no more than their goal.
       return { fact: goal };
   }
 }

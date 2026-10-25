@@ -6,6 +6,7 @@ import { ErrorAlert } from "../components/ui";
 import { useI18n } from "../i18n";
 import { monthLabel } from "../lib/months";
 import { Forward, RiskChart, StatusGrid, Timeline } from "./AnalysisCharts";
+import { GoalChances } from "./GoalChances";
 import { MoneySankey } from "./MoneySankey";
 import { Points } from "./Points";
 import { GOALS_KEY } from "./shared";
@@ -73,6 +74,7 @@ export function AnalysisPage({ initialScope = "household" }: { initialScope?: Sc
               />
               <Timeline data={data} />
               <RiskChart data={data} />
+              <GoalChances data={data} />
               <MoneySankey sankey={data.sankey} allAssets={allAssets} onAllAssets={setAllAssets} />
               <StatusGrid data={data} />
             </>
