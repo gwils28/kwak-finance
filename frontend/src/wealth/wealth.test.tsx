@@ -690,6 +690,8 @@ test("the matrix keeps its months and its line names in view while scrolling", a
   // Its own scroll area, both ways, so the header row and the first column can stick.
   expect(table.parentElement?.className).toMatch(/overflow-auto/);
   expect(table.parentElement?.className).toMatch(/max-h-/);
+  // Positioned, so the screen-reader texts of carried values stay inside it, not past the page.
+  expect(table.parentElement?.className).toMatch(/\brelative\b/);
   for (const header of within(table).getAllByRole("columnheader")) {
     expect(header.className).toMatch(/sticky/);
     expect(header.className).toMatch(/top-0/);
