@@ -90,6 +90,7 @@ _TEXT: Mapping[str, tuple[str, str]] = {
     "lea_clothes": ("Clothes for Léa", "Vêtements Léa"),
     "swimming": ("Swimming lessons Léa", "Cours de natation Léa"),
     "holidays_paid": ("Summer holidays", "Vacances d'été"),
+    "holiday_rental": ("Holiday rental", "Location de vacances"),
     "from_cel": ("Withdrawal CEL", "Retrait CEL"),
     "car_down": ("Car down payment", "Apport voiture"),
     "clutch": ("Garage - clutch", "Garage - embrayage"),
@@ -279,10 +280,12 @@ def generate(today: date, language: Language, seed: int = DEMO_SEED) -> Demo:
         return DemoFixed(key, t(key), category, D(amount), frequency, day, first, last, skips)
 
     augusts = tuple(m for m in months if m.month == 8)
+    # The property tax is paid in ten instalments, January to October, as most French households do.
+    winters = tuple(m for m in months if m.month in {11, 12})
     fixed = (
         fx("mortgage", "Housing", "-1088.00", 5, start),
         fx("condo", "Housing", "-420.00", 1, first_in({1, 4, 7, 10}), QUARTERLY),
-        fx("property_tax", "Housing", "-1240.00", 15, first_in({10}), YEARLY),
+        fx("property_tax", "Housing", "-124.00", 15, start, skips=winters),
         fx("home_insurance", "Housing", "-264.00", 20, first_in({3}), YEARLY),
         fx("electricity", "Home", "-98.00", 8, start),
         fx("internet", "Subscriptions", "-39.99", 1, start),
@@ -361,8 +364,9 @@ def generate(today: date, language: Language, seed: int = DEMO_SEED) -> Demo:
         # Income.
         salary_camille = D("2960.00") if i >= RAISE_CAMILLE else D("2780.00")
         salary_alex = D("2590.00") if i >= RAISE_ALEX else D("2420.00")
-        add(on(28), "salary_camille", salary_camille, "Salaries", CAMILLE)
-        add(on(27), "salary_alex", salary_alex, "Salaries", ALEX)
+        # Paid on the first, so the month in progress has its income from its first day.
+        add(on(1), "salary_camille", salary_camille, "Salaries", CAMILLE)
+        add(on(1), "salary_alex", salary_alex, "Salaries", ALEX)
         if month.month == 12:
             add(on(18), "bonus", "1800.00", "Salaries", ALEX)
         if i <= NANNY_LAST:
@@ -426,6 +430,7 @@ def generate(today: date, language: Language, seed: int = DEMO_SEED) -> Demo:
         if month.month == 7:
             leisure, transport = ("Leisure", D(1100)), ("Transport", D(250))
             split(on(20), "holidays_paid", leisure, transport, by=CAMILLE)
+            add(on(6), "holiday_rental", "-1500.00", "Leisure", CAMILLE)
         if i == CAR:
             add(on(3), "from_cel", "2500.00", "Savings", ALEX)
             add(on(4), "car_down", "-7000.00", "Transport", ALEX)
