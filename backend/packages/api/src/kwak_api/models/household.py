@@ -14,6 +14,7 @@ from sqlalchemy import (
     Index,
     LargeBinary,
     Numeric,
+    SmallInteger,
     String,
     text,
 )
@@ -30,6 +31,16 @@ class Household(UUIDPrimaryKey, Timestamps, Base):
         CheckConstraint("precaution_share BETWEEN 0.5 AND 1", name="precaution_share_range"),
         CheckConstraint("goal_capacity >= 0", name="goal_capacity_positive"),
         CheckConstraint("inflation BETWEEN -0.05 AND 0.2", name="inflation_range"),
+        CheckConstraint("retirement_share BETWEEN 0.5 AND 1.5", name="retirement_share_range"),
+        CheckConstraint("retirement_spending >= 0", name="retirement_spending_positive"),
+        CheckConstraint(
+            "retirement_share IS NULL OR retirement_spending IS NULL",
+            name="retirement_share_or_amount",
+        ),
+        CheckConstraint(
+            "pension_indexation BETWEEN -0.02 AND 0.01", name="pension_indexation_range"
+        ),
+        CheckConstraint("horizon_age BETWEEN 85 AND 105", name="horizon_age_range"),
     )
 
     name: Mapped[str] = mapped_column(String(100))
@@ -43,6 +54,13 @@ class Household(UUIDPrimaryKey, Timestamps, Base):
     goal_capacity: Mapped[Decimal | None] = mapped_column(Numeric(14, 2))
     # F-SIM-1: the yearly inflation the projection assumes; NULL: the default (2 %).
     inflation: Mapped[Decimal | None] = mapped_column(Numeric(4, 3))
+    # F-RET-2: the retirement spending, a share of today's spending outside the loans or an
+    # amount; the pensions' indexation against inflation; the youngest member's age at the
+    # horizon. NULL: the defaults (80 %, -0.3 %, 95).
+    retirement_share: Mapped[Decimal | None] = mapped_column(Numeric(3, 2))
+    retirement_spending: Mapped[Decimal | None] = mapped_column(Numeric(14, 2))
+    pension_indexation: Mapped[Decimal | None] = mapped_column(Numeric(4, 3))
+    horizon_age: Mapped[int | None] = mapped_column(SmallInteger)
 
     users: Mapped[list["User"]] = relationship(back_populates="household")
 

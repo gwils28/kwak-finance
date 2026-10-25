@@ -68,6 +68,21 @@ export const API_MESSAGES_FR: Record<string, string> = {
   "this member already has a precaution goal": "ce membre a déjà une épargne de précaution",
   "the proposal counts 1 to 12 months": "la proposition compte de 1 à 12 mois",
   "a debt cannot fund a goal": "une dette ne peut pas financer un objectif",
+  "a pension starts with the retirement or later":
+    "une pension commence avec la retraite ou plus tard",
+  "one retires after being born": "on part à la retraite après sa naissance",
+  "one retires before 105 years old": "on part à la retraite avant 105 ans",
+  "earnings and pensions are positive, in cents at most":
+    "revenus et pensions sont positifs, au centime près",
+  "the retirement spending is a whole percentage":
+    "les dépenses à la retraite sont un pourcentage entier",
+  "the retirement spending is from 50 to 150 % of today's":
+    "les dépenses à la retraite vont de 50 à 150 % de celles d'aujourd'hui",
+  "the pensions' indexation is set to 0.1 % at most":
+    "l'indexation des pensions se règle à 0,1 % près",
+  "the pensions' indexation is from -2 % to +1 % a year":
+    "l'indexation des pensions va de -2 % à +1 % par an",
+  "the horizon is an age from 85 to 105": "l'horizon est un âge de 85 à 105 ans",
   "a joint goal uses joint lines only": "un objectif commun n'utilise que des lignes communes",
   "a goal uses its owner's lines and joint ones":
     "un objectif utilise les lignes de son titulaire et les lignes communes",

@@ -1183,6 +1183,32 @@ export type MonthLinesOut = {
 };
 
 /**
+ * MyRetirementIn
+ */
+export type MyRetirementIn = {
+    /**
+     * Birth
+     */
+    birth: string;
+    /**
+     * Earnings
+     */
+    earnings?: number | string;
+    /**
+     * Pension
+     */
+    pension?: number | string;
+    /**
+     * Pension Month
+     */
+    pension_month?: string | null;
+    /**
+     * Retirement
+     */
+    retirement: string;
+};
+
+/**
  * PartIn
  */
 export type PartIn = {
@@ -1455,6 +1481,148 @@ export type RegulatedType = 'livret_a' | 'ldds' | 'lep' | 'pel' | 'livret_jeune'
  * ReportSection
  */
 export type ReportSection = 'income' | 'spending' | 'savings';
+
+/**
+ * RetirementMemberOut
+ */
+export type RetirementMemberOut = {
+    /**
+     * Age At Pension
+     */
+    age_at_pension: number | null;
+    /**
+     * Age At Retirement
+     */
+    age_at_retirement: number | null;
+    /**
+     * Birth
+     */
+    birth: string | null;
+    /**
+     * Display Name
+     */
+    display_name: string;
+    /**
+     * Earnings
+     */
+    earnings: string | null;
+    /**
+     * Me
+     */
+    me: boolean;
+    /**
+     * Pension
+     */
+    pension: string | null;
+    /**
+     * Pension Month
+     */
+    pension_month: string | null;
+    /**
+     * Retirement
+     */
+    retirement: string | null;
+    /**
+     * User Id
+     */
+    user_id: string;
+};
+
+/**
+ * RetirementOut
+ */
+export type RetirementOut = {
+    /**
+     * Members
+     */
+    members: Array<RetirementMemberOut>;
+    settings: RetirementSettingsOut;
+    spending: RetirementSpendingOut;
+};
+
+/**
+ * RetirementSettingsOut
+ */
+export type RetirementSettingsOut = {
+    /**
+     * Default Horizon Age
+     */
+    default_horizon_age: number;
+    /**
+     * Default Indexation
+     */
+    default_indexation: string;
+    /**
+     * Default Spending Share
+     */
+    default_spending_share: string;
+    /**
+     * Horizon Age
+     */
+    horizon_age: number;
+    /**
+     * Indexation
+     */
+    indexation: string;
+    /**
+     * Spending Amount
+     */
+    spending_amount: string | null;
+    /**
+     * Spending Share
+     */
+    spending_share: string | null;
+};
+
+/**
+ * RetirementSettingsPatch
+ *
+ * Only the fields present change; null brings a setting back to its default.
+ */
+export type RetirementSettingsPatch = {
+    /**
+     * Horizon Age
+     */
+    horizon_age?: number | null;
+    /**
+     * Indexation
+     */
+    indexation?: number | string | null;
+    /**
+     * Spending Amount
+     */
+    spending_amount?: number | string | null;
+    /**
+     * Spending Share
+     */
+    spending_share?: number | string | null;
+};
+
+/**
+ * RetirementSpendingOut
+ */
+export type RetirementSpendingOut = {
+    /**
+     * Average
+     */
+    average: string;
+    /**
+     * Base
+     */
+    base: string;
+    /**
+     * Debt Payments
+     */
+    debt_payments: string;
+    /**
+     * Months
+     */
+    months: number;
+    /**
+     * Retirement Spending
+     */
+    retirement_spending: string;
+};
 
 /**
  * RiskPointOut
@@ -3817,6 +3985,106 @@ export type SetInflationResponses = {
 };
 
 export type SetInflationResponse = SetInflationResponses[keyof SetInflationResponses];
+
+export type GetRetirementData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/retirement';
+};
+
+export type GetRetirementErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type GetRetirementError = GetRetirementErrors[keyof GetRetirementErrors];
+
+export type GetRetirementResponses = {
+    /**
+     * Successful Response
+     */
+    200: RetirementOut;
+};
+
+export type GetRetirementResponse = GetRetirementResponses[keyof GetRetirementResponses];
+
+export type DeleteMyRetirementData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/retirement/me';
+};
+
+export type DeleteMyRetirementErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type DeleteMyRetirementError = DeleteMyRetirementErrors[keyof DeleteMyRetirementErrors];
+
+export type DeleteMyRetirementResponses = {
+    /**
+     * Successful Response
+     */
+    204: void;
+};
+
+export type DeleteMyRetirementResponse = DeleteMyRetirementResponses[keyof DeleteMyRetirementResponses];
+
+export type SetMyRetirementData = {
+    body: MyRetirementIn;
+    path?: never;
+    query?: never;
+    url: '/api/retirement/me';
+};
+
+export type SetMyRetirementErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type SetMyRetirementError = SetMyRetirementErrors[keyof SetMyRetirementErrors];
+
+export type SetMyRetirementResponses = {
+    /**
+     * Successful Response
+     */
+    200: RetirementOut;
+};
+
+export type SetMyRetirementResponse = SetMyRetirementResponses[keyof SetMyRetirementResponses];
+
+export type UpdateRetirementSettingsData = {
+    body: RetirementSettingsPatch;
+    path?: never;
+    query?: never;
+    url: '/api/retirement/settings';
+};
+
+export type UpdateRetirementSettingsErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type UpdateRetirementSettingsError = UpdateRetirementSettingsErrors[keyof UpdateRetirementSettingsErrors];
+
+export type UpdateRetirementSettingsResponses = {
+    /**
+     * Successful Response
+     */
+    200: RetirementOut;
+};
+
+export type UpdateRetirementSettingsResponse = UpdateRetirementSettingsResponses[keyof UpdateRetirementSettingsResponses];
 
 export type ListSpendingCategoriesData = {
     body?: never;
