@@ -353,3 +353,24 @@ def test_the_first_of_a_month_still_has_lines() -> None:
     demo = generate(date(2027, 3, 1), Language.EN)
     assert any(ln.day == demo.today for ln in demo.lines)
     assert demo.today - timedelta(days=1) >= demo.start.first_day()
+
+
+@pytest.mark.parametrize("today", [date(2026, 10, 1), date(2026, 10, 25)])
+def test_the_month_in_progress_already_has_its_salaries(today: date) -> None:
+    demo = generate(today, Language.EN)
+    this_month = [ln for ln in demo.lines if Month.of(ln.day) == demo.this_month]
+    paid = {ln.entered_by for ln in this_month if ln.category == "Salaries"}
+    assert paid == {m.key for m in demo.members}
+
+
+def test_no_month_of_housing_goes_far_past_its_target() -> None:
+    demo = generate(TODAY, Language.EN)
+    spent: dict[Month, Decimal] = defaultdict(Decimal)
+    for ln in demo.lines:
+        if ln.category == "Housing":
+            spent[Month.of(ln.day)] -= ln.amount
+    targets = sorted((t for t in demo.targets if t.category == "Housing"), key=lambda t: t.start)
+    for month, amount in spent.items():
+        target = [t.amount for t in targets if t.start <= month][-1]
+        assert target is not None
+        assert amount <= target * Decimal("1.25"), month
