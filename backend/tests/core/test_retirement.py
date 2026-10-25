@@ -24,6 +24,7 @@ from kwak_core.retirement import (
     check_member,
     check_spending_share,
     counted,
+    debt_costs,
     horizon,
     household_retirement,
     plan_savings,
@@ -196,3 +197,11 @@ def test_earnings_and_pensions_move_the_savings_the_right_way(
     ]
     base, more = _plan(members, months=150), _plan(richer, months=150)
     assert all(b <= r for b, r in zip(base, more, strict=True))
+
+
+def test_the_debts_cost_their_payments_and_insurance_until_repaid() -> None:
+    loans = [
+        Debt(D(1200), DebtTerms(D(500), D(0), D(20))),
+        Debt(D(300), DebtTerms(D(300), D(0), D(0))),
+    ]
+    assert debt_costs(loans, 4) == [D(820), D(520), D(220), D(0)]

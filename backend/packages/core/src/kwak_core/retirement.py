@@ -163,6 +163,14 @@ def _paid(debt: Debt, months: int) -> list[Decimal]:
     return out
 
 
+def debt_costs(debts: Sequence[Debt], months: int) -> list[Decimal]:
+    """What the debts cost together each month, payments and insurance, current euros."""
+    total = [ZERO] * months
+    for debt in debts:
+        total = [a + b for a, b in zip(total, _paid(debt, months), strict=True)]
+    return total
+
+
 def plan_savings(
     members: Sequence[Member],
     *,

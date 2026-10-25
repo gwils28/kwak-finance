@@ -50,6 +50,92 @@ EN: Mapping[str, str] = {
     ),
     "not_signed_in": "Sign in to Kwak Finance to see this page.",
     "not_found": "No such page.",
+    "ret_intro": (
+        "What standard of living the household could keep once retired: the pensions entered "
+        "under the charts, and what the wealth can pay each month, against the retirement "
+        "spending."
+    ),
+    "ret_no_member": (
+        "Enter your birth month, your retirement and your pension under the charts to see the "
+        "household's retirement."
+    ),
+    "ret_horizon": "The horizon comes before the household retires: raise the horizon age.",
+    "ret_left_out": "Left out, without a retirement entered: {names}.",
+    "ret_scope": "The wealth counted is the household's lines you see.",
+    "ret_living": (
+        "From {month}, pensions of {pensions} and a sustainable withdrawal of {withdrawal} a "
+        "month give {total} a month in 9 outcomes in 10 ({total_half} in half of them), for "
+        "spending of {spending}: {covered} covered."
+    ),
+    "ret_living_none": (
+        "From {month}, pensions of {pensions} a month, for spending of {spending}. In more "
+        "than one outcome in ten the liquid wealth has already run out by then: nothing can be "
+        "withdrawn from it."
+    ),
+    "ret_model": (
+        "9 in 10 in the model, not a guarantee: the real chance is lower (see the limits)."
+    ),
+    "ret_later_pension": (
+        "A pension starting after the household's retirement leaves the years before it to "
+        "the wealth: the chance below counts them, the withdrawal does not."
+    ),
+    "ret_lasts": (
+        "In {chance} of the outcomes, the plan runs to {month} (the youngest {age} years old) "
+        "without the liquid wealth running out."
+    ),
+    "ret_runs_out": (
+        "The liquid wealth runs out by age {ten} in 1 outcome in 10, by age {half} in half of them."
+    ),
+    "ret_runs_out_ten": (
+        "The liquid wealth runs out by age {ten} in 1 outcome in 10; in half of them, not "
+        "before {age}."
+    ),
+    "ret_never": "In 9 outcomes in 10, the liquid wealth does not run out before {age}.",
+    "ret_shortfall_after": (
+        "From then on, the spending would have to be cut, or financed otherwise (the home, family)."
+    ),
+    "ret_fan_title": "Net worth to the horizon",
+    "ret_liquid": "Liquid wealth (median)",
+    "ret_retires": "Household retires",
+    "ret_pension_of": "{name}'s pension",
+    "ret_income_title": "Monthly income once retired",
+    "ret_pensions": "Pensions",
+    "ret_withdrawal": "Sustainable withdrawal (9 in 10)",
+    "ret_spending": "Retirement spending",
+    "ret_income_axis": "A month, today's euros",
+    "ret_disclaimer": (
+        "An estimate from the assumptions and the pensions you entered, not a forecast and not "
+        "advice. Pension estimates change with your career and with reforms: check yours on "
+        "info-retraite.fr. Past returns do not guarantee future ones."
+    ),
+    "ret_inputs_title": "Inputs",
+    "ret_input_member": (
+        "{name}: born {birth}, stops working in {retirement} at {age} with earnings of "
+        "{earnings} stopping then; a pension of {pension} from {pension_month}, at {pension_age}."
+    ),
+    "ret_input_spending": "Retirement spending: {amount} a month, {how}.",
+    "ret_how_share": (
+        "{share} of today's spending outside the loans ({base}, measured over {months} months)"
+    ),
+    "ret_how_amount": "set by hand",
+    "ret_input_indexation": "Pensions follow inflation {rate} a year.",
+    "ret_input_horizon": "Horizon: {month}, when the youngest is {age}.",
+    "ret_limit_pensions": "Pensions as entered, never revised but by the indexation setting.",
+    "ret_limit_tax": (
+        "No tax on withdrawals: from a PEA, a CTO or an assurance vie, the gains part is taxed, "
+        "often 5 to 15% of what is withdrawn after many years."
+    ),
+    "ret_limit_care": (
+        "Long-term care not modelled: a nursing home costs about €2,000 to €2,500 a month "
+        "after aid."
+    ),
+    "ret_limit_household": (
+        "The household's composition is fixed: no death, separation nor inheritance. After a "
+        "death the survivor keeps a reversion pension (about 54% of a base pension, "
+        "means-tested, 60% of an Agirc-Arrco one) and spends about two thirds to three "
+        "quarters of what a couple does."
+    ),
+    "ret_limit_home": "The home is never sold nor mortgaged.",
     "reach_title": "Reaching an amount",
     "amount": "Amount",
     "reach_month": "Month",
@@ -176,6 +262,100 @@ FR: Mapping[str, str] = {
     ),
     "not_signed_in": "Connectez-vous à Kwak Finance pour voir cette page.",
     "not_found": "Cette page n'existe pas.",
+    "ret_intro": (
+        "Le niveau de vie que le foyer pourrait garder une fois retraité : les pensions saisies "
+        "sous les graphiques, et ce que le patrimoine peut verser chaque mois, face aux "
+        "dépenses de retraite."
+    ),
+    "ret_no_member": (
+        "Saisissez votre mois de naissance, votre départ et votre pension sous les graphiques "
+        "pour voir la retraite du foyer."
+    ),
+    "ret_horizon": "L'horizon arrive avant la retraite du foyer : relevez l'âge de l'horizon.",
+    "ret_left_out": "Non compté, sans retraite saisie : {names}.",
+    "ret_scope": "Le patrimoine compté est celui des lignes du foyer que vous voyez.",
+    "ret_living": (
+        "À partir de {month}, des pensions de {pensions} et un retrait soutenable de "
+        "{withdrawal} par mois donnent {total} par mois dans 9 cas sur 10 ({total_half} dans "
+        "la moitié des cas), pour des dépenses de {spending}, couvertes à {covered}."
+    ),
+    "ret_living_none": (
+        "À partir de {month}, des pensions de {pensions} par mois, pour des dépenses de "
+        "{spending}. Dans plus d'un cas sur dix, le patrimoine liquide est déjà épuisé : rien "
+        "ne peut en être retiré."
+    ),
+    "ret_model": (
+        "9 sur 10 dans le modèle, pas une garantie : la chance réelle est plus faible (voir les "
+        "limites)."
+    ),
+    "ret_later_pension": (
+        "Une pension qui démarre après la retraite du foyer laisse les années d'avant au "
+        "patrimoine : la chance ci-dessous les compte, le retrait non."
+    ),
+    "ret_lasts": (
+        "Dans {chance} des résultats, le plan tient jusqu'en {month} (le plus jeune a {age} "
+        "ans) sans que le patrimoine liquide s'épuise."
+    ),
+    "ret_runs_out": (
+        "Le patrimoine liquide s'épuise vers {ten} ans dans 1 cas sur 10, vers {half} ans dans "
+        "la moitié des cas."
+    ),
+    "ret_runs_out_ten": (
+        "Le patrimoine liquide s'épuise vers {ten} ans dans 1 cas sur 10 ; dans la moitié des "
+        "cas, pas avant {age} ans."
+    ),
+    "ret_never": "Dans 9 cas sur 10, le patrimoine liquide ne s'épuise pas avant {age} ans.",
+    "ret_shortfall_after": (
+        "Dès lors, il faudrait réduire les dépenses ou les financer autrement (le logement, la "
+        "famille)."
+    ),
+    "ret_fan_title": "Le patrimoine net jusqu'à l'horizon",
+    "ret_liquid": "Patrimoine liquide (médiane)",
+    "ret_retires": "Retraite du foyer",
+    "ret_pension_of": "Pension de {name}",
+    "ret_income_title": "Les revenus mensuels une fois retraité",
+    "ret_pensions": "Pensions",
+    "ret_withdrawal": "Retrait soutenable (9 sur 10)",
+    "ret_spending": "Dépenses de retraite",
+    "ret_income_axis": "Par mois, en euros d'aujourd'hui",
+    "ret_disclaimer": (
+        "Une estimation tirée des hypothèses et des pensions saisies, ni une prévision ni un "
+        "conseil. Les estimations de pension changent avec la carrière et les réformes : "
+        "vérifiez la vôtre sur info-retraite.fr. Les rendements passés ne présagent pas des "
+        "rendements futurs."
+    ),
+    "ret_inputs_title": "Données utilisées",
+    "ret_input_member": (
+        "{name} : né(e) en {birth}, arrête de travailler en {retirement} à {age} ans avec un "
+        "revenu de {earnings} qui s'arrête alors ; une pension de {pension} à partir de "
+        "{pension_month}, à {pension_age} ans."
+    ),
+    "ret_input_spending": "Dépenses de retraite : {amount} par mois, {how}.",
+    "ret_how_share": (
+        "{share} des dépenses d'aujourd'hui hors prêts ({base}, mesurées sur {months} mois)"
+    ),
+    "ret_how_amount": "saisies à la main",
+    "ret_input_indexation": "Les pensions suivent l'inflation {rate} par an.",
+    "ret_input_horizon": "Horizon : {month}, quand le plus jeune a {age} ans.",
+    "ret_limit_pensions": (
+        "Pensions telles que saisies, jamais révisées sauf par le réglage d'indexation."
+    ),
+    "ret_limit_tax": (
+        "Pas d'impôt sur les retraits : d'un PEA, d'un CTO ou d'une assurance vie, la part de "
+        "plus-value est imposée, souvent 5 à 15 % de ce qui est retiré après de longues "
+        "années."
+    ),
+    "ret_limit_care": (
+        "La dépendance n'est pas modélisée : un Ehpad coûte environ 2 000 à 2 500 € "
+        "par mois après aides."
+    ),
+    "ret_limit_household": (
+        "La composition du foyer est fixe : ni décès, ni séparation, ni héritage. Après un "
+        "décès, le survivant garde une pension de réversion (environ 54 % d'une pension "
+        "de base, sous conditions de ressources, 60 % d'une pension Agirc-Arrco) et "
+        "dépense environ les deux tiers à trois quarts de ce que dépense un couple."
+    ),
+    "ret_limit_home": "Le logement n'est jamais vendu ni hypothéqué.",
     "reach_title": "Atteindre un montant",
     "amount": "Montant",
     "reach_month": "Mois",

@@ -25,6 +25,7 @@ const SPACES = {
     { to: "/wealth", label: "wealthTracking", exact: true },
     { to: "/wealth/analysis", label: "wealthAnalysis", exact: false },
     { to: "/wealth/projection", label: "wealthProjection", exact: false },
+    { to: "/wealth/retirement", label: "wealthRetirement", exact: false },
   ],
   // The pyramid's tab stays marked on each goal's page.
   goals: [

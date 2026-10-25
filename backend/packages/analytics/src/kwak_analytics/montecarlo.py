@@ -92,6 +92,9 @@ class Outcome:
     deflator: Floats
     """(1 + inflation)^(t / 12) for each month t."""
     seed: int
+    liquid_median: Floats
+    """The median of the liquid holdings (all but the never taken categories), current
+    euros: (months + 1,)."""
     assets: Floats | None = None
     """(months + 1, paths, categories), only when kept."""
     flows: Sequence[Flows] | None = None
@@ -156,6 +159,10 @@ class Outcome:
         needed = float(share) * self.net.shape[1]
         months = np.nonzero(counts >= needed)[0]
         return int(months[0]) if months.size else None
+
+    def liquid_medians(self, *, today: bool = True) -> list[Decimal]:
+        """The liquid holdings' median month by month: what withdrawals can draw on."""
+        return [_cents(float(v)) for v in self.liquid_median / self._unit(today)]
 
     def ran_out_by(self, share: Decimal) -> int | None:
         """The first month by which `share` of the outcomes have run out of liquid holdings
@@ -253,6 +260,8 @@ def simulate(
     net = np.empty((months + 1, paths))
     shortfall = np.zeros((months + 1, paths))
     median = np.empty((months + 1, len(cats)))
+    liquid = np.array([c.preset not in NEVER_TAKEN for c in cats], dtype=bool)
+    liquid_median = np.empty(months + 1)
     kept = np.empty((months + 1, paths, len(cats))) if keep else None
     flows: list[Flows] = []
 
@@ -260,6 +269,7 @@ def simulate(
         net[t] = held.sum(axis=1) - debts[t] - short
         shortfall[t] = short
         median[t] = np.median(held, axis=0) if cats else 0
+        liquid_median[t] = np.median((held * liquid).sum(axis=1))
         if kept is not None:
             kept[t] = held
 
@@ -293,4 +303,6 @@ def simulate(
         record(t)
 
     deflator = (1 + float(scenario.inflation)) ** (np.arange(months + 1) / 12)
-    return Outcome(net, shortfall, median, deflator, seed, kept, flows if keep else None)
+    return Outcome(
+        net, shortfall, median, deflator, seed, liquid_median, kept, flows if keep else None
+    )

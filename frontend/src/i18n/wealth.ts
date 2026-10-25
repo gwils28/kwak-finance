@@ -71,6 +71,48 @@ export const wealthEn = {
   analysisTitle: "Wealth analysis",
   projectionTitle: "Wealth projection",
   projectionFrame: "The projection's charts",
+  retirementTitle: "Retirement",
+  retirementFrame: "The retirement's charts",
+  myRetirement: "My retirement",
+  myRetirementIntro:
+    "Seen by the household's members, since the plan is the household's. Amounts are monthly, in today's euros.",
+  birthMonth: "Birth month",
+  retirementMonth: "Month I stop working",
+  earnings: "Net earnings that stop then (€ a month)",
+  earningsHint:
+    "As they reach the account, after income tax withheld at source, like your income lines.",
+  pensionMonth: "Month my pension starts",
+  pensionMonthHint: "Leave empty when it starts as you stop working.",
+  pension: "Net pension (€ a month)",
+  pensionHint:
+    "Your estimate on info-retraite.fr for the age at the pension month, as it would reach the account: the simulator gives it after social charges and before income tax, so take off your expected withholding rate. In today's euros: deflate an amount given in euros of the departure year.",
+  saveRetirement: "Save my retirement",
+  removeRetirement: "Remove my retirement",
+  otherMembers: "The other members",
+  memberRetirement: (name: string, retirement: string, age: number, pension: string) =>
+    `${name}: stops working in ${retirement} at ${age}, a pension of ${pension} a month.`,
+  memberNotEntered: (name: string) => `${name}: no retirement entered, left out of the plan.`,
+  householdRetirement: "The household's retirement",
+  householdRetirementIntro: "Settings any member can change, kept until changed.",
+  spendingShare: "A share of today's spending outside the loans",
+  spendingAmount: "An amount",
+  spendingShareField: "Share (%)",
+  spendingAmountField: "Amount (€ a month)",
+  measuredSpending: (average: string, months: number, loans: string, base: string) =>
+    `Today: ${average} a month spent on average over ${months} months, of which ${loans} of loans, so ${base} outside them.`,
+  retirementSpending: (amount: string) => `Retirement spending: ${amount} a month.`,
+  indexation: "Pensions against inflation (% a year)",
+  indexationHint:
+    "Base pensions follow prices; supplementary ones (Agirc-Arrco) have often been raised by less.",
+  horizonAge: "Horizon: the youngest member's age",
+  horizonHint:
+    "At 60, about one woman in four and one man in six or seven may reach 95: a margin, not a ceiling.",
+  saveSettings: "Save the settings",
+  restoreDefaults: "Restore the defaults",
+  monthInvalid: "Enter the months as month and year.",
+  shareInvalid: "The share is a whole percentage from 50 to 150.",
+  indexationInvalid: "The indexation is from −2 to +1, to 0.1.",
+  horizonInvalid: "The horizon is an age from 85 to 105.",
   assumptionsTitle: "Projection assumptions",
   assumptionsIntro:
     "Shared by the household: any member can change them, and they stay until changed. Returns are yearly averages after a low-cost fund's fees and before tax; the median growth is what the middle outcome earns once volatility is counted.",
@@ -244,6 +286,49 @@ export const wealthFr: typeof wealthEn = {
   analysisTitle: "Analyse du patrimoine",
   projectionTitle: "Projection du patrimoine",
   projectionFrame: "Les graphiques de la projection",
+  retirementTitle: "Retraite",
+  retirementFrame: "Les graphiques de la retraite",
+  myRetirement: "Ma retraite",
+  myRetirementIntro:
+    "Visible des membres du foyer, puisque le plan est celui du foyer. Les montants sont mensuels, en euros d'aujourd'hui.",
+  birthMonth: "Mois de naissance",
+  retirementMonth: "Mois où j'arrête de travailler",
+  earnings: "Revenu net qui s'arrête alors (€ par mois)",
+  earningsHint:
+    "Tel qu'il arrive sur le compte, après prélèvement à la source, comme vos lignes de revenus.",
+  pensionMonth: "Mois où ma pension commence",
+  pensionMonthHint: "Laissez vide si elle commence quand vous arrêtez de travailler.",
+  pension: "Pension nette (€ par mois)",
+  pensionHint:
+    "Votre estimation sur info-retraite.fr pour l'âge au mois de la pension, telle qu'elle arriverait sur le compte : le simulateur la donne après prélèvements sociaux et avant impôt, retirez donc votre taux de prélèvement attendu. En euros d'aujourd'hui : ramenez-y un montant donné en euros de l'année de départ.",
+  saveRetirement: "Enregistrer ma retraite",
+  removeRetirement: "Supprimer ma retraite",
+  otherMembers: "Les autres membres",
+  memberRetirement: (name, retirement, age, pension) =>
+    `${name} : arrête de travailler en ${retirement} à ${age} ans, une pension de ${pension} par mois.`,
+  memberNotEntered: (name) => `${name} : pas de retraite saisie, non compté dans le plan.`,
+  householdRetirement: "La retraite du foyer",
+  householdRetirementIntro:
+    "Des réglages que chaque membre peut changer, jusqu'au prochain changement.",
+  spendingShare: "Une part des dépenses d'aujourd'hui hors prêts",
+  spendingAmount: "Un montant",
+  spendingShareField: "Part (%)",
+  spendingAmountField: "Montant (€ par mois)",
+  measuredSpending: (average, months, loans, base) =>
+    `Aujourd'hui : ${average} dépensés par mois en moyenne sur ${months} mois, dont ${loans} de prêts, soit ${base} hors prêts.`,
+  retirementSpending: (amount) => `Dépenses de retraite : ${amount} par mois.`,
+  indexation: "Pensions face à l'inflation (% par an)",
+  indexationHint:
+    "Les pensions de base suivent les prix ; les complémentaires (Agirc-Arrco) ont souvent été moins revalorisées.",
+  horizonAge: "Horizon : l'âge du plus jeune membre",
+  horizonHint:
+    "À 60 ans, environ une femme sur quatre et un homme sur six ou sept peuvent atteindre 95 ans : une marge, pas un plafond.",
+  saveSettings: "Enregistrer les réglages",
+  restoreDefaults: "Rétablir les défauts",
+  monthInvalid: "Saisissez les mois en mois et année.",
+  shareInvalid: "La part est un pourcentage entier de 50 à 150.",
+  indexationInvalid: "L'indexation va de −2 à +1, à 0,1 près.",
+  horizonInvalid: "L'horizon est un âge de 85 à 105 ans.",
   assumptionsTitle: "Hypothèses de la projection",
   assumptionsIntro:
     "Communes au foyer : chaque membre peut les changer, et elles restent jusqu'au prochain changement. Les rendements sont des moyennes annuelles après les frais d'un fonds peu cher et avant impôts ; la croissance médiane est ce que rapporte le résultat du milieu, une fois la volatilité comptée.",

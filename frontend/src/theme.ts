@@ -32,6 +32,8 @@ export function useDocumentTheme(): Theme {
   useEffect(() => {
     const observer = new MutationObserver(() => setTheme(pageTheme()));
     observer.observe(document.documentElement, { attributeFilter: ["data-theme"] });
+    // A switch between the first render and this subscription would otherwise be missed.
+    setTheme(pageTheme());
     return () => observer.disconnect();
   }, []);
   return theme;

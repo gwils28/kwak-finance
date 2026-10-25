@@ -56,7 +56,7 @@ def _yearly(count: int) -> list[int]:
     return rows if rows[-1] == count else [*rows, count]
 
 
-def _layout(figure: go.Figure, view: View, *, y_title: str) -> go.Figure:
+def chart_layout(figure: go.Figure, view: View, *, y_title: str) -> go.Figure:
     lang, theme = view.lang, view.theme
     grid = tokens.rgb(theme, "chart-grid")
     figure.update_layout(
@@ -183,7 +183,7 @@ def fan(
             annotation_position="top left",
             annotation_font_color=tokens.rgb(theme, "muted"),
         )
-    return _layout(figure, view, y_title=t(lang, "net_worth"))
+    return chart_layout(figure, view, y_title=t(lang, "net_worth"))
 
 
 @dataclass(frozen=True)
@@ -250,13 +250,13 @@ def by_category(
             customdata=[i18n.money(-v, lang) for v in values],
             hovertemplate=f"{name}: %{{customdata}}<extra></extra>",
         )
-    _layout(figure, view, y_title=t(lang, "median"))
+    chart_layout(figure, view, y_title=t(lang, "median"))
     # As the wealth Analysis tab: the matrix's order in the legend and the month's label.
     figure.update_layout(hovermode="x unified", legend={"traceorder": "normal"})
     return figure
 
 
-def _table(
+def data_table(
     header: Sequence[str], rows: Sequence[Sequence[str]], lang: Language, *, open_: bool = False
 ) -> html.Details:
     cell = {"padding": "0.25rem 0.75rem", "textAlign": "right", "whiteSpace": "nowrap"}
@@ -299,7 +299,7 @@ def fan_table(
         ]
         for k in _yearly(len(rows) - 1)
     ]
-    return _table(header, body, lang)
+    return data_table(header, body, lang)
 
 
 def category_table(
@@ -329,7 +329,7 @@ def category_table(
         ]
         for m in _yearly(len(medians) - 1)
     ]
-    return _table(header, body, lang)
+    return data_table(header, body, lang)
 
 
 def reach(
@@ -405,7 +405,7 @@ def comparison(
             chance = s.run.outcome.chance(target.amount, target.month, today=today)
             row.append(i18n.chance(chance, lang))
         body.append(row)
-    table = _table(header, body, lang, open_=True)
+    table = data_table(header, body, lang, open_=True)
     return html.Div([html.H3(t(lang, "compare_title", month=horizon)), table])
 
 

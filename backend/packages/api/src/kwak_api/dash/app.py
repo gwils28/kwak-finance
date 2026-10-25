@@ -106,7 +106,7 @@ class DashGate:
 
 def create_dash(state: State) -> ASGIApp:
     # Imported here: the pages import this module for Context.
-    from kwak_api.dash import projection
+    from kwak_api.dash import projection, retirement
 
     app = Dash(
         __name__,
@@ -120,7 +120,10 @@ def create_dash(state: State) -> ASGIApp:
     app.index_string = INDEX
     app.layout = html.Div([dcc.Location(id="url"), html.Div(id="page")])
     context = Context(state)
-    pages = {"projection": projection.register(app, context)}
+    pages = {
+        "projection": projection.register(app, context),
+        "retirement": retirement.register(app, context),
+    }
 
     @app.callback(Output("page", "children"), Input("url", "pathname"), Input("url", "search"))
     def page(pathname: str | None, search: str | None) -> object:
