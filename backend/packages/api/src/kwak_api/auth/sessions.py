@@ -19,7 +19,7 @@ def open_session(db: Session, user: User, now: datetime) -> tuple[str, UserSessi
     """Return the cookie token (never stored) and the new session."""
     token = secrets.token_urlsafe(32)
     user_session = UserSession(
-        user=user,
+        account=user,
         token_hash=hash_token(token),
         csrf_token=secrets.token_urlsafe(32),
         created_at=now,
@@ -37,9 +37,9 @@ def find_active_session(
     user_session = db.scalar(
         select(UserSession)
         .where(UserSession.token_hash == hash_token(token))
-        .options(joinedload(UserSession.user))
+        .options(joinedload(UserSession.account), joinedload(UserSession.acting_user))
     )
-    if user_session is None or not user_session.user.is_active:
+    if user_session is None or not user_session.account.is_active:
         return None
     if not session_is_active(
         policy,

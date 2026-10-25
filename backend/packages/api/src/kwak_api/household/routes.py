@@ -16,7 +16,7 @@ from kwak_core.progress import check_warn_at
 from pydantic import AfterValidator, BaseModel, Field
 from sqlalchemy import select
 
-from kwak_api.auth.routes import CurrentSession, Db, Now
+from kwak_api.auth.routes import CurrentSession, Db, Now, check_outside_demo
 from kwak_api.models import Household, Invite, Role, User, UserSession
 from kwak_api.services import audit
 from kwak_api.services import invites as service
@@ -35,6 +35,15 @@ def owner_session(user_session: CurrentSession) -> UserSession:
 
 
 OwnerSession = Annotated[UserSession, Depends(owner_session)]
+
+
+def inviting_session(user_session: OwnerSession) -> UserSession:
+    """The owner, outside the demo: its members are fictitious (F-ADM-5)."""
+    check_outside_demo(user_session)
+    return user_session
+
+
+InvitingSession = Annotated[UserSession, Depends(inviting_session)]
 
 
 class MemberOut(BaseModel):
@@ -209,7 +218,7 @@ def list_members(user_session: CurrentSession, db: Db) -> list[MemberOut]:
 
 @router.post("/invites", status_code=status.HTTP_201_CREATED)
 def create_invite(
-    body: InviteCreate, user_session: OwnerSession, db: Db, now: Now
+    body: InviteCreate, user_session: InvitingSession, db: Db, now: Now
 ) -> InviteCreated:
     try:
         token, invite = service.create_invite(db, user_session.user, body.email, now)
@@ -224,13 +233,13 @@ def create_invite(
 
 
 @router.get("/invites")
-def list_invites(user_session: OwnerSession, db: Db, now: Now) -> list[InviteOut]:
+def list_invites(user_session: InvitingSession, db: Db, now: Now) -> list[InviteOut]:
     invites = service.pending_invites(db, user_session.user.household_id, now)
     return [InviteOut.of(i, now) for i in invites]
 
 
 @router.delete("/invites/{invite_id}", status_code=status.HTTP_204_NO_CONTENT)
-def revoke_invite(invite_id: UUID, user_session: OwnerSession, db: Db, now: Now) -> None:
+def revoke_invite(invite_id: UUID, user_session: InvitingSession, db: Db, now: Now) -> None:
     email = service.revoke_invite(db, user_session.user.household_id, invite_id, now)
     if email is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "no pending invitation with this id")

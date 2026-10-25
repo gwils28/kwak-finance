@@ -34,13 +34,16 @@ from kwak_api.auth.throttle import (
 )
 from kwak_api.auth.totp import check_code, start_enrollment
 from kwak_api.deps import get_db, get_now, get_secret_box, get_settings
-from kwak_api.models import Role, User, UserSession
+from kwak_api.models import Household, Role, User, UserSession
 from kwak_api.services import audit
 from kwak_api.settings import Settings
 
 SESSION_COOKIE = "kwak_session"
 CSRF_COOKIE = "kwak_csrf"
 CSRF_HEADER = "X-CSRF-Token"
+HOUSEHOLD_HEADER = "X-Kwak-Household"
+"""The household the page shows (F-ADM-5): a change sent from a page left in the demo, or
+left outside it, is refused rather than saved in the other household."""
 SAFE_METHODS = frozenset({"GET", "HEAD", "OPTIONS"})
 TOTP_ISSUER = "Kwak Finance"
 
@@ -70,17 +73,24 @@ class UserOut(BaseModel):
     role: Role
     language: Language | None
     """The interface language; null until chosen (follow the browser)."""
+    demo: bool
+    """In the demo (F-ADM-5): the user is the demo's owner, the language still the account's."""
 
     @classmethod
-    def of(cls, user: User) -> "UserOut":
+    def of(cls, user: User, account: User | None = None) -> "UserOut":
         return cls(
             id=user.id,
             household_id=user.household_id,
             email=user.email,
             display_name=user.display_name,
             role=user.role,
-            language=user.language,
+            language=(account or user).language,
+            demo=user.household.is_demo,
         )
+
+    @classmethod
+    def of_session(cls, user_session: UserSession) -> "UserOut":
+        return cls.of(user_session.user, user_session.account)
 
 
 class LoginOut(BaseModel):
@@ -142,6 +152,11 @@ def pending_session(
         sent = request.headers.get(CSRF_HEADER, "")
         if not hmac.compare_digest(sent.encode(), user_session.csrf_token.encode()):
             raise HTTPException(status.HTTP_403_FORBIDDEN, "missing or invalid CSRF token")
+        shown = request.headers.get(HOUSEHOLD_HEADER)
+        if shown is not None and shown != str(user_session.user.household_id):
+            raise HTTPException(
+                status.HTTP_409_CONFLICT, "this page shows another household: reload it"
+            )
     return user_session
 
 
@@ -156,6 +171,22 @@ def current_session(user_session: PendingSession) -> UserSession:
 
 
 CurrentSession = Annotated[UserSession, Depends(current_session)]
+
+NOT_IN_DEMO = "not available in the demo"
+
+
+def check_outside_demo(user_session: UserSession) -> None:
+    """F-ADM-5: what touches people, passwords and second factors stays out of the demo."""
+    if user_session.acting_user_id is not None:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, NOT_IN_DEMO)
+
+
+def outside_demo(user_session: CurrentSession) -> UserSession:
+    check_outside_demo(user_session)
+    return user_session
+
+
+OutsideDemoSession = Annotated[UserSession, Depends(outside_demo)]
 
 
 @router.post("/login")
@@ -178,7 +209,10 @@ def login(
     # Checked before the password, so a blocked caller learns nothing from the answer.
     ensure_allowed(db, [(account, PASSWORD_LIMITS), (ip, IP_LIMITS)], now)
 
-    user = db.scalar(select(User).where(User.email == email))
+    # F-ADM-5: nobody signs in as one of the demo's fictitious members.
+    user = db.scalar(
+        select(User).join(Household).where(User.email == email, Household.is_demo.is_(False))
+    )
     # Hash even for unknown emails so response time does not reveal which accounts exist.
     password_ok = verify_password(user.password_hash if user else _dummy_hash(), body.password)
     if user is None or not user.is_active or not password_ok:
@@ -218,7 +252,8 @@ def login(
 @router.post("/totp/setup")
 def totp_setup(user_session: PendingSession, box: Box) -> TotpSetupOut:
     """Issue a new seed. Only before enrollment: a password alone must not replace the factor."""
-    user = user_session.user
+    check_outside_demo(user_session)
+    user = user_session.account
     if user.totp_confirmed_at is not None:
         raise HTTPException(status.HTTP_409_CONFLICT, "TOTP is already set up")
     secret = start_enrollment(user, box)
@@ -251,7 +286,7 @@ def _signed_in(
     db: Session, user_session: UserSession, now: datetime, ip: str | None, method: str
 ) -> None:
     user_session.mfa_verified_at = now
-    audit.record(db, user_session.user, AuditAction.SIGNED_IN, now, ip=ip, method=method)
+    audit.record(db, user_session.account, AuditAction.SIGNED_IN, now, ip=ip, method=method)
 
 
 @router.post("/totp/confirm")
@@ -259,7 +294,8 @@ def totp_confirm(
     body: TotpCode, request: Request, user_session: PendingSession, db: Db, box: Box, now: Now
 ) -> TotpConfirmOut:
     """Prove the authenticator app works; this completes the login and issues recovery codes."""
-    user = user_session.user
+    check_outside_demo(user_session)
+    user = user_session.account
     if user.totp_confirmed_at is not None or user.totp_secret_enc is None:
         raise HTTPException(status.HTTP_409_CONFLICT, "no TOTP setup in progress")
     ip = client_ip(request)
@@ -273,7 +309,8 @@ def totp_confirm(
 def totp_verify(
     body: TotpCode, request: Request, user_session: PendingSession, db: Db, box: Box, now: Now
 ) -> UserOut:
-    user = user_session.user
+    check_outside_demo(user_session)
+    user = user_session.account
     if user.totp_confirmed_at is None:
         raise HTTPException(status.HTTP_409_CONFLICT, "TOTP is not set up")
     ip = client_ip(request)
@@ -287,7 +324,8 @@ def recovery(
     body: RecoveryCodeIn, request: Request, user_session: PendingSession, db: Db, now: Now
 ) -> UserOut:
     """Complete the login with a recovery code instead of a TOTP code."""
-    user = user_session.user
+    check_outside_demo(user_session)
+    user = user_session.account
     if user.totp_confirmed_at is None:
         raise HTTPException(status.HTTP_409_CONFLICT, "TOTP is not set up")
     ip = client_ip(request)
@@ -298,10 +336,10 @@ def recovery(
 
 @router.post("/recovery-codes")
 def regenerate_recovery_codes(
-    body: PasswordConfirmation, user_session: CurrentSession, db: Db, now: Now
+    body: PasswordConfirmation, user_session: OutsideDemoSession, db: Db, now: Now
 ) -> RecoveryCodesOut:
     """Replace every recovery code. Asks for the password again: a session alone is not enough."""
-    user = user_session.user
+    user = user_session.account
     subject = password_subject(user.email)
     ensure_allowed(db, [(subject, PASSWORD_LIMITS)], now)
     if not verify_password(user.password_hash, body.password):
@@ -322,14 +360,14 @@ def logout(
 ) -> None:
     revoke_session(user_session, now)
     if user_session.mfa_verified_at is not None:  # an abandoned sign-in is not a sign-out
-        audit.record(db, user_session.user, AuditAction.SIGNED_OUT, now, ip=client_ip(request))
+        audit.record(db, user_session.account, AuditAction.SIGNED_OUT, now, ip=client_ip(request))
     for name in (SESSION_COOKIE, CSRF_COOKIE):
         response.delete_cookie(name, secure=settings.cookie_secure, samesite="lax")
 
 
 @router.get("/me")
 def me(user_session: CurrentSession) -> UserOut:
-    return UserOut.of(user_session.user)
+    return UserOut.of_session(user_session)
 
 
 class Preferences(BaseModel):
@@ -338,6 +376,6 @@ class Preferences(BaseModel):
 
 @router.patch("/me")
 def update_me(body: Preferences, user_session: CurrentSession) -> UserOut:
-    """Save the signed-in user's preferences."""
-    user_session.user.language = body.language
-    return UserOut.of(user_session.user)
+    """Save the signed-in user's preferences: the account's, in the demo too."""
+    user_session.account.language = body.language
+    return UserOut.of_session(user_session)

@@ -41,9 +41,13 @@ class Household(UUIDPrimaryKey, Timestamps, Base):
             "pension_indexation BETWEEN -0.02 AND 0.01", name="pension_indexation_range"
         ),
         CheckConstraint("horizon_age BETWEEN 85 AND 105", name="horizon_age_range"),
+        # F-ADM-5: one demo household at most.
+        Index("uq_household_demo", "is_demo", unique=True, postgresql_where=text("is_demo")),
     )
 
     name: Mapped[str] = mapped_column(String(100))
+    # F-ADM-5: the demo's fictitious household, which the real one never sees.
+    is_demo: Mapped[bool] = mapped_column(default=False, server_default=text("false"))
     # F-BUD-2: the share of a monthly target from which a category is to watch.
     warn_at: Mapped[Decimal] = mapped_column(Numeric(3, 2), server_default=text("0.80"))
     # F-WLT-5: the first month the wealth matrix shows by default; NULL: no limit.

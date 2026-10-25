@@ -5060,6 +5060,10 @@
       },
       "UserOut": {
         "properties": {
+          "demo": {
+            "title": "Demo",
+            "type": "boolean"
+          },
           "display_name": {
             "title": "Display Name",
             "type": "string"
@@ -5098,7 +5102,8 @@
           "email",
           "display_name",
           "role",
-          "language"
+          "language",
+          "demo"
         ],
         "title": "UserOut",
         "type": "object"
@@ -6043,7 +6048,7 @@
         ]
       },
       "patch": {
-        "description": "Save the signed-in user's preferences.",
+        "description": "Save the signed-in user's preferences: the account's, in the demo too.",
         "operationId": "updateMe",
         "parameters": [
           {
@@ -6387,6 +6392,155 @@
         "summary": "Totp Verify",
         "tags": [
           "auth"
+        ]
+      }
+    },
+    "/api/demo/enter": {
+      "post": {
+        "description": "Act as the demo's owner; the demo is generated the first time it is opened.",
+        "operationId": "enter",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "kwak_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Kwak Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Enter",
+        "tags": [
+          "demo"
+        ]
+      }
+    },
+    "/api/demo/leave": {
+      "post": {
+        "operationId": "leave",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "kwak_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Kwak Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Leave",
+        "tags": [
+          "demo"
+        ]
+      }
+    },
+    "/api/demo/reset": {
+      "post": {
+        "description": "Generate the demo again, dated from today; what anyone changed in it is lost.",
+        "operationId": "reset",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "kwak_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Kwak Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Reset",
+        "tags": [
+          "demo"
         ]
       }
     },
