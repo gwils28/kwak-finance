@@ -13,6 +13,8 @@ from kwak_core.categories import CategoryKind
 from kwak_core.fixed import FixedExpense, FixedFrequency
 from kwak_core.forecast import (
     BASELINE,
+    BIAS,
+    BIAS_FLOOR,
     HORIZON,
     MIN_ERRORS,
     Band,
@@ -33,6 +35,7 @@ from kwak_core.forecast import (
     errors,
     history,
     known,
+    optimism,
     own_cuts,
     quantiles,
     score,
@@ -286,42 +289,130 @@ def bt(**models: tuple[int | str, int | str]) -> dict[str, dict[int, tuple[Decim
 
 
 def test_the_lowest_mase_wins_when_clearly_below_the_baseline() -> None:
-    got = choose(ACTUAL, bt(baseline=(10, 10), ets=(21, 39)), ORDER, cuts=[2, 3])
+    got = choose(ACTUAL, bt(baseline=(10, 10), ets=(21, 39)), ORDER, cuts=[2, 3], kind=EXPENSE)
     assert got.model == "ets"
     assert got.contest
 
 
 def test_the_baseline_stays_unless_ten_percent_better() -> None:
     """Invariant §8.44: errors 9.2 against 10 on both cuts, 8 % better only."""
-    got = choose(ACTUAL, bt(baseline=(10, 30), naive=("10.8", "49.2")), ORDER, cuts=[2, 3])
+    got = choose(
+        ACTUAL, bt(baseline=(10, 30), naive=("10.8", "49.2")), ORDER, cuts=[2, 3], kind=EXPENSE
+    )
     assert got.model == BASELINE
 
 
 def test_ties_go_to_the_simpler() -> None:
-    got = choose(ACTUAL, bt(baseline=(10, 10), ets=(20, 40), naive=(20, 40)), ORDER, cuts=[2, 3])
+    got = choose(
+        ACTUAL,
+        bt(baseline=(10, 10), ets=(20, 40), naive=(20, 40)),
+        ORDER,
+        cuts=[2, 3],
+        kind=EXPENSE,
+    )
     assert got.model == "naive"
 
 
 def test_a_candidate_missing_a_cut_is_left_out() -> None:
     models = bt(baseline=(10, 10))
     models["ets"] = {3: ds(40)}
-    assert choose(ACTUAL, models, ORDER, cuts=[2, 3]).model == BASELINE
+    assert choose(ACTUAL, models, ORDER, cuts=[2, 3], kind=EXPENSE).model == BASELINE
 
 
 def test_a_sparse_series_keeps_the_baseline_without_contest() -> None:
-    got = choose(ds(0, 0, 40, 0), bt(baseline=(10, 10), naive=(40, 0)), ORDER, cuts=[2, 3])
+    got = choose(
+        ds(0, 0, 40, 0), bt(baseline=(10, 10), naive=(40, 0)), ORDER, cuts=[2, 3], kind=EXPENSE
+    )
     assert got.model == BASELINE
     assert not got.contest
 
 
 def test_a_flat_training_keeps_the_baseline_without_contest() -> None:
-    got = choose(ds(5, 5, 5, 9), bt(baseline=(5, 5), naive=(5, 9)), ORDER, cuts=[2, 3])
+    got = choose(
+        ds(5, 5, 5, 9), bt(baseline=(5, 5), naive=(5, 9)), ORDER, cuts=[2, 3], kind=EXPENSE
+    )
     assert got.model == BASELINE
     assert not got.contest
 
 
 def test_no_cut_keeps_the_baseline() -> None:
-    assert not choose(ACTUAL, bt(baseline=(10, 10)), ORDER, cuts=[]).contest
+    assert not choose(ACTUAL, bt(baseline=(10, 10)), ORDER, cuts=[], kind=EXPENSE).contest
+
+
+# The bias: (entered - forecast) over the absolute amounts entered; months 200 and 400 tested.
+BIASED = ds(100, 300, 200, 400)
+# baseline: errors +50, -50, no bias; ets: +12, +22, the lowest MASE but 5.7 % less spent
+# than entered, €17 a month; naive: -25, -20, the next MASE, 7.5 % more than entered.
+BIASED_BT = bt(baseline=(150, 450), ets=(188, 378), naive=(225, 420))
+
+
+def test_an_optimistic_candidate_is_set_aside_before_the_choice() -> None:
+    """Invariant §8.44: ets errs least but under-forecasts the spending; naive is kept."""
+    got = choose(BIASED, BIASED_BT, ORDER, cuts=[2, 3], kind=EXPENSE)
+    assert got.model == "naive"
+    assert got.set_aside == {"ets"}
+    assert got.scores["ets"].bias == D(34) / D(600)
+    assert got.gains["ets"] < got.gains["naive"]
+
+
+def test_under_forecast_income_is_not_optimistic() -> None:
+    got = choose(BIASED, BIASED_BT, ORDER, cuts=[2, 3], kind=INCOME)
+    assert got.model == "ets"
+    assert got.set_aside == {"naive"}
+
+
+def test_savings_are_judged_both_ways() -> None:
+    got = choose(BIASED, BIASED_BT, ORDER, cuts=[2, 3], kind=SAVINGS)
+    assert got.model == BASELINE
+    assert got.set_aside == {"ets", "naive"}
+
+
+def test_a_bias_under_ten_euros_a_month_is_not_set_aside() -> None:
+    small = tuple(v / 10 for v in BIASED)
+    models = {
+        m: {c: tuple(v / 10 for v in f) for c, f in by.items()} for m, by in BIASED_BT.items()
+    }
+    got = choose(small, models, ORDER, cuts=[2, 3], kind=EXPENSE)
+    assert got.model == "ets"
+    assert not got.set_aside
+
+
+def test_no_more_optimistic_than_the_baseline_is_kept() -> None:
+    """The baseline under-forecasts by 8.3 %, ets by 5.7 %: ets is less optimistic, kept."""
+    models = bt(baseline=(180, 370), ets=(188, 378))
+    got = choose(BIASED, models, ORDER, cuts=[2, 3], kind=EXPENSE)
+    assert got.model == "ets"
+    assert not got.set_aside
+
+
+@given(
+    st.lists(st.integers(0, 500), min_size=8, max_size=8),
+    st.lists(st.lists(st.integers(0, 500), min_size=2, max_size=2), min_size=4, max_size=4),
+    st.sampled_from([EXPENSE, INCOME, SAVINGS]),
+)
+def test_a_set_aside_candidate_is_never_kept(
+    actual: list[int], forecasts: list[list[int]], kind: CategoryKind
+) -> None:
+    """Invariant §8.44: the choice is the one made without the candidates set aside, each of
+    them more optimistic than the baseline beyond BIAS and BIAS_FLOOR; never the baseline."""
+    order = (BASELINE, "average_3", "naive", "ets")
+    series = ds(*actual)
+    backtests = {m: {6: ds(f[0]), 7: ds(f[1])} for m, f in zip(order, forecasts, strict=True)}
+    got = choose(series, backtests, order, cuts=[6, 7], kind=kind)
+    assert BASELINE not in got.set_aside
+    assert got.model not in got.set_aside
+    base = got.scores.get(BASELINE)  # every candidate covers both cuts: the same months
+    for m in got.set_aside:
+        s = got.scores[m]
+        assert s.bias is not None
+        assert base is not None
+        assert base.bias is not None
+        assert optimism(s.bias, kind) > BIAS
+        assert optimism(s.per_month, kind) > BIAS_FLOOR
+        assert optimism(s.bias, kind) > optimism(base.bias, kind)
+    kept = {m: f for m, f in backtests.items() if m not in got.set_aside}
+    again = choose(series, kept, order, cuts=[6, 7], kind=kind)
+    assert again.model == got.model
 
 
 # F-FCT-5: bands and chances
@@ -478,6 +569,56 @@ def test_forecasts_add_up() -> None:
         assert got.income[step].point == D(3000)
         assert got.saved[step].point == D(200)
         assert got.rest[step].point == D(3000) - spent - D(200)
+
+
+def test_totals_bias_from_the_summed_errors() -> None:
+    """Spending forecast at 90 for 100 entered: 10 % less, the rest €10 a month above."""
+    n = 24
+    s = {
+        GROCERIES: _series([100] * n),
+        SALARY: _series([1000] * n, kind=INCOME),
+    }
+    backtests = {
+        GROCERIES: {BASELINE: {c: (D(90),) * min(HORIZON, n - c) for c in range(1, n)}},
+        SALARY: _flat_backtests(s[SALARY], n),
+    }
+    futures = {k: {BASELINE: (v.variable[-1],) * HORIZON} for k, v in s.items()}
+    got = assemble(s, {}, backtests, futures, ORDER)
+    spent = got.bias("spent")
+    assert spent is not None
+    assert spent.share == D("0.1")
+    assert spent.per_month == D(10)
+    rest = got.bias("rest")
+    assert rest is not None
+    assert rest.per_month == D(-10)
+    assert got.rest_above() is None  # €10 is 1 % of the income: under 2 %, no warning
+
+
+def test_a_total_s_bias_counts_only_the_categories_forecast() -> None:
+    """A category with no error at a cut adds nothing entered to that cut's bias either."""
+    n = 24
+    s = {GROCERIES: _series([100] * n), RENT_CAT: _series([800] * n)}
+    backtests = {
+        GROCERIES: {BASELINE: {c: (D(90),) * min(HORIZON, n - c) for c in range(1, n)}},
+        RENT_CAT: {BASELINE: {}},  # never forecast at a cut: no error
+    }
+    futures = {k: {BASELINE: (v.variable[-1],) * HORIZON} for k, v in s.items()}
+    got = assemble(s, {}, backtests, futures, ORDER)
+    spent = got.bias("spent")
+    assert spent is not None
+    assert spent.share == D("0.1")
+
+
+def test_the_summary_warns_when_the_rest_was_too_high() -> None:
+    n = 24
+    s = {GROCERIES: _series([100] * n), SALARY: _series([1000] * n, kind=INCOME)}
+    backtests = {
+        GROCERIES: {BASELINE: {c: (D(70),) * min(HORIZON, n - c) for c in range(1, n)}},
+        SALARY: _flat_backtests(s[SALARY], n),
+    }
+    futures = {k: {BASELINE: (v.variable[-1],) * HORIZON} for k, v in s.items()}
+    got = assemble(s, {}, backtests, futures, ORDER)
+    assert got.rest_above() == D(30)
 
 
 def test_a_category_without_lines_is_forecast_at_zero() -> None:

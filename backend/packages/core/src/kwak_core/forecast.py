@@ -13,7 +13,7 @@ import enum
 import math
 from collections import defaultdict
 from collections.abc import Collection, Iterable, Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date
 from decimal import Decimal
 from uuid import UUID
@@ -41,6 +41,12 @@ MIN_ERRORS = 9
 LOW, HIGH = Decimal("0.1"), Decimal("0.9")
 MARGIN = Decimal("0.10")
 """How much lower a candidate's MASE must be than the baseline's to replace it."""
+BIAS = Decimal("0.05")
+"""The optimistic bias, of the absolute amounts entered, above which a candidate is set aside."""
+BIAS_FLOOR = Decimal(10)
+"""And its errors' average a month, in euros: a small series is not judged on cents."""
+REST_BIAS = Decimal("0.02")
+"""The rest's bias, of the income, above which the summary warns (with BIAS_FLOOR)."""
 MIN_ACTIVE = 3
 """Months holding a line for a series to have a contest."""
 MIN_CUTS = FIRST_CUT - FIRST_CUT_SHORT
@@ -226,6 +232,11 @@ class Score:
     rmsse: Decimal
     wape: Decimal | None
     """None when the months forecast hold no amount."""
+    bias: Decimal | None = None
+    """The errors' sum over the absolute amounts entered: above 0, less forecast than entered.
+    None when the months forecast hold no amount."""
+    per_month: Decimal = ZERO
+    """The errors' average, in euros a month."""
 
 
 def score(
@@ -233,7 +244,7 @@ def score(
 ) -> Score | None:
     """None when a training never changed from month to month (the MASE is undefined), or
     when nothing was forecast. The training runs from the series' first month, `start`."""
-    abs_scaled = sq_scaled = abs_err = abs_actual = ZERO
+    abs_scaled = sq_scaled = abs_err = abs_actual = err = ZERO
     count = 0
     for c, values in forecasts.items():
         changes = [actual[t] - actual[t - 1] for t in range(start + 1, c)]
@@ -245,6 +256,7 @@ def score(
             abs_scaled += abs(e) / scale
             sq_scaled += e * e / scale2
             abs_err += abs(e)
+            err += e
             abs_actual += abs(actual[c + k - 1])
             count += 1
     if count == 0:
@@ -253,6 +265,8 @@ def score(
         abs_scaled / count,
         (sq_scaled / count).sqrt(),
         abs_err / abs_actual if abs_actual else None,
+        err / abs_actual if abs_actual else None,
+        err / count,
     )
 
 
@@ -265,6 +279,28 @@ class Choice:
     """Each candidate's MASE over the baseline's on the same cuts (below 1: it errs less)."""
     contest: bool
     """False when the baseline was kept without one."""
+    set_aside: frozenset[str] = frozenset()
+    """The candidates left out of the contest for forecasting too optimistically."""
+
+
+def optimism(bias: Decimal, kind: CategoryKind) -> Decimal:
+    """How optimistic a bias reads: less spending, more income, or savings either way."""
+    if kind is CategoryKind.EXPENSE:
+        return bias
+    if kind is CategoryKind.INCOME:
+        return -bias
+    return abs(bias)
+
+
+def _too_optimistic(s: Score, base: Score, kind: CategoryKind) -> bool:
+    if s.bias is None or base.bias is None:
+        return False
+    mine = optimism(s.bias, kind)
+    return (
+        mine > BIAS
+        and optimism(s.per_month, kind) > BIAS_FLOOR
+        and mine > optimism(base.bias, kind)
+    )
 
 
 def choose(
@@ -273,12 +309,14 @@ def choose(
     order: Sequence[str],
     *,
     cuts: Sequence[int],
+    kind: CategoryKind,
     start: int = 0,
 ) -> Choice:
     """The candidate whose MASE is lowest against the baseline's on the same cuts, when at
     least MARGIN below it; ties to the simpler (earlier in `order`). A candidate needing a
     longer training than the first cuts is judged on the cuts it covers, MIN_CUTS at least
-    (all of them when there are fewer)."""
+    (all of them when there are fewer). A candidate more optimistic than the baseline on the
+    same cuts, beyond BIAS and BIAS_FLOOR, is set aside first; the baseline never is."""
     no_contest = Choice(BASELINE, {}, {}, contest=False)
     if not cuts or sum(1 for v in actual if v != 0) < MIN_ACTIVE:
         return no_contest
@@ -290,6 +328,7 @@ def choose(
         return no_contest
     scores: dict[str, Score] = {BASELINE: base}
     gains: dict[str, Decimal] = {BASELINE: ONE}
+    set_aside: set[str] = set()
     for model in order:
         found = backtests.get(model, {})
         covered = [c for c in cuts if c in found]
@@ -301,10 +340,12 @@ def choose(
             continue
         scores[model] = s
         gains[model] = s.mase / b.mase
-    best = min(gains, key=lambda m: (gains[m], order.index(m) if m in order else -1))
-    if best != BASELINE and gains[best] <= ONE - MARGIN:
-        return Choice(best, scores, gains, contest=True)
-    return Choice(BASELINE, scores, gains, contest=True)
+        if _too_optimistic(s, b, kind):
+            set_aside.add(model)
+    kept = [m for m in gains if m not in set_aside]
+    best = min(kept, key=lambda m: (gains[m], order.index(m) if m in order else -1))
+    model = best if best != BASELINE and gains[best] <= ONE - MARGIN else BASELINE
+    return Choice(model, scores, gains, contest=True, set_aside=frozenset(set_aside))
 
 
 # F-FCT-5: bands and chances
@@ -433,6 +474,14 @@ class CategoryForecast:
 
 
 @dataclass(frozen=True)
+class Bias:
+    share: Decimal | None
+    """The errors' sum over the absolute amounts entered; None without any."""
+    per_month: Decimal
+    """The errors' average, in euros a month: above 0, less forecast than entered."""
+
+
+@dataclass(frozen=True)
 class Forecast:
     n: int
     """Months of history."""
@@ -443,6 +492,30 @@ class Forecast:
     rest: tuple[Band, ...]
     total_errors: Mapping[str, Mapping[tuple[int, int], Decimal]]
     """By total: "income", "spent", "saved", "rest"."""
+    entered_at: Mapping[str, Mapping[tuple[int, int], Decimal]] = field(default_factory=dict)
+    """By total and (cut, step): what was entered in the categories with an error there."""
+
+    def bias(self, name: str) -> Bias | None:
+        """A total's bias in the back-test, from its summed errors (F-FCT-6)."""
+        errs = self.total_errors[name]
+        if not errs:
+            return None
+        at = self.entered_at[name]
+        err = sum(errs.values(), ZERO)
+        entered = sum((abs(at.get(key, ZERO)) for key in errs), ZERO)
+        return Bias(err / entered if entered else None, err / len(errs))
+
+    def rest_above(self) -> Decimal | None:
+        """How much a month the rest was forecast above what was left, when beyond REST_BIAS
+        of the income and BIAS_FLOOR; None otherwise."""
+        rest = self.bias("rest")
+        errs = self.total_errors["rest"]
+        if rest is None:
+            return None
+        income = self.entered_at["income"]
+        average = sum((income.get(key, ZERO) for key in errs), ZERO) / len(errs)
+        above = -rest.per_month
+        return above if above > BIAS_FLOOR and above > REST_BIAS * average else None
 
     def year(self, category: UUID, k: int) -> Band:
         """The category's first k months added up, with the band of k-month sums."""
@@ -486,6 +559,7 @@ def _category(
         {m: backtests[m] for m in allowed if m in backtests},
         allowed,
         cuts=own_cuts(n, start=start),
+        kind=s.kind,
         start=start,
     )
     chosen = backtests.get(choice.model, {})
@@ -550,6 +624,17 @@ def assemble(
         steps = Errors.of(total_errs[name])
         return tuple(band(v, steps.at(k + 1), floor=name in FLOORED) for k, v in enumerate(values))
 
+    entered_at: dict[str, dict[tuple[int, int], Decimal]] = {name: {} for name in TOTAL_OF.values()}
+    for cf in categories.values():
+        at = entered_at[TOTAL_OF[cf.series.kind]]
+        for c, k in cf.errors:
+            at[(c, k)] = at.get((c, k), ZERO) + cf.series.total[c + k - 1]
+    entered_at["rest"] = {
+        key: entered_at["income"].get(key, ZERO)
+        - entered_at["spent"].get(key, ZERO)
+        - entered_at["saved"].get(key, ZERO)
+        for key in rest_errs
+    }
     return Forecast(
         n,
         categories,
@@ -558,6 +643,7 @@ def assemble(
         bands("saved", points["saved"]),
         bands("rest", rest),
         total_errs,
+        entered_at,
     )
 
 
