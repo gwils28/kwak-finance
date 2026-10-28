@@ -1,0 +1,38 @@
+[project]
+name = "kwak-forecasting-study"
+version = "0.0.0"
+description = "The cash-flow forecasting study behind spec §4.14 (synthetic data only)"
+requires-python = ">=3.13,<3.14"
+dependencies = [
+    "kwak-core",
+    "kwak-analytics",
+    "jupyter>=1.1",
+    "nbconvert>=7.16",
+    "ipykernel>=6.29",
+    "nbformat>=5.10",
+    "matplotlib>=3.10",
+    "statsforecast>=2.0",
+    "mlforecast>=1.0",
+    "utilsforecast>=0.2.12",
+    "skforecast>=0.17",
+    "lightgbm>=4.6",
+    "scikit-learn>=1.6",
+    "shap>=0.48",
+    "statsmodels>=0.14",
+    "scipy>=1.15",
+    "torch>=2.7",
+    "chronos-forecasting>=2.0",
+    "ruff>=0.14",
+    "timesfm[torch]>=2.0",
+]
+
+[tool.uv]
+package = false
+
+[tool.uv.sources]
+kwak-core = { path = "../../backend/packages/core", editable = true }
+kwak-analytics = { path = "../../backend/packages/analytics", editable = true }
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
