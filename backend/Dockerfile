@@ -7,6 +7,9 @@ COPY packages ./packages
 RUN --mount=type=cache,target=/root/.cache/uv uv sync --frozen --no-dev --no-editable
 
 FROM python:3.13-slim-bookworm
+# LightGBM (the forecast's trees, spec §4.14) needs the OpenMP runtime.
+RUN apt-get update && apt-get install -y --no-install-recommends libgomp1 \
+    && rm -rf /var/lib/apt/lists/*
 RUN useradd --create-home --uid 1000 kwak
 COPY --from=build --chown=kwak:kwak /app/.venv /app/.venv
 ENV PATH="/app/.venv/bin:$PATH"
