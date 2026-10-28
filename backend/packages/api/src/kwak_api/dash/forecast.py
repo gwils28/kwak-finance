@@ -2,7 +2,7 @@
 with their bands, against the targets, what each forecast rests on and the back-test, their
 tables, the disclaimer and the limits. Nothing is set here: the page only reads."""
 
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Collection, Sequence
 from decimal import Decimal
 from uuid import UUID
 
@@ -344,29 +344,34 @@ def band_note(r: service.Result, lang: Language) -> html.P | None:
 # Against the targets
 
 
-def _table(header: Sequence[str], rows: Sequence[Sequence[str]], *, text: int = 1) -> html.Div:
-    """The first `text` columns hold words, left-aligned and wrapping; the others figures."""
+def _table(
+    header: Sequence[str],
+    rows: Sequence[Sequence[str]],
+    *,
+    text: int = 1,
+    worded: Collection[int] = (),
+) -> html.Div:
+    """The first `text` columns hold words, left-aligned and wrapping; the others figures,
+    right-aligned and on one line, except the `worded` ones (a chance, a status), which wrap
+    like the headers so the table fits its frame (issue #164)."""
     cell = {"padding": "0.25rem 0.75rem", "textAlign": "right", "whiteSpace": "nowrap"}
-    words = {**cell, "textAlign": "left", "whiteSpace": "normal", "minWidth": "8rem"}
+    wrapping = {**cell, "whiteSpace": "normal"}
+    words = {**wrapping, "textAlign": "left", "minWidth": "8rem"}
+
+    def style(i: int, head: bool) -> dict[str, str]:
+        if i < text:
+            return words
+        return wrapping if head or i in worded else cell
+
     return html.Div(
         html.Table(
             [
                 html.Thead(
-                    html.Tr(
-                        [
-                            html.Th(h, style=words if i < text else cell)
-                            for i, h in enumerate(header)
-                        ]
-                    )
+                    html.Tr([html.Th(h, style=style(i, True)) for i, h in enumerate(header)])
                 ),
                 html.Tbody(
                     [
-                        html.Tr(
-                            [
-                                html.Td(v, style=words if i < text else cell)
-                                for i, v in enumerate(row)
-                            ]
-                        )
+                        html.Tr([html.Td(v, style=style(i, False)) for i, v in enumerate(row)])
                         for row in rows
                     ]
                 ),
@@ -422,7 +427,7 @@ def targets(r: service.Result, lang: Language) -> list[Component]:
             "col_status",
         )
     ]
-    out.append(_table(header, [row for _, row in sorted(rows, key=lambda p: p[0])]))
+    out.append(_table(header, [row for _, row in sorted(rows, key=lambda p: p[0])], worded=(4, 5)))
     return out
 
 
@@ -487,7 +492,7 @@ def year(r: service.Result, lang: Language) -> list[Component]:
     return [
         html.H3(t(lang, "fct_year_title", year=first.year)),
         html.P(t(lang, "fct_year_intro", origin=i18n.month(r.origin, lang))),
-        _table(header, [row for _, row in sorted(rows, key=lambda p: p[0])]),
+        _table(header, [row for _, row in sorted(rows, key=lambda p: p[0])], worded=(6, 7)),
     ]
 
 
@@ -530,7 +535,7 @@ def savings(r: service.Result, lang: Language) -> list[Component]:
     return [
         html.H3(t(lang, "fct_savings_title")),
         html.P(t(lang, "fct_savings_intro", month=i18n.month(month, lang))),
-        _table(header, [row for _, row in sorted(rows, key=lambda p: p[0])]),
+        _table(header, [row for _, row in sorted(rows, key=lambda p: p[0])], worded=(4, 5)),
     ]
 
 

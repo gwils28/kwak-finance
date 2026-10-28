@@ -89,3 +89,18 @@ def test_the_charts_and_ratios_follow_the_language(demo_client: TestClient) -> N
     text = _text(body)
     assert "Dépensé : prévu un mois à l'avance" in text
     assert not re.search(r'"\d\.\d\d"', text), "a ratio with a decimal point in French"
+
+
+def test_the_tables_wrap_their_headers_and_words_but_not_their_amounts() -> None:
+    # issue #164: the year table was wider than its frame
+    from kwak_api.dash.forecast import _table
+
+    table = _table(
+        ["Category", "To date", "Chance"], [["Leisure", "4 377 €", "nearly always"]], worded=(2,)
+    ).children
+    header = table.children[0].children
+    wraps = [c.style["whiteSpace"] for c in header.children]
+    assert wraps == ["normal", "normal", "normal"]
+    (row,) = table.children[1].children
+    assert [c.style["whiteSpace"] for c in row.children] == ["normal", "nowrap", "normal"]
+    assert [c.style["textAlign"] for c in row.children] == ["left", "right", "right"]
