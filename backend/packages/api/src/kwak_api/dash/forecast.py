@@ -9,6 +9,7 @@ from uuid import UUID
 import plotly.graph_objects as go
 from dash import Dash, Input, Output, State, dcc, html
 from dash.development.base_component import Component
+from kwak_analytics import foundation
 from kwak_analytics.forecast import TREES
 from kwak_core import forecast as core
 from kwak_core.budget import Month, month_range, target_for
@@ -32,7 +33,20 @@ LIMITS = (
     "fct_limit_change",
     "fct_limit_yearly",
     "fct_limit_euros",
+    "fct_limit_prices",
 )
+KIND_WORD = {
+    CategoryKind.EXPENSE: "expense",
+    CategoryKind.INCOME: "income",
+    CategoryKind.SAVINGS: "savings",
+}
+TOTAL_KIND = {
+    "income": CategoryKind.INCOME,
+    "spent": CategoryKind.EXPENSE,
+    "saved": CategoryKind.SAVINGS,
+}
+ABOUT = Decimal("0.01")
+"""Under this bias, the forecast reads as about what was entered."""
 TOTALS = ("income", "spent", "saved", "rest")
 KIND_TOTAL = {
     CategoryKind.INCOME: "income",
@@ -154,7 +168,10 @@ def summary(r: service.Result, lang: Language) -> list[html.P]:
             month=month,
             expected=i18n.euros(now.point, lang),
         )
-    return [html.P(text, style={"fontSize": "1.1rem", "fontWeight": 600}), html.P(current)]
+    out = [html.P(text, style={"fontSize": "1.1rem", "fontWeight": 600}), html.P(current)]
+    if (above := f.rest_above()) is not None:
+        out.append(html.P(t(lang, "fct_rest_warning", amount=i18n.euros(above, lang))))
+    return out
 
 
 def _x(months: Sequence[Month]) -> list[object]:
@@ -559,6 +576,35 @@ def income(r: service.Result, lang: Language) -> list[Component]:
 # What it rests on, and the back-test
 
 
+def bias_text(bias: Decimal, kind: CategoryKind, lang: Language) -> str:
+    """A bias (entered - forecast, over the amounts entered) in words, for its kind."""
+    if abs(bias) < ABOUT:
+        return t(lang, "fct_bias_none")
+    side = "less" if bias > 0 else "more"
+    share = i18n.percent(abs(bias), lang, places=0)
+    return t(lang, f"fct_bias_{KIND_WORD[kind]}_{side}", share=share)
+
+
+def set_aside_text(choice: core.Choice, kind: CategoryKind, lang: Language) -> str | None:
+    """The candidate set aside for its optimism that erred least, when less than the one kept."""
+    kept = choice.gains.get(choice.model, core.ONE)
+    better = [m for m in choice.set_aside if choice.gains[m] < kept]
+    if not better:
+        return None
+    model = min(better, key=lambda m: choice.gains[m])
+    bias = choice.scores[model].bias
+    assert bias is not None  # set aside on its bias  # noqa: S101
+    return t(
+        lang,
+        "fct_set_aside",
+        model=t(lang, f"fct_name_{model}")
+        if model in foundation.NAMES
+        else t(lang, f"fct_m_{model}"),
+        share=i18n.percent(1 - choice.gains[model] / kept, lang, places=0),
+        bias=bias_text(bias, kind, lang),
+    )
+
+
 def method(r: service.Result, category: UUID, lang: Language) -> str:
     choice = r.forecast.categories[category].choice
     if choice is None:
@@ -568,8 +614,9 @@ def method(r: service.Result, category: UUID, lang: Language) -> str:
         return t(lang, "fct_no_contest", method=words)
     if choice.model == TREES and (shares := r.contributions.get(category)):
         features = ", ".join(t(lang, f"fct_f_{name}") for name, _ in shares[:3])
-        return t(lang, "fct_mostly", method=words, features=features)
-    return words
+        words = t(lang, "fct_mostly", method=words, features=features)
+    aside = set_aside_text(choice, r.forecast.categories[category].series.kind, lang)
+    return f"{words}. {aside}" if aside else words
 
 
 def rests_on(r: service.Result, lang: Language) -> list[Component]:
@@ -593,6 +640,7 @@ def rests_on(r: service.Result, lang: Language) -> list[Component]:
                 if score and score.wape is not None
                 else "—",
                 versus,
+                bias_text(score.bias, c.kind, lang) if score and score.bias is not None else "—",
                 i18n.percent(cf.coverage, lang, places=0) if cf.coverage is not None else "—",
             ]
         )
@@ -605,6 +653,7 @@ def rests_on(r: service.Result, lang: Language) -> list[Component]:
             "col_mase",
             "col_wape",
             "col_vs_baseline",
+            "col_bias",
             "col_coverage",
         )
     ]
@@ -621,6 +670,19 @@ def one_ahead(r: service.Result, name: str) -> tuple[list[int], list[Decimal], l
     errs = r.forecast.total_errors[name]
     cuts = [c for c in core.cuts(len(r.history)) if (c, 1) in errs]
     return cuts, [actual[c] for c in cuts], [actual[c] - errs[(c, 1)] for c in cuts]
+
+
+def total_bias_text(r: service.Result, name: str, lang: Language) -> str:
+    """A total's bias in the back-test: a share for income, spent and saved, euros for the rest."""
+    bias = r.forecast.bias(name)
+    if bias is None:
+        return "—"
+    if name != "rest":
+        return bias_text(bias.share, TOTAL_KIND[name], lang) if bias.share is not None else "—"
+    if abs(bias.per_month) < 1:
+        return t(lang, "fct_bias_none")
+    side = "above" if bias.per_month < 0 else "below"
+    return t(lang, f"fct_bias_rest_{side}", amount=i18n.euros(abs(bias.per_month), lang))
 
 
 def backtest(r: service.Result, view: View) -> list[Component]:
@@ -664,9 +726,10 @@ def backtest(r: service.Result, view: View) -> list[Component]:
                 ratio(s.mase, lang) if s else "—",
                 i18n.percent(s.wape, lang, places=0) if s and s.wape is not None else "—",
                 ratio(s.rmsse, lang) if s else "—",
+                total_bias_text(r, name, lang),
             ]
         )
-    header = [t(lang, k) for k in ("col_total", "col_mase", "col_wape", "col_rmsse")]
+    header = [t(lang, k) for k in ("col_total", "col_mase", "col_wape", "col_rmsse", "col_bias")]
     table_rows = []
     for name in ("income", "spent"):
         cuts, entered, forecast = one_ahead(r, name)
@@ -701,6 +764,15 @@ def backtest(r: service.Result, view: View) -> list[Component]:
     ]
 
 
+def models_text(r: service.Result, lang: Language) -> str:
+    if not r.foundation:
+        return t(lang, "fct_no_models")
+    models = ", ".join(
+        f"{t(lang, f'fct_name_{name}')} ({revision})" for name, revision in r.foundation.items()
+    )
+    return t(lang, "fct_models", models=models)
+
+
 def limits(r: service.Result, lang: Language) -> html.Div:
     return html.Div(
         [
@@ -715,7 +787,9 @@ def limits(r: service.Result, lang: Language) -> html.Div:
                     n=len(r.history),
                     seed=r.seed,
                     version=r.engine_version,
-                ),
+                )
+                + " "
+                + models_text(r, lang),
                 style={"fontSize": "0.8rem"},
             ),
         ]

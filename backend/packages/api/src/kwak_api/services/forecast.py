@@ -6,12 +6,13 @@ few results are kept in memory, keyed by everything they were computed from."""
 import threading
 from collections import OrderedDict
 from collections.abc import Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date
 from decimal import Decimal
 from uuid import UUID
 
 from kwak_analytics import forecast as engine
+from kwak_analytics import foundation
 from kwak_core import forecast as core
 from kwak_core.budget import Month, target_for
 from kwak_core.categories import CategoryKind
@@ -56,6 +57,8 @@ class Result:
     """What each category holds so far in the current month, never used by the forecast."""
     targets: spending_budget.Targets
     seed: int
+    foundation: Mapping[str, str] = field(default_factory=dict)
+    """The foundation models that took part and their revisions; empty when not installed."""
     engine_version: int = engine.ENGINE_VERSION
 
     def target(self, category: UUID, month: Month) -> Decimal | None:
@@ -130,6 +133,7 @@ def _run(
         n,
         seed,
         engine.ENGINE_VERSION,
+        tuple(sorted(foundation.revisions().items())),
         tuple(sorted((str(k), s) for k, s in series.items())),
         tuple(sorted((str(k), tuple(v)) for k, v in known.items())),
     )
@@ -147,7 +151,7 @@ def _run(
         if s.start is not None
     ]
     result = engine.run(inputs, first=first, n=n, cuts=core.cuts(n), seed=seed)
-    forecast = core.assemble(series, known, result.backtests, result.futures, engine.ORDER)
+    forecast = core.assemble(series, known, result.backtests, result.futures, result.order)
     with _lock:
         _cache[key] = (forecast, result)
         while len(_cache) > CACHED:
@@ -187,4 +191,5 @@ def compute(
         entered=entered,
         targets=spending_budget.targets(db, household_id),
         seed=seed,
+        foundation=dict(result.foundation),
     )
