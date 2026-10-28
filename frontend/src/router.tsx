@@ -12,6 +12,7 @@ import { ActivityPage } from "./activity/ActivityPage";
 import type { Scope } from "./api/generated";
 import { LoginPage } from "./auth/LoginPage";
 import { meQuery } from "./auth/session";
+import { ForecastPage } from "./forecast/ForecastPage";
 import { AnalysisPage as GoalAnalysisPage } from "./goals/AnalysisPage";
 import { GoalPage } from "./goals/GoalPage";
 import { GoalsPage } from "./goals/GoalsPage";
@@ -106,6 +107,12 @@ const reportsRoute = createRoute({
       <ReportsPage key={`${start}-${end}`} initial={start && end ? { start, end } : undefined} />
     );
   },
+});
+
+const forecastRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: "/forecast",
+  component: ForecastPage,
 });
 
 const wealthRoute = createRoute({
@@ -209,6 +216,7 @@ const routeTree = rootRoute.addChildren([
     goalAnalysisRoute,
     goalRoute,
     reportsRoute,
+    forecastRoute,
     membersRoute,
     activityRoute,
     guideRoute,

@@ -215,6 +215,154 @@ EN: Mapping[str, str] = {
     "limit_ceilings": (
         "Savings accounts' ceilings (€22,950 on a Livret A, €12,000 on an LDDS) are not modelled."
     ),
+    # The cash-flow forecast (spec §4.14).
+    "fct_intro": (
+        "What the next twelve months of spending could look like, from the household's own "
+        "history: the fixed expenses due are known, the rest is forecast by the method that "
+        "erred least on the months already entered, with a band of likely values."
+    ),
+    "fct_not_enough": (
+        "A forecast needs 12 complete months of spending; there are {n} so far. Open the demo "
+        "from the account menu to try it."
+    ),
+    "fct_summary": (
+        "From {first} to {last}, an income of {income}, spending of {spent} and savings of "
+        "{saved} are expected, leaving a rest of {rest} (between {low} and {high} about 8 times "
+        "in 10)."
+    ),
+    "fct_summary_no_band": (
+        "From {first} to {last}, an income of {income}, spending of {spent} and savings of "
+        "{saved} are expected, leaving a rest of {rest} (too short a history for a range)."
+    ),
+    "fct_now": "{entered} spent so far in {month}, {expected} expected for the month.",
+    "fct_now_above": (
+        "{entered} spent so far in {month}: already above what was expected ({high} at most, "
+        "about 8 times in 10)."
+    ),
+    "fct_months_title": "Month by month",
+    "fct_income": "Income",
+    "fct_spent": "Spent",
+    "fct_spent_fixed": "Of which fixed expenses",
+    "fct_saved": "Saved",
+    "fct_rest": "Rest",
+    "fct_band": "{name}, about 8 times in 10",
+    "fct_forecast_of": "{name} (forecast)",
+    "fct_origin": "Last complete month",
+    "fct_rest_title": "The rest",
+    "fct_axis": "A month",
+    "fct_widened": "From {month}, the band is the last one measured on enough months, widened.",
+    "fct_no_band": "No band yet: too few months to measure the errors.",
+    "fct_targets_title": "Against the targets",
+    "fct_targets_intro": (
+        "{month}: each expense category with a target, its forecast and the chance of going "
+        "over it, the likeliest overrun first."
+    ),
+    "fct_no_target": "No expense category has a target this month.",
+    "fct_likely_over": "▲ likely over",
+    "fct_may_go_over": "△ may go over",
+    "fct_within": "✓ within",
+    "fct_likely_short": "▲ likely short",
+    "fct_may_fall_short": "△ may fall short",
+    "fct_on_track": "✓ on track",
+    "fct_year_title": "The year {year}",
+    "fct_year_intro": (
+        "Each target's or savings objective's amount to date (to {origin}) plus its forecast "
+        "to December, against the full year's."
+    ),
+    "fct_savings_title": "Savings objectives",
+    "fct_savings_intro": "{month}: each savings category with an objective, and the chance of "
+    "saving less.",
+    "fct_income_title": "Income",
+    "fct_rests_title": "What the forecast rests on",
+    "fct_rests_intro": (
+        "For each category, the method that erred least when it forecast the months already "
+        "entered (its MASE: below 1, it errs less than repeating the previous month), against "
+        "the 6-month average, and how often the months entered fell inside the band built from "
+        "the errors known at the time (8 times in 10 expected)."
+    ),
+    "fct_m_baseline": "the average of the last 6 months",
+    "fct_m_average_3": "the average of the last 3 months",
+    "fct_m_average_12": "the average of the last 12 months",
+    "fct_m_average_all": "the average of the whole history",
+    "fct_m_naive": "the last month",
+    "fct_m_seasonal_naive": "the same month last year",
+    "fct_m_ses": "exponential smoothing, weighing the last months most",
+    "fct_m_ets": "an exponential smoothing chosen automatically (ETS)",
+    "fct_m_theta": "the Theta method",
+    "fct_m_arima": "an ARIMA model chosen automatically",
+    "fct_m_adida": "ADIDA, for months often empty",
+    "fct_m_trees": "trees learnt on all the categories",
+    "fct_m_none": "no line yet: its fixed expenses due only",
+    "fct_no_contest": "{method} (kept without a contest: too few months, or always the same)",
+    "fct_better": "errs {share} less",
+    "fct_same": "the baseline",
+    "fct_mostly": "{method}, mostly from {features}",
+    "fct_f_lag1": "the last month",
+    "fct_f_lag2": "2 months before",
+    "fct_f_lag3": "3 months before",
+    "fct_f_lag6": "6 months before",
+    "fct_f_lag12": "the same month last year",
+    "fct_f_mean3": "the 3-month average",
+    "fct_f_mean6": "the 6-month average",
+    "fct_f_month": "the calendar month",
+    "fct_f_category": "the category",
+    "fct_backtest_title": "The back-test",
+    "fct_backtest_intro": (
+        "At each month of the history, the totals forecast one month ahead from the months "
+        "before it only, against what was entered."
+    ),
+    "fct_entered": "{name}: entered",
+    "fct_one_ahead": "{name}: forecast one month ahead",
+    "col_category": "Category",
+    "col_forecast": "Forecast",
+    "col_band": "About 8 times in 10",
+    "col_target": "Target",
+    "col_objective": "Objective",
+    "col_odds": "Chance",
+    "col_status": "Status",
+    "col_to_date": "To date",
+    "col_to_december": "Forecast to December",
+    "col_year": "The year",
+    "col_year_target": "Full-year target",
+    "col_method": "Method",
+    "col_known": "Fixed expenses due (12 months)",
+    "col_mase": "MASE",
+    "col_wape": "WAPE",
+    "col_rmsse": "RMSSE",
+    "col_vs_baseline": "Against the 6-month average",
+    "col_coverage": "Inside the band",
+    "col_total": "Total",
+    "col_entered": "Entered",
+    "col_one_ahead": "Forecast one month ahead",
+    "fct_range": "{low} – {high}",
+    "fct_rare": "rare in the past months",
+    "fct_nearly": "nearly always in the past months",
+    "fct_disclaimer": (
+        "An estimate drawn from your past months: not a prediction of your decisions, and not "
+        "advice. A new expense, a change of job or a move are not in the history: the band "
+        "reflects only the past months' surprises, and holds about 8 times in 10 if the coming "
+        "months resemble them."
+    ),
+    "fct_limit_fixed": (
+        "A fixed expense counts at its current amount: an estimated bill may differ."
+    ),
+    "fct_limit_bands": (
+        "The bands rest on the back-tests that chose the methods, so they may be narrow: the "
+        "coverage measured above shows how often they held."
+    ),
+    "fct_limit_yearly": (
+        "Under 24 months of history, a sum that comes once a year (a 13th month, a bonus, an "
+        "annual tax or insurance) is forecast only if it is a fixed expense; otherwise it is "
+        "spread over the months."
+    ),
+    "fct_limit_euros": "Amounts in current euros, not deflated.",
+    "fct_limit_change": (
+        "A change in the past months (a raise, a benefit that ended) shows in the errors: the "
+        "band may then lean to one side, as the past surprises did."
+    ),
+    "fct_engine": (
+        "{cuts} back-test cuts over {n} months of history, seed {seed}, engine version {version}."
+    ),
 }
 
 FR: Mapping[str, str] = {
@@ -447,6 +595,160 @@ FR: Mapping[str, str] = {
         "Les plafonds des livrets (22 950 € pour un Livret A, 12 000 € pour un LDDS) ne sont pas "
         "modélisés."
     ),
+    # La prévision de trésorerie (spec §4.14).
+    "fct_intro": (
+        "À quoi pourraient ressembler les douze prochains mois, d'après l'historique du foyer : "
+        "les dépenses fixes à venir sont connues, le reste est prévu par la méthode qui s'est le "
+        "moins trompée sur les mois déjà saisis, avec une fourchette de valeurs probables."
+    ),
+    "fct_not_enough": (
+        "Une prévision demande 12 mois complets de dépenses ; il y en a {n} pour l'instant. "
+        "Ouvrez la démo depuis le menu du compte pour l'essayer."
+    ),
+    "fct_summary": (
+        "Entre {first} et {last}, des revenus de {income}, des dépenses de {spent} et une "
+        "épargne de {saved} sont attendus, soit un reste de {rest} (entre {low} et {high} "
+        "environ 8 fois sur 10)."
+    ),
+    "fct_summary_no_band": (
+        "Entre {first} et {last}, des revenus de {income}, des dépenses de {spent} et une "
+        "épargne de {saved} sont attendus, soit un reste de {rest} (historique trop court pour une "
+        "fourchette)."
+    ),
+    "fct_now": "{entered} dépensés en {month} jusqu'ici, {expected} attendus sur le mois.",
+    "fct_now_above": (
+        "{entered} dépensés en {month} jusqu'ici : déjà au-dessus de ce qui était attendu "
+        "({high} au plus, environ 8 fois sur 10)."
+    ),
+    "fct_months_title": "Mois par mois",
+    "fct_income": "Revenus",
+    "fct_spent": "Dépensé",
+    "fct_spent_fixed": "Dont dépenses fixes",
+    "fct_saved": "Épargné",
+    "fct_rest": "Reste",
+    "fct_band": "{name}, environ 8 fois sur 10",
+    "fct_forecast_of": "{name} (prévision)",
+    "fct_origin": "Dernier mois complet",
+    "fct_rest_title": "Le reste",
+    "fct_axis": "Par mois",
+    "fct_widened": (
+        "À partir de {month}, la fourchette est la dernière mesurée sur assez de mois, élargie."
+    ),
+    "fct_no_band": "Pas encore de fourchette : trop peu de mois pour mesurer les erreurs.",
+    "fct_targets_title": "Face aux objectifs",
+    "fct_targets_intro": (
+        "{month} : chaque catégorie de dépense avec un objectif, sa prévision et la probabilité "
+        "de le dépasser, le dépassement le plus probable en premier."
+    ),
+    "fct_no_target": "Aucune catégorie de dépense n'a d'objectif ce mois-ci.",
+    "fct_likely_over": "▲ dépassement probable",
+    "fct_may_go_over": "△ dépassement possible",
+    "fct_within": "✓ dans l'objectif",
+    "fct_likely_short": "▲ manque probable",
+    "fct_may_fall_short": "△ manque possible",
+    "fct_on_track": "✓ en bonne voie",
+    "fct_year_title": "L'année {year}",
+    "fct_year_intro": (
+        "Le montant à date de chaque objectif de dépense ou d'épargne (jusqu'à {origin}) plus "
+        "sa prévision jusqu'en décembre, face à celui de l'année entière."
+    ),
+    "fct_savings_title": "Objectifs d'épargne",
+    "fct_savings_intro": "{month} : chaque catégorie d'épargne avec un objectif, et la "
+    "probabilité d'épargner moins.",
+    "fct_income_title": "Revenus",
+    "fct_rests_title": "Sur quoi repose la prévision",
+    "fct_rests_intro": (
+        "Pour chaque catégorie, la méthode qui s'est le moins trompée en prévoyant les mois déjà "
+        "saisis (son MASE : sous 1, elle se trompe moins que de répéter le mois précédent), "
+        "face à la moyenne des 6 derniers mois, et la part des mois saisis tombés dans la "
+        "fourchette construite avec les erreurs connues à l'époque (8 fois sur 10 attendu)."
+    ),
+    "fct_m_baseline": "la moyenne des 6 derniers mois",
+    "fct_m_average_3": "la moyenne des 3 derniers mois",
+    "fct_m_average_12": "la moyenne des 12 derniers mois",
+    "fct_m_average_all": "la moyenne de tout l'historique",
+    "fct_m_naive": "le dernier mois",
+    "fct_m_seasonal_naive": "le même mois l'an dernier",
+    "fct_m_ses": "un lissage exponentiel, qui pèse surtout les derniers mois",
+    "fct_m_ets": "un lissage exponentiel choisi automatiquement (ETS)",
+    "fct_m_theta": "la méthode Theta",
+    "fct_m_arima": "un modèle ARIMA choisi automatiquement",
+    "fct_m_adida": "ADIDA, pour des mois souvent vides",
+    "fct_m_trees": "des arbres appris sur toutes les catégories",
+    "fct_m_none": "aucune ligne encore : ses seules dépenses fixes à venir",
+    "fct_no_contest": "{method} (gardée sans comparaison : trop peu de mois, ou toujours pareil)",
+    "fct_better": "se trompe de {share} en moins",
+    "fct_same": "la référence",
+    "fct_mostly": "{method}, surtout d'après {features}",
+    "fct_f_lag1": "le dernier mois",
+    "fct_f_lag2": "il y a 2 mois",
+    "fct_f_lag3": "il y a 3 mois",
+    "fct_f_lag6": "il y a 6 mois",
+    "fct_f_lag12": "le même mois l'an dernier",
+    "fct_f_mean3": "la moyenne sur 3 mois",
+    "fct_f_mean6": "la moyenne sur 6 mois",
+    "fct_f_month": "le mois de l'année",
+    "fct_f_category": "la catégorie",
+    "fct_backtest_title": "Le back-test",
+    "fct_backtest_intro": (
+        "À chaque mois de l'historique, les totaux prévus un mois à l'avance à partir des seuls "
+        "mois d'avant, face à ce qui a été saisi."
+    ),
+    "fct_entered": "{name} : saisi",
+    "fct_one_ahead": "{name} : prévu un mois à l'avance",
+    "col_category": "Catégorie",
+    "col_forecast": "Prévision",
+    "col_band": "Environ 8 fois sur 10",
+    "col_target": "Objectif",
+    "col_objective": "Objectif",
+    "col_odds": "Probabilité",
+    "col_status": "Statut",
+    "col_to_date": "À date",
+    "col_to_december": "Prévision jusqu'en décembre",
+    "col_year": "L'année",
+    "col_year_target": "Objectif de l'année",
+    "col_method": "Méthode",
+    "col_known": "Dépenses fixes à venir (12 mois)",
+    "col_mase": "MASE",
+    "col_wape": "WAPE",
+    "col_rmsse": "RMSSE",
+    "col_vs_baseline": "Face à la moyenne sur 6 mois",
+    "col_coverage": "Dans la fourchette",
+    "col_total": "Total",
+    "col_entered": "Saisi",
+    "col_one_ahead": "Prévu un mois à l'avance",
+    "fct_range": "{low} – {high}",
+    "fct_rare": "rare sur les mois passés",
+    "fct_nearly": "presque toujours sur les mois passés",
+    "fct_disclaimer": (
+        "Une estimation tirée de vos mois passés : pas une prédiction de vos décisions, ni un "
+        "conseil. Une nouvelle dépense, un changement d'emploi ou un déménagement ne sont pas "
+        "dans l'historique : la fourchette ne reflète que les surprises des mois passés, et tient "
+        "environ 8 fois sur 10 si les mois à venir leur ressemblent."
+    ),
+    "fct_limit_fixed": (
+        "Une dépense fixe compte pour son montant actuel : une facture estimée peut différer."
+    ),
+    "fct_limit_bands": (
+        "Les fourchettes reposent sur les back-tests qui ont choisi les méthodes, elles peuvent "
+        "donc être étroites : la couverture mesurée plus haut montre combien de fois elles ont "
+        "tenu."
+    ),
+    "fct_limit_yearly": (
+        "Sous 24 mois d'historique, une somme qui revient une fois par an (un 13e mois, une "
+        "prime, un impôt ou une assurance annuels) n'est prévue que si c'est une dépense fixe ; "
+        "sinon elle est étalée sur les mois."
+    ),
+    "fct_limit_euros": "Montants en euros courants, non corrigés de l'inflation.",
+    "fct_limit_change": (
+        "Un changement dans les mois passés (une augmentation, une aide qui s'arrête) se "
+        "retrouve dans les erreurs : la fourchette peut alors pencher d'un côté, comme les "
+        "surprises passées."
+    ),
+    "fct_engine": (
+        "{cuts} coupes de back-test sur {n} mois d'historique, graine {seed}, version du moteur "
+        "{version}."
+    ),
 }
 
 MESSAGES: Mapping[Language, Mapping[str, str]] = {"en": EN, "fr": FR}
@@ -501,6 +803,24 @@ def percent(share: Decimal, lang: Language, *, places: int = 1) -> str:
     if lang == "fr":
         return text.replace(".", ",").replace("-", "−") + "\u202f%"
     return text.replace("-", "−") + "%"
+
+
+def euros(amount: Decimal, lang: Language) -> str:
+    """To the nearest euro, as the forecast's amounts (F-FCT-6)."""
+    rounded = int(amount.quantize(Decimal(1), rounding=ROUND_HALF_UP))
+    sign = "-" if rounded < 0 else ""
+    digits = number(abs(rounded), lang)
+    return f"{sign}{digits}\u00a0€" if lang == "fr" else f"{sign}€{digits}"
+
+
+def chance_5(share: Decimal, lang: Language) -> str:
+    """To the nearest 5 %, "rare" below 5 % and "nearly always" above 95 % (F-FCT-5)."""
+    if share < Decimal("0.05"):
+        return t(lang, "fct_rare")
+    if share > Decimal("0.95"):
+        return t(lang, "fct_nearly")
+    rounded = (share * 20).quantize(Decimal(1), rounding=ROUND_HALF_UP) / 20
+    return percent(rounded, lang, places=0)
 
 
 def chance(share: Decimal, lang: Language) -> str:

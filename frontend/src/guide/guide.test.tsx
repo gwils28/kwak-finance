@@ -149,6 +149,7 @@ test("the guide is in the header and has a section per feature", async () => {
     "Wealth",
     "Goals",
     "Reports",
+    "Forecast",
     "Members and security",
     "The demo",
   ]);

@@ -13,6 +13,7 @@ export type GuidePage =
   | "/wealth"
   | "/goals"
   | "/reports"
+  | "/forecast"
   | "/members"
   | "/activity";
 export type GuideSection = {
@@ -25,7 +26,7 @@ export type GuideSection = {
 export const guideEn = {
   title: "Using Kwak Finance",
   intro:
-    "Kwak Finance keeps your household's spending, budget, wealth and goals in one place, on your own computer. This guide walks through each page. The app's name, at the top left, leads to the overview, the summary of the whole app. Next to it, “Spending”, “Wealth” and “Goals” switch between three spaces: the everyday pages (lines, budget, reports), the wealth (monthly tracking, analysis, projection, retirement) and your financial goals (pyramid, analysis), each with its tabs. Categories, members, the activity log, the demo, language and theme are in the menu under your name, next to this guide. To install, start or update the app, see “How to run the app” at the bottom of every page.",
+    "Kwak Finance keeps your household's spending, budget, wealth and goals in one place, on your own computer. This guide walks through each page. The app's name, at the top left, leads to the overview, the summary of the whole app. Next to it, “Spending”, “Wealth” and “Goals” switch between three spaces: the everyday pages (lines, budget, reports, forecast), the wealth (monthly tracking, analysis, projection, retirement) and your financial goals (pyramid, analysis), each with its tabs. Categories, members, the activity log, the demo, language and theme are in the menu under your name, next to this guide. To install, start or update the app, see “How to run the app” at the bottom of every page.",
   contents: "Contents",
   sections: [
     {
@@ -134,6 +135,15 @@ export const guideEn = {
       link: { to: "/reports", label: "Open the reports" },
     },
     {
+      id: "forecast",
+      title: "Forecast",
+      paragraphs: [
+        "The “Forecast” tab, next to the reports, estimates the next twelve months of spending, the current month first, once your lines cover 12 complete months (until then, try it in the demo). The fixed expenses due are known in advance; the rest of each category is forecast from its own history by the method that erred least when it was asked to forecast the months already entered (an average, the same month last year, exponential smoothing, or trees learnt on all the categories), a method beating the 6-month average only when it does so by 10 % or more. Nothing entered this month is used: what you have entered so far is shown next to its forecast.",
+        "The page gives the twelve months' income, spending, savings and rest, then month by month the last 24 months entered and the 12 to come, each with a band that past errors held about 8 times in 10; then, against your targets, each category's chance of going over this month and over the year, and each savings objective's chance of falling short; what each forecast rests on (its method, how much less it erred than the 6-month average, how often the band held); and the back-test, the totals forecast one month ahead against what was entered. It is an estimate from your past months, not advice: a new expense or a change of job is not in the history.",
+      ],
+      link: { to: "/forecast", label: "Open the forecast" },
+    },
+    {
       id: "members",
       title: "Members and security",
       paragraphs: [
@@ -148,7 +158,7 @@ export const guideEn = {
       id: "demo",
       title: "The demo",
       paragraphs: [
-        "Many pages need months of history before they say much: the budget matrix, the year, the reports, the wealth charts, the goals' analysis, the projection and the retirement. To see them at work before your own data has that history, choose “Open the demo” in the menu under your name: it opens a fictitious household, a couple with a child and three years of lines, fixed expenses, targets, wealth, goals and retirement plans, dated up to today.",
+        "Many pages need months of history before they say much: the budget matrix, the year, the reports, the wealth charts, the goals' analysis, the projection, the retirement and the forecast. To see them at work before your own data has that history, choose “Open the demo” in the menu under your name: it opens a fictitious household, a couple with a child and three years of lines, fixed expenses, targets, wealth, goals and retirement plans, dated up to today.",
         "While you are in it, a banner says so at the top of every page, and every page shows the demo instead of your household, which is untouched. You can change anything to try it; the demo is shared by every member and keeps the changes until someone resets it, so never enter real figures there. Members, invitations, your password, second factor and recovery codes are left out of the demo.",
         "“Back to my household”, on the banner or in the menu, takes you back; signing out does too. “Reset the demo” deletes it, with everyone's changes, and generates it again from today, after a confirmation.",
       ],
@@ -174,7 +184,7 @@ export const guideEn = {
 export const guideFr: typeof guideEn = {
   title: "Utiliser Kwak Finance",
   intro:
-    "Kwak Finance réunit les dépenses, le budget, le patrimoine et les objectifs de votre foyer, sur votre propre ordinateur. Ce guide parcourt chaque page. Le nom de l'application, en haut à gauche, mène à la vue d'ensemble, le résumé de toute l'application. À côté, « Dépenses », « Patrimoine » et « Objectifs » passent d'un espace à l'autre : les pages du quotidien (lignes, budget, rapports), le patrimoine (suivi mensuel, analyse, projection, retraite) et vos objectifs financiers (pyramide, analyse), chacun avec ses onglets. Les catégories, les membres, le journal d'activité, la démo, la langue et le thème sont dans le menu à votre nom, à côté de ce guide. Pour installer, lancer ou mettre à jour l'application, voyez « Lancer et arrêter l'application » en bas de chaque page.",
+    "Kwak Finance réunit les dépenses, le budget, le patrimoine et les objectifs de votre foyer, sur votre propre ordinateur. Ce guide parcourt chaque page. Le nom de l'application, en haut à gauche, mène à la vue d'ensemble, le résumé de toute l'application. À côté, « Dépenses », « Patrimoine » et « Objectifs » passent d'un espace à l'autre : les pages du quotidien (lignes, budget, rapports, prévision), le patrimoine (suivi mensuel, analyse, projection, retraite) et vos objectifs financiers (pyramide, analyse), chacun avec ses onglets. Les catégories, les membres, le journal d'activité, la démo, la langue et le thème sont dans le menu à votre nom, à côté de ce guide. Pour installer, lancer ou mettre à jour l'application, voyez « Lancer et arrêter l'application » en bas de chaque page.",
   contents: "Sommaire",
   sections: [
     {
@@ -283,6 +293,15 @@ export const guideFr: typeof guideEn = {
       link: { to: "/reports", label: "Ouvrir les rapports" },
     },
     {
+      id: "forecast",
+      title: "Prévision",
+      paragraphs: [
+        "L'onglet « Prévision », à côté des rapports, estime les douze prochains mois de dépenses, le mois en cours en premier, dès que vos lignes couvrent 12 mois complets (d'ici là, essayez-le dans la démo). Les dépenses fixes à venir sont connues d'avance ; le reste de chaque catégorie est prévu d'après son propre historique par la méthode qui s'est le moins trompée quand on lui a demandé de prévoir les mois déjà saisis (une moyenne, le même mois l'an dernier, un lissage exponentiel, ou des arbres appris sur toutes les catégories), une méthode ne battant la moyenne des 6 derniers mois que si elle le fait d'au moins 10 %. Rien de ce qui est saisi ce mois-ci n'est utilisé : ce que vous avez déjà saisi est montré à côté de sa prévision.",
+        "La page donne les revenus, les dépenses, l'épargne et le reste des douze mois, puis mois par mois les 24 derniers mois saisis et les 12 à venir, chacun avec une fourchette que les erreurs passées ont tenue environ 8 fois sur 10 ; puis, face à vos objectifs, la probabilité pour chaque catégorie de dépasser ce mois-ci et sur l'année, et pour chaque objectif d'épargne celle d'un manque ; sur quoi repose chaque prévision (sa méthode, de combien elle se trompe moins que la moyenne sur 6 mois, combien de fois la fourchette a tenu) ; et le back-test, les totaux prévus un mois à l'avance face à ce qui a été saisi. C'est une estimation tirée de vos mois passés, pas un conseil : une nouvelle dépense ou un changement d'emploi ne sont pas dans l'historique.",
+      ],
+      link: { to: "/forecast", label: "Ouvrir la prévision" },
+    },
+    {
       id: "members",
       title: "Membres et sécurité",
       paragraphs: [
@@ -297,7 +316,7 @@ export const guideFr: typeof guideEn = {
       id: "demo",
       title: "La démo",
       paragraphs: [
-        "Beaucoup de pages ont besoin de mois d'historique pour dire quelque chose : la matrice du budget, l'année, les rapports, les graphiques du patrimoine, l'analyse des objectifs, la projection et la retraite. Pour les voir à l'œuvre avant que vos données aient cet historique, choisissez « Ouvrir la démo » dans le menu à votre nom : elle ouvre un foyer fictif, un couple avec un enfant et trois ans de lignes, de dépenses fixes, de cibles, de patrimoine, d'objectifs et de retraites, datés jusqu'à aujourd'hui.",
+        "Beaucoup de pages ont besoin de mois d'historique pour dire quelque chose : la matrice du budget, l'année, les rapports, les graphiques du patrimoine, l'analyse des objectifs, la projection, la retraite et la prévision. Pour les voir à l'œuvre avant que vos données aient cet historique, choisissez « Ouvrir la démo » dans le menu à votre nom : elle ouvre un foyer fictif, un couple avec un enfant et trois ans de lignes, de dépenses fixes, de cibles, de patrimoine, d'objectifs et de retraites, datés jusqu'à aujourd'hui.",
         "Tant que vous y êtes, un bandeau le rappelle en haut de chaque page, et chaque page montre la démo au lieu de votre foyer, qui n'est pas touché. Vous pouvez tout y modifier pour essayer ; la démo est partagée par tous les membres et garde les modifications jusqu'à ce que quelqu'un la réinitialise : n'y saisissez jamais de vrais chiffres. Les membres, les invitations, votre mot de passe, la double authentification et les codes de secours restent hors de la démo.",
         "« Revenir à mon foyer », dans le bandeau ou dans le menu, vous ramène chez vous ; se déconnecter aussi. « Réinitialiser la démo » la supprime, avec les modifications de chacun, et la génère à nouveau à partir d'aujourd'hui, après confirmation.",
       ],
