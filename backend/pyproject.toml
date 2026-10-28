@@ -5,6 +5,9 @@ description = "Kwak Finance backend workspace"
 requires-python = ">=3.13,<3.14"
 dependencies = ["kwak-core", "kwak-api", "kwak-analytics"]
 
+[project.optional-dependencies]
+foundation = ["kwak-analytics[foundation]"]
+
 [dependency-groups]
 dev = [
     "httpx2>=2.13.1",
@@ -26,6 +29,13 @@ members = ["packages/*"]
 kwak-core = { workspace = true }
 kwak-api = { workspace = true }
 kwak-analytics = { workspace = true }
+# PyTorch for the processor only: the CUDA build would add gigabytes the server cannot use.
+torch = { index = "pytorch-cpu" }
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
 
 [tool.ruff]
 line-length = 100
@@ -50,6 +60,11 @@ plugins = ["pydantic.mypy"]
 # Plotly ships no type hints; only the Dash pages use it. Nor does pandas, which only the
 # forecasting engine uses, to talk to Nixtla's libraries.
 module = ["plotly.*", "pandas.*"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+# The forecast's optional foundation models (F-FCT-7): untyped, and absent without the extra.
+module = ["chronos.*", "timesfm.*", "torch.*", "huggingface_hub.*"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]

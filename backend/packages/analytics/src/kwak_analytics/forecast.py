@@ -5,8 +5,10 @@ Floating point like the Monte Carlo engine (spec §6): the series come in `Decim
 `kwak_core.forecast`, the forecasts go back as `Decimal` cents, and `kwak_core.forecast` makes
 every choice from them. The averages are computed here; the statistical models are Nixtla's
 `statsforecast` (one per series); the trees are one LightGBM for all the household's series,
-through Nixtla's `mlforecast`, trained at each cut on the months up to it only. The same series,
-seed and engine version always give the same forecasts.
+through Nixtla's `mlforecast`, trained at each cut on the months up to it only; in an image built
+with them, the foundation models Chronos-2 and TimesFM 2.5 (`kwak_analytics.foundation`) forecast
+each (series, cut) from its months alone. The same series, seed, engine version and models always
+give the same forecasts on the same host.
 """
 
 import multiprocessing
@@ -41,7 +43,9 @@ from statsforecast.models import (
     SimpleExponentialSmoothingOptimized,
 )
 
-ENGINE_VERSION = 1
+from kwak_analytics import foundation
+
+ENGINE_VERSION = 2
 """Raised whenever the same series and seed could give different forecasts."""
 DEFAULT_SEED = 20261028
 SEASON = 12
@@ -53,7 +57,8 @@ AVERAGE_MODELS = ("average_3", "average_12", "average_all")
 STATS_MODELS = ("naive", "seasonal_naive", "ses", "ets", "theta", "arima", "adida")
 TREES = "trees"
 ORDER = (BASELINE, *AVERAGE_MODELS, *STATS_MODELS, TREES)
-"""Every candidate, from the simplest (F-FCT-3)."""
+"""Every candidate, from the simplest (F-FCT-3), the foundation models apart: they follow, in
+an image built with them."""
 
 LAGS = (1, 2, 3, 6, 12)
 FEATURES = ("lag1", "lag2", "lag3", "lag6", "lag12", "mean3", "mean6", "month", "category")
@@ -81,6 +86,10 @@ class Result:
     contributions: Mapping[UUID, tuple[tuple[str, Decimal], ...]] = field(default_factory=dict)
     """The trees' forecast one month ahead, by feature: each one's share of the absolute
     TreeSHAP contributions, the largest first."""
+    order: tuple[str, ...] = ORDER
+    """The candidates that took part, from the simplest."""
+    foundation: Mapping[str, str] = field(default_factory=dict)
+    """The foundation models that took part and their revisions; empty without them."""
 
 
 def _cents(values: Sequence[float]) -> Forecasts:
@@ -303,6 +312,21 @@ def run(
                 futures[key][model] = fc
             else:
                 backtests[key][model][c] = fc
+    zero_shot = (
+        foundation.forecast([list(job[2]) for job in stats_jobs], HORIZON)
+        if stats_jobs and foundation.available()
+        else None
+    )
+    models = foundation.available()  # False once a load failed
+    if zero_shot is not None:
+        for name, rows in zero_shot.items():
+            for (key, c, _, steps), row in zip(stats_jobs, rows, strict=True):
+                if not np.all(np.isfinite(values := row[:steps])):
+                    continue
+                if c == n:
+                    futures[key][name] = _cents(values)
+                else:
+                    backtests[key].setdefault(name, {})[c] = _cents(values)
     contributions: dict[UUID, tuple[tuple[str, Decimal], ...]] = {}
     for c, jobs in sorted(trees_jobs.items()):
         found, explained = _trees(jobs, first, offsets, seed, explain=c == n)
@@ -312,4 +336,12 @@ def run(
             else:
                 backtests[key][TREES][c] = fc
         contributions.update(explained)
-    return Result(backtests, futures, contributions)
+    if not models:
+        return Result(backtests, futures, contributions)
+    return Result(
+        backtests,
+        futures,
+        contributions,
+        (*ORDER, *foundation.NAMES),
+        foundation.revisions(),
+    )

@@ -12,6 +12,10 @@ dependencies = [
     "statsforecast>=2.0",
 ]
 
+[project.optional-dependencies]
+# The forecast's foundation models (spec F-FCT-7), only in an image built with them.
+foundation = ["chronos-forecasting>=2.3", "timesfm[torch]>=3.0", "torch>=2.7"]
+
 [tool.uv.sources]
 kwak-core = { workspace = true }
 
