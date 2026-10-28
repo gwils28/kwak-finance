@@ -111,6 +111,26 @@ def test_the_tables_wrap_their_headers_and_words_but_not_their_amounts() -> None
     assert [c.style["textAlign"] for c in row.children] == ["left", "right", "right"]
 
 
+def _cells(component: Any, tag: str) -> list[Any]:
+    if isinstance(component, list):
+        return [c for item in component for c in _cells(item, tag)]
+    if not isinstance(component, dict):
+        return []
+    props = component.get("props", {})
+    found = [props] if component.get("type") == tag else []
+    return found + _cells(props.get("children"), tag)
+
+
+def test_the_biases_wrap_so_the_tables_fit_their_frame(demo_client: TestClient) -> None:
+    # in French, a bias on one line pushed the last column out of the frame
+    cells = _cells(_body(demo_client, "?lang=fr"), "Td")
+    biases = [
+        c for c in cells if re.search(r"que ce qui (a été saisi|restait)", str(c["children"]))
+    ]
+    assert len(biases) > 3
+    assert {c["style"]["whiteSpace"] for c in biases} == {"normal"}
+
+
 def test_a_bias_reads_by_kind() -> None:
     """Spec F-FCT-6: what the forecast rests on, in words."""
     from decimal import Decimal
