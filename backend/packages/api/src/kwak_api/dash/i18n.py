@@ -363,6 +363,38 @@ EN: Mapping[str, str] = {
     "fct_engine": (
         "{cuts} back-test cuts over {n} months of history, seed {seed}, engine version {version}."
     ),
+    "fct_m_chronos_2": (
+        "Chronos-2, a model pretrained on many public series, from this category's months alone"
+    ),
+    "fct_m_timesfm": (
+        "TimesFM 2.5, a model pretrained on many public series, from this category's months alone"
+    ),
+    "fct_name_chronos_2": "Chronos-2",
+    "fct_name_timesfm": "TimesFM 2.5",
+    "fct_bias_expense_less": "{share} less spending than was entered",
+    "fct_bias_expense_more": "{share} more spending than was entered",
+    "fct_bias_income_less": "{share} less income than was received",
+    "fct_bias_income_more": "{share} more income than was received",
+    "fct_bias_savings_less": "{share} less savings than was saved",
+    "fct_bias_savings_more": "{share} more savings than was saved",
+    "fct_bias_none": "about what was entered",
+    "fct_bias_rest_above": "the rest {amount} a month above what was left",
+    "fct_bias_rest_below": "the rest {amount} a month below what was left",
+    "fct_set_aside": (
+        "{model} erred {share} less but forecast {bias} in the past months tested, so it was not "
+        "used."
+    ),
+    "fct_rest_warning": (
+        "In the past months tested, this forecast put the rest {amount} a month above what was "
+        "left: the rest may be lower than shown."
+    ),
+    "col_bias": "Bias, past months tested",
+    "fct_limit_prices": (
+        "A price rise faster than in the past months is forecast late: in such a period, the "
+        "spending forecast may be low."
+    ),
+    "fct_models": "Foundation models: {models}.",
+    "fct_no_models": "Foundation models not installed (see Running Kwak Finance).",
 }
 
 FR: Mapping[str, str] = {
@@ -749,6 +781,40 @@ FR: Mapping[str, str] = {
         "{cuts} coupes de back-test sur {n} mois d'historique, graine {seed}, version du moteur "
         "{version}."
     ),
+    "fct_m_chronos_2": (
+        "Chronos-2, un modèle pré-entraîné sur de nombreuses séries publiques, d'après les seuls "
+        "mois de cette catégorie"
+    ),
+    "fct_m_timesfm": (
+        "TimesFM 2.5, un modèle pré-entraîné sur de nombreuses séries publiques, d'après les "
+        "seuls mois de cette catégorie"
+    ),
+    "fct_name_chronos_2": "Chronos-2",
+    "fct_name_timesfm": "TimesFM 2.5",
+    "fct_bias_expense_less": "{share} de dépenses en moins que ce qui a été saisi",
+    "fct_bias_expense_more": "{share} de dépenses en plus que ce qui a été saisi",
+    "fct_bias_income_less": "{share} de revenus en moins que ce qui a été reçu",
+    "fct_bias_income_more": "{share} de revenus en plus que ce qui a été reçu",
+    "fct_bias_savings_less": "{share} d'épargne en moins que ce qui a été épargné",
+    "fct_bias_savings_more": "{share} d'épargne en plus que ce qui a été épargné",
+    "fct_bias_none": "à peu près ce qui a été saisi",
+    "fct_bias_rest_above": "le reste {amount} par mois au-dessus de ce qui restait",
+    "fct_bias_rest_below": "le reste {amount} par mois en dessous de ce qui restait",
+    "fct_set_aside": (
+        "{model} se trompait de {share} en moins mais prévoyait {bias} sur les mois passés "
+        "testés : il n'a pas été retenu."
+    ),
+    "fct_rest_warning": (
+        "Sur les mois passés testés, cette prévision plaçait le reste {amount} par mois "
+        "au-dessus de ce qui restait : il pourrait être plus bas qu'affiché."
+    ),
+    "col_bias": "Biais, mois passés testés",
+    "fct_limit_prices": (
+        "Une hausse des prix plus rapide que sur les mois passés est prévue avec retard : dans "
+        "une telle période, la prévision des dépenses peut être basse."
+    ),
+    "fct_models": "Modèles de fondation : {models}.",
+    "fct_no_models": "Modèles de fondation non installés (voir Faire tourner Kwak Finance).",
 }
 
 MESSAGES: Mapping[Language, Mapping[str, str]] = {"en": EN, "fr": FR}
