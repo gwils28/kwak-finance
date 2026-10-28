@@ -13,7 +13,11 @@ services:
     restart: unless-stopped
 
   api:
-    build: ./backend
+    build:
+      context: ./backend
+      args:
+        # 1 in .env builds the API with the forecast's foundation models (about 2.5 GB more).
+        KWAK_FOUNDATION_MODELS: ${KWAK_FOUNDATION_MODELS:-0}
     env_file: .env
     environment:
       # Trust X-Forwarded-For from Caddy, so login limits see the real client address.

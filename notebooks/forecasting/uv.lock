@@ -1139,13 +1139,17 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
+    { name = "chronos-forecasting", marker = "extra == 'foundation'", specifier = ">=2.3" },
     { name = "kwak-core", editable = "../../backend/packages/core" },
     { name = "lightgbm", specifier = ">=4.6" },
     { name = "mlforecast", specifier = ">=1.0" },
     { name = "numpy", specifier = ">=2.3" },
     { name = "pandas", specifier = ">=2.3" },
     { name = "statsforecast", specifier = ">=2.0" },
+    { name = "timesfm", extras = ["torch"], marker = "extra == 'foundation'", specifier = ">=3.0" },
+    { name = "torch", marker = "extra == 'foundation'", specifier = ">=2.7", index = "https://download.pytorch.org/whl/cpu" },
 ]
+provides-extras = ["foundation"]
 
 [[package]]
 name = "kwak-core"

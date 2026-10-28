@@ -3,7 +3,9 @@
 from decimal import Decimal
 from uuid import UUID, uuid4
 
+import numpy as np
 import pytest
+from kwak_analytics import foundation
 from kwak_analytics.forecast import AVERAGE_MODELS, ORDER, TREES, Result, SeriesInput, run
 from kwak_core.budget import Month
 from kwak_core.forecast import BASELINE, HORIZON, cuts
@@ -119,3 +121,66 @@ def test_keys_are_series_ids() -> None:
     series = household(24, count=2)
     result = run(series, first=FIRST, n=24, cuts=cuts(24))
     assert all(isinstance(k, UUID) for k in result.futures)
+
+
+# F-FCT-3, 7: the foundation models, when the image carries them
+
+
+def _last_value(contexts: list[list[float]], horizon: int) -> dict[str, np.ndarray]:
+    """Stands for both models: each context's last month, repeated."""
+    last = np.array([[c[-1]] * horizon for c in contexts], dtype=np.float64)
+    return {foundation.CHRONOS: last, foundation.TIMESFM: last + 1}
+
+
+def test_without_the_foundation_models_the_order_is_unchanged(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(foundation, "available", lambda: False)
+    result = run(household(14, count=2), first=FIRST, n=14, cuts=cuts(14))
+    assert result.order == ORDER
+    assert not result.foundation
+
+
+def test_the_foundation_models_forecast_each_cut_from_its_months(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(foundation, "available", lambda: True)
+    monkeypatch.setattr(foundation, "forecast", _last_value)
+    series = household(26, count=2)
+    result = run(series, first=FIRST, n=26, cuts=cuts(26))
+    assert result.order == (*ORDER, *foundation.NAMES)
+    assert set(result.foundation) == set(foundation.NAMES)
+    s = series[0]
+    by_cut = result.backtests[s.key][foundation.CHRONOS]
+    assert set(by_cut) == set(cuts(26))  # every cut has 13 months of training
+    for c, values in by_cut.items():
+        assert values == (s.values[c - 1],) * min(HORIZON, 26 - c)  # nothing after the cut
+    assert result.futures[s.key][foundation.TIMESFM] == (s.values[-1] + 1,) * HORIZON
+
+
+@pytest.mark.skipif(not foundation.available(), reason="an image built with the models")
+def test_the_real_models_give_the_same_forecasts_twice() -> None:
+    series = household(30, count=3)
+    a = run(series, first=FIRST, n=30, cuts=cuts(30))
+    b = run(series, first=FIRST, n=30, cuts=cuts(30))
+    for s in series:
+        for name in foundation.NAMES:
+            assert a.futures[s.key][name] == b.futures[s.key][name]
+            assert all(D(50) < v < D(500) for v in a.futures[s.key][name]), name
+
+
+def test_a_model_that_fails_to_load_leaves_the_forecast_without_them(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """F-FCT-7: the page still opens, on the other candidates."""
+
+    def broken() -> None:
+        monkeypatch.setattr(foundation, "_failed", True)
+
+    monkeypatch.setattr(foundation, "_failed", False)
+    monkeypatch.setattr(foundation, "available", lambda: not foundation._failed)
+    monkeypatch.setattr(foundation, "_load", broken)
+    series = household(14, count=2)
+    result = run(series, first=FIRST, n=14, cuts=cuts(14))
+    assert result.order == ORDER
+    assert foundation.CHRONOS not in result.futures[series[0].key]

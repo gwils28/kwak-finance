@@ -25,6 +25,7 @@ const DOWN = ["make down"];
 const PAUSE = ["docker compose stop", "docker compose start"];
 const ENABLE_DOCKER = ["sudo systemctl enable --now docker"];
 const UPDATE = ["git pull", "make up", "docker compose exec api kwak migrate"];
+const FOUNDATION_ON = ["printf '\\nKWAK_FOUNDATION_MODELS=1\\n' >> .env", "make up"];
 const LOGS = ["docker compose logs --tail 50 api", "make logs"];
 const RESTART = ["docker compose restart api"];
 const BACKUPS = ["docker compose logs backup", "ls -lh data/backups"];
@@ -139,6 +140,19 @@ export const runGuideEn = {
         {
           text: "Get the new version, rebuild and apply the database changes (migrate does nothing when there are none), then reload the page with Ctrl+Shift+R:",
           commands: UPDATE,
+        },
+      ],
+    },
+    {
+      id: "models",
+      title: "The forecast's foundation models (optional)",
+      steps: [
+        {
+          text: "The Forecast tab can also try two models pretrained on many public series, Chronos-2 and TimesFM 2.5, against its other methods. They are off by default: they add about 2.5 GB to the API image and make its build longer. Their weights are downloaded once, while the image is built, and checked; nothing leaves your computer when a forecast runs. To turn them on, add the setting to .env and rebuild:",
+          commands: FOUNDATION_ON,
+        },
+        {
+          text: "The foot of the Forecast page says whether they took part. To turn them off, set KWAK_FOUNDATION_MODELS=0 in .env and run make up again.",
         },
       ],
     },
@@ -284,6 +298,19 @@ export const runGuideFr: typeof runGuideEn = {
         {
           text: "Récupérez la nouvelle version, reconstruisez et appliquez les changements de la base (migrate ne fait rien s'il n'y en a pas), puis rechargez la page avec Ctrl+Maj+R :",
           commands: UPDATE,
+        },
+      ],
+    },
+    {
+      id: "models",
+      title: "Les modèles de fondation de la prévision (facultatif)",
+      steps: [
+        {
+          text: "L'onglet Prévision peut aussi essayer deux modèles pré-entraînés sur de nombreuses séries publiques, Chronos-2 et TimesFM 2.5, face à ses autres méthodes. Ils sont désactivés par défaut : ils ajoutent environ 2,5 Go à l'image de l'API et allongent sa construction. Leurs poids sont téléchargés une fois, pendant la construction de l'image, puis vérifiés ; rien ne quitte votre ordinateur quand une prévision tourne. Pour les activer, ajoutez le réglage à .env et reconstruisez :",
+          commands: FOUNDATION_ON,
+        },
+        {
+          text: "Le bas de la page Prévision indique s'ils ont participé. Pour les désactiver, mettez KWAK_FOUNDATION_MODELS=0 dans .env et relancez make up.",
         },
       ],
     },
