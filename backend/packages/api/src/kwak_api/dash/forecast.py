@@ -369,7 +369,7 @@ def _table(
     worded: Collection[int] = (),
 ) -> html.Div:
     """The first `text` columns hold words, left-aligned and wrapping; the others figures,
-    right-aligned and on one line, except the `worded` ones (a chance, a status), which wrap
+    right-aligned and on one line, except the `worded` ones (a chance, a status, a bias), which wrap
     like the headers so the table fits its frame (issue #164)."""
     cell = {"padding": "0.25rem 0.75rem", "textAlign": "right", "whiteSpace": "nowrap"}
     wrapping = {**cell, "whiteSpace": "normal"}
@@ -660,7 +660,7 @@ def rests_on(r: service.Result, lang: Language) -> list[Component]:
     return [
         html.H3(t(lang, "fct_rests_title")),
         html.P(t(lang, "fct_rests_intro")),
-        _table(header, rows, text=2),
+        _table(header, rows, text=2, worded=(6,)),
     ]
 
 
@@ -760,7 +760,7 @@ def backtest(r: service.Result, view: View) -> list[Component]:
             table_rows,
             lang,
         ),
-        _table(header, rows),
+        _table(header, rows, worded=(4,)),
     ]
 
 
