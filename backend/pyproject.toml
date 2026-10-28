@@ -47,8 +47,9 @@ packages = ["kwak_core", "kwak_api", "kwak_analytics"]
 plugins = ["pydantic.mypy"]
 
 [[tool.mypy.overrides]]
-# Plotly ships no type hints; only the Dash pages use it.
-module = ["plotly.*"]
+# Plotly ships no type hints; only the Dash pages use it. Nor does pandas, which only the
+# forecasting engine uses, to talk to Nixtla's libraries.
+module = ["plotly.*", "pandas.*"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]
