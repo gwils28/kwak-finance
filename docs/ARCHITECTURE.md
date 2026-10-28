@@ -35,7 +35,7 @@ Everything runs from a single `docker compose up`. The front end is served from 
 | DB driver | `psycopg` 3 | Async and sync, works with DuckDB `postgres` extension setups |
 | Auth | argon2-cffi, pyotp, server-side sessions table | Simple, no third-party identity provider in a self-hosted app |
 | Jobs | APScheduler, in a dedicated `worker` container | Few, simple daily jobs. No broker needed |
-| Analytics | **DuckDB**, polars, numpy, statsmodels / statsforecast (phase 5) | DuckDB reads Postgres directly, so no ETL pipeline at first |
+| Analytics | numpy (Monte Carlo), Nixtla **statsforecast** / **mlforecast** + LightGBM (forecast), phase 5 | Small series read through the services; DuckDB kept for a later study of the real history |
 | Logging | structlog (JSON) | |
 | Lint / format | **ruff** (lint + format) | |
 | Types | **mypy --strict** (or pyright strict, to be decided in phase 0) | Money code must be typed |
@@ -61,6 +61,8 @@ The React app is the product. Dash is used only for **exploratory analytics page
 
 The first Dash page is the **wealth projection** (spec §4.11): `kwak_core.projection` holds the assumptions, their defaults, the starting point and the allocation, in `Decimal`; `kwak_analytics.montecarlo` draws the paths with numpy (`numpy.random.Generator` from a fixed seed), in floating point, and returns percentiles rounded back to `Decimal` cents. The assumptions are saved per household (the inflation on `household`, each asset category's return and volatility on `wealth_category`, NULL for the preset's default, and each debt line's payment, rate and insurance on `wealth_line`), served and changed through `/api/projection` (`kwak_api.projection`), and read by the goals analysis too. The **retirement** page (spec §4.13) is a second Dash page on the same engine: `kwak_core.retirement` holds the members' months and amounts, the settings and the plan's savings month by month, `kwak_analytics.retirement` the sustainable withdrawal (a per-path bisection over the liquid categories, drawn from the same streams), and `kwak_api.services.retirement` reads them from `member_retirement` and the household; its inputs are set in React through `/api/retirement`. If a Dash page becomes a core feature, it is rewritten in React on top of a dedicated API endpoint.
 
+The **cash-flow forecast** (spec §4.14) is a third Dash page, in the Spending space: `kwak_core.forecast` builds the monthly series by category from the lines (the fixed expenses' lines apart, their future occurrences known), the back-test's cuts, the error metrics (MASE, WAPE, RMSSE), the choice of a model per series against the baseline, the conformal bands and the chances, in `Decimal`; `kwak_analytics.forecast` fits the candidates at each cut and for the months to come, with Nixtla's `statsforecast` (statistical models, one per series) and `mlforecast` (LightGBM, one model for all the categories, with TreeSHAP contributions), in floating point and back to `Decimal` cents; `kwak_api.services.forecast` reads the lines, fixed expenses and targets. Nothing is saved: the page computes it when it opens. The study behind the candidates lives in `notebooks/forecasting/`, a uv project of its own that depends on the workspace's packages by path and adds what the app's image must not carry (PyTorch, the foundation models Chronos and TimesFM, skforecast, SHAP, Jupyter); it runs on synthetic data only.
+
 The **goals analysis** (spec §4.12) is React, not Dash: `kwak_core.goal_analysis` computes the reference month, the forward efforts, the goals' weights, volatilities and real returns, the status history and the points to look at (pure, every threshold a named constant); the chance of reaching each goal reuses `kwak_analytics.montecarlo` and is served by the API with the other views.
 
 ### Infrastructure
@@ -85,13 +87,13 @@ The **goals analysis** (spec §4.12) is React, not Dash: `kwak_core.goal_analysi
 │   ├── packages/
 │   │   ├── core/            # kwak_core: pure domain, no I/O (money, spending, budget, wealth, goals)
 │   │   ├── api/             # kwak_api: FastAPI app, routers, schemas, persistence (SQLAlchemy, Alembic)
-│   │   └── analytics/       # kwak_analytics: DuckDB queries, forecasting, simulation (phase 5)
+│   │   └── analytics/       # kwak_analytics: Monte Carlo simulation, forecasting engine (phase 5)
 │   └── tests/               # mirrors packages; every fixture is synthetic
 ├── frontend/
 │   └── src/{routes,features,components,api(generated),styles}
 ├── data/                    # git-ignored: Parquet snapshots, backups
 │   └── raw/                 # read-only for Claude (hook-enforced)
-├── notebooks/               # explanation only; logic lives in packages
+├── notebooks/forecasting/   # the forecasting study (own uv project, synthetic data); logic lives in packages
 └── docs/
     ├── SPECIFICATIONS.md
     ├── ARCHITECTURE.md
@@ -114,7 +116,7 @@ Conventions: UUIDv7 primary keys, `created_at` / `updated_at` in UTC (`timestamp
 ## 5. Analytics path
 
 1. **Phases 1–3**: dashboards query Postgres (SQL views / materialised views refreshed by the worker).
-2. **Phase 5**: the wealth projection needs no DuckDB: it starts from the current month of the wealth matrix, read through the API's services. For the forecasting that follows, `kwak_analytics` opens DuckDB, attaches Postgres **read-only** (a dedicated read-only role), and writes dated Parquet snapshots to `data/snapshots/` for reproducible experiments. Forecasting follows a written protocol: temporal split only, a naive baseline first (seasonal naive / moving average), metrics with dispersion across rolling origins, and fixed seeds.
+2. **Phase 5**: the wealth projection needs no DuckDB: it starts from the current month of the wealth matrix, read through the API's services. Nor does the cash-flow forecast: a household's monthly series by category are a few thousand numbers, read through the services too. Forecasting follows a written protocol: temporal split only (rolling origins, nothing after a cut), a naive baseline first, scaled metrics (MASE, RMSSE) with WAPE, conformal bands checked for coverage, and fixed seeds. The experiments behind it run in `notebooks/forecasting/` on synthetic households, never on `data/` nor the real database, so DuckDB and Parquet snapshots are left for when a study needs the real history (read-only role).
 3. **Phase 6**: an Ollama service. The LLM only sees a curated read-only analytics schema (text-to-SQL validated against an allow-list, executed under the read-only role). pgvector is added if RAG over documents is needed.
 
 ## 6. Decisions
