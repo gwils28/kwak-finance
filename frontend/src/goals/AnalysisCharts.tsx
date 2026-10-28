@@ -25,7 +25,7 @@ import type {
   TimelineOut,
   Zone,
 } from "../api/generated";
-import { AXIS, Card, DataTable, GRID, legendText, TOOLTIP } from "../dashboard/charts";
+import { AXIS, axisTicks, Card, DataTable, GRID, legendText, TOOLTIP } from "../dashboard/charts";
 import { useI18n } from "../i18n";
 import { formatEurWhole, formatPercent, formatRateSigned } from "../lib/money";
 import { monthLabel, shiftMonth } from "../lib/months";
@@ -73,6 +73,11 @@ const lasts = (b: { months: number }) => Math.max(1, b.months);
 
 const SHORT_CAPACITY = 3;
 const FULL_YEAR = 12;
+
+/** The effort's axis: past the highest total and the capacity, so its line is never cut off. */
+export function effortAxis(totals: string[], capacity: number) {
+  return axisTicks([...totals.map(Number), capacity]);
+}
 
 /** F-ANA-2: what each goal needs every month, stacked, against the household's capacity. */
 export function Forward({
@@ -153,7 +158,12 @@ export function Forward({
                 </defs>
                 <CartesianGrid vertical={false} stroke={GRID} />
                 <XAxis dataKey="month" tickFormatter={monthLabel} {...AXIS} />
-                <YAxis tickFormatter={(v: number) => formatEurWhole(v)} width={84} {...AXIS} />
+                <YAxis
+                  tickFormatter={(v: number) => formatEurWhole(v)}
+                  width={84}
+                  {...effortAxis(forward.totals, capacity)}
+                  {...AXIS}
+                />
                 <Tooltip
                   {...TOOLTIP}
                   itemStyle={{ color: FG }}

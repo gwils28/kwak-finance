@@ -4,6 +4,7 @@ import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import type { GoalAnalysisOut, PointOut } from "../api/generated";
 import { fakeApi, owner } from "../test/fakeApi";
 import { TestApp } from "../test/TestApp";
+import { effortAxis } from "./AnalysisCharts";
 
 beforeEach(() => {
   vi.useFakeTimers({ toFake: ["Date"] });
@@ -712,4 +713,10 @@ test("each goal's chance, the precaution's months and the debt points", async ()
   expect(
     screen.getByText("Debt payments of €800 a month take 40% of the average income."),
   ).toBeVisible();
+});
+
+test("the effort's axis reaches the capacity when it is above every month's total", () => {
+  const { domain, ticks } = effortAxis(["1800.00", "1500.00"], 1853);
+  expect(domain[1]).toBeGreaterThanOrEqual(1853);
+  expect(ticks.at(-1)).toBe(domain[1]);
 });
