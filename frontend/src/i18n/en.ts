@@ -3,6 +3,7 @@ import { authEn, navEn } from "./auth";
 import { commonEn, errorsEn } from "./common";
 import { dashboardEn } from "./dashboard";
 import { demoEn } from "./demo";
+import { forecastEn } from "./forecast";
 import { goalAnalysisEn } from "./goalAnalysis";
 import { goalsEn } from "./goals";
 import { guideEn } from "./guide";
@@ -26,6 +27,7 @@ export const en = {
   spendingBudget: spendingBudgetEn,
   overview: overviewEn,
   reports: reportsEn,
+  forecast: forecastEn,
   activity: activityEn,
   demo: demoEn,
   wealth: wealthEn,

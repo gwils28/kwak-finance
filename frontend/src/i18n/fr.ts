@@ -4,6 +4,7 @@ import { commonFr, errorsFr } from "./common";
 import { dashboardFr } from "./dashboard";
 import { demoFr } from "./demo";
 import type { Messages } from "./en";
+import { forecastFr } from "./forecast";
 import { goalAnalysisFr } from "./goalAnalysis";
 import { goalsFr } from "./goals";
 import { guideFr } from "./guide";
@@ -26,6 +27,7 @@ export const fr: Messages = {
   spendingBudget: spendingBudgetFr,
   overview: overviewFr,
   reports: reportsFr,
+  forecast: forecastFr,
   activity: activityFr,
   demo: demoFr,
   wealth: wealthFr,

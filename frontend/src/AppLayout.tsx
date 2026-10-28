@@ -22,6 +22,7 @@ const SPACES = {
     { to: "/spending", label: "lines", exact: false },
     { to: "/budget", label: "budget", exact: false },
     { to: "/reports", label: "reports", exact: false },
+    { to: "/forecast", label: "forecast", exact: false },
   ],
   wealth: [
     { to: "/wealth", label: "wealthTracking", exact: true },
@@ -45,7 +46,7 @@ const SWITCH = [
   { key: "goals", to: "/goals", label: "goals" },
 ] as const;
 
-const SPENDING_PAGES = ["/spending", "/budget", "/reports"];
+const SPENDING_PAGES = ["/spending", "/budget", "/reports", "/forecast"];
 
 /** The space a page belongs to; none for the overview and the account menu's pages. */
 function placeOf(pathname: string): Space | null {

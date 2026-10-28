@@ -24,7 +24,7 @@ test("the main tabs lead to the everyday pages, the current one marked", async (
 
   const main = await screen.findByRole("navigation", { name: "Main" });
   const tabs = within(main).getAllByRole("link");
-  expect(tabs.map((tab) => tab.textContent)).toEqual(["Lines", "Budget", "Reports"]);
+  expect(tabs.map((tab) => tab.textContent)).toEqual(["Lines", "Budget", "Reports", "Forecast"]);
   expect(within(main).getByRole("link", { name: "Lines" })).toHaveAttribute("aria-current", "page");
   // Spending is the space shown; wealth and goals are one click away.
   const spaces = screen.getByRole("navigation", { name: "Spaces" });

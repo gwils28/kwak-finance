@@ -106,7 +106,7 @@ class DashGate:
 
 def create_dash(state: State) -> ASGIApp:
     # Imported here: the pages import this module for Context.
-    from kwak_api.dash import projection, retirement
+    from kwak_api.dash import forecast, projection, retirement
 
     app = Dash(
         __name__,
@@ -123,6 +123,7 @@ def create_dash(state: State) -> ASGIApp:
     pages = {
         "projection": projection.register(app, context),
         "retirement": retirement.register(app, context),
+        "forecast": forecast.register(app, context),
     }
 
     @app.callback(Output("page", "children"), Input("url", "pathname"), Input("url", "search"))
