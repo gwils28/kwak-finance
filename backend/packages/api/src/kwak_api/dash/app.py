@@ -21,7 +21,7 @@ from starlette.types import ASGIApp, Receive, Scope, Send
 
 from kwak_api.auth.routes import SESSION_COOKIE
 from kwak_api.auth.sessions import find_active_session
-from kwak_api.dash import i18n
+from kwak_api.dash import i18n, layout
 from kwak_api.models import User
 
 PREFIX = "/dash/"
@@ -29,7 +29,8 @@ USER_HEADER = "X-Kwak-User"
 """Set by the gate on every request it lets through, never taken from the client."""
 _USER_KEY = USER_HEADER.lower().encode()
 
-INDEX = """<!DOCTYPE html>
+INDEX = (
+    """<!DOCTYPE html>
 <html>
   <head>
     {%metas%}
@@ -44,6 +45,9 @@ INDEX = """<!DOCTYPE html>
     {%css%}
     <style>
       body { margin: 0; font-family: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif; }
+    """
+    + layout.STYLESHEET
+    + """
     </style>
   </head>
   <body>
@@ -51,6 +55,7 @@ INDEX = """<!DOCTYPE html>
     <footer>{%config%}{%scripts%}{%renderer%}</footer>
   </body>
 </html>"""
+)
 
 
 class Context:

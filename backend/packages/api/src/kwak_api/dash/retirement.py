@@ -4,6 +4,7 @@ of net worth to the horizon and the monthly income once retired, their tables, t
 the limits. The inputs are set under the charts, in React (Dash pages only read)."""
 
 from collections.abc import Callable, Sequence
+from dataclasses import dataclass
 from decimal import Decimal
 
 import plotly.graph_objects as go
@@ -15,11 +16,11 @@ from kwak_core.budget import Month
 from kwak_core.goals import add_months, months_between
 from kwak_core.money import quantize
 
-from kwak_api.dash import i18n, tokens
+from kwak_api.dash import i18n, layout, tokens
 from kwak_api.dash import projection_views as views
 from kwak_api.dash.app import Context
 from kwak_api.dash.i18n import Language, t
-from kwak_api.dash.projection import GRAPH, dash_colours, view_of
+from kwak_api.dash.projection import dash_colours, view_of
 from kwak_api.dash.projection_views import View
 from kwak_api.services import projection
 from kwak_api.services import retirement as service
@@ -74,8 +75,26 @@ def spending_at(p: service.Plan, t: int, costs: Sequence[Decimal]) -> Decimal:
     return p.spending.retirement + costs[t - 1] / (ONE + p.basis.inflation) ** (Decimal(t) / 12)
 
 
-def living(p: service.Plan, result: service.Result, lang: Language) -> list[html.P]:
-    """The standard of living at the household's retirement (F-RET-4)."""
+@dataclass(frozen=True)
+class Living:
+    """The standard of living at the household's retirement (F-RET-4) and its sentences."""
+
+    pensions: Decimal
+    withdrawal: Decimal | None
+    spending: Decimal
+    sentences: list[str]
+
+    @property
+    def total(self) -> Decimal | None:
+        return None if self.withdrawal is None else self.pensions + self.withdrawal
+
+    @property
+    def covered(self) -> Decimal | None:
+        total = self.total
+        return None if total is None or not self.spending else total / self.spending
+
+
+def living(p: service.Plan, result: service.Result, lang: Language) -> Living:
     at = p.retired_at
     last = max(m.pension_month for _, m in p.members)
     full = max(at, months_between(p.this_month, last))
@@ -83,46 +102,120 @@ def living(p: service.Plan, result: service.Result, lang: Language) -> list[html
     spending = p.spending.retirement
     month = i18n.month(p.retired, lang)
     w = result.withdrawal
-    out: list[html.P] = []
+    sentences: list[str] = []
     if w.nine_tenths is None:
-        out.append(
-            html.P(
-                t(
-                    lang,
-                    "ret_living_none",
-                    month=month,
-                    pensions=i18n.money(pensions, lang),
-                    spending=i18n.money(spending, lang),
-                )
+        sentences.append(
+            t(
+                lang,
+                "ret_living_none",
+                month=month,
+                pensions=i18n.money(pensions, lang),
+                spending=i18n.money(spending, lang),
             )
         )
     else:
         total = pensions + w.nine_tenths
         half = pensions + (w.half or w.nine_tenths)
         covered = total / spending if spending else Decimal(0)
-        out.append(
-            html.P(
-                t(
-                    lang,
-                    "ret_living",
-                    month=month,
-                    pensions=i18n.money(pensions, lang),
-                    withdrawal=i18n.money(w.nine_tenths, lang),
-                    total=i18n.money(total, lang),
-                    total_half=i18n.money(half, lang),
-                    spending=i18n.money(spending, lang),
-                    covered=i18n.percent(covered, lang, places=0),
-                ),
-                style={"fontSize": "1.1rem", "fontWeight": 600},
+        sentences.append(
+            t(
+                lang,
+                "ret_living",
+                month=month,
+                pensions=i18n.money(pensions, lang),
+                withdrawal=i18n.money(w.nine_tenths, lang),
+                total=i18n.money(total, lang),
+                total_half=i18n.money(half, lang),
+                spending=i18n.money(spending, lang),
+                covered=i18n.percent(covered, lang, places=0),
             )
         )
-        out.append(html.P(t(lang, "ret_model")))
     if last > p.retired:
-        out.append(html.P(t(lang, "ret_later_pension")))
-    return out
+        sentences.append(t(lang, "ret_later_pension"))
+    return Living(pensions, w.nine_tenths, spending, sentences)
 
 
-def lasts(p: service.Plan, outcome: mc.Outcome, lang: Language) -> list[html.P]:
+def _split(life: Living, view: View) -> list[Component]:
+    """The pensions and the withdrawal as one bar, a mark at the spending under it."""
+    lang, theme = view.lang, view.theme
+    dark = theme == "dark"
+    parts = [
+        (life.pensions, "ret_split_pensions", "primary-400" if dark else "primary-600", "surface"),
+        (
+            life.withdrawal or Decimal(0),
+            "ret_split_withdrawal",
+            "primary-700" if dark else "primary-300",
+            "fg",
+        ),
+    ]
+    total = sum((v for v, *_ in parts), Decimal(0))
+    if not total:
+        return []
+    bar = html.Div(
+        [
+            html.Div(
+                t(lang, key, amount=i18n.money(v, lang)),
+                style={
+                    "flex": f"{v} 1 0",
+                    "background": tokens.rgb(theme, fill),
+                    "color": tokens.rgb(theme, ink),
+                },
+            )
+            for v, key, fill, ink in parts
+            if v
+        ],
+        className="kw-split",
+    )
+    at = min(life.spending / total, Decimal(1)) * 100
+    mark = html.Div(
+        html.Span(
+            t(lang, "ret_against", amount=i18n.money(life.spending, lang)),
+            style={"left": f"{at:.1f}%"},
+        ),
+        className="kw-against",
+    )
+    return [bar, mark]
+
+
+def tiles(p: service.Plan, result: service.Result, view: View) -> html.Div:
+    lang = view.lang
+    life = living(p, result, lang)
+    total, covered = life.total, life.covered
+    outcome = result.outcome
+    chance = Decimal(1) - outcome.shortfall_share()
+    lasting = lasts(p, outcome, lang)
+    return layout.tiles(
+        layout.tile(
+            t(lang, "ret_tile_living", month=i18n.month(p.retired, lang)),
+            t(
+                lang,
+                "ret_per_month",
+                amount=i18n.money(total if total is not None else life.pensions, lang),
+            ),
+            body=_split(life, view),
+            note=" ".join(life.sentences),
+            wide=True,
+        ),
+        layout.tile(
+            t(lang, "ret_tile_covered"),
+            "—" if covered is None else i18n.percent(covered, lang, places=0),
+            chips=[]
+            if covered is None
+            else [
+                layout.chip("ok", t(lang, "ret_covered"))
+                if covered >= 1
+                else layout.chip("over", t(lang, "ret_short"))
+            ],
+        ),
+        layout.tile(
+            t(lang, "ret_tile_lasts"),
+            i18n.chance(chance, lang),
+            note=" ".join(lasting),
+        ),
+    )
+
+
+def lasts(p: service.Plan, outcome: mc.Outcome, lang: Language) -> list[str]:
     youngest = _youngest(p)
     chance = Decimal(1) - outcome.shortfall_share()
 
@@ -138,19 +231,17 @@ def lasts(p: service.Plan, outcome: mc.Outcome, lang: Language) -> list[html.P]:
     else:
         runs_out = t(lang, "ret_runs_out", ten=ten, half=half)
     out = [
-        html.P(
-            t(
-                lang,
-                "ret_lasts",
-                chance=i18n.chance(chance, lang),
-                month=i18n.month(p.horizon, lang),
-                age=core.age(youngest, p.horizon),
-            )
+        t(
+            lang,
+            "ret_lasts",
+            chance=i18n.chance(chance, lang),
+            month=i18n.month(p.horizon, lang),
+            age=core.age(youngest, p.horizon),
         ),
-        html.P(runs_out),
+        runs_out,
     ]
     if outcome.shortfall_share():
-        out.append(html.P(t(lang, "ret_shortfall_after")))
+        out.append(t(lang, "ret_shortfall_after"))
     return out
 
 
@@ -279,24 +370,32 @@ def income_table(p: service.Plan, result: service.Result, lang: Language) -> htm
     )
 
 
-def inputs(p: service.Plan, lang: Language) -> html.Div:
-    items = []
+def inputs(p: service.Plan, view: View) -> html.Section:
+    lang = view.lang
+    people = []
     for name, m in p.members:
         assert m.birth is not None  # noqa: S101 - counted members have one
-        items.append(
-            html.Li(
-                t(
-                    lang,
-                    "ret_input_member",
-                    name=name,
-                    birth=i18n.month(m.birth, lang),
-                    retirement=i18n.month(m.retirement, lang),
-                    age=core.age(m.birth, m.retirement),
-                    earnings=i18n.money(m.earnings, lang),
-                    pension=i18n.money(m.pension, lang),
-                    pension_month=i18n.month(m.pension_month, lang),
-                    pension_age=core.age(m.birth, m.pension_month),
-                )
+        people.append(
+            html.Div(
+                [
+                    html.B(name),
+                    html.P(
+                        t(
+                            lang,
+                            "ret_input_member",
+                            name=name,
+                            birth=i18n.month(m.birth, lang),
+                            retirement=i18n.month(m.retirement, lang),
+                            age=core.age(m.birth, m.retirement),
+                            earnings=i18n.money(m.earnings, lang),
+                            pension=i18n.money(m.pension, lang),
+                            pension_month=i18n.month(m.pension_month, lang),
+                            pension_age=core.age(m.birth, m.pension_month),
+                        )
+                    ),
+                ],
+                className="kw-person",
+                style={"borderLeft": f"4px solid {_hue(p, name, view.theme)}"},
             )
         )
     s = p.spending
@@ -311,7 +410,7 @@ def inputs(p: service.Plan, lang: Language) -> html.Div:
             months=s.months,
         )
     )
-    items += [
+    items = [
         html.Li(t(lang, "ret_input_spending", amount=i18n.money(s.retirement, lang), how=how)),
         html.Li(
             t(
@@ -332,12 +431,130 @@ def inputs(p: service.Plan, lang: Language) -> html.Div:
     if p.left_out:
         items.append(html.Li(t(lang, "ret_left_out", names=", ".join(p.left_out))))
     items.append(html.Li(t(lang, "ret_scope")))
-    return html.Div([html.H3(t(lang, "ret_inputs_title")), html.Ul(items)])
+    return layout.card(
+        "ret-inputs",
+        t(lang, "ret_inputs_title"),
+        None,
+        html.Div(people, className="kw-people"),
+        html.Ul(items, className="kw-lede"),
+    )
 
 
-def limits(lang: Language) -> html.Div:
-    return html.Div(
-        [html.H3(t(lang, "limits_title")), html.Ul([html.Li(t(lang, k)) for k in LIMITS])]
+def limits(lang: Language) -> html.Details:
+    return layout.fold(
+        t(lang, "limits_title"),
+        t(lang, "ret_limits_hint"),
+        html.Ul([html.Li(t(lang, k)) for k in LIMITS]),
+    )
+
+
+PEOPLE = ("wealth-stocks", "wealth-crypto")
+"""The members' hues on the timeline, from the categorical set (spec §7)."""
+
+
+def _hue(p: service.Plan, name: str, theme: tokens.Theme = "light") -> str:
+    k = [n for n, _ in p.members].index(name)
+    return tokens.rgb(theme, PEOPLE[k % len(PEOPLE)])
+
+
+def _year(m: Month) -> float:
+    return m.year + (m.month - 1) / 12
+
+
+def timeline(p: service.Plan, view: View) -> html.Section:
+    """Each member's working months then pension to the horizon, today, each retirement and
+    the horizon marked (F-RET-4)."""
+    lang, theme = view.lang, view.theme
+    start, end = p.this_month.year - 6, p.horizon.year + 1
+
+    def at(m: Month) -> str:
+        return f"{100 * (_year(m) - start) / (end - start):.2f}%"
+
+    rows = []
+    for k, (name, m) in enumerate(p.members):
+        hue = PEOPLE[k % len(PEOPLE)]
+        style = {"--kw-hue": tokens.rgb(theme, hue)}
+        segments = []
+        if m.retirement > p.this_month:
+            segments.append(
+                html.Div(
+                    t(lang, "ret_working", amount=i18n.money(m.earnings, lang)),
+                    className="kw-segment",
+                    style={
+                        **style,
+                        "left": 0,
+                        "right": f"calc(100% - {at(m.retirement)})",
+                        "background": tokens.rgba(theme, hue, 0.15),
+                    },
+                )
+            )
+        segments.append(
+            html.Div(
+                t(lang, "ret_pension_segment", amount=i18n.money(m.pension, lang)),
+                className="kw-segment",
+                style={
+                    **style,
+                    "left": at(max(m.pension_month, p.this_month)),
+                    "right": f"calc(100% - {at(p.horizon)})",
+                    "background": tokens.rgba(theme, hue, 0.5),
+                },
+            )
+        )
+        rows.append(
+            html.Div(
+                [html.B(name), html.Div(segments, className="kw-track")], className="kw-life-row"
+            )
+        )
+    youngest = max(p.members, key=lambda nm: nm[1].birth or p.this_month)
+    marks = [
+        html.Div(
+            html.Span(t(lang, "ret_today")),
+            className="kw-at kw-now",
+            style={"left": at(p.this_month)},
+        )
+    ]
+    for k, (name, m) in enumerate(p.members):
+        assert m.birth is not None  # noqa: S101 - counted members have one
+        if m.retirement > p.this_month:
+            marks.append(
+                html.Div(
+                    html.Span(
+                        t(lang, "ret_retires_at", name=name, age=core.age(m.birth, m.retirement))
+                    ),
+                    className="kw-at kw-mid kw-low" if k % 2 == 0 else "kw-at kw-mid",
+                    style={"left": at(m.retirement)},
+                )
+            )
+    assert youngest[1].birth is not None  # noqa: S101
+    marks.append(
+        html.Div(
+            html.Span(
+                t(
+                    lang,
+                    "ret_horizon_at",
+                    name=youngest[0],
+                    age=core.age(youngest[1].birth, p.horizon),
+                )
+            ),
+            className="kw-at kw-end",
+            style={"left": at(p.horizon)},
+        )
+    )
+    years = [y for y in range(start, end + 1) if y % 10 == 0]
+    marks.append(
+        html.Div(
+            [
+                html.Span(str(y), style={"left": f"{100 * (y - start) / (end - start):.2f}%"})
+                for y in years
+            ],
+            className="kw-years",
+        )
+    )
+    return layout.card(
+        "ret-life",
+        t(lang, "ret_life_title"),
+        t(lang, "ret_life_lede"),
+        html.Div([*rows, html.Div(marks, className="kw-marks")], className="kw-life"),
     )
 
 
@@ -345,22 +562,47 @@ def body(p: service.Plan, result: service.Result, view: View) -> list[Component]
     lang = view.lang
     run = projection.Run(p.scenario, result.outcome)
     return [
-        *living(p, result, lang),
-        *lasts(p, result.outcome, lang),
-        html.H3(t(lang, "ret_fan_title")),
-        dcc.Graph(figure=fan(p, run, view), config=GRAPH, style={"height": "28rem"}),
-        views.fan_table(
-            [views.Scenario(t(lang, "base"), run, projection.BASE)],
-            p.this_month,
-            today=True,
-            lang=lang,
+        layout.jump(
+            [
+                ("ret-life", t(lang, "ret_jump_life")),
+                ("ret-income", t(lang, "ret_jump_income")),
+                ("ret-fan", t(lang, "ret_jump_fan")),
+                ("ret-inputs", t(lang, "ret_jump_inputs")),
+            ]
         ),
-        html.H3(t(lang, "ret_income_title")),
-        dcc.Graph(figure=income(p, result, view), config=GRAPH, style={"height": "24rem"}),
-        income_table(p, result, lang),
-        html.P(t(lang, "ret_disclaimer")),
-        inputs(p, lang),
-        limits(lang),
+        tiles(p, result, view),
+        *(
+            [layout.callout(t(lang, "ret_model"), info=True)]
+            if result.withdrawal.nine_tenths
+            else []
+        ),
+        layout.grid(
+            timeline(p, view),
+            layout.card(
+                "ret-income",
+                t(lang, "ret_income_title"),
+                t(lang, "ret_income_lede"),
+                layout.graph("ret-income-chart", income(p, result, view), height="22rem"),
+                income_table(p, result, lang),
+                span="half",
+            ),
+            layout.card(
+                "ret-fan",
+                t(lang, "ret_fan_title"),
+                t(lang, "ret_fan_lede"),
+                layout.graph("ret-fan-chart", fan(p, run, view), height="22rem"),
+                views.fan_table(
+                    [views.Scenario(t(lang, "base"), run, projection.BASE)],
+                    p.this_month,
+                    today=True,
+                    lang=lang,
+                ),
+                span="half",
+            ),
+            inputs(p, view),
+            limits(lang),
+        ),
+        html.P(t(lang, "ret_disclaimer"), className="kw-intro"),
     ]
 
 
@@ -382,23 +624,14 @@ def register(app: Dash, context: Context) -> Callable[[str], html.Div]:
     def render(search: str) -> html.Div:
         view = view_of(search)
         theme = view.theme
-        return html.Div(
+        return layout.page(
+            theme,
             [
                 dcc.Store(id="ret-trigger", data=True),
-                html.P(
-                    t(view.lang, "ret_intro"),
-                    style={"maxWidth": "42rem", "color": tokens.rgb(theme, "muted")},
-                ),
+                layout.intro(t(view.lang, "ret_intro")),
                 dcc.Loading(html.Div(id="ret-body"), color=tokens.rgb(theme, "primary-600")),
             ],
-            style={
-                **dash_colours(theme),
-                "background": tokens.rgb(theme, "bg"),
-                "color": tokens.rgb(theme, "fg"),
-                "minHeight": "100vh",
-                "padding": "0.5rem 1rem 2rem",
-                "boxSizing": "border-box",
-            },
+            extra=dash_colours(theme),
         )
 
     return render

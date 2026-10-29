@@ -12,6 +12,7 @@ from kwak_analytics import foundation
 from kwak_api.models import User
 
 from tests.api.conftest import Clock, csrf, log_in
+from tests.api.dash.helpers import class_named, find, graphs
 
 NOW = datetime(2026, 10, 28, 9, tzinfo=UTC)
 
@@ -63,15 +64,17 @@ def test_the_demo_is_forecast(demo_client: TestClient, monkeypatch: pytest.Monke
     assert "From Oct 2026 to Sep 2027, an income of €" in text
     assert "about 8 times in 10" in text
     assert "spent so far in Oct 2026" in text
-    figures = [c["props"]["figure"] for c in body if c.get("type") == "Graph"]
-    months, rest, backtest = figures
+    charts = graphs(body)
+    months = charts["fct-months-chart"]
     names = [d.get("name") for d in months["data"]]
-    for name in ("Income", "Spent", "Saved", "Of which fixed expenses", "Spent (forecast)"):
+    for name in ("Income", "Spent", "Of which fixed expenses", "Spent (forecast)", "Rest"):
         assert name in names
     assert "Spent, about 8 times in 10" in names
+    assert "Rest (forecast)" in names
     assert "Last complete month" in _text(months["layout"]["annotations"])
-    assert "Rest (forecast)" in [d.get("name") for d in rest["data"]]
-    assert "Spent: forecast one month ahead" in [d.get("name") for d in backtest["data"]]
+    assert "Spent: forecast one month ahead" in [
+        d.get("name") for d in charts["fct-backtest-chart"]["data"]
+    ]
     for title in ("Against the targets", "What the forecast rests on", "The back-test", "Limits"):
         assert title in text
     assert "the average of the last 6 months" in text or "kept without a contest" in text
@@ -81,16 +84,55 @@ def test_the_demo_is_forecast(demo_client: TestClient, monkeypatch: pytest.Monke
     assert "A price rise faster than in the past months is forecast late" in text
 
 
+def test_the_answer_comes_first_in_tiles(demo_client: TestClient) -> None:
+    """Spec §7: the sections' links, the rest's warning, then the tiles, then the cards."""
+    body = _body(demo_client)
+    assert body[0]["type"] == "Nav"
+    assert "#fct-reliable" in _text(body[0])
+    warning, tiles = body[1], body[2]
+    assert "the rest may be lower than shown" in _text(warning)
+    assert tiles["props"]["className"] == "kw-tiles"
+    labels = [c["props"]["children"] for c in class_named(tiles, "kw-label")]
+    assert labels[0] == "Rest, Oct 2026 to Sep 2027"
+    assert "Oct 2026 so far" in labels
+    assert len(labels) == 7
+    assert class_named(tiles, "kw-meter"), "the month's spending against its forecast"
+    assert any("likely over" in _text(c) for c in class_named(tiles, "kw-chip"))
+
+
+def test_the_targets_and_the_year_are_drawn_against_their_targets(demo_client: TestClient) -> None:
+    charts = graphs(_body(demo_client))
+    targets = charts["fct-targets-chart"]
+    assert targets["layout"]["shapes"][0]["x0"] == 100, "the target, at 100 %"
+    rows = targets["data"][1]["y"]
+    assert rows[-1].startswith("▲ "), "the likeliest overrun on top"
+    year = charts["fct-year-chart"]
+    assert year["layout"]["barmode"] == "stack"
+    assert [d["name"] for d in year["data"][:2]] == ["To Sep 2026", "Forecast to December"]
+    assert "fct-income-chart" in charts
+
+
+def test_the_method_is_folded_under_how_reliable_it_is(demo_client: TestClient) -> None:
+    body = _body(demo_client)
+    (fold,) = class_named(body, "kw-fold")
+    assert fold["props"]["id"] == "fct-reliable"
+    inside = _text(fold)
+    for title in ("What the forecast rests on", "The back-test", "Limits"):
+        assert title in inside
+    assert "fct-reliability-chart" in graphs(fold)
+
+
 def test_the_page_follows_the_language(demo_client: TestClient) -> None:
     text = _text(_body(demo_client, "?lang=fr&theme=dark"))
     assert "Entre oct. 2026 et sept. 2027, des revenus de" in text
     assert "Face aux objectifs" in text
+    assert "Le reste, oct. 2026 à sept. 2027" in text
 
 
 def test_the_charts_and_ratios_follow_the_language(demo_client: TestClient) -> None:
     body = _body(demo_client, "?lang=fr")
-    months = next(c for c in body if c.get("type") == "Graph")["props"]["figure"]
-    assert "janv. 2026" in months["layout"]["xaxis"]["ticktext"]
+    months = graphs(body)["fct-months-chart"]
+    assert "janv. 2026" in months["layout"]["xaxis2"]["ticktext"]
     text = _text(body)
     assert "Dépensé : prévu un mois à l'avance" in text
     assert not re.search(r'"\d\.\d\d"', text), "a ratio with a decimal point in French"
@@ -173,3 +215,29 @@ def test_a_candidate_set_aside_is_named_when_it_erred_less() -> None:
     )
     kept = Choice("timesfm", choice.scores, choice.gains, contest=True)
     assert set_aside_text(kept, CategoryKind.EXPENSE, "en") is None
+
+
+def test_every_chart_is_boxed_to_its_height(demo_client: TestClient) -> None:
+    """Responsive, a chart fills its box: without a height of its own it took its card's, and
+    ten rows were squeezed into ninety pixels."""
+    body = _body(demo_client)
+    charts = find(body, lambda c: c.get("type") == "Graph")
+    assert len(charts) >= 5
+    for chart in charts:
+        props = chart["props"]
+        height = props["figure"]["layout"].get("height")
+        boxed = props.get("style", {}).get("height", "")
+        assert boxed == f"{height}px" if height else boxed.endswith("rem"), props["id"]
+
+
+def test_the_rows_are_named_without_a_euro_sign(demo_client: TestClient) -> None:
+    """The row charts' y axis names categories: the euro sign of the value axes stays off it."""
+    charts = graphs(_body(demo_client, "?lang=fr"))
+    for name in (
+        "fct-targets-chart",
+        "fct-year-chart",
+        "fct-income-chart",
+        "fct-reliability-chart",
+    ):
+        axis = charts[name]["layout"]["yaxis"]
+        assert "€" not in axis.get("ticksuffix", "") + axis.get("tickprefix", ""), name
