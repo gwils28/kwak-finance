@@ -8,6 +8,7 @@ from fastapi.testclient import TestClient
 from kwak_api.models import User
 
 from tests.api.conftest import Clock, log_in
+from tests.api.dash.helpers import class_named, graphs
 from tests.api.retirement.test_retirement import _flat, _mine, _settings
 from tests.api.wealth.test_wealth import TODAY, _line, _value
 
@@ -61,8 +62,8 @@ def test_the_standard_of_living_and_how_long_the_wealth_lasts(owner_client: Test
     ) in text
     assert "In more than 99% of the outcomes, the plan runs to Dec 2055" in text
     assert "In 9 outcomes in 10, the liquid wealth does not run out before 95." in text
-    figures = [c["props"]["figure"] for c in body if c.get("type") == "Graph"]
-    fan, income = figures
+    charts = graphs(body)
+    fan, income = charts["ret-fan-chart"], charts["ret-income-chart"]
     assert "Liquid wealth (median)" in [d.get("name") for d in fan["data"]]
     assert "Household retires" in _text(fan["layout"]["annotations"])
     assert [d["name"] for d in income["data"]] == [
@@ -80,3 +81,31 @@ def test_the_page_follows_the_language(owner_client: TestClient) -> None:
     _value(owner_client, livret, "2026-12", "120000.00")
     _mine(owner_client)
     assert "retrait soutenable" in _text(_body(owner_client, "?lang=fr"))
+
+
+def test_the_answer_comes_first_then_the_timeline(owner_client: TestClient) -> None:
+    """Spec §7, F-RET-4: the standard of living as a tile, the pensions and the withdrawal
+    against the spending, then each member's working months and pension on a timeline."""
+    _flat(owner_client)
+    livret = _line(owner_client, "Savings accounts", "Livret A")
+    _value(owner_client, livret, "2026-12", "120000.00")
+    _mine(owner_client)
+    _settings(owner_client, spending_amount="1000.00")
+    body = _body(owner_client)
+    assert body[0]["type"] == "Nav"
+    tiles = body[1]
+    assert tiles["props"]["className"] == "kw-tiles"
+    values = [c["props"]["children"] for c in class_named(tiles, "kw-value")]
+    assert values == ["€1,300 a month", "130%", "more than 99%"]
+    (split,) = class_named(tiles, "kw-split")
+    assert [c["props"]["children"] for c in split["props"]["children"]] == [
+        "Pensions €1,000",
+        "Withdrawal €300",
+    ]
+    assert "Spending €1,000" in _text(class_named(tiles, "kw-against"))
+    (life,) = class_named(body, "kw-life")
+    segments = [c["props"]["children"] for c in class_named(life, "kw-segment")]
+    assert segments[0].startswith("Pension €1,000")
+    assert "Today" in _text(class_named(life, "kw-at"))
+    (fold,) = class_named(body, "kw-fold")
+    assert "Long-term care not modelled" in _text(fold)

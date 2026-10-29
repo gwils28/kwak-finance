@@ -152,7 +152,7 @@ EN: Mapping[str, str] = {
         "home and locked-in funds, but the spending would have to be borrowed."
     ),
     "amount_line": "Amount to reach: {amount}",
-    "by_category_title": "Median by category",
+    "by_category_title": "By category, today and at the horizon",
     "by_category_note": (
         "Each category's own median: together they need not add up to the median net worth."
     ),
@@ -248,7 +248,6 @@ EN: Mapping[str, str] = {
     "fct_band": "{name}, about 8 times in 10",
     "fct_forecast_of": "{name} (forecast)",
     "fct_origin": "Last complete month",
-    "fct_rest_title": "The rest",
     "fct_axis": "A month",
     "fct_widened": "From {month}, the band is the last one measured on enough months, widened.",
     "fct_no_band": "No band yet: too few months to measure the errors.",
@@ -395,6 +394,92 @@ EN: Mapping[str, str] = {
     ),
     "fct_models": "Foundation models: {models}.",
     "fct_no_models": "Foundation models not installed (see Running Kwak Finance).",
+    "fct_jump_month": "This month",
+    "fct_jump_months": "12 months",
+    "fct_jump_targets": "Targets",
+    "fct_jump_year": "The year",
+    "fct_jump_reliable": "How reliable",
+    "fct_tile_rest": "Rest, {first} to {last}",
+    "fct_tile_month": "{month} so far",
+    "fct_tile_targets": "Targets this month",
+    "fct_tile_year": "Targets in {year}",
+    "fct_tile_income": "Income, 12 months",
+    "fct_tile_spent": "Spending, 12 months",
+    "fct_tile_saved": "Savings, 12 months",
+    "fct_per_month": "about {amount} a month",
+    "fct_count_over": "{n} likely over",
+    "fct_count_watch": "{n} may go over",
+    "fct_all_within": "all within",
+    "fct_at_risk": "{n} at risk of {of}",
+    "fct_months_lede": (
+        "What comes in, what goes out and what is left each month; dashed, the months to come, "
+        "their bands holding about 8 times in 10."
+    ),
+    "fct_rest_of_month": "Rest of the month",
+    "fct_targets_lede": (
+        "Each category in percent of its target: the point is the forecast, the bar its band, "
+        "the line the target."
+    ),
+    "fct_year_lede": (
+        "Solid, the year to date; lighter, the forecast to December; the thin line, the band of"
+        " the year's total; in percent of the full-year target."
+    ),
+    "fct_to_origin": "To {month}",
+    "fct_income_lede": "{month}: each income category's forecast and its band.",
+    "fct_objective_chip": "{name}: {point} for {target}, {word}",
+    "fct_reliable_title": "How reliable it is",
+    "fct_reliable_hint": (
+        "the methods, the back-test and the limits: to check, not to read every day"
+    ),
+    "fct_gain_axis": "Errs less than the 6-month average",
+    "fct_bias_axis": "Optimistic to the right",
+    "ret_jump_life": "Timeline",
+    "ret_jump_income": "Income",
+    "ret_jump_fan": "Net worth",
+    "ret_jump_inputs": "Inputs",
+    "ret_tile_living": "Standard of living from {month}, 9 in 10",
+    "ret_per_month": "{amount} a month",
+    "ret_split_pensions": "Pensions {amount}",
+    "ret_split_withdrawal": "Withdrawal {amount}",
+    "ret_against": "Spending {amount}",
+    "ret_tile_covered": "Spending covered",
+    "ret_covered": "covered",
+    "ret_short": "short",
+    "ret_tile_lasts": "The wealth lasts to the horizon",
+    "ret_life_title": "Timeline",
+    "ret_life_lede": "Who works, who draws a pension, and how far the plan is tested.",
+    "ret_working": "Works, {amount}",
+    "ret_pension_segment": "Pension {amount}",
+    "ret_today": "Today",
+    "ret_retires_at": "{name} retires at {age}",
+    "ret_horizon_at": "Horizon: {name} at {age}",
+    "ret_income_lede": (
+        "The pensions plus the sustainable withdrawal (9 in 10), against the retirement spending."
+    ),
+    "ret_fan_lede": (
+        "Net worth, its median and its range, and the liquid part that pays the withdrawal."
+    ),
+    "ret_limits_hint": "taxes, long-term care, a death: what the model leaves out",
+    "jump_fan": "Trajectory",
+    "jump_reach": "An amount",
+    "jump_mix": "By category",
+    "jump_whatifs": "What-ifs",
+    "jump_assumptions": "Assumptions",
+    "fan_title": "Net worth over the horizon",
+    "fan_lede": (
+        "The median and the range of the outcomes; on the amount's line, when half and nine "
+        "tenths of them have reached it."
+    ),
+    "reach_marks": "Reached by half, nine tenths",
+    "today_bars": "Today",
+    "return_axis": "Expected return a year, ± its volatility",
+    "limits_hint": "what the model leaves out",
+    "tile_today": "Net worth today",
+    "tile_savings": "{amount} saved a month",
+    "tile_median": "Median in {month}",
+    "tile_range": "between {low} and {high} 8 times in 10",
+    "tile_amount": "{amount} in {month}",
+    "tile_half": "half the outcomes reach it by {month}",
 }
 
 FR: Mapping[str, str] = {
@@ -556,7 +641,7 @@ FR: Mapping[str, str] = {
         "encore le logement et les fonds bloqués, mais les dépenses devraient être empruntées."
     ),
     "amount_line": "Montant à atteindre : {amount}",
-    "by_category_title": "Médiane par catégorie",
+    "by_category_title": "Par catégorie, aujourd'hui et à l'horizon",
     "by_category_note": (
         "La médiane propre à chaque catégorie : ensemble, elles ne font pas forcément la médiane "
         "du patrimoine net."
@@ -661,7 +746,6 @@ FR: Mapping[str, str] = {
     "fct_band": "{name}, environ 8 fois sur 10",
     "fct_forecast_of": "{name} (prévision)",
     "fct_origin": "Dernier mois complet",
-    "fct_rest_title": "Le reste",
     "fct_axis": "Par mois",
     "fct_widened": (
         "À partir de {month}, la fourchette est la dernière mesurée sur assez de mois, élargie."
@@ -815,6 +899,92 @@ FR: Mapping[str, str] = {
     ),
     "fct_models": "Modèles de fondation : {models}.",
     "fct_no_models": "Modèles de fondation non installés (voir Faire tourner Kwak Finance).",
+    "fct_jump_month": "Ce mois",
+    "fct_jump_months": "12 mois",
+    "fct_jump_targets": "Objectifs",
+    "fct_jump_year": "L'année",
+    "fct_jump_reliable": "Fiabilité",
+    "fct_tile_rest": "Le reste, {first} à {last}",
+    "fct_tile_month": "{month} jusqu'ici",
+    "fct_tile_targets": "Objectifs du mois",
+    "fct_tile_year": "Objectifs {year}",
+    "fct_tile_income": "Revenus, 12 mois",
+    "fct_tile_spent": "Dépenses, 12 mois",
+    "fct_tile_saved": "Épargne, 12 mois",
+    "fct_per_month": "environ {amount} par mois",
+    "fct_count_over": "dépassement probable : {n}",
+    "fct_count_watch": "dépassement possible : {n}",
+    "fct_all_within": "tous tenus",
+    "fct_at_risk": "{n} à risque sur {of}",
+    "fct_months_lede": (
+        "Ce qui entre, ce qui sort et ce qui reste chaque mois ; en pointillés, les mois à "
+        "venir, leurs bandes tenant environ 8 fois sur 10."
+    ),
+    "fct_rest_of_month": "Reste du mois",
+    "fct_targets_lede": (
+        "Chaque catégorie en pourcentage de son objectif : le point est la prévision, la barre "
+        "sa fourchette, le trait l'objectif."
+    ),
+    "fct_year_lede": (
+        "En plein, l'année jusqu'ici ; en clair, la prévision jusqu'à décembre ; le trait fin, "
+        "la fourchette du total de l'année ; en pourcentage de l'objectif annuel."
+    ),
+    "fct_to_origin": "Jusqu'à {month}",
+    "fct_income_lede": "{month} : la prévision de chaque catégorie de revenus et sa fourchette.",
+    "fct_objective_chip": "{name} : {point} pour {target}, {word}",
+    "fct_reliable_title": "Fiabilité de la prévision",
+    "fct_reliable_hint": (
+        "les méthodes, le back-test et les limites : pour vérifier, pas à lire tous les jours"
+    ),
+    "fct_gain_axis": "Erreur en moins face à la moyenne de 6 mois",
+    "fct_bias_axis": "Optimiste à droite",
+    "ret_jump_life": "Le parcours",
+    "ret_jump_income": "Revenus",
+    "ret_jump_fan": "Patrimoine",
+    "ret_jump_inputs": "Données",
+    "ret_tile_living": "Niveau de vie dès {month}, 9 fois sur 10",
+    "ret_per_month": "{amount} par mois",
+    "ret_split_pensions": "Pensions {amount}",
+    "ret_split_withdrawal": "Retrait {amount}",
+    "ret_against": "Dépenses {amount}",
+    "ret_tile_covered": "Dépenses couvertes",
+    "ret_covered": "couvertes",
+    "ret_short": "insuffisant",
+    "ret_tile_lasts": "Le patrimoine tient jusqu'à l'horizon",
+    "ret_life_title": "Le parcours",
+    "ret_life_lede": "Qui travaille, qui touche sa pension, et jusqu'où le plan est testé.",
+    "ret_working": "Travaille, {amount}",
+    "ret_pension_segment": "Pension {amount}",
+    "ret_today": "Aujourd'hui",
+    "ret_retires_at": "{name} part à {age} ans",
+    "ret_horizon_at": "Horizon : {name} à {age} ans",
+    "ret_income_lede": (
+        "Les pensions plus le retrait soutenable (9 fois sur 10), face aux dépenses de retraite."
+    ),
+    "ret_fan_lede": (
+        "Le patrimoine net, sa médiane et son éventail, et la part liquide qui paie le retrait."
+    ),
+    "ret_limits_hint": "impôts, dépendance, décès : ce que le modèle laisse de côté",
+    "jump_fan": "Trajectoire",
+    "jump_reach": "Un montant",
+    "jump_mix": "Par catégorie",
+    "jump_whatifs": "Et si",
+    "jump_assumptions": "Hypothèses",
+    "fan_title": "Le patrimoine net jusqu'à l'horizon",
+    "fan_lede": (
+        "La médiane et l'éventail des issues ; sur la ligne du montant, quand la moitié puis "
+        "neuf dixièmes l'ont atteint."
+    ),
+    "reach_marks": "Atteint par la moitié, neuf dixièmes",
+    "today_bars": "Aujourd'hui",
+    "return_axis": "Rendement attendu par an, ± sa volatilité",
+    "limits_hint": "ce que le modèle laisse de côté",
+    "tile_today": "Patrimoine net aujourd'hui",
+    "tile_savings": "{amount} épargnés par mois",
+    "tile_median": "Médiane en {month}",
+    "tile_range": "entre {low} et {high} 8 fois sur 10",
+    "tile_amount": "{amount} en {month}",
+    "tile_half": "la moitié des issues l'atteint dès {month}",
 }
 
 MESSAGES: Mapping[Language, Mapping[str, str]] = {"en": EN, "fr": FR}

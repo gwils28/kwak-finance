@@ -9,12 +9,12 @@ from decimal import Decimal
 from uuid import UUID
 
 import plotly.graph_objects as go
-from dash import html
+from dash import dcc, html
 from kwak_core.budget import Month
 from kwak_core.goals import add_months
 from kwak_core.projection import median_growth
 
-from kwak_api.dash import i18n, tokens
+from kwak_api.dash import i18n, layout, tokens
 from kwak_api.dash.i18n import Language, t
 from kwak_api.dash.tokens import Theme
 from kwak_api.services import projection
@@ -54,6 +54,17 @@ def _yearly(count: int) -> list[int]:
     """The rows of a table: the start, each year, and the horizon."""
     rows = list(range(0, count + 1, 12))
     return rows if rows[-1] == count else [*rows, count]
+
+
+ROWS_AXIS: dict[str, object] = {
+    "gridcolor": "rgba(0,0,0,0)",
+    "automargin": True,
+    "title": None,
+    "tickformat": "",
+    "tickprefix": "",
+    "ticksuffix": "",
+}
+"""The y axis of a chart with a row per category: `chart_layout` wrote euros on it."""
 
 
 def chart_layout(figure: go.Figure, view: View, *, y_title: str) -> go.Figure:
@@ -176,6 +187,29 @@ def fan(
             hovertemplate=f"{other.name}: %{{customdata}}<extra></extra>",
         )
     if target is not None:
+        reached = [
+            k
+            for share in (HALF, NINE_TENTHS)
+            if (k := base.run.outcome.reached_by(target.amount, share, today=today)) is not None
+        ]
+        if reached:
+            name = t(lang, "reach_marks")
+            figure.add_scatter(
+                x=[add_months(start, k).first_day() for k in reached],
+                y=[float(target.amount)] * len(reached),
+                mode="markers",
+                marker={
+                    "size": 11,
+                    "color": tokens.rgb(theme, "surface"),
+                    "line": {
+                        "width": 2.5,
+                        "color": tokens.rgb(theme, "primary-400" if dark else "primary-600"),
+                    },
+                },
+                name=name,
+                customdata=[i18n.month(add_months(start, k), lang) for k in reached],
+                hovertemplate=f"{name}: %{{customdata}}<extra></extra>",
+            )
         figure.add_hline(
             y=float(target.amount),
             line={"dash": "dot", "width": 1.5, "color": tokens.rgb(theme, "neutral-500")},
@@ -208,51 +242,58 @@ def by_category(
     today: bool,
     view: View,
 ) -> go.Figure:
-    """Each category's own median, stacked in its colour; the debts and the Shortfall below
-    zero, in the debts' colour (spec §7)."""
+    """Each category's own median today and at the horizon, side by side in its colour; the
+    debts and the Shortfall below zero, in the debts' colour (F-SIM-5, spec §7)."""
     lang, theme = view.lang, view.theme
     medians = base.outcome.medians_by_category(today=today)
-    months = _months(start, len(medians) - 1)
-    x = [m.first_day() for m in months]
-    # A thin line of the surface between the layers, as the Analysis tab's stacked bars.
-    edge = {"width": 1, "color": tokens.rgb(theme, "surface")}
-    figure = go.Figure()
-    for k, category in _shown_categories(categories, medians):
-        values = [row[k] for row in medians]
-        figure.add_scatter(
-            x=x,
-            y=[float(v) for v in values],
-            mode="lines",
-            stackgroup="assets",
-            line=edge,
-            fillcolor=tokens.rgb(theme, f"wealth-{category.colour}"),
-            name=category.name,
-            customdata=[i18n.money(v, lang) for v in values],
-            hovertemplate=f"{category.name}: %{{customdata}}<extra></extra>",
-        )
+    rows: list[tuple[str, str, Decimal, Decimal]] = [
+        (c.name, f"wealth-{c.colour}", medians[0][k], medians[-1][k])
+        for k, c in _shown_categories(categories, medians)
+    ]
     debts = base.debts(today=today)
     shortfall = base.outcome.shortfall_median(today=today)
-    for values, name, pattern in (
-        (debts, t(lang, "debts"), None),
-        (shortfall, t(lang, "shortfall_name"), {"shape": "/"}),
-    ):
-        if not any(values):
-            continue
-        figure.add_scatter(
-            x=x,
-            y=[-float(v) for v in values],
-            mode="lines",
-            stackgroup="debts",
-            line=edge,
-            fillcolor=tokens.rgb(theme, "wealth-debts"),
-            fillpattern=pattern,
-            name=name,
-            customdata=[i18n.money(-v, lang) for v in values],
-            hovertemplate=f"{name}: %{{customdata}}<extra></extra>",
+    for values, name in ((debts, t(lang, "debts")), (shortfall, t(lang, "shortfall_name"))):
+        if any(values):
+            rows.append((name, "wealth-debts", -values[0], -values[-1]))
+    rows.reverse()  # Plotly draws the first row at the bottom
+    names = [r[0] for r in rows]
+    figure = go.Figure()
+    horizon = i18n.month(add_months(start, len(medians) - 1), lang)
+    for label, at, alpha in ((t(lang, "today_bars"), 0, 0.4), (horizon, 1, 1.0)):
+        values = [r[3] if at else r[2] for r in rows]
+        figure.add_bar(
+            orientation="h",
+            y=names,
+            x=[float(v) for v in values],
+            name=label,
+            marker={
+                "color": [
+                    tokens.rgb(theme, r[1]) if alpha == 1 else tokens.rgba(theme, r[1], alpha)
+                    for r in rows
+                ]
+            },
+            text=[i18n.money(v, lang) for v in values] if alpha == 1 else None,
+            textposition="outside",
+            cliponaxis=False,
+            customdata=[i18n.money(v, lang) for v in values],
+            hovertemplate=f"%{{y}}, {label}: %{{customdata}}<extra></extra>",
         )
-    chart_layout(figure, view, y_title=t(lang, "median"))
-    # As the wealth Analysis tab: the matrix's order in the legend and the month's label.
-    figure.update_layout(hovermode="x unified", legend={"traceorder": "normal"})
+    chart_layout(figure, view, y_title="")
+    figure.update_layout(
+        barmode="group",
+        bargap=0.3,
+        bargroupgap=0.1,
+        hovermode="closest",
+        height=56 * len(rows) + 80,
+        margin={"l": 8, "r": 64, "t": 8, "b": 8},
+        legend={"orientation": "h", "y": -0.12, "traceorder": "normal"},
+        xaxis={
+            "tickformat": "~s",
+            "zeroline": True,
+            "zerolinecolor": tokens.rgb(theme, "fg"),
+        },
+        yaxis=ROWS_AXIS,
+    )
     return figure
 
 
@@ -375,10 +416,11 @@ def comparison(
     start: Month,
     *,
     today: bool,
-    lang: Language,
+    view: View,
     target: Target | None,
 ) -> html.Div:
     """The scenarios at the horizon: median, 10 % and 90 %, and the chance of the amount."""
+    lang = view.lang
     last = scenarios[0].run.outcome.months
     horizon = i18n.month(add_months(start, last), lang)
     reachable = target is not None and target.month <= last
@@ -405,8 +447,68 @@ def comparison(
             chance = s.run.outcome.chance(target.amount, target.month, today=today)
             row.append(i18n.chance(chance, lang))
         body.append(row)
-    table = data_table(header, body, lang, open_=True)
-    return html.Div([html.H3(t(lang, "compare_title", month=horizon)), table])
+    table = data_table(header, body, lang)
+    return html.Div(
+        [
+            html.P(html.B(t(lang, "compare_title", month=horizon))),
+            dcc.Graph(
+                id="compare-chart",
+                figure=scenarios_chart(scenarios, today=today, view=view),
+                config={"displayModeBar": False},
+            ),
+            table,
+        ]
+    )
+
+
+def scenarios_chart(scenarios: Sequence[Scenario], *, today: bool, view: View) -> go.Figure:
+    """Each scenario at the horizon: its median a point on its 10-90 % range, the base on top."""
+    lang, theme = view.lang, view.theme
+    rows = list(reversed(scenarios))
+    ends = [s.run.outcome.percentiles(today=today)[-1] for s in rows]
+    hues = [
+        tokens.rgb(theme, "primary-400" if theme == "dark" else "primary-600")
+        if s is scenarios[0]
+        else _what_if_colour(scenarios.index(s), theme)
+        for s in rows
+    ]
+    names = [s.name for s in rows]
+    figure = go.Figure()
+    figure.add_bar(
+        orientation="h",
+        y=names,
+        base=[float(e[10]) for e in ends],
+        x=[float(e[90] - e[10]) for e in ends],
+        marker={"color": [h.replace("rgb(", "rgba(").replace(")", ",0.25)") for h in hues]},
+        width=0.4,
+        hoverinfo="skip",
+    )
+    figure.add_scatter(
+        mode="markers+text",
+        y=names,
+        x=[float(e[50]) for e in ends],
+        marker={
+            "size": 12,
+            "color": hues,
+            "line": {"color": tokens.rgb(theme, "surface"), "width": 2},
+        },
+        text=[i18n.money(e[50], lang) for e in ends],
+        textposition="top center",
+        customdata=[[i18n.money(e[10], lang), i18n.money(e[90], lang)] for e in ends],
+        hovertemplate=(
+            f"%{{y}}: %{{text}}<br>{i18n.percent(Decimal('0.1'), lang)} %{{customdata[0]}}, "
+            f"{i18n.percent(Decimal('0.9'), lang)} %{{customdata[1]}}<extra></extra>"
+        ),
+    )
+    chart_layout(figure, view, y_title="")
+    figure.update_layout(
+        showlegend=False,
+        hovermode="closest",
+        height=70 * len(rows) + 60,
+        xaxis={"tickformat": "~s"},
+        yaxis=ROWS_AXIS,
+    )
+    return figure
 
 
 def _shares(shares: dict[UUID, Decimal], names: dict[UUID, str], lang: Language) -> str:
@@ -417,8 +519,79 @@ def _shares(shares: dict[UUID, Decimal], names: dict[UUID, str], lang: Language)
     )
 
 
-def assumptions(b: projection.Basis, scenarios: Sequence[Scenario], lang: Language) -> html.Div:
-    """The base's assumptions, and what each what-if changes (F-SIM-5)."""
+def assumptions_chart(b: projection.Basis, view: View) -> go.Figure:
+    """Each category's expected return a point, its volatility on either side."""
+    lang, theme = view.lang, view.theme
+    rows = sorted(b.categories, key=lambda c: b.assumptions[c.id].ret)
+    figure = go.Figure()
+    figure.add_scatter(
+        mode="markers",
+        y=[c.name for c in rows],
+        x=[float(100 * b.assumptions[c.id].ret) for c in rows],
+        marker={
+            "size": 11,
+            "color": [tokens.rgb(theme, f"wealth-{c.colour}") for c in rows],
+            "line": {"color": tokens.rgb(theme, "surface"), "width": 2},
+        },
+        error_x={
+            "type": "data",
+            "array": [float(100 * b.assumptions[c.id].volatility) for c in rows],
+            "color": tokens.rgb(theme, "muted"),
+            "thickness": 1.5,
+            "width": 0,
+        },
+        customdata=[
+            [
+                i18n.percent(b.assumptions[c.id].ret, lang),
+                i18n.percent(b.assumptions[c.id].volatility, lang),
+            ]
+            for c in rows
+        ],
+        hovertemplate="%{y}: %{customdata[0]} ± %{customdata[1]}<extra></extra>",
+    )
+    chart_layout(figure, view, y_title="")
+    figure.update_layout(
+        showlegend=False,
+        hovermode="closest",
+        height=30 * len(rows) + 60,
+        xaxis={
+            "ticksuffix": " %",
+            "tickprefix": "",
+            "tickformat": "",
+            "zeroline": True,
+            "zerolinecolor": tokens.rgb(theme, "fg"),
+            "title": {"text": t(lang, "return_axis")},
+        },
+        yaxis=ROWS_AXIS,
+    )
+    return figure
+
+
+def allocation_bar(b: projection.Basis, lang: Language, theme: Theme) -> html.Div | None:
+    """Where the monthly savings go, as one bar in the categories' colours."""
+    if not b.allocation:
+        return None
+    by_id = {c.id: c for c in b.categories}
+    parts = sorted(((v, by_id[k]) for k, v in b.allocation.items() if v), key=lambda p: -p[0])
+    return html.Div(
+        [
+            html.Div(
+                f"{c.name} {i18n.percent(v, lang, places=0)}",
+                title=f"{c.name} {i18n.percent(v, lang, places=0)}",
+                style={
+                    "flex": f"{v} 1 0",
+                    "background": tokens.rgb(theme, f"wealth-{c.colour}"),
+                },
+            )
+            for v, c in parts
+        ],
+        className="kw-split",
+    )
+
+
+def assumptions(b: projection.Basis, scenarios: Sequence[Scenario], view: View) -> html.Div:
+    """The base's assumptions drawn, then what each what-if changes (F-SIM-5)."""
+    lang = view.lang
     names = {c.id: c.name for c in b.categories}
     items = [
         html.Li(
@@ -466,11 +639,19 @@ def assumptions(b: projection.Basis, scenarios: Sequence[Scenario], lang: Langua
                 )
             )
         )
+    lines, what_ifs = items[: len(b.categories)], items[len(b.categories) :]
+    bar = allocation_bar(b, lang, view.theme)
     return html.Div(
         [
-            html.H3(t(lang, "assumptions_title")),
-            html.P(t(lang, "assumptions_where")),
-            html.Ul(items),
+            html.P(t(lang, "assumptions_where"), className="kw-lede"),
+            dcc.Graph(
+                id="assumptions-chart",
+                figure=assumptions_chart(b, view),
+                config={"displayModeBar": False},
+            ),
+            *([bar] if bar is not None else []),
+            html.Ul(what_ifs),
+            html.Details([html.Summary(t(lang, "show_data")), html.Ul(lines)]),
         ]
     )
 
@@ -485,7 +666,56 @@ LIMITS = (
 )
 
 
-def limits(lang: Language) -> html.Div:
-    return html.Div(
-        [html.H3(t(lang, "limits_title")), html.Ul([html.Li(t(lang, k)) for k in LIMITS])]
+def limits(lang: Language) -> html.Details:
+    return layout.fold(
+        t(lang, "limits_title"),
+        t(lang, "limits_hint"),
+        html.Ul([html.Li(t(lang, k)) for k in LIMITS]),
     )
+
+
+def tiles(
+    b: projection.Basis,
+    base: projection.Run,
+    target: Target | None,
+    start: Month,
+    *,
+    today: bool,
+    lang: Language,
+) -> html.Div:
+    """The answer first (spec §7): net worth today, the median at the horizon, the amount."""
+    outcome = base.outcome
+    end = outcome.percentiles(today=today)[-1]
+    horizon = i18n.month(add_months(start, outcome.months), lang)
+    items = [
+        layout.tile(
+            t(lang, "tile_today"),
+            i18n.money(b.start.net, lang),
+            note=t(lang, "tile_savings", amount=i18n.money(b.savings, lang)),
+        ),
+        layout.tile(
+            t(lang, "tile_median", month=horizon),
+            i18n.money(end[50], lang),
+            note=t(
+                lang,
+                "tile_range",
+                low=i18n.money(end[10], lang),
+                high=i18n.money(end[90], lang),
+            ),
+            wide=True,
+        ),
+    ]
+    if target is not None and target.month <= outcome.months:
+        month = i18n.month(add_months(start, target.month), lang)
+        half = outcome.reached_by(target.amount, HALF, today=today)
+        items.append(
+            layout.tile(
+                t(lang, "tile_amount", amount=i18n.money(target.amount, lang), month=month),
+                i18n.chance(outcome.chance(target.amount, target.month, today=today), lang),
+                note=t(lang, "not_within")
+                if half is None
+                else t(lang, "tile_half", month=i18n.month(add_months(start, half), lang)),
+                anchor="prj-goal-tile",
+            )
+        )
+    return layout.tiles(*items)

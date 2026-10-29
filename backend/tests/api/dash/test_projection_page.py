@@ -18,6 +18,7 @@ from kwak_core.budget import Month
 from kwak_core.projection import Assumption
 
 from tests.api.conftest import Clock, log_in
+from tests.api.dash.helpers import class_named, graphs
 from tests.api.wealth.test_wealth import TODAY, _line, _value
 
 D = Decimal
@@ -36,9 +37,12 @@ OUTPUTS = [
     ("fan-after", "children"),
     ("categories-title", "children"),
     ("categories", "figure"),
+    ("categories", "style"),
     ("categories-after", "children"),
     ("compare", "children"),
     ("about", "children"),
+    ("tiles", "children"),
+    ("reach", "children"),
 ]
 
 
@@ -121,15 +125,31 @@ def test_the_chance_of_reaching_an_amount_and_when(owner_client: TestClient) -> 
     _value(owner_client, livret, "2026-12", "10000.00")
     # No volatility and no savings: at 1.7 % against 2 % of inflation, every outcome holds
     # about €9,850 of today's euros in five years.
-    after = _text(_update(owner_client, amount=9800)["fan-after"]["children"])
+    after = _text(_update(owner_client, amount=9800)["reach"]["children"])
     assert "In more than 99% of the outcomes, net worth is at least €9,800 in Dec 2031." in after
     assert "Half of the outcomes have reached it once by Dec 2026" in after
-    after = _text(_update(owner_client, amount=9900)["fan-after"]["children"])
+    after = _text(_update(owner_client, amount=9900)["reach"]["children"])
     assert "In less than 1% of the outcomes" in after
-    after = _text(_update(owner_client, amount=1_000_000)["fan-after"]["children"])
+    after = _text(_update(owner_client, amount=1_000_000)["reach"]["children"])
     assert "In less than 1% of the outcomes" in after
     assert "not within the horizon" in after
-    assert "Enter an amount" in _text(_update(owner_client, amount=None)["fan-after"]["children"])
+    assert "Enter an amount" in _text(_update(owner_client, amount=None)["reach"]["children"])
+
+
+def test_the_answer_comes_first_in_tiles(owner_client: TestClient) -> None:
+    """Spec §7, F-SIM-5: net worth today, the median at the horizon, the amount's chance."""
+    livret = _line(owner_client, "Savings accounts", "Livret A")
+    _value(owner_client, livret, "2026-12", "10000.00")
+    out = _update(owner_client, amount=9800)
+    tiles = out["tiles"]["children"]
+    labels = [c["props"]["children"] for c in class_named(tiles, "kw-label")]
+    assert labels == ["Net worth today", "Median in Dec 2031", "€9,800 in Dec 2031"]
+    values = [c["props"]["children"] for c in class_named(tiles, "kw-value")]
+    assert values[0] == "€10,000"
+    assert values[2] == "more than 99%"
+    fan = out["fan"]["figure"]
+    (milestones,) = [d for d in fan["data"] if d.get("name") == "Reached by half, nine tenths"]
+    assert milestones["y"] == [9800, 9800]
 
 
 def test_a_what_if_is_drawn_and_compared(owner_client: TestClient) -> None:
@@ -143,8 +163,14 @@ def test_a_what_if_is_drawn_and_compared(owner_client: TestClient) -> None:
     assert "Median (What-if 1)" in names
     compare = _text(out["compare"]["children"])
     assert "What-if 1" in compare
+    scenarios = graphs(out["compare"]["children"])["compare-chart"]
+    assert scenarios["data"][1]["y"] == ["What-if 1", "Base"]
     assert "Base" in compare
-    assert "What-if 1: savings of €500 a month, inflation of 3%." in _text(out["about"]["children"])
+    about = out["about"]["children"]
+    assert "What-if 1: savings of €500 a month, inflation of 3%." in _text(about)
+    assert "assumptions-chart" in graphs(about)
+    (fold,) = class_named(about, "kw-fold")
+    assert "Limits" in _text(fold)
 
 
 def test_a_what_if_that_cannot_run_says_why(owner_client: TestClient) -> None:
@@ -170,14 +196,13 @@ def test_the_median_by_category_shows_the_debts_below_zero(owner_client: TestCli
     loan = _line(owner_client, "Debts", "Prêt auto")
     _value(owner_client, loan, "2026-12", "3000.00")
     out = _update(owner_client)
-    data = out["categories"]["figure"]["data"]
-    assert [d["name"] for d in data] == ["Savings accounts", "Debts"]
-    assert data[1]["y"][0] == -3000
-    # As the Analysis tab: the category's token, a line of the surface between the layers.
-    assert data[0]["fillcolor"] == "rgb(68,131,53)"  # wealth-savings
-    assert data[0]["line"]["color"] == "rgb(255,255,255)"  # the light surface
-    assert out["categories"]["figure"]["layout"]["legend"]["traceorder"] == "normal"
+    today, horizon = out["categories"]["figure"]["data"]
+    assert (today["name"], horizon["name"]) == ("Today", "Dec 2031")
+    assert today["y"] == ["Debts", "Savings accounts"]  # the matrix's order, from the top
+    assert today["x"][0] == -3000
+    assert horizon["marker"]["color"][1] == "rgb(68,131,53)"  # wealth-savings
     assert "together they need not add up" in _text(out["categories-after"]["children"])
+    assert "Savings accounts" in _text(out["categories-after"]["children"])  # the table
 
 
 def test_without_a_wealth_line_the_page_asks_for_one(owner_client: TestClient) -> None:
@@ -280,3 +305,14 @@ def test_the_amount_follows_the_euros_shown(owner_client: TestClient) -> None:
 
     assert convert("current", 100_000) == 110_400  # 1.02 ** 5
     assert convert("today", 110_400) == 100_000
+
+
+def test_the_categories_chart_is_boxed_to_its_rows(owner_client: TestClient) -> None:
+    """Responsive, the chart fills its box: the callback sizes the box with the figure."""
+    livret = _line(owner_client, "Savings accounts", "Livret A")
+    _value(owner_client, livret, "2026-12", "10000.00")
+    out = _update(owner_client)
+    height = out["categories"]["figure"]["layout"]["height"]
+    assert out["categories"]["style"] == {"height": f"{height}px"}
+    axis = _update(owner_client, "?lang=fr")["categories"]["figure"]["layout"]["yaxis"]
+    assert "€" not in axis.get("ticksuffix", "") + axis.get("tickprefix", "")

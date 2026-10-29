@@ -25,6 +25,7 @@ from kwak_core.projection import (
 from kwak_core.visibility import Scope
 
 from kwak_api.dash import i18n, tokens
+from kwak_api.dash import layout as kw
 from kwak_api.dash import projection_views as views
 from kwak_api.dash.app import Context
 from kwak_api.dash.i18n import Language, t
@@ -56,8 +57,6 @@ def _label(text: str, control: Component) -> html.Label:
     )
 
 
-GRAPH = dcc.Graph.Config(displaylogo=False, responsive=True)
-"""Charts fill the height their style gives them."""
 ROW = {"display": "flex", "flexWrap": "wrap", "gap": "1.5rem", "alignItems": "end"}
 
 
@@ -165,8 +164,15 @@ def layout(view: View, b: projection.Basis | None, this_month: Month) -> html.Di
                     "inflation": str(b.inflation if b is not None else 0),
                 },
             ),
-            html.P(
-                t(lang, "intro"), style={"maxWidth": "42rem", "color": tokens.rgb(theme, "muted")}
+            kw.intro(t(lang, "intro")),
+            kw.jump(
+                [
+                    ("prj-fan", t(lang, "jump_fan")),
+                    ("prj-reach", t(lang, "jump_reach")),
+                    ("prj-mix", t(lang, "jump_mix")),
+                    ("prj-whatifs", t(lang, "jump_whatifs")),
+                    ("prj-assumptions", t(lang, "jump_assumptions")),
+                ]
             ),
             html.Div(
                 [
@@ -208,70 +214,98 @@ def layout(view: View, b: projection.Basis | None, this_month: Month) -> html.Di
                         style={"flex": "1 1 16rem", "minWidth": "12rem"},
                     ),
                 ],
-                style=ROW,
+                className="kw-tile",
+                style={**ROW, "marginBottom": "0.75rem"},
             ),
-            html.H3(t(lang, "reach_title")),
-            html.Div(
-                [
-                    _label(
-                        t(lang, "amount"),
-                        _number(
-                            "amount", value=default_amount(b), minimum=0, step=1000, width="11rem"
-                        ),
-                    ),
-                    _label(
-                        t(lang, "reach_month"),
-                        dcc.Dropdown(
-                            id="reach-month",
-                            options=[
-                                {"label": i18n.MONTHS[lang][m - 1], "value": m}
-                                for m in range(1, 13)
-                            ],
-                            value=horizon_end.month,
-                            clearable=False,
-                            style={"width": "8rem"},
-                        ),
-                    ),
-                    _label(
-                        t(lang, "reach_year"),
-                        dcc.Dropdown(
-                            id="reach-year",
-                            options=[this_month.year + k for k in range(projection.MAX_YEARS + 1)],
-                            value=horizon_end.year,
-                            clearable=False,
-                            style={"width": "7rem"},
-                        ),
-                    ),
-                ],
-                style=ROW,
-            ),
-            html.H3(t(lang, "whatifs_title")),
-            html.P(t(lang, "whatifs_intro"), style={"color": tokens.rgb(theme, "muted")}),
-            *(_what_if_panel(n, categories, lang) for n in WHAT_IFS),
             dcc.Loading(
-                html.Div(
-                    [
-                        html.Div(id="invalid", style={"color": tokens.rgb(theme, "fg")}),
-                        dcc.Graph(id="fan", config=GRAPH, style={"height": "30rem"}),
-                        html.Div(id="fan-after"),
-                        html.H3(id="categories-title"),
-                        dcc.Graph(id="categories", config=GRAPH, style={"height": "26rem"}),
-                        html.Div(id="categories-after"),
-                        html.Div(id="compare"),
-                        html.Div(id="about"),
-                    ]
-                ),
+                [
+                    html.Div(id="invalid", style={"color": tokens.rgb(theme, "fg")}),
+                    html.Div(id="tiles"),
+                ],
                 color=tokens.rgb(theme, "primary-600"),
             ),
+            kw.grid(
+                kw.card(
+                    "prj-fan",
+                    t(lang, "fan_title"),
+                    t(lang, "fan_lede"),
+                    kw.graph("fan", height="26rem"),
+                    html.Div(id="fan-after"),
+                    span="two-thirds",
+                ),
+                kw.card(
+                    "prj-reach",
+                    t(lang, "reach_title"),
+                    None,
+                    html.Div(
+                        [
+                            _label(
+                                t(lang, "amount"),
+                                _number(
+                                    "amount",
+                                    value=default_amount(b),
+                                    minimum=0,
+                                    step=1000,
+                                    width="11rem",
+                                ),
+                            ),
+                            _label(
+                                t(lang, "reach_month"),
+                                dcc.Dropdown(
+                                    id="reach-month",
+                                    options=[
+                                        {"label": i18n.MONTHS[lang][m - 1], "value": m}
+                                        for m in range(1, 13)
+                                    ],
+                                    value=horizon_end.month,
+                                    clearable=False,
+                                    style={"width": "8rem"},
+                                ),
+                            ),
+                            _label(
+                                t(lang, "reach_year"),
+                                dcc.Dropdown(
+                                    id="reach-year",
+                                    options=[
+                                        this_month.year + k for k in range(projection.MAX_YEARS + 1)
+                                    ],
+                                    value=horizon_end.year,
+                                    clearable=False,
+                                    style={"width": "7rem"},
+                                ),
+                            ),
+                        ],
+                        style={**ROW, "gap": "0.75rem"},
+                    ),
+                    html.Div(id="reach"),
+                    span="third",
+                ),
+                kw.card(
+                    "prj-mix",
+                    html.Span(id="categories-title"),
+                    None,
+                    kw.graph("categories", height="0px"),
+                    html.Div(id="categories-after"),
+                    span="half",
+                ),
+                kw.card(
+                    "prj-whatifs",
+                    t(lang, "whatifs_title"),
+                    t(lang, "whatifs_intro"),
+                    html.Div(id="compare"),
+                    *(_what_if_panel(n, categories, lang) for n in WHAT_IFS),
+                    span="half",
+                ),
+                kw.card(
+                    "prj-assumptions",
+                    t(lang, "assumptions_title"),
+                    None,
+                    html.Div(id="about"),
+                ),
+            ),
         ],
-        style={
-            **dash_colours(theme),
-            "background": tokens.rgb(theme, "bg"),
-            "color": tokens.rgb(theme, "fg"),
-            "minHeight": "100vh",
-            "padding": "0.5rem 1rem 2rem",
-            "boxSizing": "border-box",
-        },
+        className="kw-page",
+        style={**kw.palette(theme), **dash_colours(theme)},
     )
 
 
@@ -416,9 +450,12 @@ def register(app: Dash, context: Context) -> Callable[[str], html.Div]:
         Output("fan-after", "children"),
         Output("categories-title", "children"),
         Output("categories", "figure"),
+        Output("categories", "style"),
         Output("categories-after", "children"),
         Output("compare", "children"),
         Output("about", "children"),
+        Output("tiles", "children"),
+        Output("reach", "children"),
         Input("scope", "value"),
         Input("horizon", "value"),
         Input("euros", "value"),
@@ -450,7 +487,19 @@ def register(app: Dash, context: Context) -> Callable[[str], html.Div]:
         with context.db() as db:
             b = projection.basis(db, context.viewer(db), chosen, context.now().date())
         if b is None:
-            return None, EMPTY, [html.P(t(lang, "no_wealth"))], None, EMPTY, None, None, None
+            return (
+                None,
+                EMPTY,
+                [html.P(t(lang, "no_wealth"))],
+                None,
+                EMPTY,
+                kw.graph_style(0),
+                None,
+                None,
+                None,
+                None,
+                None,
+            )
         fields = _grouped(wi_ids, wi_values, "field")
         allocations = _grouped(alloc_ids, alloc_values, "cat")
         what_ifs: list[tuple[str, projection.WhatIf]] = []
@@ -476,7 +525,19 @@ def register(app: Dash, context: Context) -> Callable[[str], html.Div]:
                 ),
             ]
         except ProjectionError:
-            return None, EMPTY, [html.P(t(lang, "no_allocation"))], None, EMPTY, None, None, None
+            return (
+                None,
+                EMPTY,
+                [html.P(t(lang, "no_allocation"))],
+                None,
+                EMPTY,
+                kw.graph_style(0),
+                None,
+                None,
+                None,
+                None,
+                None,
+            )
         today = euros != "current"
         start = b.start.month
         value = _decimal(amount)
@@ -487,7 +548,7 @@ def register(app: Dash, context: Context) -> Callable[[str], html.Div]:
         categories = [views.CategoryInfo(c.id, c.name, c.colour) for c in b.categories]
         fan_after: list[Component] = [views.fan_table(scenarios, start, today=today, lang=lang)]
         fan_after += notes(b, base.outcome, chosen, lang)
-        fan_after += (
+        reach = (
             views.reach(base, target, start, today=today, lang=lang)
             if target is not None
             else [html.P(t(lang, "amount_missing"))]
@@ -501,15 +562,19 @@ def register(app: Dash, context: Context) -> Callable[[str], html.Div]:
         ]
         if shortfall is not None:
             categories_after.append(shortfall)
+        by_category = views.by_category(base, categories, start, today=today, view=view)
         return (
             invalid,
             views.fan(scenarios, start, today=today, view=view, target=target),
             fan_after,
             t(lang, "by_category_title"),
-            views.by_category(base, categories, start, today=today, view=view),
+            by_category,
+            kw.graph_style(by_category.layout.height),
             categories_after,
-            views.comparison(scenarios, start, today=today, lang=lang, target=target),
-            [views.assumptions(b, scenarios, lang), views.limits(lang)],
+            views.comparison(scenarios, start, today=today, view=view, target=target),
+            [views.assumptions(b, scenarios, view), views.limits(lang)],
+            views.tiles(b, base, target, start, today=today, lang=lang),
+            reach,
         )
 
     def render(search: str) -> html.Div:
