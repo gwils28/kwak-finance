@@ -35,29 +35,27 @@ const same = (a: Draft, b: Draft) => JSON.stringify(a) === JSON.stringify(b);
 export function CategoryOptions({ categories }: { categories: SpendingCategoryOut[] }) {
   const { t } = useI18n();
   const { expense, savings, income } = byKind(categories);
+  const g = t.spending.grid;
+  // An empty group would end the list on a bare heading, as if it were cut off.
   return (
     <>
-      <optgroup label={t.spending.grid.expenses}>
-        {expense.map((c) => (
-          <option key={c.id} value={c.id}>
-            {c.name}
-          </option>
+      {(
+        [
+          [g.expenses, expense],
+          [g.savings, savings],
+          [g.income, income],
+        ] as const
+      )
+        .filter(([, group]) => group.length > 0)
+        .map(([label, group]) => (
+          <optgroup key={label} label={label}>
+            {group.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </optgroup>
         ))}
-      </optgroup>
-      <optgroup label={t.spending.grid.savings}>
-        {savings.map((c) => (
-          <option key={c.id} value={c.id}>
-            {c.name}
-          </option>
-        ))}
-      </optgroup>
-      <optgroup label={t.spending.grid.income}>
-        {income.map((c) => (
-          <option key={c.id} value={c.id}>
-            {c.name}
-          </option>
-        ))}
-      </optgroup>
     </>
   );
 }

@@ -84,6 +84,16 @@ test("a fixed expense is added as an outflow", async () => {
   expect(await screen.findByText("Fixed expense saved.")).toBeVisible();
 });
 
+test("the fixed expense's category list has no empty income group", async () => {
+  api();
+  render(<TestApp path="/spending/fixed" />);
+
+  const user = userEvent.setup();
+  await user.click(await screen.findByRole("button", { name: "Add a fixed expense" }));
+  const groups = screen.getByLabelText("Category").querySelectorAll("optgroup");
+  expect([...groups].map((g) => g.label)).toEqual(["Expenses", "Savings"]);
+});
+
 test("deleting a fixed expense asks first", async () => {
   const calls = api({
     "DELETE /api/spending/fixed/f-rent": () => new Response(null, { status: 204 }),
