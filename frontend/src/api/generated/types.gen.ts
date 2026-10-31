@@ -1868,6 +1868,11 @@ export type SankeyOut = {
 };
 
 /**
+ * SavingsStatus
+ */
+export type SavingsStatus = 'reached' | 'in_progress';
+
+/**
  * Scope
  *
  * Which wealth lines and goals a view covers (F-WLT-5, F-GOAL-7).
@@ -2229,6 +2234,10 @@ export type SpendingProgressOut = {
      */
     lines: Array<SpendingProgressLineOut>;
     /**
+     * Savings
+     */
+    savings: Array<SpendingSavingsLineOut>;
+    /**
      * Warn At
      */
     warn_at: string;
@@ -2405,6 +2414,37 @@ export type SpendingRestoreOut = {
      * Added
      */
     added: number;
+};
+
+/**
+ * SpendingSavingsLineOut
+ */
+export type SpendingSavingsLineOut = {
+    /**
+     * Category Id
+     */
+    category_id: string;
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Objective
+     */
+    objective: string;
+    /**
+     * Remaining
+     */
+    remaining: string;
+    /**
+     * Saved
+     */
+    saved: string;
+    /**
+     * Share
+     */
+    share: string | null;
+    status: SavingsStatus;
 };
 
 /**

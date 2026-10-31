@@ -11,6 +11,16 @@ export const overviewEn = {
   noTargets: "No category has a monthly target this month.",
   setTargets: "Set them in Budget",
   openLines: (name: string) => `Lines of ${name} this month`,
+  savingsTargets: {
+    title: "Targets this month: savings",
+    titleOf: (month: string) => `Savings targets, ${month}`,
+    none: "No savings category has a monthly objective this month.",
+    savedOf: (saved: string, objective: string) => `${saved} of ${objective} saved`,
+    toGo: (amount: string) => `${amount} to go`,
+    beyond: (amount: string) => `${amount} beyond`,
+    share: (share: string) => `${share} of the objective`,
+    status: { reached: "Reached", in_progress: "In progress" },
+  },
   toConfirm: {
     title: "Fixed expenses to confirm",
     none: "Every fixed expense of the month is confirmed or skipped.",
@@ -36,6 +46,16 @@ export const overviewFr: typeof overviewEn = {
   noTargets: "Aucune catégorie n'a de cible mensuelle ce mois-ci.",
   setTargets: "Les fixer dans Budget",
   openLines: (name) => `Lignes de ${name} ce mois-ci`,
+  savingsTargets: {
+    title: "Cibles du mois : épargne",
+    titleOf: (month) => `Cibles d'épargne, ${month}`,
+    none: "Aucune catégorie d'épargne n'a d'objectif mensuel ce mois-ci.",
+    savedOf: (saved, objective) => `${saved} épargnés sur ${objective}`,
+    toGo: (amount) => `reste ${amount}`,
+    beyond: (amount) => `${amount} au-delà`,
+    share: (share) => `${share} de l'objectif`,
+    status: { reached: "Atteint", in_progress: "En cours" },
+  },
   toConfirm: {
     title: "Dépenses fixes à confirmer",
     none: "Toutes les dépenses fixes du mois sont confirmées ou sautées.",

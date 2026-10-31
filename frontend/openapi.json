@@ -3562,6 +3562,14 @@
         "title": "SankeyOut",
         "type": "object"
       },
+      "SavingsStatus": {
+        "enum": [
+          "reached",
+          "in_progress"
+        ],
+        "title": "SavingsStatus",
+        "type": "string"
+      },
       "Scope": {
         "description": "Which wealth lines and goals a view covers (F-WLT-5, F-GOAL-7).",
         "enum": [
@@ -4306,6 +4314,13 @@
             "title": "Lines",
             "type": "array"
           },
+          "savings": {
+            "items": {
+              "$ref": "#/components/schemas/SpendingSavingsLineOut"
+            },
+            "title": "Savings",
+            "type": "array"
+          },
           "warn_at": {
             "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Warn At",
@@ -4314,7 +4329,8 @@
         },
         "required": [
           "warn_at",
-          "lines"
+          "lines",
+          "savings"
         ],
         "title": "SpendingProgressOut",
         "type": "object"
@@ -4609,6 +4625,60 @@
           "added"
         ],
         "title": "SpendingRestoreOut",
+        "type": "object"
+      },
+      "SpendingSavingsLineOut": {
+        "properties": {
+          "category_id": {
+            "format": "uuid",
+            "title": "Category Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "objective": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Objective",
+            "type": "string"
+          },
+          "remaining": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Remaining",
+            "type": "string"
+          },
+          "saved": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Saved",
+            "type": "string"
+          },
+          "share": {
+            "anyOf": [
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Share"
+          },
+          "status": {
+            "$ref": "#/components/schemas/SavingsStatus"
+          }
+        },
+        "required": [
+          "category_id",
+          "name",
+          "saved",
+          "objective",
+          "remaining",
+          "share",
+          "status"
+        ],
+        "title": "SpendingSavingsLineOut",
         "type": "object"
       },
       "SpendingTargetIn": {

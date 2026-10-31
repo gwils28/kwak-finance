@@ -1,5 +1,6 @@
 """The month so far (F-BUD-2): each category's spending against its monthly target, with a
-warning threshold and the pace of the month; one-off categories (F-CAT-6) skip both.
+warning threshold and the pace of the month; one-off categories (F-CAT-6) skip both. Then
+each savings category against its objective (F-BUD-9): reached or in progress, without pace.
 
 Lines are read from a one-month budget matrix, so they never disagree with it (§8.10).
 """
@@ -113,3 +114,57 @@ def month_progress(
             )
         )
     return sorted(lines, key=lambda line: (-line.rank, line.name.lower()))
+
+
+class SavingsStatus(enum.StrEnum):
+    REACHED = "reached"
+    IN_PROGRESS = "in_progress"
+
+
+def savings_status(saved: Decimal, objective: Decimal) -> SavingsStatus:
+    """No pace and no warning: saving often happens once, early in the month."""
+    return SavingsStatus.REACHED if saved >= objective else SavingsStatus.IN_PROGRESS
+
+
+@dataclass(frozen=True)
+class SavingsLine:
+    category_id: UUID
+    name: str
+    parent_id: UUID | None
+    saved: Decimal
+    objective: Decimal
+    remaining: Decimal
+    """objective - saved: negative once beyond it."""
+    share: Decimal | None
+    """saved / objective; None for a zero objective."""
+    status: SavingsStatus
+
+    @property
+    def rank(self) -> Decimal:
+        """Lower first: the objective furthest from reached leads."""
+        if self.share is not None:
+            return self.share
+        return Decimal("Infinity") if self.status is SavingsStatus.REACHED else Decimal("-Infinity")
+
+
+def savings_progress(matrix: Matrix) -> list[SavingsLine]:
+    """One line per savings category with an objective of its own in the matrix's single month,
+    the least advanced first (a parent's covers its children, as for the targets)."""
+    lines = []
+    for row in matrix.savings:
+        cell = row.cells[0]
+        if row.category_id is None or cell.target is None or row.target_from_children:
+            continue
+        lines.append(
+            SavingsLine(
+                row.category_id,
+                row.name,
+                row.parent_id,
+                cell.spent,
+                cell.target,
+                cell.target - cell.spent,
+                cell.spent / cell.target if cell.target else None,
+                savings_status(cell.spent, cell.target),
+            )
+        )
+    return sorted(lines, key=lambda line: (line.rank, line.name.lower()))

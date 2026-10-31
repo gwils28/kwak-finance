@@ -13,7 +13,7 @@ from kwak_core.budget import DEFAULT_BAND, BudgetStatus, Cell, Month, Row, build
 from kwak_core.categories import CategoryKind
 from kwak_core.fixed import FixedStatus, projected_rest
 from kwak_core.money import quantize, require_cents
-from kwak_core.progress import ProgressStatus, month_progress
+from kwak_core.progress import ProgressStatus, SavingsStatus, month_progress, savings_progress
 from kwak_core.spending import MonthFigures, cumulative_by_day, top_categories
 from kwak_core.year import YearLine, months_to_date, year_lines
 from pydantic import AfterValidator, BaseModel, Field
@@ -162,9 +162,22 @@ class SpendingProgressLineOut(BaseModel):
     """The share of the month elapsed; None for a one-off category or another month."""
 
 
+class SpendingSavingsLineOut(BaseModel):
+    category_id: UUID
+    name: str
+    saved: Decimal
+    objective: Decimal
+    remaining: Decimal
+    """Negative once beyond the objective."""
+    share: Decimal | None
+    status: SavingsStatus
+
+
 class SpendingProgressOut(BaseModel):
     warn_at: Decimal
     lines: list[SpendingProgressLineOut]
+    savings: list[SpendingSavingsLineOut]
+    """The savings categories with an objective this month (F-BUD-9), least advanced first."""
 
 
 class SpendingDayOut(BaseModel):
@@ -271,6 +284,18 @@ def month_summary(
                     pace=_ratio(p.pace),
                 )
                 for p in progress
+            ],
+            savings=[
+                SpendingSavingsLineOut(
+                    category_id=s.category_id,
+                    name=s.name,
+                    saved=s.saved,
+                    objective=s.objective,
+                    remaining=s.remaining,
+                    share=_ratio(s.share),
+                    status=s.status,
+                )
+                for s in savings_progress(matrix)
             ],
         ),
     )

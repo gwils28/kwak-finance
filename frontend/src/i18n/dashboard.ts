@@ -31,8 +31,8 @@ export const dashboardEn = {
   budgetPace: "Budget pace",
   paceTable: "Spending so far against the budget pace",
   targets: {
-    title: "Targets this month",
-    titleOf: (month: string) => `Targets, ${month}`,
+    title: "Targets this month: spending budget",
+    titleOf: (month: string) => `Spending targets, ${month}`,
     noPlan: "No budget plan covers this month.",
     createPlan: "Create one in Budget",
     noTargets: "No category has a monthly target in this plan.",
@@ -87,8 +87,8 @@ export const dashboardFr: typeof dashboardEn = {
   budgetPace: "Rythme du budget",
   paceTable: "Dépenses à ce jour par rapport au rythme du budget",
   targets: {
-    title: "Cibles du mois",
-    titleOf: (month) => `Cibles, ${month}`,
+    title: "Cibles du mois : budget dépenses",
+    titleOf: (month) => `Cibles de dépenses, ${month}`,
     noPlan: "Aucun plan budgétaire ne couvre ce mois.",
     createPlan: "En créer un dans Budget",
     noTargets: "Aucune catégorie n'a d'objectif mensuel dans ce plan.",
