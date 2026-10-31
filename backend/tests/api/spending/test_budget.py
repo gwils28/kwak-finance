@@ -123,6 +123,20 @@ def test_the_month_figures_progress_and_projected_rest(owner_client: TestClient)
         ("Groceries", "on_track"),
     ]
     assert progress["lines"][1]["pace"] == "0.6774"  # 21 / 31
+    assert progress["savings"] == []  # no savings objective yet
+
+    _target(owner_client, "Savings", "2026-10", "800.00")
+    (savings,) = _get(owner_client, "/month", month="2026-10")["progress"]["savings"]
+    assert (savings["name"], savings["saved"], savings["objective"]) == (
+        "Savings",
+        "500.00",
+        "800.00",
+    )
+    assert (savings["remaining"], savings["share"], savings["status"]) == (
+        "300.00",
+        "0.6250",
+        "in_progress",
+    )
 
 
 def test_changes_against_the_previous_month_and_the_average(owner_client: TestClient) -> None:

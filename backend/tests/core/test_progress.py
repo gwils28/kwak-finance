@@ -9,11 +9,14 @@ from kwak_core.budget import Month, build_matrix
 from kwak_core.progress import (
     DEFAULT_WARN_AT,
     ProgressStatus,
+    SavingsStatus,
     check_warn_at,
     month_pace,
     month_progress,
     one_off,
     progress_status,
+    savings_progress,
+    savings_status,
 )
 
 D = Decimal
@@ -27,6 +30,8 @@ CATEGORIES = [
     (LEISURE, None, "Leisure"),
 ]
 OCT = Month(2026, 10)
+LIVRET, PEA, CRYPTO = (uuid4() for _ in range(3))
+SAVINGS = [(LIVRET, None, "Livret A"), (PEA, None, "PEA"), (CRYPTO, None, "Crypto")]
 
 
 @pytest.mark.parametrize(
@@ -165,3 +170,74 @@ def test_each_line_is_its_matrix_cell_ranked_by_share_used(
         assert line.status is progress_status(line.spent, line.target, warn_at)
     keys = [line.rank for line in lines]
     assert keys == sorted(keys, reverse=True)
+
+
+# The month's savings objectives (F-BUD-2, F-BUD-9)
+
+
+@pytest.mark.parametrize(
+    ("saved", "objective", "status"),
+    [
+        ("0", "100", SavingsStatus.IN_PROGRESS),
+        ("99.99", "100", SavingsStatus.IN_PROGRESS),
+        ("100", "100", SavingsStatus.REACHED),
+        ("150", "100", SavingsStatus.REACHED),
+        ("-20", "100", SavingsStatus.IN_PROGRESS),  # more taken back than put aside
+        ("0", "0", SavingsStatus.REACHED),
+        ("-1", "0", SavingsStatus.IN_PROGRESS),
+    ],
+)
+def test_an_objective_is_reached_once_saved(
+    saved: str, objective: str, status: SavingsStatus
+) -> None:
+    assert savings_status(D(saved), D(objective)) is status
+
+
+def test_the_savings_lines_list_the_objectives_furthest_from_reached_first() -> None:
+    matrix = build_matrix(
+        CATEGORIES,
+        {LIVRET: [(OCT, D("200"))], PEA: [(OCT, D("500"))], LEISURE: [(OCT, D("100"))]},
+        {(LIVRET, OCT): D("250"), (PEA, OCT): D("100"), (CRYPTO, OCT): D("50")},
+        [OCT],
+        savings=SAVINGS,
+    )
+    lines = savings_progress(matrix)
+
+    assert [line.name for line in lines] == ["PEA", "Livret A"]  # Crypto has no objective
+    pea, livret = lines
+    assert (pea.saved, pea.objective, pea.remaining, pea.share) == (
+        D("100"),
+        D("500"),
+        D("400"),
+        D("0.2"),
+    )
+    assert pea.status is SavingsStatus.IN_PROGRESS
+    assert (livret.remaining, livret.share) == (D("-50"), D("1.25"))  # 50 beyond
+    assert livret.status is SavingsStatus.REACHED
+
+
+# Invariant §8.10 for the savings: each line is its matrix cell.
+@given(
+    st.dictionaries(st.sampled_from([c[0] for c in SAVINGS]), amounts, max_size=3),
+    st.dictionaries(st.sampled_from([c[0] for c in SAVINGS]), st.decimals(0, 2000, places=2)),
+)
+def test_each_savings_line_is_its_matrix_cell(
+    saved: dict[object, Decimal], objectives: dict[object, Decimal]
+) -> None:
+    matrix = build_matrix(
+        [],
+        {cid: [(OCT, amount)] for cid, amount in objectives.items()},
+        {(cid, OCT): amount for cid, amount in saved.items()},
+        [OCT],
+        savings=SAVINGS,
+    )
+    lines = savings_progress(matrix)
+    cells = {row.category_id: row.cells[0] for row in matrix.savings}
+    assert {line.category_id for line in lines} == set(objectives)
+    for line in lines:
+        cell = cells[line.category_id]
+        assert (line.saved, line.objective) == (cell.spent, cell.target)
+        assert line.remaining == line.objective - line.saved
+        assert line.status is savings_status(line.saved, line.objective)
+    keys = [line.rank for line in lines]
+    assert keys == sorted(keys)

@@ -84,13 +84,70 @@ test("the month so far shows each target's progress and opens its lines", async 
   api();
   render(<TestApp path="/" />);
 
-  const section = await screen.findByRole("region", { name: /^Targets, / });
+  const section = await screen.findByRole("region", { name: /^Spending targets, / });
   expect(section).toHaveTextContent("€43 of €50 · €8 left");
   expect(section).toHaveTextContent("Watch · 85% used");
   expect(section).toHaveTextContent("Pace: 71% of the month gone");
   expect(
     within(section).getByRole("link", { name: "Lines of Groceries this month" }),
   ).toHaveAttribute("href", `/spending?month=${month}&category=${groceries.id}`);
+});
+
+test("the savings objectives have their own section, below the spending targets", async () => {
+  api();
+  render(<TestApp path="/" />);
+
+  const spending = await screen.findByRole("region", { name: /^Spending targets, / });
+  const section = screen.getByRole("region", { name: /^Savings targets, / });
+  expect(spending).not.toHaveTextContent("Savings");
+  expect(section).toHaveTextContent("Targets this month: savings");
+  expect(section).toHaveTextContent("€200 of €500 saved · €300 to go");
+  expect(section).toHaveTextContent("In progress · 40% of the objective");
+  expect(section).not.toHaveTextContent("Pace:");
+  expect(
+    within(section).getByRole("link", { name: "Lines of Savings this month" }),
+  ).toHaveAttribute("href", `/spending?month=${month}&category=c-savings`);
+  expect(spending.compareDocumentPosition(section) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+});
+
+test("a savings objective reached, in French", async () => {
+  api({
+    "GET /api/auth/me": () => Response.json({ ...owner, language: "fr" }),
+    "GET /api/spending/month": (_body, url) => {
+      const summary = summaryOf(url.searchParams.get("month") ?? month);
+      const reached = {
+        ...summary.progress.savings[0],
+        saved: "650.00",
+        remaining: "-150.00",
+        share: "1.3000",
+        status: "reached",
+      };
+      return Response.json({ ...summary, progress: { ...summary.progress, savings: [reached] } });
+    },
+  });
+  render(<TestApp path="/" />);
+
+  const section = await screen.findByRole("region", { name: /^Cibles d'épargne, / });
+  expect(section).toHaveTextContent("Cibles du mois : épargne");
+  expect(section).toHaveTextContent("150 € au-delà");
+  expect(section).toHaveTextContent("Atteint · 130 % de l'objectif");
+});
+
+test("without any savings objective, the section says where to set one", async () => {
+  api({
+    "GET /api/spending/month": (_body, url) => {
+      const summary = summaryOf(url.searchParams.get("month") ?? month);
+      return Response.json({ ...summary, progress: { ...summary.progress, savings: [] } });
+    },
+  });
+  render(<TestApp path="/" />);
+
+  const section = await screen.findByRole("region", { name: /^Savings targets, / });
+  expect(section).toHaveTextContent("No savings category has a monthly objective this month.");
+  expect(within(section).getByRole("link", { name: "Set them in Budget" })).toHaveAttribute(
+    "href",
+    "/budget",
+  );
 });
 
 test("a fixed expense still to confirm is confirmed from the overview", async () => {
@@ -202,7 +259,7 @@ test("a past month's targets show no pace, and no one-off note either", async ()
   render(<TestApp path="/" />);
 
   fireEvent.change(await screen.findByLabelText("Month"), { target: { value: "2026-01" } });
-  const section = await screen.findByRole("region", { name: "Targets, Jan 2026" });
+  const section = await screen.findByRole("region", { name: "Spending targets, Jan 2026" });
   expect(section).toHaveTextContent("Groceries");
   expect(section).not.toHaveTextContent("Paid once in the month");
   expect(section).not.toHaveTextContent("Pace:");
@@ -217,7 +274,7 @@ test("the owner changes the warning threshold", async () => {
   render(<TestApp path="/" />);
 
   const user = userEvent.setup();
-  const section = await screen.findByRole("region", { name: /^Targets, / });
+  const section = await screen.findByRole("region", { name: /^Spending targets, / });
   expect(section).toHaveTextContent("Watch from 80% of a target");
   await user.click(within(section).getByRole("button", { name: "Change" }));
   const input = within(section).getByLabelText("Warning threshold (%)");
@@ -252,5 +309,7 @@ test("the month's spending day by day is drawn against its targets, with its tab
   const table = within(pace).getByRole("table", {
     name: "Spending so far against the budget pace",
   });
-  expect(within(table).getAllByRole("row")).toHaveLength(4);
+  // The header, then each day of the fixture (3) up to today: this month stops at today.
+  const days = Math.min(new Date().getDate(), 3);
+  expect(within(table).getAllByRole("row")).toHaveLength(1 + days);
 });

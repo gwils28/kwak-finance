@@ -6,6 +6,7 @@ import {
   type FixedOccurrenceOut,
   type SpendingMonthOut,
   type SpendingProgressLineOut,
+  type SpendingSavingsLineOut,
 } from "../api/generated";
 import { detailSentence } from "../auth/errors";
 import { Button, ErrorAlert } from "../components/ui";
@@ -33,8 +34,8 @@ import {
 const BOX = "flex flex-col gap-3 rounded-lg border border-border bg-surface p-4";
 
 /**
- * The overview's spending (F-DSH-1, 4, F-BUD-2, F-FIX-4): the month's figures, the month so far,
- * the fixed expenses still to confirm and the last lines entered.
+ * The overview's spending (F-DSH-1, 4, F-BUD-2, F-FIX-4): the month's figures, the month so far
+ * (the spending targets, then the savings objectives), the fixed expenses still to confirm and the last lines entered.
  */
 export function MonthOverview({ month, isOwner }: { month: string; isOwner: boolean }) {
   const { t } = useI18n();
@@ -57,6 +58,7 @@ export function MonthOverview({ month, isOwner }: { month: string; isOwner: bool
     <div className="flex flex-col gap-6">
       <Figures summary={summary.data} />
       <MonthSoFar summary={summary.data} isOwner={isOwner} />
+      <SavingsSoFar summary={summary.data} />
       <ToConfirm month={month} projectedRest={summary.data.projected_rest} />
       <div className="grid gap-6 lg:grid-cols-2">
         <Top summary={summary.data} />
@@ -222,6 +224,75 @@ function ProgressLine({ line, month }: { line: SpendingProgressLineOut; month: s
               : null}
         </span>
       </div>
+    </li>
+  );
+}
+
+/** The month's savings objectives (F-BUD-2, F-BUD-9): reached or in progress, least advanced first. */
+function SavingsSoFar({ summary }: { summary: SpendingMonthOut }) {
+  const { t } = useI18n();
+  const s = t.overview.savingsTargets;
+  const lines = summary.progress.savings;
+  return (
+    <section aria-label={s.titleOf(monthLabel(summary.month))} className={BOX}>
+      <h2 className="font-semibold">{s.title}</h2>
+      {lines.length === 0 ? (
+        <p className="text-sm text-muted">
+          {s.none}{" "}
+          <Link to="/budget" className="text-accent hover:underline">
+            {t.overview.setTargets}
+          </Link>
+        </p>
+      ) : (
+        <ul className="flex flex-col gap-3">
+          {lines.map((line) => (
+            <SavingsLine key={line.category_id} line={line} month={summary.month} />
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
+function SavingsLine({ line, month }: { line: SpendingSavingsLineOut; month: string }) {
+  const { t } = useI18n();
+  const s = t.overview.savingsTargets;
+  const reached = line.status === "reached";
+  const beyond = line.remaining.startsWith("-");
+  const filled =
+    line.share === null ? (reached ? 1 : 0) : Math.min(Math.max(Number(line.share), 0), 1);
+  return (
+    <li className="flex flex-col gap-1 text-sm">
+      <div className="flex flex-wrap items-baseline justify-between gap-x-3">
+        <Link
+          to="/spending"
+          search={{ month, category: line.category_id }}
+          aria-label={t.overview.openLines(line.name)}
+          className="font-medium hover:text-accent hover:underline"
+        >
+          {line.name}
+        </Link>
+        <span className="tabular text-muted">
+          {s.savedOf(formatEurWhole(line.saved), formatEurWhole(line.objective))}
+          {Number(line.remaining) !== 0 &&
+            ` · ${
+              beyond
+                ? s.beyond(formatEurWhole(line.remaining.slice(1)))
+                : s.toGo(formatEurWhole(line.remaining))
+            }`}
+        </span>
+      </div>
+      <div className="h-2 rounded-full bg-border">
+        <div
+          className={`h-2 rounded-full ${reached ? "bg-flow-saved" : "bg-flow-saved-behind"}`}
+          style={{ width: `${filled * 100}%` }}
+        />
+      </div>
+      <span className={`text-xs ${reached ? "font-semibold" : "text-muted"}`}>
+        <span aria-hidden="true">{reached ? "✓" : "…"} </span>
+        {s.status[line.status]}
+        {line.share !== null && ` · ${s.share(formatPercent(line.share))}`}
+      </span>
     </li>
   );
 }

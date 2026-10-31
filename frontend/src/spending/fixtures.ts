@@ -92,6 +92,17 @@ export const summaryOf = (month: string): SpendingMonthOut => ({
         pace: "0.7097",
       },
     ],
+    savings: [
+      {
+        category_id: "c-savings",
+        name: "Savings",
+        saved: "200.00",
+        objective: "500.00",
+        remaining: "300.00",
+        share: "0.4000",
+        status: "in_progress",
+      },
+    ],
   },
   cumulative: [
     { day: `${month}-01`, spent: "0.00" },
