@@ -51,6 +51,7 @@ class WealthCategory(UUIDPrimaryKey, Timestamps, Base):
             "expected_return > -1 AND expected_return <= 1 AND volatility BETWEEN 0 AND 2",
             name="assumption_range",
         ),
+        CheckConstraint("monthly_contribution BETWEEN 1 AND 100000", name="contribution_range"),
     )
 
     household_id: Mapped[UUID] = mapped_column(ForeignKey("household.id"), index=True)
@@ -67,6 +68,11 @@ class WealthCategory(UUIDPrimaryKey, Timestamps, Base):
     """The projection's expected annual return, the arithmetic mean (F-SIM-1); with the
     volatility, NULL for the preset's default."""
     volatility: Mapped[Decimal | None] = mapped_column(Numeric(4, 3))
+    monthly_contribution: Mapped[Decimal | None] = mapped_column(Numeric(14, 2))
+    """What the household invests in it each month (F-SIM-3); NULL for none, so one per
+    category at most. An asset category's only: the API refuses one on a debt."""
+    contribution_indexed: Mapped[bool] = mapped_column(default=True, server_default=text("true"))
+    """The contribution follows the inflation; else a fixed amount in current euros."""
 
 
 class WealthLine(UUIDPrimaryKey, Timestamps, Base):

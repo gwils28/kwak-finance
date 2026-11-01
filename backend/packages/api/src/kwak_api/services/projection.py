@@ -14,9 +14,16 @@ from kwak_core import projection as core
 from kwak_core.budget import Month
 from kwak_core.goals import EFFORT_MONTHS
 from kwak_core.money import quantize
-from kwak_core.projection import DEFAULT_INFLATION, Assumption, DebtTerms, assumption_of
+from kwak_core.projection import (
+    DEFAULT_INFLATION,
+    Assumption,
+    Contribution,
+    DebtTerms,
+    assumption_of,
+)
 from kwak_core.visibility import Scope
 from kwak_core.wealth import CategoryInput, WealthKind, line_cell
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from kwak_api.models import Household, User, WealthCategory, WealthLine
@@ -96,10 +103,16 @@ class Basis:
     savings_months: int
     """The complete months it was measured on."""
     inflation: Decimal
+    contributions: list[Contribution] = field(default_factory=list)
+    """The household's monthly contributions (F-SIM-3): with any, they make the savings and
+    the allocation, the capacity above is only compared with them."""
 
 
-def basis(db: Session, viewer: User, scope: Scope, today: date) -> Basis | None:
-    """None without a wealth line in scope: the page asks to enter the wealth first."""
+def basis(
+    db: Session, viewer: User, scope: Scope, today: date, *, contributions: bool = False
+) -> Basis | None:
+    """None without a wealth line in scope: the page asks to enter the wealth first. Only the
+    simulator reads the `contributions` (F-SIM-3); the retirement saves the capacity (F-RET-3)."""
     month = Month.of(today)
     scoped = wealth.scoped_lines(db, viewer, scope)
     if not scoped:
@@ -135,6 +148,11 @@ def basis(db: Session, viewer: User, scope: Scope, today: date) -> Basis | None:
             else len(goals.capacity_months(db, viewer.household_id, month))
         ),
         inflation=inflation(household),
+        contributions=[
+            Contribution(c.id, c.monthly_contribution, c.contribution_indexed)
+            for c in assets
+            if contributions and c.monthly_contribution is not None
+        ],
     )
 
 
@@ -154,6 +172,10 @@ BASE = WhatIf()
 
 def scenario(b: Basis, *, years: int, what_if: WhatIf = BASE) -> mc.Scenario:
     months = years * 12
+    if b.contributions:
+        if what_if.allocation is not None:
+            raise core.ProjectionError("with contributions, change them rather than the allocation")
+        return _contributed(b, months=months, what_if=what_if)
     if what_if.allocation is not None:
         core.check_allocation(what_if.allocation)
         shares = {k: Decimal(p) / 100 for k, p in what_if.allocation.items()}
@@ -188,6 +210,64 @@ def scenario(b: Basis, *, years: int, what_if: WhatIf = BASE) -> mc.Scenario:
         debts=owed,
         start_debts=sum(b.start.debts.values(), Decimal(0)),
         inflation=rate,
+    )
+
+
+def members(db: Session, viewer: User, scope: Scope) -> int:
+    """How many members a scope's savings accounts may belong to: one in *mine*."""
+    if scope is Scope.MINE:
+        return 1
+    count = db.scalar(
+        select(func.count()).select_from(User).where(User.household_id == viewer.household_id)
+    )
+    return max(1, count or 0)
+
+
+def _debts(b: Basis, months: int) -> tuple[list[Decimal], list[Decimal]]:
+    """What the debt lines owe at the end of months 1 to n, and what they free."""
+    owed = [Decimal(0)] * months
+    freed = [Decimal(0)] * months
+    for line_id, start_owed in b.start.debts.items():
+        path = core.amortise(start_owed, b.debts[line_id], months=months)
+        owed = [a + o for a, o in zip(owed, path.owed, strict=True)]
+        freed = [a + f for a, f in zip(freed, path.freed, strict=True)]
+    return owed, freed
+
+
+def _contributed(b: Basis, *, months: int, what_if: WhatIf) -> mc.Scenario:
+    """F-SIM-3: the contributions make the savings and their split, month by month; a what-if
+    on the savings scales them all."""
+    assumptions = b.assumptions | dict(what_if.assumptions)
+    for a in what_if.assumptions.values():
+        core.check_assumption(a)
+    rate = b.inflation if what_if.inflation is None else what_if.inflation
+    core.check_inflation(rate)
+    owed, freed = _debts(b, months)
+    total = sum((c.amount for c in b.contributions), Decimal(0))
+    if what_if.savings is not None and what_if.savings <= 0:
+        raise core.ProjectionError("with contributions, the savings stay above zero")
+    scale = Decimal(1) if what_if.savings is None else what_if.savings / total
+    plan = core.contribution_plan(
+        b.contributions, months=months, inflation=rate, freed=freed, scale=scale
+    )
+    split, savings = plan.split, plan.savings
+    first = split[0] if split else {}
+    return mc.Scenario(
+        categories=[
+            mc.Category(
+                c.id,
+                c.preset,
+                b.start.assets.get(c.id, Decimal(0)),
+                assumptions[c.id],
+                first.get(c.id, Decimal(0)),
+            )
+            for c in b.categories
+        ],
+        savings=savings,
+        debts=owed,
+        start_debts=sum(b.start.debts.values(), Decimal(0)),
+        inflation=rate,
+        split=[[row.get(c.id, Decimal(0)) for c in b.categories] for row in split],
     )
 
 

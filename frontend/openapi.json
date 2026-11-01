@@ -224,6 +224,22 @@
             "title": "Colour",
             "type": "string"
           },
+          "contribution": {
+            "anyOf": [
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contribution"
+          },
+          "contribution_indexed": {
+            "title": "Contribution Indexed",
+            "type": "boolean"
+          },
           "default_ret": {
             "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Default Ret",
@@ -284,7 +300,9 @@
           "default_ret",
           "default_volatility",
           "median_growth",
-          "own"
+          "own",
+          "contribution",
+          "contribution_indexed"
         ],
         "title": "CategoryAssumptionOut",
         "type": "object"
@@ -298,6 +316,39 @@
         "title": "CategoryKind",
         "type": "string"
       },
+      "CategoryOut": {
+        "properties": {
+          "colour": {
+            "title": "Colour",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "medians": {
+            "items": {
+              "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+              "type": "string"
+            },
+            "title": "Medians",
+            "type": "array"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "colour",
+          "medians"
+        ],
+        "title": "CategoryOut",
+        "type": "object"
+      },
       "ClosedAs": {
         "enum": [
           "archived",
@@ -305,6 +356,107 @@
         ],
         "title": "ClosedAs",
         "type": "string"
+      },
+      "ContributionDraft": {
+        "properties": {
+          "amount": {
+            "anyOf": [
+              {
+                "exclusiveMaximum": 1000000000000.0,
+                "exclusiveMinimum": -1000000000000.0,
+                "type": "number"
+              },
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              }
+            ],
+            "title": "Amount"
+          },
+          "category_id": {
+            "format": "uuid",
+            "title": "Category Id",
+            "type": "string"
+          },
+          "indexed": {
+            "default": true,
+            "title": "Indexed",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "category_id",
+          "amount"
+        ],
+        "title": "ContributionDraft",
+        "type": "object"
+      },
+      "ContributionIn": {
+        "properties": {
+          "amount": {
+            "anyOf": [
+              {
+                "exclusiveMaximum": 1000000000000.0,
+                "type": "number"
+              },
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              }
+            ],
+            "title": "Amount"
+          },
+          "category_id": {
+            "format": "uuid",
+            "title": "Category Id",
+            "type": "string"
+          },
+          "indexed": {
+            "default": true,
+            "title": "Indexed",
+            "type": "boolean"
+          },
+          "ret": {
+            "anyOf": [
+              {
+                "exclusiveMaximum": 10.0,
+                "exclusiveMinimum": -10.0,
+                "type": "number"
+              },
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ret"
+          }
+        },
+        "required": [
+          "category_id",
+          "amount"
+        ],
+        "title": "ContributionIn",
+        "type": "object"
+      },
+      "ContributionsIn": {
+        "properties": {
+          "contributions": {
+            "items": {
+              "$ref": "#/components/schemas/ContributionIn"
+            },
+            "maxItems": 50,
+            "title": "Contributions",
+            "type": "array"
+          }
+        },
+        "required": [
+          "contributions"
+        ],
+        "title": "ContributionsIn",
+        "type": "object"
       },
       "DebtOut": {
         "properties": {
@@ -1903,6 +2055,44 @@
         "title": "Health",
         "type": "object"
       },
+      "HorizonOut": {
+        "properties": {
+          "income_low": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Income Low",
+            "type": "string"
+          },
+          "income_median": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Income Median",
+            "type": "string"
+          },
+          "median": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Median",
+            "type": "string"
+          },
+          "p10": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "P10",
+            "type": "string"
+          },
+          "p90": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "P90",
+            "type": "string"
+          }
+        },
+        "required": [
+          "median",
+          "p10",
+          "p90",
+          "income_median",
+          "income_low"
+        ],
+        "title": "HorizonOut",
+        "type": "object"
+      },
       "InflationIn": {
         "properties": {
           "inflation": {
@@ -2350,6 +2540,85 @@
           "last_entry"
         ],
         "title": "MonthLinesOut",
+        "type": "object"
+      },
+      "MonthOut": {
+        "properties": {
+          "contributed": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Contributed",
+            "type": "string"
+          },
+          "debts": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Debts",
+            "type": "string"
+          },
+          "gains": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Gains",
+            "type": "string"
+          },
+          "month": {
+            "title": "Month",
+            "type": "string"
+          },
+          "p10": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "P10",
+            "type": "string"
+          },
+          "p25": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "P25",
+            "type": "string"
+          },
+          "p50": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "P50",
+            "type": "string"
+          },
+          "p75": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "P75",
+            "type": "string"
+          },
+          "p90": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "P90",
+            "type": "string"
+          },
+          "repaid": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Repaid",
+            "type": "string"
+          },
+          "shortfall": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Shortfall",
+            "type": "string"
+          },
+          "today": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Today",
+            "type": "string"
+          }
+        },
+        "required": [
+          "month",
+          "p10",
+          "p25",
+          "p50",
+          "p75",
+          "p90",
+          "today",
+          "contributed",
+          "repaid",
+          "gains",
+          "debts",
+          "shortfall"
+        ],
+        "title": "MonthOut",
         "type": "object"
       },
       "MyRetirementIn": {
@@ -2895,6 +3164,51 @@
         "title": "QuickOut",
         "type": "object"
       },
+      "ReachOut": {
+        "properties": {
+          "chance": {
+            "anyOf": [
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Chance"
+          },
+          "half": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Half"
+          },
+          "ninety": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ninety"
+          }
+        },
+        "required": [
+          "chance",
+          "half",
+          "ninety"
+        ],
+        "title": "ReachOut",
+        "type": "object"
+      },
       "RecoveryCodeIn": {
         "properties": {
           "code": {
@@ -3249,6 +3563,35 @@
         "title": "RetirementSpendingOut",
         "type": "object"
       },
+      "ReturnDraft": {
+        "properties": {
+          "category_id": {
+            "format": "uuid",
+            "title": "Category Id",
+            "type": "string"
+          },
+          "ret": {
+            "anyOf": [
+              {
+                "exclusiveMaximum": 10.0,
+                "exclusiveMinimum": -10.0,
+                "type": "number"
+              },
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              }
+            ],
+            "title": "Ret"
+          }
+        },
+        "required": [
+          "category_id",
+          "ret"
+        ],
+        "title": "ReturnDraft",
+        "type": "object"
+      },
       "RiskPointOut": {
         "description": "A funded goal on the horizon and risk chart (F-ANA-4).",
         "properties": {
@@ -3378,6 +3721,187 @@
         ],
         "title": "Rule",
         "type": "string"
+      },
+      "RunIn": {
+        "properties": {
+          "amount": {
+            "anyOf": [
+              {
+                "exclusiveMaximum": 1000000000000.0,
+                "exclusiveMinimum": -1000000000000.0,
+                "type": "number"
+              },
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Amount"
+          },
+          "contributions": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/ContributionDraft"
+                },
+                "maxItems": 50,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contributions"
+          },
+          "reach_month": {
+            "anyOf": [
+              {
+                "pattern": "^\\d{4}-(0[1-9]|1[0-2])$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reach Month"
+          },
+          "returns": {
+            "items": {
+              "$ref": "#/components/schemas/ReturnDraft"
+            },
+            "maxItems": 50,
+            "title": "Returns",
+            "type": "array"
+          },
+          "scope": {
+            "$ref": "#/components/schemas/Scope",
+            "default": "household"
+          },
+          "today": {
+            "default": true,
+            "title": "Today",
+            "type": "boolean"
+          },
+          "what_ifs": {
+            "items": {
+              "$ref": "#/components/schemas/WhatIfIn"
+            },
+            "maxItems": 2,
+            "title": "What Ifs",
+            "type": "array"
+          },
+          "withdrawal_rate": {
+            "anyOf": [
+              {
+                "exclusiveMaximum": 10.0,
+                "exclusiveMinimum": -10.0,
+                "type": "number"
+              },
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              }
+            ],
+            "default": "0.04",
+            "title": "Withdrawal Rate"
+          },
+          "years": {
+            "maximum": 40.0,
+            "minimum": 1.0,
+            "title": "Years",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "years"
+        ],
+        "title": "RunIn",
+        "type": "object"
+      },
+      "RunOut": {
+        "properties": {
+          "categories": {
+            "items": {
+              "$ref": "#/components/schemas/CategoryOut"
+            },
+            "title": "Categories",
+            "type": "array"
+          },
+          "ceiling_note": {
+            "title": "Ceiling Note",
+            "type": "boolean"
+          },
+          "engine_version": {
+            "title": "Engine Version",
+            "type": "integer"
+          },
+          "horizon": {
+            "$ref": "#/components/schemas/HorizonOut"
+          },
+          "months": {
+            "items": {
+              "$ref": "#/components/schemas/MonthOut"
+            },
+            "title": "Months",
+            "type": "array"
+          },
+          "paths": {
+            "title": "Paths",
+            "type": "integer"
+          },
+          "reach": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ReachOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "savings": {
+            "$ref": "#/components/schemas/SavingsOut"
+          },
+          "seed": {
+            "title": "Seed",
+            "type": "integer"
+          },
+          "shortfall_share": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Shortfall Share",
+            "type": "string"
+          },
+          "start_month": {
+            "title": "Start Month",
+            "type": "string"
+          },
+          "what_ifs": {
+            "items": {
+              "$ref": "#/components/schemas/WhatIfOut"
+            },
+            "title": "What Ifs",
+            "type": "array"
+          }
+        },
+        "required": [
+          "start_month",
+          "months",
+          "savings",
+          "horizon",
+          "reach",
+          "shortfall_share",
+          "categories",
+          "what_ifs",
+          "ceiling_note",
+          "paths",
+          "seed",
+          "engine_version"
+        ],
+        "title": "RunOut",
+        "type": "object"
       },
       "SankeyCategoryOut": {
         "properties": {
@@ -3560,6 +4084,58 @@
           "elsewhere"
         ],
         "title": "SankeyOut",
+        "type": "object"
+      },
+      "SavingsOut": {
+        "properties": {
+          "capacity": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Capacity",
+            "type": "string"
+          },
+          "capacity_months": {
+            "title": "Capacity Months",
+            "type": "integer"
+          },
+          "capacity_set": {
+            "title": "Capacity Set",
+            "type": "boolean"
+          },
+          "mode": {
+            "enum": [
+              "contributions",
+              "capacity"
+            ],
+            "title": "Mode",
+            "type": "string"
+          },
+          "monthly": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Monthly",
+            "type": "string"
+          },
+          "share_of_capacity": {
+            "anyOf": [
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Share Of Capacity"
+          }
+        },
+        "required": [
+          "mode",
+          "monthly",
+          "capacity",
+          "capacity_set",
+          "capacity_months",
+          "share_of_capacity"
+        ],
+        "title": "SavingsOut",
         "type": "object"
       },
       "SavingsStatus": {
@@ -5860,6 +6436,140 @@
         "title": "WealthValueIn",
         "type": "object"
       },
+      "WhatIfIn": {
+        "properties": {
+          "category_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category Id"
+          },
+          "inflation": {
+            "anyOf": [
+              {
+                "exclusiveMaximum": 10.0,
+                "exclusiveMinimum": -10.0,
+                "type": "number"
+              },
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Inflation"
+          },
+          "ret": {
+            "anyOf": [
+              {
+                "exclusiveMaximum": 10.0,
+                "exclusiveMinimum": -10.0,
+                "type": "number"
+              },
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ret"
+          },
+          "savings": {
+            "anyOf": [
+              {
+                "exclusiveMaximum": 1000000000000.0,
+                "exclusiveMinimum": -1000000000000.0,
+                "type": "number"
+              },
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Savings"
+          },
+          "volatility": {
+            "anyOf": [
+              {
+                "exclusiveMaximum": 10.0,
+                "exclusiveMinimum": -10.0,
+                "type": "number"
+              },
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Volatility"
+          }
+        },
+        "title": "WhatIfIn",
+        "type": "object"
+      },
+      "WhatIfOut": {
+        "properties": {
+          "chance": {
+            "anyOf": [
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Chance"
+          },
+          "median": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Median",
+            "type": "string"
+          },
+          "medians": {
+            "items": {
+              "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+              "type": "string"
+            },
+            "title": "Medians",
+            "type": "array"
+          },
+          "p10": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "P10",
+            "type": "string"
+          },
+          "p90": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "P90",
+            "type": "string"
+          }
+        },
+        "required": [
+          "medians",
+          "median",
+          "p10",
+          "p90",
+          "chance"
+        ],
+        "title": "WhatIfOut",
+        "type": "object"
+      },
       "Zone": {
         "enum": [
           "none",
@@ -7993,6 +8703,65 @@
         ]
       }
     },
+    "/api/projection/contributions": {
+      "put": {
+        "operationId": "setContributions",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "kwak_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Kwak Session"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ContributionsIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssumptionsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Set Contributions",
+        "tags": [
+          "projection"
+        ]
+      }
+    },
     "/api/projection/debts/{line_id}": {
       "put": {
         "operationId": "setDebtTerms",
@@ -8116,6 +8885,66 @@
           }
         },
         "summary": "Set Inflation",
+        "tags": [
+          "projection"
+        ]
+      }
+    },
+    "/api/projection/run": {
+      "post": {
+        "description": "The settings being typed, run through the engine: nothing is saved.",
+        "operationId": "runProjection",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "kwak_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Kwak Session"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RunIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Run Projection",
         "tags": [
           "projection"
         ]

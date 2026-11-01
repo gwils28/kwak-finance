@@ -112,6 +112,14 @@ export type CategoryAssumptionOut = {
      */
     colour: string;
     /**
+     * Contribution
+     */
+    contribution: string | null;
+    /**
+     * Contribution Indexed
+     */
+    contribution_indexed: boolean;
+    /**
      * Default Ret
      */
     default_ret: string;
@@ -155,9 +163,81 @@ export type CategoryAssumptionOut = {
 export type CategoryKind = 'expense' | 'income' | 'savings';
 
 /**
+ * CategoryOut
+ */
+export type CategoryOut = {
+    /**
+     * Colour
+     */
+    colour: string;
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Medians
+     */
+    medians: Array<string>;
+    /**
+     * Name
+     */
+    name: string;
+};
+
+/**
  * ClosedAs
  */
 export type ClosedAs = 'archived' | 'cancelled';
+
+/**
+ * ContributionDraft
+ */
+export type ContributionDraft = {
+    /**
+     * Amount
+     */
+    amount: number | string;
+    /**
+     * Category Id
+     */
+    category_id: string;
+    /**
+     * Indexed
+     */
+    indexed?: boolean;
+};
+
+/**
+ * ContributionIn
+ */
+export type ContributionIn = {
+    /**
+     * Amount
+     */
+    amount: number | string;
+    /**
+     * Category Id
+     */
+    category_id: string;
+    /**
+     * Indexed
+     */
+    indexed?: boolean;
+    /**
+     * Ret
+     */
+    ret?: number | string | null;
+};
+
+/**
+ * ContributionsIn
+ */
+export type ContributionsIn = {
+    /**
+     * Contributions
+     */
+    contributions: Array<ContributionIn>;
+};
 
 /**
  * DebtOut
@@ -986,6 +1066,32 @@ export type Health = {
 };
 
 /**
+ * HorizonOut
+ */
+export type HorizonOut = {
+    /**
+     * Income Low
+     */
+    income_low: string;
+    /**
+     * Income Median
+     */
+    income_median: string;
+    /**
+     * Median
+     */
+    median: string;
+    /**
+     * P10
+     */
+    p10: string;
+    /**
+     * P90
+     */
+    p90: string;
+};
+
+/**
  * InflationIn
  */
 export type InflationIn = {
@@ -1241,6 +1347,60 @@ export type MonthLinesOut = {
      * Month
      */
     month: string;
+};
+
+/**
+ * MonthOut
+ */
+export type MonthOut = {
+    /**
+     * Contributed
+     */
+    contributed: string;
+    /**
+     * Debts
+     */
+    debts: string;
+    /**
+     * Gains
+     */
+    gains: string;
+    /**
+     * Month
+     */
+    month: string;
+    /**
+     * P10
+     */
+    p10: string;
+    /**
+     * P25
+     */
+    p25: string;
+    /**
+     * P50
+     */
+    p50: string;
+    /**
+     * P75
+     */
+    p75: string;
+    /**
+     * P90
+     */
+    p90: string;
+    /**
+     * Repaid
+     */
+    repaid: string;
+    /**
+     * Shortfall
+     */
+    shortfall: string;
+    /**
+     * Today
+     */
+    today: string;
 };
 
 /**
@@ -1512,6 +1672,24 @@ export type QuickOut = {
 };
 
 /**
+ * ReachOut
+ */
+export type ReachOut = {
+    /**
+     * Chance
+     */
+    chance: string | null;
+    /**
+     * Half
+     */
+    half: string | null;
+    /**
+     * Ninety
+     */
+    ninety: string | null;
+};
+
+/**
  * RecoveryCodeIn
  */
 export type RecoveryCodeIn = {
@@ -1686,6 +1864,20 @@ export type RetirementSpendingOut = {
 };
 
 /**
+ * ReturnDraft
+ */
+export type ReturnDraft = {
+    /**
+     * Category Id
+     */
+    category_id: string;
+    /**
+     * Ret
+     */
+    ret: number | string;
+};
+
+/**
  * RiskPointOut
  *
  * A funded goal on the horizon and risk chart (F-ANA-4).
@@ -1742,6 +1934,90 @@ export type Role = 'owner' | 'member';
  * The rules, in the order their points are shown within a severity.
  */
 export type Rule = 'data' | 'precaution_none' | 'precaution_low' | 'precaution_risky' | 'unfunded' | 'overcommitted' | 'short_risk' | 'behind' | 'no_gain' | 'costly_debt' | 'precaution_current' | 'idle' | 'ceiling' | 'debt_payments' | 'eroding' | 'losing_value' | 'not_indexed' | 'capstone' | 'left_over';
+
+/**
+ * RunIn
+ */
+export type RunIn = {
+    /**
+     * Amount
+     */
+    amount?: number | string | null;
+    /**
+     * Contributions
+     */
+    contributions?: Array<ContributionDraft> | null;
+    /**
+     * Reach Month
+     */
+    reach_month?: string | null;
+    /**
+     * Returns
+     */
+    returns?: Array<ReturnDraft>;
+    scope?: Scope;
+    /**
+     * Today
+     */
+    today?: boolean;
+    /**
+     * What Ifs
+     */
+    what_ifs?: Array<WhatIfIn>;
+    /**
+     * Withdrawal Rate
+     */
+    withdrawal_rate?: number | string;
+    /**
+     * Years
+     */
+    years: number;
+};
+
+/**
+ * RunOut
+ */
+export type RunOut = {
+    /**
+     * Categories
+     */
+    categories: Array<CategoryOut>;
+    /**
+     * Ceiling Note
+     */
+    ceiling_note: boolean;
+    /**
+     * Engine Version
+     */
+    engine_version: number;
+    horizon: HorizonOut;
+    /**
+     * Months
+     */
+    months: Array<MonthOut>;
+    /**
+     * Paths
+     */
+    paths: number;
+    reach: ReachOut | null;
+    savings: SavingsOut;
+    /**
+     * Seed
+     */
+    seed: number;
+    /**
+     * Shortfall Share
+     */
+    shortfall_share: string;
+    /**
+     * Start Month
+     */
+    start_month: string;
+    /**
+     * What Ifs
+     */
+    what_ifs: Array<WhatIfOut>;
+};
 
 /**
  * SankeyCategoryOut
@@ -1865,6 +2141,36 @@ export type SankeyOut = {
      * Month
      */
     month: string;
+};
+
+/**
+ * SavingsOut
+ */
+export type SavingsOut = {
+    /**
+     * Capacity
+     */
+    capacity: string;
+    /**
+     * Capacity Months
+     */
+    capacity_months: number;
+    /**
+     * Capacity Set
+     */
+    capacity_set: boolean;
+    /**
+     * Mode
+     */
+    mode: 'contributions' | 'capacity';
+    /**
+     * Monthly
+     */
+    monthly: string;
+    /**
+     * Share Of Capacity
+     */
+    share_of_capacity: string | null;
 };
 
 /**
@@ -3071,6 +3377,58 @@ export type WealthValueIn = {
 };
 
 /**
+ * WhatIfIn
+ */
+export type WhatIfIn = {
+    /**
+     * Category Id
+     */
+    category_id?: string | null;
+    /**
+     * Inflation
+     */
+    inflation?: number | string | null;
+    /**
+     * Ret
+     */
+    ret?: number | string | null;
+    /**
+     * Savings
+     */
+    savings?: number | string | null;
+    /**
+     * Volatility
+     */
+    volatility?: number | string | null;
+};
+
+/**
+ * WhatIfOut
+ */
+export type WhatIfOut = {
+    /**
+     * Chance
+     */
+    chance: string | null;
+    /**
+     * Median
+     */
+    median: string;
+    /**
+     * Medians
+     */
+    medians: Array<string>;
+    /**
+     * P10
+     */
+    p10: string;
+    /**
+     * P90
+     */
+    p90: string;
+};
+
+/**
  * Zone
  */
 export type Zone = 'none' | 'red_short' | 'amber_glide' | 'red_eroding';
@@ -4111,6 +4469,31 @@ export type SetCategoryAssumptionResponses = {
 
 export type SetCategoryAssumptionResponse = SetCategoryAssumptionResponses[keyof SetCategoryAssumptionResponses];
 
+export type SetContributionsData = {
+    body: ContributionsIn;
+    path?: never;
+    query?: never;
+    url: '/api/projection/contributions';
+};
+
+export type SetContributionsErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type SetContributionsError = SetContributionsErrors[keyof SetContributionsErrors];
+
+export type SetContributionsResponses = {
+    /**
+     * Successful Response
+     */
+    200: AssumptionsOut;
+};
+
+export type SetContributionsResponse = SetContributionsResponses[keyof SetContributionsResponses];
+
 export type SetDebtTermsData = {
     body: DebtTermsIn;
     path: {
@@ -4165,6 +4548,31 @@ export type SetInflationResponses = {
 };
 
 export type SetInflationResponse = SetInflationResponses[keyof SetInflationResponses];
+
+export type RunProjectionData = {
+    body: RunIn;
+    path?: never;
+    query?: never;
+    url: '/api/projection/run';
+};
+
+export type RunProjectionErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type RunProjectionError = RunProjectionErrors[keyof RunProjectionErrors];
+
+export type RunProjectionResponses = {
+    /**
+     * Successful Response
+     */
+    200: RunOut;
+};
+
+export type RunProjectionResponse = RunProjectionResponses[keyof RunProjectionResponses];
 
 export type GetRetirementData = {
     body?: never;

@@ -288,3 +288,155 @@ def to_today(amount: Decimal, month: int, inflation: Decimal) -> Decimal:
     """An amount of month `month` in today's euros (invariant §8.28), unrounded: the engine
     works on it; money shown goes through `quantize`."""
     return amount / (ONE + inflation) ** (Decimal(month) / 12) if month else amount
+
+
+# F-SIM-3: the monthly contributions
+
+MIN_CONTRIBUTION = Decimal(1)
+MAX_CONTRIBUTION = Decimal(100_000)
+
+
+@dataclass(frozen=True)
+class Contribution:
+    """What the household invests each month in one asset category."""
+
+    category_id: UUID
+    amount: Decimal
+    """A month, today's euros if indexed, else current euros."""
+    indexed: bool = True
+    """Follows the inflation, as an income keeping pace with prices; else a fixed amount, as a
+    standing order usually is."""
+
+
+def check_contributions(contributions: Sequence[Contribution]) -> None:
+    """At most one per category, each from €1 to €100,000 a month, in cents."""
+    ids = [c.category_id for c in contributions]
+    if len(set(ids)) != len(ids):
+        raise ProjectionError("one contribution per category at most")
+    for c in contributions:
+        if c.amount != quantize(c.amount):
+            raise ProjectionError("a contribution is in cents at most")
+        if not MIN_CONTRIBUTION <= c.amount <= MAX_CONTRIBUTION:
+            raise ProjectionError("a contribution is from €1 to €100,000 a month")
+
+
+@dataclass(frozen=True)
+class ContributionPlan:
+    put_in: list[Decimal]
+    """The contributions of months 1 to n, current euros."""
+    savings: list[Decimal]
+    """The savings of months 1 to n, current euros: the contributions plus the debts' freed
+    payments (`savings_path`)."""
+    split: list[dict[UUID, Decimal]]
+    """Each month's allocation: each contribution over their sum, summing to exactly 1 (the
+    largest takes the rounding). It moves when indexed and fixed contributions mix, so each
+    category receives its own contribution only."""
+
+
+def contribution_plan(
+    contributions: Sequence[Contribution],
+    *,
+    months: int,
+    inflation: Decimal,
+    freed: Sequence[Decimal] = (),
+    scale: Decimal = ONE,
+) -> ContributionPlan:
+    """F-SIM-3: with contributions, the savings are their sum and the allocation their split;
+    a freed debt payment joins the savings and is split the same way. `scale` multiplies every
+    contribution, for a what-if changing their total (F-SIM-5)."""
+    check_contributions(contributions)
+    if not contributions:
+        raise ProjectionError("no contribution to plan")
+    if scale <= 0:
+        raise ProjectionError("a plan's contributions stay above zero")
+    put_in: list[Decimal] = []
+    savings: list[Decimal] = []
+    split: list[dict[UUID, Decimal]] = []
+    for t in range(1, months + 1):
+        growth = (ONE + inflation) ** (Decimal(t) / 12)
+        own = {
+            c.category_id: quantize(c.amount * scale * (growth if c.indexed else ONE))
+            for c in contributions
+        }
+        total = sum(own.values(), ZERO)
+        shares = {k: (v / total).quantize(SHARE) for k, v in own.items()}
+        largest = max(shares, key=lambda k: shares[k])
+        shares[largest] = ONE - sum((v for k, v in shares.items() if k != largest), ZERO)
+        put_in.append(total)
+        savings.append(total + (freed[t - 1] if t <= len(freed) else ZERO))
+        split.append(shares)
+    return ContributionPlan(put_in, savings, split)
+
+
+# F-SIM-5: where the money comes from
+
+
+@dataclass(frozen=True)
+class Parts:
+    """What makes up a month's median net worth, in the euros shown."""
+
+    today: Decimal
+    contributed: Decimal
+    """The savings added up, freed debt payments included (withdrawals subtracted)."""
+    repaid: Decimal
+    """The capital the debt lines repaid from the income, the Shortfall left out."""
+    gains: Decimal
+    """The rest: after inflation in today's euros, negative as losses."""
+
+
+def breakdown(
+    *,
+    start_net: Decimal,
+    savings: Sequence[Decimal],
+    start_debts: Decimal,
+    owed: Sequence[Decimal],
+    medians: Sequence[Decimal],
+    inflation: Decimal,
+    today: bool,
+) -> list[Parts]:
+    """Months 0 to n (invariant §8.46). `savings` and `owed` (months 1 to n) are in current
+    euros, `medians` (months 0 to n) in the euros shown. In today's euros each amount counts
+    at its value when it was added, so the gains are after inflation; in current euros, the
+    amounts as paid. Today's net worth, the savings and the debts are the same on every path,
+    so the gains are exactly the median of the paths' gains."""
+    if not len(savings) == len(owed) == len(medians) - 1:
+        raise ValueError("savings and debts cover months 1 to n, the medians 0 to n")
+    out = [Parts(quantize(start_net), ZERO, ZERO, quantize(medians[0]) - quantize(start_net))]
+    contributed = repaid = ZERO
+    before = start_debts
+    for t in range(1, len(medians)):
+        unit = (ONE + inflation) ** (Decimal(t) / 12) if today else ONE
+        contributed += savings[t - 1] / unit
+        repaid += (before - owed[t - 1]) / unit
+        before = owed[t - 1]
+        start, added, paid = quantize(start_net), quantize(contributed), quantize(repaid)
+        out.append(Parts(start, added, paid, quantize(medians[t]) - start - added - paid))
+    return out
+
+
+# F-SIM-5: an income at a withdrawal rate, the regulated ceilings
+
+DEFAULT_WITHDRAWAL = Decimal("0.04")
+MIN_WITHDRAWAL, MAX_WITHDRAWAL = Decimal("0.02"), Decimal("0.05")
+"""A rule of thumb from US history (Bengen, Trinity), for holdings mostly in shares paying out
+over about 30 years; beyond 5 %, such drawdowns often failed."""
+REGULATED_CEILINGS = Decimal("34950")
+"""A full Livret A (€22,950) and LDDS (€12,000), a member, in current euros."""
+
+
+def check_withdrawal_rate(rate: Decimal) -> None:
+    _stepped(rate, "a withdrawal rate")
+    if not MIN_WITHDRAWAL <= rate <= MAX_WITHDRAWAL:
+        raise ProjectionError("a withdrawal rate is from 2 to 5 % a year")
+
+
+def withdrawal_income(liquid: Decimal, rate: Decimal) -> Decimal:
+    """A month: the liquid holdings (a home pays no income) times the rate, over 12."""
+    check_withdrawal_rate(rate)
+    return quantize(liquid * rate / 12)
+
+
+def beyond_ceilings(savings_accounts: Decimal, *, members: int) -> bool:
+    """Savings accounts above a full Livret A and LDDS a member: beyond, the 1.7 % rate is not
+    available (F-SIM-3). Compared in current euros, as the ceilings are not indexed."""
+    return savings_accounts > REGULATED_CEILINGS * max(members, 1)

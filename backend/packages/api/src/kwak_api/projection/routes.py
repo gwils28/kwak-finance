@@ -1,5 +1,5 @@
-"""The wealth projection's assumptions (spec §4.11 F-SIM-1): a household setting any member
-can change, kept until changed. The projection page itself is a Dash page (kwak_api.dash)."""
+"""The wealth projection's assumptions (spec §4.11 F-SIM-1, 3): a household setting any member
+can change, kept until changed; and the simulator's runs (F-SIM-5), in `run`."""
 
 from decimal import Decimal
 from typing import Annotated
@@ -13,10 +13,12 @@ from kwak_core.projection import (
     DEFAULT_INFLATION,
     STEP,
     Assumption,
+    Contribution,
     DebtTerms,
     ProjectionError,
     assumption_of,
     check_assumption,
+    check_contributions,
     check_debt_terms,
     check_inflation,
     debt_grows,
@@ -28,6 +30,7 @@ from pydantic import AfterValidator, BaseModel, Field
 
 from kwak_api.auth.routes import CurrentSession, Db, Now
 from kwak_api.models import Household, User, WealthCategory, WealthLine
+from kwak_api.projection import run as simulator
 from kwak_api.services import audit, projection
 from kwak_api.services import wealth as wealth_service
 
@@ -65,6 +68,10 @@ class CategoryAssumptionOut(BaseModel):
     """The median path's annual growth, below the mean return when there is volatility."""
     own: bool
     """Set by the household rather than the default."""
+    contribution: Decimal | None
+    """What the household invests in it each month (F-SIM-3); null for none."""
+    contribution_indexed: bool
+    """The contribution follows the inflation; else a fixed amount."""
 
 
 class DebtOut(BaseModel):
@@ -107,6 +114,8 @@ def _category_out(category: WealthCategory) -> CategoryAssumptionOut:
         default_volatility=_step(default.volatility),
         median_growth=_step(median_growth(a)),
         own=category.expected_return is not None,
+        contribution=category.monthly_contribution,
+        contribution_indexed=category.contribution_indexed,
     )
 
 
@@ -278,3 +287,78 @@ def set_debt_terms(
     )
     db.flush()
     return _assumptions(db, user_session.user, now)
+
+
+# F-SIM-3: the monthly contributions
+
+
+class ContributionIn(BaseModel):
+    category_id: UUID
+    amount: Amount
+    """A month, in cents, from €1 to €100,000."""
+    indexed: bool = True
+    """Follows the inflation; else a fixed amount in current euros."""
+    ret: Share | None = None
+    """The category's expected return changed with it (its volatility kept); null: unchanged."""
+
+
+class ContributionsIn(BaseModel):
+    contributions: list[ContributionIn] = Field(max_length=50)
+    """The whole list: it replaces the saved one."""
+
+
+@router.put("/contributions")
+def set_contributions(
+    body: ContributionsIn, user_session: CurrentSession, db: Db, now: Now
+) -> AssumptionsOut:
+    viewer = user_session.user
+    chosen = [(_asset_category(db, viewer, c.category_id), c) for c in body.contributions]
+    try:
+        check_contributions(
+            [Contribution(c.category_id, c.amount, c.indexed) for c in body.contributions]
+        )
+        for category, c in chosen:
+            if c.ret is not None:
+                check_assumption(Assumption(c.ret, projection.assumption(category).volatility))
+    except ProjectionError as error:
+        raise _unprocessable(error) from None
+    wanted = {category.id: c for category, c in chosen}
+    for category in wealth_service.categories(db, viewer.household_id):
+        item = wanted.get(category.id)
+        category.monthly_contribution = None if item is None else item.amount
+        category.contribution_indexed = True if item is None else item.indexed
+        if item is not None and item.ret is not None:
+            kept = projection.assumption(category).volatility
+            category.expected_return, category.volatility = item.ret, kept
+    audit.record(
+        db,
+        viewer,
+        AuditAction.SETTINGS_CHANGED,
+        now,
+        contributions=", ".join(
+            f"{category.name} {c.amount}"
+            + ("" if c.indexed else " fixed")
+            + ("" if c.ret is None else f" at {_step(c.ret)}")
+            for category, c in chosen
+        ),
+    )
+    db.flush()
+    return _assumptions(db, viewer, now)
+
+
+# F-SIM-5: the simulator
+
+
+@router.post("/run")
+def run_projection(
+    body: simulator.RunIn, user_session: CurrentSession, db: Db, now: Now
+) -> simulator.RunOut:
+    """The settings being typed, run through the engine: nothing is saved."""
+    viewer = user_session.user
+    b = projection.basis(db, viewer, body.scope, now.date(), contributions=True)
+    if b is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "no wealth line in this scope")
+    try:
+        return simulator.run(db, viewer, b, body)
+    except (simulator.RunError, ProjectionError) as error:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, str(error)) from None

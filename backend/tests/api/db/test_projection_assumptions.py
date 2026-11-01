@@ -108,3 +108,22 @@ def test_debt_terms_stay_within_bounds(
 ) -> None:
     with pytest.raises(IntegrityError, match=name):
         _debt(session, household, **fields)
+
+
+# F-SIM-3: the monthly contributions
+
+
+def test_a_category_starts_without_a_contribution_that_would_follow_prices(
+    session: Session, household: Household
+) -> None:
+    category = _category(session, household)
+    session.refresh(category)
+    assert (category.monthly_contribution, category.contribution_indexed) == (None, True)
+
+
+@pytest.mark.parametrize("amount", [Decimal("0.99"), Decimal("100000.01")])
+def test_a_contribution_is_from_one_euro_to_a_hundred_thousand(
+    session: Session, household: Household, amount: Decimal
+) -> None:
+    with pytest.raises(IntegrityError, match="ck_wealth_category_contribution_range"):
+        _category(session, household, monthly_contribution=amount)
