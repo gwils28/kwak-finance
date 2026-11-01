@@ -111,7 +111,8 @@ class DashGate:
 
 def create_dash(state: State) -> ASGIApp:
     # Imported here: the pages import this module for Context.
-    from kwak_api.dash import forecast, projection, retirement
+    from kwak_api.dash import forecast, retirement
+    from kwak_api.dash.projection_views import view_of
 
     app = Dash(
         __name__,
@@ -126,7 +127,6 @@ def create_dash(state: State) -> ASGIApp:
     app.layout = html.Div([dcc.Location(id="url"), html.Div(id="page")])
     context = Context(state)
     pages = {
-        "projection": projection.register(app, context),
         "retirement": retirement.register(app, context),
         "forecast": forecast.register(app, context),
     }
@@ -136,7 +136,7 @@ def create_dash(state: State) -> ASGIApp:
         name = (pathname or "").removeprefix(PREFIX).strip("/")
         render = pages.get(name)
         if render is None:
-            return html.P(i18n.t(projection.view_of(search or "").lang, "not_found"))
+            return html.P(i18n.t(view_of(search or "").lang, "not_found"))
         return render(search or "")
 
     return DashGate(state, WSGIMiddleware(app.server))  # type: ignore[arg-type]

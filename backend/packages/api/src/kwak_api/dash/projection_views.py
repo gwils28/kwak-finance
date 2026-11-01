@@ -6,6 +6,7 @@ limits. Pure functions: the page's callbacks only gather the inputs."""
 from collections.abc import Sequence
 from dataclasses import dataclass
 from decimal import Decimal
+from urllib.parse import parse_qs
 from uuid import UUID
 
 import plotly.graph_objects as go
@@ -29,6 +30,13 @@ SHOWN = (90, 75, 50, 25, 10)
 class View:
     lang: Language
     theme: Theme
+
+
+def view_of(search: str) -> View:
+    """The React route passes the app's language and theme in the query string."""
+    query = parse_qs(search.removeprefix("?"))
+    theme: Theme = "dark" if query.get("theme") == ["dark"] else "light"
+    return View(i18n.language(query.get("lang", [""])[0]), theme)
 
 
 @dataclass(frozen=True)

@@ -23,8 +23,7 @@ from kwak_api.dash import i18n, layout, tokens
 from kwak_api.dash import projection_views as views
 from kwak_api.dash.app import Context
 from kwak_api.dash.i18n import Language, t
-from kwak_api.dash.projection import dash_colours, view_of
-from kwak_api.dash.projection_views import View
+from kwak_api.dash.projection_views import View, view_of
 from kwak_api.services import forecast as service
 
 ZERO = Decimal(0)
@@ -1387,7 +1386,7 @@ def register(app: Dash, context: Context) -> Callable[[str], html.Div]:
                 layout.intro(t(view.lang, "fct_intro")),
                 dcc.Loading(html.Div(id="fct-body"), color=tokens.rgb(theme, "primary-600")),
             ],
-            extra=dash_colours(theme),
+            extra=layout.dash_colours(theme),
         )
 
     return render

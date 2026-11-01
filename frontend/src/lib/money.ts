@@ -66,6 +66,22 @@ export function formatEurWhole(amount: Num): string {
   return numberFormat(WHOLE_EUR).format(amount as Intl.StringNumericLiteral);
 }
 
+const COMPACT_EUR: Intl.NumberFormatOptions = {
+  ...EUR,
+  notation: "compact",
+  maximumFractionDigits: 1,
+};
+
+/** "250000" -> "€250K" (en) or "250 k€" (fr): for chart axes. */
+export function formatEurCompact(amount: Num): string {
+  return numberFormat(COMPACT_EUR).format(amount as Intl.StringNumericLiteral);
+}
+
+/** To the nearest €100, whole: the projection's amounts (F-SIM-5). */
+export function formatEurHundreds(amount: Num): string {
+  return formatEurWhole(Math.round(Number(amount) / 100) * 100);
+}
+
 /** "-60.00" -> "-60 €", "12" -> "+12 €". */
 export function formatEurSigned(amount: Num): string {
   return numberFormat(SIGNED_EUR).format(amount as Intl.StringNumericLiteral);
