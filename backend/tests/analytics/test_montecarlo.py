@@ -311,3 +311,40 @@ def test_the_liquid_holdings_have_their_own_median() -> None:
     house = _category("real-estate", "200000")
     out = simulate(Scenario([livret, house], [D(100)] * 2, [D(0)] * 2, D(0), D(0)), paths=3)
     assert out.liquid_medians(today=False) == [D(1000), D(1100), D(1200)]
+
+
+def test_a_split_by_month_sends_each_month_s_savings_where_it_says() -> None:
+    """F-SIM-3: indexed and fixed contributions mix, so the allocation moves month by month."""
+    a, b = _category("stocks", "0"), _category("savings", "0")
+    s = Scenario(
+        [a, b],
+        [D(100), D(100)],
+        [D(0)] * 2,
+        D(0),
+        D(0),
+        split=[[D(1), D(0)], [D("0.25"), D("0.75")]],
+    )
+    out = simulate(s, paths=2)
+    assert out.medians_by_category(today=False)[2] == [D(125), D(75)]
+
+
+@pytest.mark.parametrize(
+    "split",
+    [[[D(1), D(0)]], [[D("0.5"), D("0.4")], [D(1), D(0)]], [[D(1)], [D(1)]]],
+)
+def test_a_split_has_a_row_per_month_summing_to_one(split: list[list[Decimal]]) -> None:
+    a, b = _category("stocks", "0"), _category("savings", "0", share="1")
+    s = Scenario([a, b], [D(100)] * 2, [D(0)] * 2, D(0), D(0), split=split)
+    with pytest.raises(ValueError, match="split"):
+        simulate(s, paths=2)
+
+
+def test_the_liquid_holdings_have_a_tenth_percentile() -> None:
+    """F-SIM-5: the income in nine outcomes in ten draws on it."""
+    stocks = _category("stocks", "10000", "0.07", "0.16", share="1")
+    house = _category("real-estate", "200000")
+    out = simulate(Scenario([stocks, house], [D(100)] * 24, [D(0)] * 24, D(0), D(0)), paths=500)
+    lows, medians = out.liquid_lows(today=False), out.liquid_medians(today=False)
+    assert lows[0] == medians[0] == D(10000)
+    assert all(low <= m for low, m in zip(lows, medians, strict=True))
+    assert lows[24] < medians[24]

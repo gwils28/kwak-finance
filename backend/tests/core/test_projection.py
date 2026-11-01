@@ -10,18 +10,27 @@ from kwak_core.money import quantize
 from kwak_core.projection import (
     DEFAULT_ASSUMPTIONS,
     DEFAULT_INFLATION,
+    DEFAULT_WITHDRAWAL,
     FIRST_TAKEN,
+    MAX_CONTRIBUTION,
+    MIN_CONTRIBUTION,
     NEVER_TAKEN,
     SHORTFALL_RATE,
     Assumption,
+    Contribution,
     DebtTerms,
     ProjectionError,
     amortise,
     assumption_of,
+    beyond_ceilings,
+    breakdown,
     check_allocation,
     check_assumption,
+    check_contributions,
     check_debt_terms,
     check_inflation,
+    check_withdrawal_rate,
+    contribution_plan,
     debt_grows,
     default_allocation,
     median_growth,
@@ -29,6 +38,7 @@ from kwak_core.projection import (
     savings_path,
     starting_point,
     to_today,
+    withdrawal_income,
 )
 from kwak_core.visibility import Visibility
 from kwak_core.wealth import (
@@ -386,3 +396,180 @@ def test_savings_are_constant_in_today_s_euros(
     for t in (1, months):
         rounding = D("0.005") / (1 + inflation) ** (D(t) / 12)
         assert abs(to_today(path[t - 1], t, inflation) - monthly) <= rounding + D("1e-20")
+
+
+# F-SIM-3: the monthly contributions
+
+PEA, LIVRET_A = uuid4(), uuid4()
+
+
+@pytest.mark.parametrize(
+    "contributions",
+    [
+        [Contribution(PEA, D("0.99"))],
+        [Contribution(PEA, D("100000.01"))],
+        [Contribution(PEA, D("10.001"))],
+        [Contribution(PEA, D(100)), Contribution(PEA, D(50))],
+    ],
+)
+def test_impossible_contributions_are_refused(contributions: list[Contribution]) -> None:
+    with pytest.raises(ProjectionError):
+        check_contributions(contributions)
+
+
+def test_a_contribution_is_from_one_euro_to_a_hundred_thousand_a_month() -> None:
+    assert (D(1), D(100_000)) == (MIN_CONTRIBUTION, MAX_CONTRIBUTION)
+    check_contributions([Contribution(PEA, D(1)), Contribution(LIVRET_A, D(100_000))])
+    check_contributions([])
+
+
+def test_an_indexed_contribution_follows_prices_and_a_fixed_one_does_not() -> None:
+    plan = contribution_plan(
+        [Contribution(PEA, D(300)), Contribution(LIVRET_A, D(150), indexed=False)],
+        months=240,
+        inflation=D("0.02"),
+    )
+    grown = quantize(D(300) * D("1.02") ** 20)
+    assert plan.put_in[239] == grown + D(150)
+    assert plan.savings == plan.put_in  # no debt frees anything
+    # Each category receives its own contribution only, month after month.
+    last = plan.split[239]
+    assert last[LIVRET_A] * plan.put_in[239] == pytest.approx(D(150), abs=D("1e-6"))
+    assert last[PEA] * plan.put_in[239] == pytest.approx(grown, abs=D("1e-6"))
+    assert plan.split[0][PEA] > D("0.66")
+
+
+def test_the_freed_payments_join_the_savings_split_like_the_contributions() -> None:
+    plan = contribution_plan(
+        [Contribution(PEA, D(100)), Contribution(LIVRET_A, D(100))],
+        months=3,
+        inflation=D(0),
+        freed=[D(0), D(0), D(500)],
+    )
+    assert plan.put_in == [D(200)] * 3
+    assert plan.savings == [D(200), D(200), D(700)]
+    assert plan.split[2] == {PEA: D("0.5"), LIVRET_A: D("0.5")}
+
+
+def test_a_what_if_scales_every_contribution() -> None:
+    plan = contribution_plan(
+        [Contribution(PEA, D(300)), Contribution(LIVRET_A, D(100), indexed=False)],
+        months=1,
+        inflation=D(0),
+        scale=D(2),
+    )
+    assert plan.put_in == [D(800)]
+    assert plan.split[0] == {PEA: D("0.75"), LIVRET_A: D("0.25")}
+    with pytest.raises(ProjectionError):
+        contribution_plan([Contribution(PEA, D(1))], months=1, inflation=D(0), scale=D(0))
+
+
+def test_a_plan_needs_a_contribution() -> None:
+    with pytest.raises(ProjectionError):
+        contribution_plan([], months=12, inflation=D(0))
+
+
+@given(
+    st.lists(st.tuples(st.decimals(1, 100_000, places=2), st.booleans()), min_size=1, max_size=4),
+    st.integers(1, 120),
+    st.decimals("-0.05", "0.2", places=3),
+)
+def test_each_month_s_split_sums_to_one(
+    amounts: list[tuple[Decimal, bool]], months: int, inflation: Decimal
+) -> None:
+    """Invariant §8.45: the savings are the contributions' sum, the allocation their split."""
+    contributions = [Contribution(uuid4(), a, indexed=i) for a, i in amounts]
+    plan = contribution_plan(contributions, months=months, inflation=inflation)
+    for t in (0, months - 1):
+        assert sum(plan.split[t].values()) == 1
+        assert all(0 <= v <= 1 for v in plan.split[t].values())
+    for t in (1, months):
+        for c in contributions:
+            own = c.amount * (1 + inflation) ** (D(t) / 12) if c.indexed else c.amount
+            assert plan.split[t - 1][c.category_id] * plan.put_in[t - 1] == pytest.approx(
+                quantize(own), abs=D("0.01")
+            )
+
+
+# F-SIM-5: where the money comes from
+
+
+def test_in_current_euros_the_parts_are_the_amounts_as_paid() -> None:
+    parts = breakdown(
+        start_net=D(10_000),
+        savings=[D(100), D(100)],
+        start_debts=D(1_000),
+        owed=[D(900), D(800)],
+        medians=[D(10_000), D(10_250), D(10_500)],
+        inflation=D("0.02"),
+        today=False,
+    )
+    assert [(p.today, p.contributed, p.repaid, p.gains) for p in parts] == [
+        (D(10_000), D(0), D(0), D(0)),
+        (D(10_000), D(100), D(100), D(50)),
+        (D(10_000), D(200), D(200), D(100)),
+    ]
+
+
+def test_in_today_s_euros_each_amount_counts_when_it_was_added() -> None:
+    """Indexed savings keep their value; a part paid later is worth less today, so the gains
+    are after inflation (negative when the holdings earn less than prices rise)."""
+    rate = D("0.02")
+    savings = savings_path(D(500), months=24, inflation=rate)
+    parts = breakdown(
+        start_net=D(1_000),
+        savings=savings,
+        start_debts=D(0),
+        owed=[D(0)] * 24,
+        medians=[D(1_000)] + [D(1_000) + D(500) * t - D(10) for t in range(1, 25)],
+        inflation=rate,
+        today=True,
+    )
+    assert parts[24].contributed == pytest.approx(D(12_000), abs=D("0.2"))
+    assert parts[24].gains < 0
+    assert parts[24].today == D(1_000)
+
+
+@given(
+    st.lists(st.decimals(-500, 5_000, places=2), min_size=1, max_size=36),
+    st.decimals(0, 50_000, places=2),
+    st.decimals("-0.05", "0.2", places=3),
+    st.booleans(),
+)
+def test_the_four_parts_add_up_to_the_median(
+    savings: list[Decimal], start_debts: Decimal, inflation: Decimal, today: bool
+) -> None:
+    """Invariant §8.46."""
+    n = len(savings)
+    path = amortise(start_debts, DebtTerms(D(400), D("0.03")), months=n)
+    medians = [D(20_000) + D(37) * t for t in range(n + 1)]
+    parts = breakdown(
+        start_net=D(20_000),
+        savings=savings,
+        start_debts=start_debts,
+        owed=path.owed,
+        medians=medians,
+        inflation=inflation,
+        today=today,
+    )
+    assert len(parts) == n + 1
+    for p, m in zip(parts, medians, strict=True):
+        assert p.today + p.contributed + p.repaid + p.gains == quantize(m)
+
+
+def test_the_income_is_the_liquid_holdings_at_a_withdrawal_rate_from_2_to_5_percent() -> None:
+    assert D("0.04") == DEFAULT_WITHDRAWAL
+    assert withdrawal_income(D("300000"), D("0.04")) == D(1000)
+    assert withdrawal_income(D("100000"), D("0.035")) == D("291.67")
+    for rate in (D("0.019"), D("0.051"), D("0.0405")):
+        with pytest.raises(ProjectionError):
+            check_withdrawal_rate(rate)
+    check_withdrawal_rate(D("0.02"))
+    check_withdrawal_rate(D("0.05"))
+
+
+def test_savings_accounts_beyond_a_full_livret_a_and_ldds_a_member_are_noted() -> None:
+    """In current euros: the ceilings are not indexed."""
+    assert beyond_ceilings(D("34950"), members=1) is False
+    assert beyond_ceilings(D("34950.01"), members=1) is True
+    assert beyond_ceilings(D("60000"), members=2) is False

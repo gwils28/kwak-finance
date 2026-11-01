@@ -58,6 +58,9 @@ class Scenario:
     """What the debts owe at the end of months 1 to n, current euros (amortise, summed)."""
     start_debts: Decimal
     inflation: Decimal
+    split: Sequence[Sequence[Decimal]] | None = None
+    """Months 1 to n, each category's share of that month's savings, summing to 1 (F-SIM-3:
+    indexed and fixed contributions mix); None: the categories' shares, every month."""
 
 
 @dataclass(frozen=True)
@@ -98,6 +101,8 @@ class Outcome:
     assets: Floats | None = None
     """(months + 1, paths, categories), only when kept."""
     flows: Sequence[Flows] | None = None
+    liquid_low: Floats | None = None
+    """The liquid holdings' 10th percentile, current euros: (months + 1,)."""
 
     @property
     def months(self) -> int:
@@ -163,6 +168,12 @@ class Outcome:
     def liquid_medians(self, *, today: bool = True) -> list[Decimal]:
         """The liquid holdings' median month by month: what withdrawals can draw on."""
         return [_cents(float(v)) for v in self.liquid_median / self._unit(today)]
+
+    def liquid_lows(self, *, today: bool = True) -> list[Decimal]:
+        """The liquid holdings' 10th percentile month by month: nine outcomes in ten hold more."""
+        if self.liquid_low is None:
+            raise ValueError("this outcome kept no 10th percentile of the liquid holdings")
+        return [_cents(float(v)) for v in self.liquid_low / self._unit(today)]
 
     def ran_out_by(self, share: Decimal) -> int | None:
         """The first month by which `share` of the outcomes have run out of liquid holdings
@@ -247,10 +258,18 @@ def simulate(
         raise ValueError("a simulation draws one path at least")
     if not cats and any(scenario.savings):
         raise ValueError("savings with nowhere to go: no asset category")
-    if cats and sum((c.share for c in cats), Decimal(0)) != 1:
+    if cats and scenario.split is None and sum((c.share for c in cats), Decimal(0)) != 1:
         raise ValueError("the allocation's shares sum to 1")
     if any(c.start < 0 or not 0 <= c.share <= 1 for c in cats):
         raise ValueError("a category's start is positive and its share from 0 to 1")
+    split = None
+    if scenario.split is not None:
+        if len(scenario.split) != months or any(
+            len(row) != len(cats) or sum(row, Decimal(0)) != 1 or any(not 0 <= v <= 1 for v in row)
+            for row in scenario.split
+        ):
+            raise ValueError("a split has a row per month, a share per category, summing to 1")
+        split = np.array([[float(v) for v in row] for row in scenario.split])
     r = rules(cats)
     generators = streams(cats, seed)
     monthly_rate = float(SHORTFALL_RATE) / 12
@@ -262,6 +281,7 @@ def simulate(
     median = np.empty((months + 1, len(cats)))
     liquid = np.array([c.preset not in NEVER_TAKEN for c in cats], dtype=bool)
     liquid_median = np.empty(months + 1)
+    liquid_low = np.empty(months + 1)
     kept = np.empty((months + 1, paths, len(cats))) if keep else None
     flows: list[Flows] = []
 
@@ -269,7 +289,9 @@ def simulate(
         net[t] = held.sum(axis=1) - debts[t] - short
         shortfall[t] = short
         median[t] = np.median(held, axis=0) if cats else 0
-        liquid_median[t] = np.median((held * liquid).sum(axis=1))
+        liquid_held = (held * liquid).sum(axis=1)
+        liquid_median[t] = np.median(liquid_held)
+        liquid_low[t] = np.percentile(liquid_held, 10)
         if kept is not None:
             kept[t] = held
 
@@ -291,7 +313,7 @@ def simulate(
             repaid = np.minimum(short, saved)
             short = short - repaid
             added = saved - repaid
-            held = held + added[:, None] * r.share
+            held = held + added[:, None] * (r.share if split is None else split[t - 1])
         else:
             need = np.full(paths, -saved)
             held, missing = withdraw(held, need, r.first, r.pro_rata)
@@ -304,5 +326,13 @@ def simulate(
 
     deflator = (1 + float(scenario.inflation)) ** (np.arange(months + 1) / 12)
     return Outcome(
-        net, shortfall, median, deflator, seed, liquid_median, kept, flows if keep else None
+        net,
+        shortfall,
+        median,
+        deflator,
+        seed,
+        liquid_median,
+        kept,
+        flows if keep else None,
+        liquid_low,
     )

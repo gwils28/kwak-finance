@@ -1,6 +1,7 @@
 """The projection's inputs read from the household, and the runs (spec §4.11 F-SIM-2 to 4)."""
 
 from decimal import Decimal
+from typing import Any
 from uuid import UUID
 
 import pytest
@@ -157,3 +158,233 @@ def test_the_mine_scope_leaves_out_a_joint_line(
     assert _basis(session, owner, Scope.MINE).start.net == D("1000.00")
     assert _basis(session, owner, Scope.JOINT).start.net == D("3000.00")
     assert _basis(session, owner).start.net == D("4000.00")
+
+
+# F-SIM-5: the simulator's run
+
+
+def _run(client: TestClient, **body: Any) -> Any:
+    return client.post("/api/projection/run", json=body, headers=csrf(client))
+
+
+def _ok(client: TestClient, **body: Any) -> dict[str, Any]:
+    response = _run(client, **body)
+    assert response.status_code == 200, response.text
+    out: dict[str, Any] = response.json()
+    return out
+
+
+def _livret(client: TestClient, amount: str = "10000.00") -> str:
+    _capacity(client, "0.00")
+    livret = _line(client, "Savings accounts", "Livret A")
+    _value(client, livret, "2026-12", amount)
+    return str(_categories(client)["Savings accounts"]["id"])
+
+
+def test_the_run_uses_the_contributions_being_typed_without_saving_them(
+    owner_client: TestClient,
+) -> None:
+    savings = _livret(owner_client)
+    out = _ok(
+        owner_client,
+        years=1,
+        today=False,
+        contributions=[{"category_id": savings, "amount": "100.00", "indexed": False}],
+        returns=[{"category_id": savings, "ret": "0"}],
+        amount="11000.00",
+        reach_month="2027-12",
+    )
+    assert out["start_month"] == "2026-12"
+    assert len(out["months"]) == 13
+    last = out["months"][12]
+    assert (last["month"], last["p10"], last["p50"], last["p90"]) == (
+        "2027-12",
+        "11200.00",
+        "11200.00",
+        "11200.00",
+    )
+    assert (last["today"], last["contributed"], last["repaid"], last["gains"]) == (
+        "10000.00",
+        "1200.00",
+        "0.00",
+        "0.00",
+    )
+    assert out["savings"]["mode"] == "contributions"
+    assert out["savings"]["monthly"] == "100.00"
+    assert out["horizon"]["income_median"] == "37.33"  # 11,200 x 4 % / 12
+    assert out["horizon"]["income_low"] == "37.33"
+    reach = out["reach"]
+    assert (reach["chance"], reach["half"], reach["ninety"]) == ("1.0000", "2027-10", "2027-10")
+    assert out["ceiling_note"] is False
+    # Nothing was saved.
+    assert all(
+        c["contribution"] is None
+        for c in owner_client.get("/api/projection/assumptions").json()["categories"]
+    )
+
+
+def test_without_contributions_the_run_saves_the_capacity(owner_client: TestClient) -> None:
+    _livret(owner_client)
+    _capacity(owner_client, "250.00")
+    out = _ok(owner_client, years=2)
+    assert (out["savings"]["mode"], out["savings"]["monthly"]) == ("capacity", "250.00")
+    assert out["savings"]["capacity"] == "250.00"
+    assert out["savings"]["capacity_set"] is True
+    assert len(out["months"]) == 25
+    assert out["reach"] is None
+
+
+def test_a_what_if_scales_the_contributions_and_shows_its_median(
+    owner_client: TestClient,
+) -> None:
+    savings = _livret(owner_client)
+    flat = [{"category_id": savings, "ret": "0"}]
+    item = {"category_id": savings, "amount": "100.00", "indexed": False}
+    out = _ok(
+        owner_client,
+        years=1,
+        today=False,
+        contributions=[item],
+        returns=flat,
+        what_ifs=[{"savings": "200.00"}, {"inflation": "0.05"}],
+    )
+    first, second = out["what_ifs"]
+    assert first["median"] == "12400.00"
+    assert len(first["medians"]) == 13
+    assert second["median"] == "11200.00"  # current euros: the inflation changes nothing
+
+
+def test_the_income_follows_the_withdrawal_rate_from_2_to_5_percent(
+    owner_client: TestClient,
+) -> None:
+    _livret(owner_client, "12000.00")
+    out = _ok(
+        owner_client,
+        years=1,
+        today=False,
+        withdrawal_rate="0.05",
+        returns=[{"category_id": _categories(owner_client)["Savings accounts"]["id"], "ret": "0"}],
+    )
+    assert out["horizon"]["income_median"] == "50.00"
+    for rate in ("0.019", "0.051"):
+        assert _run(owner_client, years=1, withdrawal_rate=rate).status_code == 422
+
+
+def test_savings_beyond_the_regulated_ceilings_are_noted(owner_client: TestClient) -> None:
+    """Compared in current euros: the ceilings are not indexed."""
+    savings = _livret(owner_client, "30000.00")
+    item = {"category_id": savings, "amount": "1000.00"}
+    assert _ok(owner_client, years=1, contributions=[item])["ceiling_note"] is True
+    small = {"category_id": savings, "amount": "100.00"}
+    assert _ok(owner_client, years=1, contributions=[small])["ceiling_note"] is False
+
+
+@pytest.mark.parametrize(
+    "body",
+    [
+        {"years": 0},
+        {"years": 41},
+        {"years": 1, "what_ifs": [{}, {}, {}]},
+        {"years": 1, "contributions": [{"category_id": "x", "amount": "1.00"}]},
+    ],
+)
+def test_impossible_runs_are_refused(owner_client: TestClient, body: dict[str, Any]) -> None:
+    _livret(owner_client)
+    assert _run(owner_client, **body).status_code == 422
+
+
+def test_a_contribution_to_a_debt_cannot_be_run(owner_client: TestClient) -> None:
+    _livret(owner_client)
+    debts = _categories(owner_client)["Debts"]["id"]
+    body = [{"category_id": debts, "amount": "10.00"}]
+    assert _run(owner_client, years=1, contributions=body).status_code == 422
+
+
+def test_without_a_wealth_line_there_is_nothing_to_run(owner_client: TestClient) -> None:
+    assert _run(owner_client, years=1).status_code == 404
+
+
+def test_with_no_volatility_the_gains_are_nothing_but_the_returns(
+    owner_client: TestClient,
+) -> None:
+    """Invariant §8.46 on the engine: at 0 % ± 0 with a debt repaid and its payment freed, the
+    four parts add up to the median; in current euros the gains are 0, in today's euros they
+    are the inflation's toll, below 0."""
+    savings = _livret(owner_client)
+    stocks = _line(owner_client, "Stocks", "PEA")
+    _value(owner_client, stocks, "2026-12", "5000.00")
+    loan = _line(owner_client, "Debts", "Prêt auto")
+    _value(owner_client, loan, "2026-12", "1000.00")
+    owner_client.put(
+        f"/api/projection/debts/{loan}",
+        json={"payment": "300.00", "rate": "0", "insurance": "0"},
+        headers=csrf(owner_client),
+    )
+    stocks_id = _categories(owner_client)["Stocks"]["id"]
+    flat = [{"category_id": savings, "ret": "0"}, {"category_id": stocks_id, "ret": "0"}]
+    owner_client.put(
+        f"/api/projection/categories/{stocks_id}",
+        json={"ret": "0", "volatility": "0"},
+        headers=csrf(owner_client),
+    )
+    item = {"category_id": savings, "amount": "100.00"}
+    for today in (False, True):
+        out = _ok(owner_client, years=1, today=today, contributions=[item], returns=flat)
+        for m in out["months"]:
+            parts = D(m["today"]) + D(m["contributed"]) + D(m["repaid"]) + D(m["gains"])
+            assert parts == D(m["p50"])
+            if today:  # after inflation: holdings at 0 % lose to prices
+                assert D(m["gains"]) <= 0
+            else:
+                assert abs(D(m["gains"])) <= D("0.05"), m
+        last = out["months"][12]
+        assert last["debts"] == "0.00"
+        if not today:
+            assert last["repaid"] == "1000.00"
+            # Stocks get no contribution: they stay as they are.
+            held = next(c for c in out["categories"] if c["id"] == stocks_id)["medians"]
+            assert held[0] == held[12] == "5000.00"
+
+
+def test_a_what_if_on_the_return_alone_keeps_the_volatility(owner_client: TestClient) -> None:
+    _livret(owner_client)
+    stocks = _line(owner_client, "Stocks", "PEA")
+    _value(owner_client, stocks, "2026-12", "50000.00")
+    stocks_id = _categories(owner_client)["Stocks"]["id"]
+    out = _ok(owner_client, years=5, what_ifs=[{"category_id": stocks_id, "ret": "0.03"}])
+    (w,) = out["what_ifs"]
+    assert D(w["p10"]) < D(w["median"]) < D(w["p90"])  # 3 % ± 16 %, not ± 0
+
+
+@pytest.mark.parametrize("savings", ["0.00", "-100.00"])
+def test_with_contributions_a_what_if_keeps_the_savings_above_zero(
+    owner_client: TestClient, savings: str
+) -> None:
+    category = _livret(owner_client)
+    item = {"category_id": category, "amount": "100.00"}
+    body = {"years": 1, "contributions": [item], "what_ifs": [{"savings": savings}]}
+    assert _run(owner_client, **body).status_code == 422
+
+
+def test_an_absurd_contribution_is_refused_not_an_error(owner_client: TestClient) -> None:
+    category = _livret(owner_client)
+    for amount in ("1e30", "100000.01"):
+        body = [{"category_id": category, "amount": amount}]
+        assert _run(owner_client, years=1, contributions=body).status_code == 422
+
+
+def test_the_run_needs_the_csrf_token(owner_client: TestClient) -> None:
+    _livret(owner_client)
+    assert owner_client.post("/api/projection/run", json={"years": 1}).status_code == 403
+
+
+def test_another_member_s_private_line_is_never_run(
+    owner_client: TestClient, clock: Clock, member: User
+) -> None:
+    _livret(owner_client)
+    private = _line(owner_client, "Stocks", "Mon PEA", visibility="private")
+    _value(owner_client, private, "2026-12", "99000.00")
+    log_in(owner_client, clock, "member@example.com")
+    out = _ok(owner_client, years=1, today=False)
+    assert out["months"][0]["p50"] == "10000.00"
+    assert "Stocks" not in {c["name"] for c in out["categories"]}

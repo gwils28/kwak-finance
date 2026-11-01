@@ -63,6 +63,8 @@ def test_a_new_household_projects_with_the_defaults(owner_client: TestClient) ->
         "default_volatility": "0.160",
         "median_growth": "0.058",
         "own": False,
+        "contribution": None,
+        "contribution_indexed": True,
     }
     assert _category(owner_client, "Crypto")["median_growth"] == "-0.056"
     assert out["debts"] == []
@@ -197,3 +199,87 @@ def test_changes_are_in_the_activity_log(owner_client: TestClient) -> None:
     details = [e["details"] for e in log["items"] if e["action"] == "settings_changed"]
     assert {"inflation": "0.025"} in details
     assert {"category": "Stocks", "ret": "0.065", "volatility": "0.180"} in details
+
+
+# F-SIM-3: the monthly contributions
+
+
+def _contributions(client: TestClient, *items: dict[str, Any]) -> Any:
+    return client.put(
+        "/api/projection/contributions", json={"contributions": list(items)}, headers=csrf(client)
+    )
+
+
+def _item(client: TestClient, name: str, amount: str, **more: Any) -> dict[str, Any]:
+    return {"category_id": _categories(client)[name]["id"], "amount": amount, **more}
+
+
+def test_the_contributions_are_saved_with_the_returns_changed_with_them(
+    owner_client: TestClient,
+) -> None:
+    assert _category(owner_client, "Stocks")["contribution"] is None
+    response = _contributions(
+        owner_client,
+        _item(owner_client, "Stocks", "300.00", ret="0.065"),
+        _item(owner_client, "Savings accounts", "150.00", indexed=False),
+    )
+    assert response.status_code == 200, response.text
+    stocks = _category(owner_client, "Stocks")
+    assert (stocks["contribution"], stocks["contribution_indexed"]) == ("300.00", True)
+    assert (stocks["ret"], stocks["volatility"], stocks["own"]) == ("0.065", "0.160", True)
+    livret = _category(owner_client, "Savings accounts")
+    assert (livret["contribution"], livret["contribution_indexed"]) == ("150.00", False)
+    assert livret["own"] is False  # its return was not changed
+
+    # The list replaces the saved one.
+    assert _contributions(owner_client, _item(owner_client, "Gold", "50.00")).status_code == 200
+    saved = {c["name"]: c["contribution"] for c in _assumptions(owner_client)["categories"]}
+    assert saved["Stocks"] is None
+    assert saved["Gold"] == "50.00"
+    assert _contributions(owner_client).status_code == 200
+    assert all(c["contribution"] is None for c in _assumptions(owner_client)["categories"])
+
+
+@pytest.mark.parametrize(
+    ("items", "status"),
+    [
+        ([("Stocks", "0.99")], 422),
+        ([("Stocks", "100000.01")], 422),
+        ([("Stocks", "10.001")], 422),
+        ([("Stocks", "10.00"), ("Stocks", "20.00")], 422),
+        ([("Debts", "10.00")], 422),
+    ],
+)
+def test_impossible_contributions_are_refused(
+    owner_client: TestClient, items: list[tuple[str, str]], status: int
+) -> None:
+    body = [_item(owner_client, name, amount) for name, amount in items]
+    assert _contributions(owner_client, *body).status_code == status
+
+
+def test_a_contribution_to_another_household_s_category_is_not_found(
+    owner_client: TestClient,
+) -> None:
+    body = {"category_id": "019a0000-0000-7000-8000-000000000000", "amount": "10.00"}
+    assert _contributions(owner_client, body).status_code == 404
+
+
+def test_the_contributions_are_in_the_activity_log(owner_client: TestClient) -> None:
+    _contributions(owner_client, _item(owner_client, "Stocks", "300.00"))
+    log = owner_client.get("/api/audit").json()
+    details = [e["details"] for e in log["items"] if e["action"] == "settings_changed"]
+    assert {"contributions": "Stocks 300.00"} in details
+    _contributions(owner_client, _item(owner_client, "Gold", "50.00", indexed=False, ret="0.035"))
+    log = owner_client.get("/api/audit").json()
+    details = [e["details"] for e in log["items"] if e["action"] == "settings_changed"]
+    assert {"contributions": "Gold 50.00 fixed at 0.035"} in details
+
+
+def test_a_member_sets_the_contributions_but_never_without_the_csrf_token(
+    client: TestClient, clock: Clock, member: User
+) -> None:
+    clock.now = TODAY
+    log_in(client, clock, "member@example.com")
+    body = {"contributions": [_item(client, "Stocks", "100.00")]}
+    assert client.put("/api/projection/contributions", json=body).status_code == 403
+    assert _contributions(client, _item(client, "Stocks", "100.00")).status_code == 200
