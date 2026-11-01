@@ -72,7 +72,6 @@ export const wealthEn = {
   projectionTitle: "Wealth projection",
   projectionFrame: "The projection's charts",
   retirementTitle: "Retirement",
-  retirementFrame: "The retirement's charts",
   myRetirement: "My retirement",
   myRetirementIntro:
     "Seen by the household's members, since the plan is the household's. Amounts are monthly, in today's euros.",
@@ -287,7 +286,6 @@ export const wealthFr: typeof wealthEn = {
   projectionTitle: "Projection du patrimoine",
   projectionFrame: "Les graphiques de la projection",
   retirementTitle: "Retraite",
-  retirementFrame: "Les graphiques de la retraite",
   myRetirement: "Ma retraite",
   myRetirementIntro:
     "Visible des membres du foyer, puisque le plan est celui du foyer. Les montants sont mensuels, en euros d'aujourd'hui.",

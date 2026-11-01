@@ -11,6 +11,7 @@ import { householdEn } from "./household";
 import { overviewEn } from "./overview";
 import { projectionEn } from "./projection";
 import { reportsEn } from "./reports";
+import { retirementEn } from "./retirement";
 import { runGuideEn } from "./runGuide";
 import { spendingEn } from "./spending";
 import { spendingBudgetEn } from "./spendingBudget";
@@ -33,6 +34,7 @@ export const en = {
   demo: demoEn,
   wealth: wealthEn,
   projection: projectionEn,
+  retirement: retirementEn,
   goals: goalsEn,
   goalAnalysis: goalAnalysisEn,
   runGuide: runGuideEn,

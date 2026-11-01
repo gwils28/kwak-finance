@@ -12,6 +12,7 @@ import { householdFr } from "./household";
 import { overviewFr } from "./overview";
 import { projectionFr } from "./projection";
 import { reportsFr } from "./reports";
+import { retirementFr } from "./retirement";
 import { runGuideFr } from "./runGuide";
 import { spendingFr } from "./spending";
 import { spendingBudgetFr } from "./spendingBudget";
@@ -33,6 +34,7 @@ export const fr: Messages = {
   demo: demoFr,
   wealth: wealthFr,
   projection: projectionFr,
+  retirement: retirementFr,
   goals: goalsFr,
   goalAnalysis: goalAnalysisFr,
   runGuide: runGuideFr,

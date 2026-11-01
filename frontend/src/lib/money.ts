@@ -141,3 +141,10 @@ export function parsePercentInput(text: string, places = 1): string | null {
   if (!match || (match[1] ?? "").replace(/0+$/, "").length > places) return null;
   return shiftPoint(compact.replace(/^\+/, ""), -2);
 }
+
+const RATIO: Intl.NumberFormatOptions = { minimumFractionDigits: 2, maximumFractionDigits: 2 };
+
+/** An error ratio (MASE, RMSSE), two decimals: "0.8123" -> "0.81" ("0,81" in French). */
+export function formatRatio(ratio: Num): string {
+  return numberFormat(RATIO).format(ratio as Intl.StringNumericLiteral);
+}

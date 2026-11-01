@@ -1,7 +1,6 @@
 """FastAPI dependencies shared by the routers."""
 
 from collections.abc import Iterator
-from contextlib import contextmanager
 from datetime import UTC, datetime
 
 from fastapi import Request
@@ -33,14 +32,6 @@ def request_scope(session: Session) -> Iterator[Session]:
 def get_db(request: Request) -> Iterator[Session]:
     """One database session per request."""
     factory: sessionmaker[Session] = request.app.state.sessionmaker
-    with factory() as session:
-        yield from request_scope(session)
-
-
-@contextmanager
-def db_scope(factory: sessionmaker[Session]) -> Iterator[Session]:
-    """One database session outside FastAPI's dependencies (the Dash pages), committed or
-    rolled back as a request's."""
     with factory() as session:
         yield from request_scope(session)
 

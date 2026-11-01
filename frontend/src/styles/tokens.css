@@ -108,6 +108,22 @@
   --color-projection-whatif-1: var(--color-secondary-500);
   --color-projection-whatif-2: var(--color-neutral-600);
   --color-projection-amount: var(--color-neutral-500);
+  /* Forecast (F-FCT-6, spec §7): income money in, spent ochre with its fixed part lighter,
+     saved green, the rest the text colour; months forecast dashed, their bands in the same hue
+     at low opacity. The statuses against the targets are the month progress ones. */
+  --color-forecast-income: var(--color-flow-in);
+  --color-forecast-spent: var(--color-secondary-600);
+  --color-forecast-fixed: var(--color-secondary-300);
+  --color-forecast-saved: var(--color-primary-600);
+  --color-forecast-rest: var(--color-fg);
+  /* Retirement (F-RET-4, spec §7): the pensions and the withdrawal two steps of one green, the
+     spending the text colour, the liquid wealth ochre over the projection's fan; the members
+     two categorical hues on the timeline. */
+  --color-retirement-pensions: var(--color-primary-600);
+  --color-retirement-withdrawal: var(--color-primary-300);
+  --color-retirement-liquid: var(--color-secondary-500);
+  --color-retirement-person-1: var(--color-wealth-stocks);
+  --color-retirement-person-2: var(--color-wealth-crypto);
 }
 
 @theme static {
@@ -208,6 +224,11 @@
     --color-projection-band-inner: var(--color-primary-700);
     --color-projection-band-outer: var(--color-primary-800);
     --color-projection-whatif-2: var(--color-neutral-300);
+    --color-forecast-spent: var(--color-secondary-400);
+    --color-forecast-fixed: var(--color-secondary-700);
+    --color-forecast-saved: var(--color-primary-400);
+    --color-retirement-pensions: var(--color-primary-400);
+    --color-retirement-withdrawal: var(--color-primary-700);
     /* Within the dark band of lightness, checked against the dark surface. */
     --color-wealth-savings: rgb(68 115 43);
     --color-wealth-current: rgb(153 154 71);
