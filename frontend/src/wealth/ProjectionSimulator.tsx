@@ -13,6 +13,7 @@ import {
   type RunIn,
   type RunOut,
   runProjection,
+  type SavingsSource,
   type Scope,
   setContributions,
   type WhatIfIn,
@@ -150,6 +151,8 @@ export function ProjectionSimulator() {
   });
 
   const [rows, setRows] = useState<Row[] | null>(null);
+  /** The source as chosen; null: declared once a contribution exists, else measured. */
+  const [source, setSource] = useState<SavingsSource | null>(null);
   const [years, setYears] = useState(DEFAULT_YEARS);
   const [scope, setScope] = useState<Scope>("household");
   const [euros, setEuros] = useState<"today" | "current">("today");
@@ -164,7 +167,10 @@ export function ProjectionSimulator() {
   const categories = assumptions.data?.categories ?? [];
   const byId = useMemo(() => new Map(categories.map((c) => [c.id, c])), [categories]);
   useEffect(() => {
-    if (assumptions.data && rows === null) setRows(savedRows(assumptions.data));
+    if (assumptions.data && rows === null) {
+      setRows(savedRows(assumptions.data));
+      setSource(assumptions.data.savings_source ?? null);
+    }
   }, [assumptions.data, rows]);
   const draft = rows ?? [];
 
@@ -185,8 +191,10 @@ export function ProjectionSimulator() {
   const saved = assumptions.data ? savedRows(assumptions.data) : [];
   const dirty =
     rows !== null &&
-    JSON.stringify(draft.map(({ key: _, ...r }) => r)) !==
-      JSON.stringify(saved.map(({ key: _, ...r }) => r));
+    (JSON.stringify(draft.map(({ key: _, ...r }) => r)) !==
+      JSON.stringify(saved.map(({ key: _, ...r }) => r)) ||
+      source !== (assumptions.data?.savings_source ?? null));
+  const shownSource: SavingsSource = source ?? (draft.length > 0 ? "declared" : "measured");
   const total = parsed.reduce((sum, x) => sum + Number(x.amount ?? 0), 0);
 
   const rateShare = parsePercentInput(rate);
@@ -237,6 +245,7 @@ export function ProjectionSimulator() {
           reach_month: amountValue ? reachMonth : null,
           withdrawal_rate: rateShare ?? "0.04",
           what_ifs: sentWhatIfs,
+          savings_source: source,
         };
   const debounced = useDebounced(body, DEBOUNCE_MS);
   const run = useQuery({
@@ -273,12 +282,14 @@ export function ProjectionSimulator() {
               indexed: x.row.indexed,
               ret: changedReturn(x.ret, byId.get(x.row.categoryId)) ? x.ret : null,
             })),
+            savings_source: source,
           },
         }),
       ),
     onSuccess: (next) => {
       queryClient.setQueryData(ASSUMPTIONS_KEY, next);
       setRows(savedRows(next));
+      setSource(next.savings_source ?? null);
       setSaveError(null);
       setSavedNote(true);
     },
@@ -325,7 +336,34 @@ export function ProjectionSimulator() {
         className="grid overflow-hidden rounded-lg border border-border bg-surface lg:grid-cols-[minmax(25rem,27rem)_1fr]"
       >
         <div className="flex flex-col gap-5 border-border p-4 max-lg:border-b lg:border-r">
+          <div className="flex flex-col gap-1">
+            <Segmented
+              label={p.sourceTitle}
+              value={shownSource}
+              onChange={(next) => {
+                setSavedNote(false);
+                setSource(next);
+              }}
+              options={[
+                ["declared", p.sourceDeclared],
+                ["measured", p.sourceMeasured],
+              ]}
+            />
+            <p className="text-xs text-muted">
+              {shownSource === "declared"
+                ? p.declaredExplain
+                : !result
+                  ? null
+                  : result.savings.capacity_set
+                    ? p.measuredSetExplain(formatEurWhole(result.savings.capacity))
+                    : p.measuredExplain(
+                        formatEurWhole(result.savings.capacity),
+                        result.savings.capacity_months,
+                      )}
+            </p>
+          </div>
           <Contributions
+            source={shownSource}
             parsed={parsed}
             categories={categories}
             byId={byId}
@@ -383,7 +421,11 @@ export function ProjectionSimulator() {
             {dirty && (
               <Button
                 variant="ghost"
-                onClick={() => assumptions.data && setRows(savedRows(assumptions.data))}
+                onClick={() => {
+                  if (!assumptions.data) return;
+                  setRows(savedRows(assumptions.data));
+                  setSource(assumptions.data.savings_source ?? null);
+                }}
               >
                 {p.cancel}
               </Button>
@@ -543,6 +585,7 @@ function Fold({ title, children }: { title: string; children: ReactNode }) {
 }
 
 function Contributions({
+  source,
   parsed,
   categories,
   byId,
@@ -554,6 +597,7 @@ function Contributions({
   onRemove,
   onAdd,
 }: {
+  source: SavingsSource;
   parsed: { row: Row; amount: string | null; ret: string | null }[];
   categories: CategoryAssumptionOut[];
   byId: Map<string, CategoryAssumptionOut>;
@@ -569,20 +613,29 @@ function Contributions({
   const p = t.projection;
   const titleId = useId();
   const savings = result?.savings;
-  const share = savings?.share_of_capacity;
+  const measured = source === "measured";
+  const short = savings && !savings.capacity_set && savings.capacity_months < 12;
   return (
     <div className="flex flex-col gap-2">
+      {measured && short && (
+        <p className="rounded border-l-4 border-progress-watch bg-bg p-2 text-xs text-warning">
+          △ {p.measuredShort(savings.capacity_months)}
+        </p>
+      )}
       <h2 id={titleId} className="text-xs font-semibold tracking-wide text-muted uppercase">
-        {p.contributionsTitle}
+        {measured ? p.splitTitle : p.contributionsTitle}
       </h2>
       {parsed.length === 0 ? (
-        <p className="text-sm text-muted">{p.noContributions}</p>
+        <p className="text-sm text-muted">
+          {measured ? p.noContributionsMeasured : p.noContributionsDeclared}
+        </p>
       ) : (
         <table aria-labelledby={titleId} className="w-full text-sm">
           <thead className="text-xs text-muted">
             <tr>
               <th className="pb-1 text-left font-medium">{p.colCategory}</th>
               <th className="pr-2 pb-1 text-right font-medium">{p.colAmount}</th>
+              {measured && <th className="pr-2 pb-1 text-right font-medium">{p.colShare}</th>}
               <th className="pr-2 pb-1 text-right font-medium">{p.colReturn}</th>
               <th className="pb-1 text-center font-medium" title={p.indexedHint}>
                 {p.colIndexed}
@@ -634,6 +687,11 @@ function Contributions({
                         className={`${field} ${amount === null ? "border-negative" : ""}`}
                       />
                     </td>
+                    {measured && (
+                      <td className="tabular py-1 pr-2 text-right text-muted">
+                        {total > 0 ? formatPercent(Number(amount ?? 0) / total) : "—"}
+                      </td>
+                    )}
                     <td className="w-16 py-1 pr-1">
                       <input
                         aria-label={p.returnOf(name)}
@@ -666,7 +724,7 @@ function Contributions({
                   </tr>
                   {volatile && category && (
                     <tr>
-                      <td colSpan={5} className="pb-1 text-xs text-warning">
+                      <td colSpan={measured ? 6 : 5} className="pb-1 text-xs text-warning">
                         △ {p.volatile(name, formatRate(category.median_growth))}
                       </td>
                     </tr>
@@ -692,38 +750,21 @@ function Contributions({
           + {p.add}
         </button>
       )}
-      {parsed.length > 0 && (
+      {parsed.length > 0 && measured && <p className="text-xs text-muted">{p.sharesFrom}</p>}
+      {(parsed.length > 0 || measured) && (
         <p className="flex items-baseline justify-between border-t border-border pt-2 text-sm">
           <span>{p.total}</span>
-          <span className="tabular font-semibold">{p.perMonth(formatEurWhole(total))}</span>
+          <span className="tabular font-semibold">
+            {p.perMonth(formatEurWhole(measured ? (savings?.capacity ?? "0") : total))}
+          </span>
         </p>
       )}
-      {savings && savings.mode === "contributions" && share && (
-        <div className="text-xs text-muted">
-          <p className={Number(share) > 1 ? "text-warning" : ""}>
-            {Number(share) > 1 ? "△ " : ""}
-            {(Number(share) > 1 ? p.overCapacity : p.ofCapacity)(
-              formatPercent(share),
-              formatEurWhole(savings.capacity),
-            )}
-          </p>
-          <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-border">
-            <div
-              className="h-full rounded-full bg-accent"
-              style={{ width: `${Math.min(100, Number(share) * 100)}%` }}
-            />
-          </div>
-        </div>
-      )}
-      {savings && savings.mode === "capacity" && (
-        <p className="text-xs text-muted">
+      {!measured && savings && parsed.length > 0 && (
+        <p className="rounded bg-bg p-2 text-xs text-muted">
           {savings.capacity_set
-            ? p.capacitySetByHand(formatEurWhole(savings.capacity))
-            : p.capacityMeasured(formatEurWhole(savings.capacity), savings.capacity_months)}
+            ? p.compareSetByHand(formatEurWhole(savings.capacity))
+            : p.compareMeasured(formatEurWhole(savings.capacity), savings.capacity_months)}
         </p>
-      )}
-      {savings && !savings.capacity_set && savings.capacity_months < 12 && (
-        <p className="text-xs text-muted">{p.capacityShort(savings.capacity_months)}</p>
       )}
       {parsed.length > 0 && <p className="text-xs text-muted">{p.indexedHint}</p>}
       {scope !== "household" && parsed.length > 0 && (

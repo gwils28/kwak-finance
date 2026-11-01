@@ -41,6 +41,9 @@ class Household(UUIDPrimaryKey, Timestamps, Base):
             "pension_indexation BETWEEN -0.02 AND 0.01", name="pension_indexation_range"
         ),
         CheckConstraint("horizon_age BETWEEN 85 AND 105", name="horizon_age_range"),
+        CheckConstraint(
+            "projection_savings IN ('declared', 'measured')", name="projection_savings_known"
+        ),
         # F-ADM-5: one demo household at most.
         Index("uq_household_demo", "is_demo", unique=True, postgresql_where=text("is_demo")),
     )
@@ -65,6 +68,9 @@ class Household(UUIDPrimaryKey, Timestamps, Base):
     retirement_spending: Mapped[Decimal | None] = mapped_column(Numeric(14, 2))
     pension_indexation: Mapped[Decimal | None] = mapped_column(Numeric(4, 3))
     horizon_age: Mapped[int | None] = mapped_column(SmallInteger)
+    # F-SIM-3: where the simulator's monthly savings come from, `declared` (the contributions
+    # alone) or `measured` (the goals' capacity); NULL: declared once a contribution exists.
+    projection_savings: Mapped[str | None] = mapped_column(String(10))
 
     users: Mapped[list["User"]] = relationship(back_populates="household")
 

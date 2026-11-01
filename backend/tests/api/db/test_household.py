@@ -65,3 +65,17 @@ def test_role_is_restricted_to_known_values(session: Session) -> None:
             ),
             {"h": household.id},
         )
+
+
+def test_the_projection_savings_source_is_declared_measured_or_unset(session: Session) -> None:
+    household = Household(name="Home")
+    session.add(household)
+    session.flush()
+    assert household.projection_savings is None
+    household.projection_savings = "declared"
+    session.flush()
+    with pytest.raises(IntegrityError, match="ck_household_projection_savings_known"):
+        session.execute(
+            text("UPDATE household SET projection_savings = 'guessed' WHERE id = :id"),
+            {"id": household.id},
+        )

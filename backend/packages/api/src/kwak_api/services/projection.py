@@ -104,8 +104,14 @@ class Basis:
     """The complete months it was measured on."""
     inflation: Decimal
     contributions: list[Contribution] = field(default_factory=list)
-    """The household's monthly contributions (F-SIM-3): with any, they make the savings and
-    the allocation, the capacity above is only compared with them."""
+    """The household's monthly contributions (F-SIM-3): declared, they make the savings and the
+    allocation; measured, only the allocation."""
+    savings_choice: core.SavingsSource | None = None
+    """The household's choice of where the savings come from; None: the default rule."""
+
+    @property
+    def source(self) -> core.SavingsSource:
+        return core.savings_source(self.savings_choice, has_contributions=bool(self.contributions))
 
 
 def basis(
@@ -153,6 +159,11 @@ def basis(
             for c in assets
             if contributions and c.monthly_contribution is not None
         ],
+        savings_choice=(
+            core.SavingsSource(household.projection_savings)
+            if contributions and household.projection_savings is not None
+            else None
+        ),
     )
 
 
@@ -172,11 +183,15 @@ BASE = WhatIf()
 
 def scenario(b: Basis, *, years: int, what_if: WhatIf = BASE) -> mc.Scenario:
     months = years * 12
-    if b.contributions:
-        if what_if.allocation is not None:
-            raise core.ProjectionError("with contributions, change them rather than the allocation")
+    declared = b.source is core.SavingsSource.DECLARED
+    if b.contributions and what_if.allocation is not None:
+        raise core.ProjectionError("with contributions, change them rather than the allocation")
+    if declared and b.contributions:
         return _contributed(b, months=months, what_if=what_if)
-    if what_if.allocation is not None:
+    if b.contributions:
+        # Measured: the capacity, split like the contributions (F-SIM-3).
+        shares = core.contribution_shares(b.contributions)
+    elif what_if.allocation is not None:
         core.check_allocation(what_if.allocation)
         shares = {k: Decimal(p) / 100 for k, p in what_if.allocation.items()}
     elif b.allocation is not None:
@@ -194,7 +209,11 @@ def scenario(b: Basis, *, years: int, what_if: WhatIf = BASE) -> mc.Scenario:
         path = core.amortise(start_owed, b.debts[line_id], months=months)
         owed = [a + o for a, o in zip(owed, path.owed, strict=True)]
         freed = [a + f for a, f in zip(freed, path.freed, strict=True)]
-    monthly = b.savings if what_if.savings is None else what_if.savings
+    if what_if.savings is not None:
+        monthly = what_if.savings
+    else:
+        # Declared without a contribution: no savings, only the debts' freed payments.
+        monthly = Decimal(0) if declared else b.savings
     return mc.Scenario(
         categories=[
             mc.Category(

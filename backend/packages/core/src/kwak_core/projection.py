@@ -7,6 +7,7 @@ debts' repayment and the savings month by month, and today's euros. The Monte Ca
 Months are counted from the starting month: month 0 is the start, month t the t-th one after.
 """
 
+import enum
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from decimal import Decimal
@@ -366,6 +367,36 @@ def contribution_plan(
         savings.append(total + (freed[t - 1] if t <= len(freed) else ZERO))
         split.append(shares)
     return ContributionPlan(put_in, savings, split)
+
+
+class SavingsSource(enum.StrEnum):
+    """Where the simulator's monthly savings come from (F-SIM-3)."""
+
+    DECLARED = "declared"
+    """The contributions alone; none: no savings."""
+    MEASURED = "measured"
+    """The goals' capacity measured on the history (or set by hand); the contributions, if
+    any, give only its split."""
+
+
+def savings_source(chosen: SavingsSource | None, *, has_contributions: bool) -> SavingsSource:
+    """The household's choice; unset, declared once a contribution exists, else measured."""
+    if chosen is not None:
+        return chosen
+    return SavingsSource.DECLARED if has_contributions else SavingsSource.MEASURED
+
+
+def contribution_shares(contributions: Sequence[Contribution]) -> dict[UUID, Decimal]:
+    """Each contribution over their sum, today's amounts, summing to exactly 1 (the largest
+    takes the rounding): how measured savings are split when contributions exist."""
+    check_contributions(contributions)
+    if not contributions:
+        raise ProjectionError("no contribution to split by")
+    total = sum((c.amount for c in contributions), ZERO)
+    shares = {c.category_id: (c.amount / total).quantize(SHARE) for c in contributions}
+    largest = max(shares, key=lambda k: shares[k])
+    shares[largest] = ONE - sum((v for k, v in shares.items() if k != largest), ZERO)
+    return shares
 
 
 # F-SIM-5: where the money comes from

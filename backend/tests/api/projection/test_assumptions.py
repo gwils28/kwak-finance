@@ -283,3 +283,23 @@ def test_a_member_sets_the_contributions_but_never_without_the_csrf_token(
     body = {"contributions": [_item(client, "Stocks", "100.00")]}
     assert client.put("/api/projection/contributions", json=body).status_code == 403
     assert _contributions(client, _item(client, "Stocks", "100.00")).status_code == 200
+
+
+def test_the_savings_source_is_saved_with_the_contributions(owner_client: TestClient) -> None:
+    assert _assumptions(owner_client)["savings_source"] is None
+    response = owner_client.put(
+        "/api/projection/contributions",
+        json={"contributions": [], "savings_source": "declared"},
+        headers=csrf(owner_client),
+    )
+    assert response.status_code == 200, response.text
+    assert response.json()["savings_source"] == "declared"
+    # Left out, it is kept.
+    assert _contributions(owner_client, _item(owner_client, "Stocks", "300.00")).status_code == 200
+    assert _assumptions(owner_client)["savings_source"] == "declared"
+    response = owner_client.put(
+        "/api/projection/contributions",
+        json={"contributions": [], "savings_source": "guessed"},
+        headers=csrf(owner_client),
+    )
+    assert response.status_code == 422

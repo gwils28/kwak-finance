@@ -156,6 +156,7 @@ const run = {
     month("2027-11", 100000, [84300, 5400, 4000, 6300]),
   ],
   savings: {
+    source: "declared",
     mode: "contributions",
     monthly: "450.00",
     capacity: "600.00",
@@ -205,7 +206,11 @@ test("the simulator answers first: the median, its range, the income and its par
   expect(parts).toHaveTextContent("Contributions €5,400");
   expect(parts).toHaveTextContent("Debts repaid €4,000");
   expect(parts).toHaveTextContent("Gains after inflation €6,300");
-  expect(screen.getByText("75% of your measured capacity (€600 a month).")).toBeVisible();
+  expect(
+    screen.getByText(
+      "To compare: your measured capacity is €600 a month, over 6 months. It is not used in the projection.",
+    ),
+  ).toBeVisible();
   // A volatile category says how little its median grows.
   expect(screen.queryByText(/Crypto swings a lot/)).toBeNull();
   expect(screen.getByRole("textbox", { name: "Monthly amount for Stocks" })).toHaveValue("300");
@@ -252,6 +257,7 @@ test("typing a contribution reruns the projection without saving it, then saves 
         { category_id: "c-stocks", amount: "400.00", indexed: true, ret: null },
         { category_id: "c-livret", amount: "150.00", indexed: false, ret: null },
       ],
+      savings_source: null,
     }),
   );
   expect(await screen.findByText("Saved.")).toBeVisible();
@@ -301,5 +307,37 @@ test("without wealth the simulator asks for it, in French", async () => {
   render(<TestApp path="/wealth/projection" />);
   expect(await screen.findByRole("heading", { name: "Projection du patrimoine" })).toBeVisible();
   expect(await screen.findByText(/Aucune ligne de patrimoine dans ce périmètre/)).toBeVisible();
-  expect(screen.getByText(/Aucun versement pour l'instant/)).toBeVisible();
+  expect(screen.getByText(/la capacité est répartie comme votre patrimoine/)).toBeVisible();
+});
+
+test("the savings can come from the history or from the contributions alone", async () => {
+  const calls = simulator({
+    "PUT /api/projection/contributions": () =>
+      Response.json({ ...withContributions, savings_source: "measured" }),
+  });
+  const user = userEvent.setup();
+  render(<TestApp path="/wealth/projection" />);
+
+  await screen.findByRole("textbox", { name: "Monthly amount for Stocks" });
+  expect(screen.getByRole("button", { name: "Declared" })).toHaveAttribute("aria-pressed", "true");
+  expect(screen.getByText(/uses only the contributions below/)).toBeVisible();
+
+  await user.click(screen.getByRole("button", { name: "Measured" }));
+  await waitFor(() =>
+    expect(calls.filter((c) => c.route === "POST /api/projection/run").at(-1)?.body).toMatchObject({
+      savings_source: "measured",
+    }),
+  );
+  expect(screen.getByRole("heading", { name: "Split of the savings" })).toBeVisible();
+  expect(
+    screen.getByText(/Measured over 6 months only: one exceptional month skews it/),
+  ).toBeVisible();
+  expect(screen.getByText("Not saved")).toBeVisible();
+
+  await user.click(screen.getByRole("button", { name: "Save the contributions" }));
+  await waitFor(() =>
+    expect(calls.find((c) => c.route === "PUT /api/projection/contributions")?.body).toMatchObject({
+      savings_source: "measured",
+    }),
+  );
 });

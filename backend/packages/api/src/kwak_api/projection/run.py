@@ -72,6 +72,8 @@ class RunIn(BaseModel):
     reach_month: MonthText | None = None
     withdrawal_rate: Share = core.DEFAULT_WITHDRAWAL
     what_ifs: list[WhatIfIn] = Field(default_factory=list, max_length=2)
+    savings_source: core.SavingsSource | None = None
+    """Where the savings come from, being chosen; null: the saved choice (F-SIM-3)."""
 
 
 class MonthOut(BaseModel):
@@ -96,9 +98,13 @@ class MonthOut(BaseModel):
 
 
 class SavingsOut(BaseModel):
+    source: core.SavingsSource
+    """Declared: the contributions alone; measured: the capacity, split like the
+    contributions if any (F-SIM-3)."""
     mode: Literal["contributions", "capacity"]
+    """Declared with contributions, or the capacity (declared without any saves nothing)."""
     monthly: Decimal
-    """What the household saves a month now: the contributions' sum, else the capacity."""
+    """What the household saves a month now in the projection."""
     capacity: Decimal
     capacity_set: bool
     capacity_months: int
@@ -175,7 +181,10 @@ def _drafted(b: projection.Basis, body: RunIn) -> projection.Basis:
             raise RunError("a return belongs to an asset category")
         assumptions[r.category_id] = Assumption(r.ret, assumptions[r.category_id].volatility)
         core.check_assumption(assumptions[r.category_id])
-    return replace(b, contributions=list(contributions), assumptions=assumptions)
+    choice = b.savings_choice if body.savings_source is None else body.savings_source
+    return replace(
+        b, contributions=list(contributions), assumptions=assumptions, savings_choice=choice
+    )
 
 
 def _what_if(b: projection.Basis, w: WhatIfIn) -> projection.WhatIf:
@@ -296,17 +305,21 @@ def run(db: Session, viewer: User, b: projection.Basis, body: RunIn) -> RunOut:
     )
 
     contributed = sum((c.amount for c in b.contributions), Decimal(0))
+    declared = b.source is core.SavingsSource.DECLARED
     return RunOut(
         start_month=str(start),
         months=months,
         savings=SavingsOut(
-            mode="contributions" if b.contributions else "capacity",
-            monthly=quantize(contributed if b.contributions else b.savings),
+            source=b.source,
+            mode="contributions" if declared and b.contributions else "capacity",
+            monthly=quantize(contributed if declared else b.savings),
             capacity=quantize(b.savings),
             capacity_set=b.savings_set,
             capacity_months=b.savings_months,
             share_of_capacity=(
-                _chance(contributed / b.savings) if b.contributions and b.savings > 0 else None
+                _chance(contributed / b.savings)
+                if declared and b.contributions and b.savings > 0
+                else None
             ),
         ),
         horizon=horizon,

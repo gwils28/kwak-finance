@@ -26,13 +26,24 @@
             "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Inflation",
             "type": "string"
+          },
+          "savings_source": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SavingsSource"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
           "inflation",
           "default_inflation",
           "categories",
-          "debts"
+          "debts",
+          "savings_source"
         ],
         "title": "AssumptionsOut",
         "type": "object"
@@ -500,6 +511,16 @@
             "maxItems": 50,
             "title": "Contributions",
             "type": "array"
+          },
+          "savings_source": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SavingsSource"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
@@ -4988,6 +5009,16 @@
             "title": "Returns",
             "type": "array"
           },
+          "savings_source": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SavingsSource"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "scope": {
             "$ref": "#/components/schemas/Scope",
             "default": "household"
@@ -5337,9 +5368,13 @@
               }
             ],
             "title": "Share Of Capacity"
+          },
+          "source": {
+            "$ref": "#/components/schemas/SavingsSource"
           }
         },
         "required": [
+          "source",
           "mode",
           "monthly",
           "capacity",
@@ -5349,6 +5384,15 @@
         ],
         "title": "SavingsOut",
         "type": "object"
+      },
+      "SavingsSource": {
+        "description": "Where the simulator's monthly savings come from (F-SIM-3).",
+        "enum": [
+          "declared",
+          "measured"
+        ],
+        "title": "SavingsSource",
+        "type": "string"
       },
       "SavingsStatus": {
         "enum": [
