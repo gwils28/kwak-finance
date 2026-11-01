@@ -20,8 +20,7 @@ from kwak_api.dash import i18n, layout, tokens
 from kwak_api.dash import projection_views as views
 from kwak_api.dash.app import Context
 from kwak_api.dash.i18n import Language, t
-from kwak_api.dash.projection import dash_colours, view_of
-from kwak_api.dash.projection_views import View
+from kwak_api.dash.projection_views import View, view_of
 from kwak_api.services import projection
 from kwak_api.services import retirement as service
 
@@ -631,7 +630,7 @@ def register(app: Dash, context: Context) -> Callable[[str], html.Div]:
                 layout.intro(t(view.lang, "ret_intro")),
                 dcc.Loading(html.Div(id="ret-body"), color=tokens.rgb(theme, "primary-600")),
             ],
-            extra=dash_colours(theme),
+            extra=layout.dash_colours(theme),
         )
 
     return render

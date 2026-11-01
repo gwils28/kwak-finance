@@ -92,6 +92,22 @@
   --color-progress-ok: var(--color-primary-600);
   --color-progress-watch: var(--color-secondary-500);
   --color-progress-over: var(--color-secondary-800);
+  /* Projection (F-SIM-5): where the money comes from, stacked on today's net worth (a grey
+     for context): contributions green, debts repaid blue, gains gold, losses burnt orange.
+     The three hues: CVD dE 21.4, normal 22.1 on white (dataviz validator); the gold is under
+     3:1, so the chart keeps its legend and its table. The fan: the median and two bands of one
+     green; the what-ifs ochre and grey, dashed; the amount to reach a grey dotted line. */
+  --color-projection-today: var(--color-neutral-300);
+  --color-projection-contributed: var(--color-primary-600);
+  --color-projection-repaid: var(--color-wealth-stocks);
+  --color-projection-gains: var(--color-wealth-gold);
+  --color-projection-losses: var(--color-secondary-800);
+  --color-projection-median: var(--color-primary-600);
+  --color-projection-band-inner: var(--color-primary-300);
+  --color-projection-band-outer: var(--color-primary-200);
+  --color-projection-whatif-1: var(--color-secondary-500);
+  --color-projection-whatif-2: var(--color-neutral-600);
+  --color-projection-amount: var(--color-neutral-500);
 }
 
 @theme static {
@@ -184,6 +200,14 @@
     --color-progress-ok: var(--color-primary-500);
     --color-progress-watch: var(--color-secondary-400);
     --color-progress-over: var(--color-secondary-700);
+    /* CVD dE 24.1, normal 26.5 on the dark surface, all three at 3:1 or more. */
+    --color-projection-today: var(--color-neutral-600);
+    --color-projection-contributed: var(--color-primary-500);
+    --color-projection-losses: var(--color-secondary-700);
+    --color-projection-median: var(--color-primary-400);
+    --color-projection-band-inner: var(--color-primary-700);
+    --color-projection-band-outer: var(--color-primary-800);
+    --color-projection-whatif-2: var(--color-neutral-300);
     /* Within the dark band of lightness, checked against the dark surface. */
     --color-wealth-savings: rgb(68 115 43);
     --color-wealth-current: rgb(153 154 71);

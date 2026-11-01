@@ -275,3 +275,22 @@ def fold(title: str, hint: str, *body: Component, anchor: str | None = None) -> 
         className="kw-fold",
         **_anchored(anchor),
     )
+
+
+def dash_colours(theme: Theme) -> dict[str, str]:
+    """Dash's own components (radio buttons, slider) in the app's palette rather than theirs."""
+    accent = tokens.rgb(theme, "primary-400" if theme == "dark" else "primary-600")
+    return {
+        "accentColor": accent,
+        "--Dash-Fill-Interactive-Strong": accent,
+        "--Dash-Fill-Inverse-Strong": tokens.rgb(theme, "surface"),
+        "--Dash-Text-Primary": tokens.rgb(theme, "fg"),
+        "--Dash-Text-Strong": tokens.rgb(theme, "fg"),
+        "--Dash-Text-Weak": tokens.rgb(theme, "muted"),
+        "--Dash-Stroke-Strong": tokens.rgb(theme, "muted"),
+        "--Dash-Stroke-Weak": tokens.rgb(theme, "border"),
+        # The slider's track and marks beyond the value, the number box's frame.
+        "--Dash-Text-Disabled": tokens.rgb(theme, "muted"),
+        "--Dash-Fill-Disabled": tokens.rgb(theme, "neutral-600" if theme == "dark" else "border"),
+        "--Dash-Fill-Primary-Active": tokens.rgb(theme, "border"),
+    }
