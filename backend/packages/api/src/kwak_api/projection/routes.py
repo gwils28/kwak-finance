@@ -16,6 +16,7 @@ from kwak_core.projection import (
     Contribution,
     DebtTerms,
     ProjectionError,
+    SavingsSource,
     assumption_of,
     check_assumption,
     check_contributions,
@@ -98,6 +99,9 @@ class AssumptionsOut(BaseModel):
     """The asset categories, in the matrix's order."""
     debts: list[DebtOut]
     """The open debt lines the viewer sees."""
+    savings_source: SavingsSource | None
+    """Where the simulator's savings come from, as saved; null: declared once a contribution
+    exists, else measured (F-SIM-3)."""
 
 
 def _category_out(category: WealthCategory) -> CategoryAssumptionOut:
@@ -146,6 +150,11 @@ def _assumptions(db: Db, viewer: User, now: Now) -> AssumptionsOut:
             if c.kind is WealthKind.ASSET
         ],
         debts=[_debt_out(line, owed) for line, owed in projection.debts(db, viewer, month)],
+        savings_source=(
+            None
+            if household.projection_savings is None
+            else SavingsSource(household.projection_savings)
+        ),
     )
 
 
@@ -305,6 +314,8 @@ class ContributionIn(BaseModel):
 class ContributionsIn(BaseModel):
     contributions: list[ContributionIn] = Field(max_length=50)
     """The whole list: it replaces the saved one."""
+    savings_source: SavingsSource | None = None
+    """Where the savings come from; left out, the saved choice is kept; null: the default."""
 
 
 @router.put("/contributions")
@@ -330,6 +341,19 @@ def set_contributions(
         if item is not None and item.ret is not None:
             kept = projection.assumption(category).volatility
             category.expected_return, category.volatility = item.ret, kept
+    source_given = "savings_source" in body.model_fields_set
+    if source_given:
+        household = db.get_one(Household, viewer.household_id)
+        household.projection_savings = (
+            None if body.savings_source is None else body.savings_source.value
+        )
+        audit.record(
+            db,
+            viewer,
+            AuditAction.SETTINGS_CHANGED,
+            now,
+            savings_source=body.savings_source or "",
+        )
     audit.record(
         db,
         viewer,

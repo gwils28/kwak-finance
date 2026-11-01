@@ -20,6 +20,7 @@ from kwak_core.projection import (
     Contribution,
     DebtTerms,
     ProjectionError,
+    SavingsSource,
     amortise,
     assumption_of,
     beyond_ceilings,
@@ -31,11 +32,13 @@ from kwak_core.projection import (
     check_inflation,
     check_withdrawal_rate,
     contribution_plan,
+    contribution_shares,
     debt_grows,
     default_allocation,
     median_growth,
     monthly_params,
     savings_path,
+    savings_source,
     starting_point,
     to_today,
     withdrawal_income,
@@ -573,3 +576,46 @@ def test_savings_accounts_beyond_a_full_livret_a_and_ldds_a_member_are_noted() -
     assert beyond_ceilings(D("34950"), members=1) is False
     assert beyond_ceilings(D("34950.01"), members=1) is True
     assert beyond_ceilings(D("60000"), members=2) is False
+
+
+# F-SIM-3: where the monthly savings come from
+
+
+def test_the_savings_are_declared_by_default_once_a_contribution_exists() -> None:
+    assert savings_source(None, has_contributions=True) is SavingsSource.DECLARED
+    assert savings_source(None, has_contributions=False) is SavingsSource.MEASURED
+
+
+def test_a_chosen_source_is_kept_with_or_without_contributions() -> None:
+    for has in (True, False):
+        assert savings_source(SavingsSource.DECLARED, has_contributions=has) is (
+            SavingsSource.DECLARED
+        )
+        assert savings_source(SavingsSource.MEASURED, has_contributions=has) is (
+            SavingsSource.MEASURED
+        )
+
+
+def test_measured_savings_are_split_like_the_contributions() -> None:
+    livret, stocks = uuid4(), uuid4()
+    shares = contribution_shares([Contribution(livret, D(200)), Contribution(stocks, D(400))])
+    third = (D(1) / 3).quantize(D("1e-12"))
+    assert shares == {livret: third, stocks: 1 - third}
+
+
+@given(
+    st.lists(
+        st.decimals(min_value=1, max_value=100_000, places=2),
+        min_size=1,
+        max_size=8,
+    )
+)
+def test_the_contributions_shares_sum_to_exactly_one(amounts: list[Decimal]) -> None:
+    shares = contribution_shares([Contribution(uuid4(), a) for a in amounts])
+    assert sum(shares.values()) == 1
+    assert all(s >= 0 for s in shares.values())
+
+
+def test_no_contribution_has_no_shares() -> None:
+    with pytest.raises(ProjectionError):
+        contribution_shares([])

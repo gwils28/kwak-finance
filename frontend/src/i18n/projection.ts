@@ -18,18 +18,28 @@ export const projectionEn = {
   add: "Add a contribution",
   total: "Total",
   perMonth: (amount: string) => `${amount} a month`,
-  noContributions:
-    "No contribution yet: the projection saves your measured capacity, split like your wealth. Add one to choose where it goes.",
-  ofCapacity: (share: string, capacity: string) =>
-    `${share} of your measured capacity (${capacity} a month).`,
-  overCapacity: (share: string, capacity: string) =>
-    `${share} of your measured capacity (${capacity} a month): can you keep it up? What is not saved cannot be invested.`,
-  capacityShort: (n: number) =>
-    `Capacity measured over ${n} months: fewer than 12 miss the year's irregular costs (taxes, insurance, holidays).`,
-  capacityMeasured: (amount: string, n: number) =>
-    `Saving your goals' capacity, ${amount} a month, measured over ${n} months.`,
-  capacitySetByHand: (amount: string) =>
-    `Saving your goals' capacity, ${amount} a month, set by hand.`,
+  sourceTitle: "Monthly savings",
+  sourceDeclared: "Declared",
+  sourceMeasured: "Measured",
+  declaredExplain:
+    "The projection uses only the contributions below. Your spending history is not used.",
+  measuredExplain: (amount: string, n: number) =>
+    `The projection saves your measured capacity: ${amount} a month, over ${n} months. Your contributions only give its split.`,
+  measuredSetExplain: (amount: string) =>
+    `The projection saves your goals' capacity: ${amount} a month, set by hand. Your contributions only give its split.`,
+  measuredShort: (n: number) =>
+    `Measured over ${n} months only: one exceptional month skews it, and fewer than 12 miss the year's irregular costs (taxes, insurance, holidays). Choose “Declared” if it does not reflect what you save.`,
+  splitTitle: "Split of the savings",
+  colShare: "Share",
+  sharesFrom: "The shares come from your contributions' amounts.",
+  noContributionsDeclared:
+    "No contribution: the projection starts from your wealth today, without savings. Add one to say what you invest each month.",
+  noContributionsMeasured:
+    "No contribution: the capacity is split like your wealth. Add some to choose where it goes.",
+  compareMeasured: (amount: string, n: number) =>
+    `To compare: your measured capacity is ${amount} a month, over ${n} months. It is not used in the projection.`,
+  compareSetByHand: (amount: string) =>
+    `To compare: your goals' capacity, set by hand, is ${amount} a month. It is not used in the projection.`,
   indexedHint:
     "A contribution that follows prices grows with the inflation (€500 today is €743 a month in 20 years at 2 %); untick it for a standing order that stays the same.",
   volatile: (category: string, growth: string) =>
@@ -165,17 +175,28 @@ export const projectionFr: typeof projectionEn = {
   add: "Ajouter un versement",
   total: "Total",
   perMonth: (amount) => `${amount} par mois`,
-  noContributions:
-    "Aucun versement pour l'instant : la projection épargne votre capacité mesurée, répartie comme votre patrimoine. Ajoutez-en un pour choisir où va l'argent.",
-  ofCapacity: (share, capacity) => `${share} de votre capacité mesurée (${capacity} par mois).`,
-  overCapacity: (share, capacity) =>
-    `${share} de votre capacité mesurée (${capacity} par mois) : est-ce tenable ? Ce qui n'est pas épargné ne peut pas être placé.`,
-  capacityShort: (n) =>
-    `Capacité mesurée sur ${n} mois : moins de 12 oublient les dépenses irrégulières de l'année (impôts, assurances, vacances).`,
-  capacityMeasured: (amount, n) =>
-    `Épargne de la capacité de vos objectifs, ${amount} par mois, mesurée sur ${n} mois.`,
-  capacitySetByHand: (amount) =>
-    `Épargne de la capacité de vos objectifs, ${amount} par mois, saisie à la main.`,
+  sourceTitle: "Épargne mensuelle",
+  sourceDeclared: "Déclarée",
+  sourceMeasured: "Mesurée",
+  declaredExplain:
+    "La projection n'utilise que les versements ci-dessous. Votre historique de dépenses n'est pas pris en compte.",
+  measuredExplain: (amount, n) =>
+    `La projection épargne votre capacité mesurée : ${amount} par mois, sur ${n} mois. Vos versements ne donnent que la répartition.`,
+  measuredSetExplain: (amount) =>
+    `La projection épargne la capacité de vos objectifs : ${amount} par mois, saisie à la main. Vos versements ne donnent que la répartition.`,
+  measuredShort: (n) =>
+    `Mesurée sur ${n} mois seulement : un mois exceptionnel la fausse, et moins de 12 mois oublient les dépenses irrégulières (impôts, assurances, vacances). Choisissez « Déclarée » si elle ne reflète pas ce que vous épargnez.`,
+  splitTitle: "Répartition de l'épargne",
+  colShare: "Part",
+  sharesFrom: "Les parts viennent des montants de vos versements.",
+  noContributionsDeclared:
+    "Aucun versement : la projection part de votre patrimoine actuel, sans épargne. Ajoutez-en un pour dire ce que vous placez chaque mois.",
+  noContributionsMeasured:
+    "Aucun versement : la capacité est répartie comme votre patrimoine. Ajoutez-en pour choisir où elle va.",
+  compareMeasured: (amount, n) =>
+    `Pour comparer : votre capacité mesurée est de ${amount} par mois, sur ${n} mois. Elle n'entre pas dans la projection.`,
+  compareSetByHand: (amount) =>
+    `Pour comparer : la capacité de vos objectifs, saisie à la main, est de ${amount} par mois. Elle n'entre pas dans la projection.`,
   indexedHint:
     "Un versement qui suit les prix grandit avec l'inflation (500 € aujourd'hui font 743 € par mois dans 20 ans à 2 %) ; décochez-le pour un virement programmé qui reste le même.",
   volatile: (category, growth) =>

@@ -24,6 +24,7 @@ export type AssumptionsOut = {
      * Inflation
      */
     inflation: string;
+    savings_source: SavingsSource | null;
 };
 
 /**
@@ -269,6 +270,7 @@ export type ContributionsIn = {
      * Contributions
      */
     contributions: Array<ContributionIn>;
+    savings_source?: SavingsSource | null;
 };
 
 /**
@@ -2621,6 +2623,7 @@ export type RunIn = {
      * Returns
      */
     returns?: Array<ReturnDraft>;
+    savings_source?: SavingsSource | null;
     scope?: Scope;
     /**
      * Today
@@ -2837,7 +2840,15 @@ export type SavingsOut = {
      * Share Of Capacity
      */
     share_of_capacity: string | null;
+    source: SavingsSource;
 };
+
+/**
+ * SavingsSource
+ *
+ * Where the simulator's monthly savings come from (F-SIM-3).
+ */
+export type SavingsSource = 'declared' | 'measured';
 
 /**
  * SavingsStatus

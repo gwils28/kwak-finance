@@ -388,3 +388,55 @@ def test_another_member_s_private_line_is_never_run(
     out = _ok(owner_client, years=1, today=False)
     assert out["months"][0]["p50"] == "10000.00"
     assert "Stocks" not in {c["name"] for c in out["categories"]}
+
+
+# F-SIM-3: where the monthly savings come from
+
+
+def test_declared_without_a_contribution_saves_nothing(owner_client: TestClient) -> None:
+    """A month of exceptional savings must not drive the projection: declared, only the
+    contributions count."""
+    _livret(owner_client)
+    _capacity(owner_client, "4850.00")
+    out = _ok(owner_client, years=1, today=False, savings_source="declared")
+    assert out["savings"]["source"] == "declared"
+    assert out["savings"]["monthly"] == "0.00"
+    assert out["savings"]["capacity"] == "4850.00", "still given, for comparison"
+    assert out["months"][12]["contributed"] == "0.00"
+
+
+def test_measured_saves_the_capacity_split_like_the_contributions(
+    owner_client: TestClient,
+) -> None:
+    savings = _livret(owner_client)
+    stocks = str(_categories(owner_client)["Stocks"]["id"])
+    _capacity(owner_client, "600.00")
+    out = _ok(
+        owner_client,
+        years=1,
+        today=False,
+        savings_source="measured",
+        contributions=[
+            {"category_id": savings, "amount": "100.00"},
+            {"category_id": stocks, "amount": "200.00"},
+        ],
+    )
+    assert (out["savings"]["source"], out["savings"]["mode"]) == ("measured", "capacity")
+    assert out["savings"]["monthly"] == "600.00"
+    assert out["savings"]["share_of_capacity"] is None
+    medians = {c["id"]: c["medians"] for c in out["categories"]}
+    assert D(medians[stocks][12]) > 3000, "two thirds of 7,200 into stocks, from nothing"
+    assert D("7200.00") < D(out["months"][12]["contributed"]) < D("7300.00"), "indexed, 2 %"
+
+
+def test_unset_the_source_is_declared_once_a_contribution_exists(
+    owner_client: TestClient,
+) -> None:
+    savings = _livret(owner_client)
+    _capacity(owner_client, "600.00")
+    assert _ok(owner_client, years=1)["savings"]["source"] == "measured"
+    with_one = _ok(
+        owner_client, years=1, contributions=[{"category_id": savings, "amount": "50.00"}]
+    )
+    assert with_one["savings"]["source"] == "declared"
+    assert with_one["savings"]["monthly"] == "50.00"
