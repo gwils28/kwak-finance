@@ -320,20 +320,12 @@ def test_the_demo_never_counts_as_the_household(
         )
 
 
-def test_the_dash_pages_show_the_demo(signed_in: TestClient) -> None:
-    request = {
-        "output": "ret-body.children",
-        "outputs": {"id": "ret-body", "property": "children"},
-        "inputs": [{"id": "ret-trigger", "property": "data", "value": True}],
-        "state": [{"id": "url", "property": "search", "value": ""}],
-        "changedPropIds": ["ret-trigger.data"],
-    }
-
-    def body() -> str:
-        response = signed_in.post("/dash/_dash-update-component", json=request)
+def test_the_analysis_pages_show_the_demo(signed_in: TestClient) -> None:
+    def plan() -> str:
+        response = signed_in.get("/api/retirement/run")
         assert response.status_code == 200, response.text
         return json.dumps(response.json(), ensure_ascii=False)
 
-    assert "Camille" not in body()
+    assert "Camille" not in plan()
     _enter(signed_in)
-    assert "Camille" in body()
+    assert "Camille" in plan()

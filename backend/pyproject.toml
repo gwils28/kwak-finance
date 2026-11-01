@@ -47,8 +47,6 @@ ignore = []
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["S101", "S105", "S106"]
-# User-visible strings keep their typography (en dashes), as the frontend's i18n files.
-"packages/api/src/kwak_api/dash/i18n.py" = ["RUF001"]
 
 [tool.mypy]
 strict = true

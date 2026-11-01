@@ -53,7 +53,7 @@ async function unwrap<D>(request: Promise<{ data?: D; error?: unknown }>): Promi
 
 /**
  * Retirement's inputs (F-RET-1, 2): the member's own retirement, the other members' (seen,
- * not changed), and the household's settings. Saving one reloads the Dash page.
+ * not changed), and the household's settings. Saving one runs the plan again.
  */
 export function RetirementForm({ onSaved }: { onSaved: () => void }) {
   const { t } = useI18n();

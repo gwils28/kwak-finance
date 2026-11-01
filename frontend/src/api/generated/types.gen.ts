@@ -85,6 +85,38 @@ export type AuditPage = {
 };
 
 /**
+ * BacktestOut
+ */
+export type BacktestOut = {
+    /**
+     * Name
+     */
+    name: 'income' | 'spent';
+    /**
+     * Points
+     */
+    points: Array<BacktestPointOut>;
+};
+
+/**
+ * BacktestPointOut
+ */
+export type BacktestPointOut = {
+    /**
+     * Entered
+     */
+    entered: string;
+    /**
+     * Forecast
+     */
+    forecast: string;
+    /**
+     * Month
+     */
+    month: string;
+};
+
+/**
  * BudgetStatus
  */
 export type BudgetStatus = 'under' | 'on' | 'over' | 'ahead' | 'behind' | 'none';
@@ -415,6 +447,365 @@ export type FixedStatus = 'to_confirm' | 'confirmed' | 'skipped';
  * FlowKind
  */
 export type FlowKind = 'income' | 'spending' | 'saved' | 'from_savings' | 'unallocated' | 'deficit';
+
+/**
+ * ForecastAgainstOut
+ *
+ * A category against its target (expenses) or objective (savings).
+ */
+export type ForecastAgainstOut = {
+    band: ForecastBandOut;
+    /**
+     * Category Id
+     */
+    category_id: string;
+    /**
+     * Chance
+     */
+    chance: string | null;
+    kind: CategoryKind;
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Point
+     */
+    point: string;
+    risk: Risk;
+    /**
+     * Target
+     */
+    target: string;
+    /**
+     * To Date
+     */
+    to_date: string | null;
+};
+
+/**
+ * ForecastAheadMonthOut
+ */
+export type ForecastAheadMonthOut = {
+    /**
+     * Fixed
+     */
+    fixed: string;
+    income: ForecastBandOut;
+    /**
+     * Month
+     */
+    month: string;
+    rest: ForecastBandOut;
+    saved: ForecastBandOut;
+    spent: ForecastBandOut;
+};
+
+/**
+ * ForecastBandNoteOut
+ */
+export type ForecastBandNoteOut = {
+    /**
+     * None
+     */
+    none: boolean;
+    /**
+     * Widened From
+     */
+    widened_from: string | null;
+};
+
+/**
+ * ForecastBandOut
+ */
+export type ForecastBandOut = {
+    /**
+     * High
+     */
+    high: string;
+    /**
+     * Low
+     */
+    low: string;
+    /**
+     * Point
+     */
+    point: string;
+};
+
+/**
+ * ForecastEngineOut
+ */
+export type ForecastEngineOut = {
+    /**
+     * Cuts
+     */
+    cuts: number;
+    /**
+     * Models
+     */
+    models: {
+        [key: string]: string;
+    };
+    /**
+     * Months
+     */
+    months: number;
+    /**
+     * Seed
+     */
+    seed: number;
+    /**
+     * Version
+     */
+    version: number;
+};
+
+/**
+ * ForecastHistoryMonthOut
+ */
+export type ForecastHistoryMonthOut = {
+    /**
+     * Fixed
+     */
+    fixed: string;
+    /**
+     * Income
+     */
+    income: string;
+    /**
+     * Month
+     */
+    month: string;
+    /**
+     * Rest
+     */
+    rest: string;
+    /**
+     * Saved
+     */
+    saved: string;
+    /**
+     * Spent
+     */
+    spent: string;
+};
+
+/**
+ * ForecastIncomeOut
+ */
+export type ForecastIncomeOut = {
+    band: ForecastBandOut;
+    /**
+     * Category Id
+     */
+    category_id: string;
+    /**
+     * Name
+     */
+    name: string;
+};
+
+/**
+ * ForecastMethodOut
+ */
+export type ForecastMethodOut = {
+    /**
+     * Contest
+     */
+    contest: boolean;
+    /**
+     * Features
+     */
+    features: Array<string>;
+    /**
+     * Model
+     */
+    model: string | null;
+    set_aside: ForecastSetAsideOut | null;
+};
+
+/**
+ * ForecastOut
+ */
+export type ForecastOut = {
+    /**
+     * Ahead
+     */
+    ahead: Array<ForecastAheadMonthOut>;
+    /**
+     * Backtest
+     */
+    backtest: Array<BacktestOut>;
+    band: ForecastBandNoteOut;
+    /**
+     * Bias Limit
+     */
+    bias_limit: string;
+    engine: ForecastEngineOut;
+    /**
+     * History
+     */
+    history: Array<ForecastHistoryMonthOut>;
+    /**
+     * Income
+     */
+    income: Array<ForecastIncomeOut>;
+    month: MonthSoFarOut;
+    /**
+     * Objectives
+     */
+    objectives: Array<ForecastAgainstOut>;
+    /**
+     * Origin
+     */
+    origin: string;
+    /**
+     * Reliability
+     */
+    reliability: Array<ForecastReliabilityOut>;
+    /**
+     * Rest Above
+     */
+    rest_above: string | null;
+    /**
+     * Scores
+     */
+    scores: Array<ForecastScoreOut>;
+    /**
+     * Targets
+     */
+    targets: Array<ForecastAgainstOut>;
+    totals: ForecastTotalsOut;
+    /**
+     * Year
+     */
+    year: number;
+    /**
+     * Year Targets
+     */
+    year_targets: Array<ForecastAgainstOut>;
+};
+
+/**
+ * ForecastPageOut
+ */
+export type ForecastPageOut = {
+    /**
+     * Complete Months
+     */
+    complete_months: number;
+    forecast: ForecastOut | null;
+    /**
+     * Needed
+     */
+    needed: number;
+};
+
+/**
+ * ForecastReliabilityOut
+ */
+export type ForecastReliabilityOut = {
+    /**
+     * Bias
+     */
+    bias: string | null;
+    /**
+     * Category Id
+     */
+    category_id: string;
+    /**
+     * Coverage
+     */
+    coverage: string | null;
+    kind: CategoryKind;
+    /**
+     * Known
+     */
+    known: string;
+    /**
+     * Mase
+     */
+    mase: string | null;
+    method: ForecastMethodOut;
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Optimism
+     */
+    optimism: string | null;
+    /**
+     * Versus
+     */
+    versus: string | null;
+    /**
+     * Wape
+     */
+    wape: string | null;
+};
+
+/**
+ * ForecastScoreOut
+ */
+export type ForecastScoreOut = {
+    /**
+     * Bias Per Month
+     */
+    bias_per_month: string | null;
+    /**
+     * Bias Share
+     */
+    bias_share: string | null;
+    /**
+     * Mase
+     */
+    mase: string | null;
+    name: Total;
+    /**
+     * Rmsse
+     */
+    rmsse: string | null;
+    /**
+     * Wape
+     */
+    wape: string | null;
+};
+
+/**
+ * ForecastSetAsideOut
+ */
+export type ForecastSetAsideOut = {
+    /**
+     * Bias
+     */
+    bias: string;
+    /**
+     * Gain
+     */
+    gain: string;
+    /**
+     * Model
+     */
+    model: string;
+};
+
+/**
+ * ForecastTotalsOut
+ *
+ * The twelve months added up, with the band of twelve-month sums.
+ */
+export type ForecastTotalsOut = {
+    /**
+     * Banded
+     */
+    banded: boolean;
+    income: ForecastBandOut;
+    rest: ForecastBandOut;
+    saved: ForecastBandOut;
+    spent: ForecastBandOut;
+};
 
 /**
  * ForwardBandOut
@@ -1404,6 +1795,25 @@ export type MonthOut = {
 };
 
 /**
+ * MonthSoFarOut
+ */
+export type MonthSoFarOut = {
+    /**
+     * Elapsed
+     */
+    elapsed: string | null;
+    /**
+     * Entered
+     */
+    entered: string;
+    expected: ForecastBandOut;
+    /**
+     * Month
+     */
+    month: string;
+};
+
+/**
  * MyRetirementIn
  */
 export type MyRetirementIn = {
@@ -1630,6 +2040,8 @@ export type Preferences = {
     language: Language;
 };
 
+export type Problem = 'no_wealth' | 'no_member' | 'horizon' | 'no_allocation';
+
 /**
  * ProgressStatus
  */
@@ -1722,6 +2134,130 @@ export type RegulatedType = 'livret_a' | 'ldds' | 'lep' | 'pel' | 'livret_jeune'
 export type ReportSection = 'income' | 'spending' | 'savings';
 
 /**
+ * RetirementEngineOut
+ */
+export type RetirementEngineOut = {
+    /**
+     * Paths
+     */
+    paths: number;
+    /**
+     * Seed
+     */
+    seed: number;
+    /**
+     * Version
+     */
+    version: number;
+};
+
+/**
+ * RetirementFanMonthOut
+ */
+export type RetirementFanMonthOut = {
+    /**
+     * Liquid
+     */
+    liquid: string;
+    /**
+     * Month
+     */
+    month: string;
+    /**
+     * P10
+     */
+    p10: string;
+    /**
+     * P25
+     */
+    p25: string;
+    /**
+     * P50
+     */
+    p50: string;
+    /**
+     * P75
+     */
+    p75: string;
+    /**
+     * P90
+     */
+    p90: string;
+};
+
+/**
+ * RetirementIncomeMonthOut
+ */
+export type RetirementIncomeMonthOut = {
+    /**
+     * Month
+     */
+    month: string;
+    /**
+     * Pensions
+     */
+    pensions: string;
+    /**
+     * Spending
+     */
+    spending: string;
+    /**
+     * Withdrawal
+     */
+    withdrawal: string;
+};
+
+/**
+ * RetirementLastsOut
+ */
+export type RetirementLastsOut = {
+    /**
+     * Chance
+     */
+    chance: string;
+    /**
+     * Half Age
+     */
+    half_age: number | null;
+    /**
+     * Shortfall
+     */
+    shortfall: boolean;
+    /**
+     * Ten Age
+     */
+    ten_age: number | null;
+};
+
+/**
+ * RetirementLivingOut
+ *
+ * At the household's retirement, once every pension has started.
+ */
+export type RetirementLivingOut = {
+    /**
+     * Later Pension
+     */
+    later_pension: boolean;
+    /**
+     * Pensions
+     */
+    pensions: string;
+    /**
+     * Spending
+     */
+    spending: string;
+    /**
+     * Withdrawal
+     */
+    withdrawal: string | null;
+    /**
+     * Withdrawal Half
+     */
+    withdrawal_half: string | null;
+};
+
+/**
  * RetirementMemberOut
  */
 export type RetirementMemberOut = {
@@ -1777,6 +2313,128 @@ export type RetirementOut = {
     members: Array<RetirementMemberOut>;
     settings: RetirementSettingsOut;
     spending: RetirementSpendingOut;
+};
+
+/**
+ * RetirementPersonOut
+ */
+export type RetirementPersonOut = {
+    /**
+     * Age At Pension
+     */
+    age_at_pension: number;
+    /**
+     * Age At Retirement
+     */
+    age_at_retirement: number;
+    /**
+     * Birth
+     */
+    birth: string;
+    /**
+     * Earnings
+     */
+    earnings: string;
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Pension
+     */
+    pension: string;
+    /**
+     * Pension Month
+     */
+    pension_month: string;
+    /**
+     * Retirement
+     */
+    retirement: string;
+};
+
+/**
+ * RetirementPlanOut
+ */
+export type RetirementPlanOut = {
+    engine: RetirementEngineOut;
+    /**
+     * Horizon
+     */
+    horizon: string;
+    /**
+     * Horizon Age
+     */
+    horizon_age: number;
+    /**
+     * Income
+     */
+    income: Array<RetirementIncomeMonthOut>;
+    /**
+     * Indexation
+     */
+    indexation: string;
+    lasts: RetirementLastsOut;
+    /**
+     * Left Out
+     */
+    left_out: Array<string>;
+    living: RetirementLivingOut;
+    /**
+     * Months
+     */
+    months: Array<RetirementFanMonthOut>;
+    /**
+     * People
+     */
+    people: Array<RetirementPersonOut>;
+    /**
+     * Retired
+     */
+    retired: string;
+    spending: RetirementPlanSpendingOut;
+    /**
+     * This Month
+     */
+    this_month: string;
+    /**
+     * Youngest
+     */
+    youngest: string;
+    /**
+     * Youngest Age At Horizon
+     */
+    youngest_age_at_horizon: number;
+};
+
+/**
+ * RetirementPlanSpendingOut
+ */
+export type RetirementPlanSpendingOut = {
+    /**
+     * Base
+     */
+    base: string;
+    /**
+     * Months
+     */
+    months: number;
+    /**
+     * Retirement
+     */
+    retirement: string;
+    /**
+     * Share
+     */
+    share: string | null;
+};
+
+/**
+ * RetirementRunOut
+ */
+export type RetirementRunOut = {
+    plan: RetirementPlanOut | null;
+    problem: Problem | null;
 };
 
 /**
@@ -1876,6 +2534,14 @@ export type ReturnDraft = {
      */
     ret: number | string;
 };
+
+/**
+ * Risk
+ *
+ * Of going over a target (likely over, may go over, within), or of falling short of a
+ * savings objective (likely short, may fall short, on track).
+ */
+export type Risk = 'likely' | 'possible' | 'unlikely';
 
 /**
  * RiskPointOut
@@ -2967,6 +3633,8 @@ export type TimelineOut = {
     tier: Tier;
 };
 
+export type Total = 'income' | 'spent' | 'saved' | 'rest';
+
 /**
  * TotpCode
  */
@@ -3776,6 +4444,31 @@ export type ResetResponses = {
 };
 
 export type ResetResponse = ResetResponses[keyof ResetResponses];
+
+export type GetForecastData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/forecast';
+};
+
+export type GetForecastErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type GetForecastError = GetForecastErrors[keyof GetForecastErrors];
+
+export type GetForecastResponses = {
+    /**
+     * Successful Response
+     */
+    200: ForecastPageOut;
+};
+
+export type GetForecastResponse = GetForecastResponses[keyof GetForecastResponses];
 
 export type ListGoalsData = {
     body?: never;
@@ -4648,6 +5341,31 @@ export type SetMyRetirementResponses = {
 };
 
 export type SetMyRetirementResponse = SetMyRetirementResponses[keyof SetMyRetirementResponses];
+
+export type RunRetirementData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/retirement/run';
+};
+
+export type RunRetirementErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type RunRetirementError = RunRetirementErrors[keyof RunRetirementErrors];
+
+export type RunRetirementResponses = {
+    /**
+     * Successful Response
+     */
+    200: RetirementRunOut;
+};
+
+export type RunRetirementResponse = RunRetirementResponses[keyof RunRetirementResponses];
 
 export type UpdateRetirementSettingsData = {
     body: RetirementSettingsPatch;

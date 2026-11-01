@@ -1,5 +1,4 @@
 from collections.abc import Iterator
-from contextlib import contextmanager
 from datetime import UTC, datetime, timedelta
 
 import pytest
@@ -75,9 +74,6 @@ def client(session: Session, clock: Clock) -> Iterator[TestClient]:
     app = create_app()
     app.dependency_overrides[get_db] = db
     app.dependency_overrides[get_now] = lambda: clock.now
-    # The Dash pages open their sessions without FastAPI's dependencies.
-    app.state.db_scope = contextmanager(db)
-    app.state.clock = lambda: clock.now
     # Session cookies are Secure: the client must speak https to send them back.
     # A documentation address (RFC 5737): the activity log keeps only real addresses.
     with TestClient(app, base_url="https://testserver", client=("192.0.2.10", 50000)) as client:

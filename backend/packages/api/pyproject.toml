@@ -14,8 +14,6 @@ dependencies = [
     "psycopg[binary]>=3.2",
     "argon2-cffi>=25.1",
     "cryptography>=46",
-    "dash>=4.4",
-    "a2wsgi>=1.10",
 ]
 
 [project.scripts]

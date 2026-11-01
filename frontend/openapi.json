@@ -168,6 +168,56 @@
         "title": "AuditPage",
         "type": "object"
       },
+      "BacktestOut": {
+        "properties": {
+          "name": {
+            "enum": [
+              "income",
+              "spent"
+            ],
+            "title": "Name",
+            "type": "string"
+          },
+          "points": {
+            "items": {
+              "$ref": "#/components/schemas/BacktestPointOut"
+            },
+            "title": "Points",
+            "type": "array"
+          }
+        },
+        "required": [
+          "name",
+          "points"
+        ],
+        "title": "BacktestOut",
+        "type": "object"
+      },
+      "BacktestPointOut": {
+        "properties": {
+          "entered": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Entered",
+            "type": "string"
+          },
+          "forecast": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Forecast",
+            "type": "string"
+          },
+          "month": {
+            "title": "Month",
+            "type": "string"
+          }
+        },
+        "required": [
+          "month",
+          "entered",
+          "forecast"
+        ],
+        "title": "BacktestPointOut",
+        "type": "object"
+      },
       "BudgetStatus": {
         "enum": [
           "under",
@@ -798,6 +848,705 @@
         ],
         "title": "FlowKind",
         "type": "string"
+      },
+      "ForecastAgainstOut": {
+        "description": "A category against its target (expenses) or objective (savings).",
+        "properties": {
+          "band": {
+            "$ref": "#/components/schemas/ForecastBandOut"
+          },
+          "category_id": {
+            "format": "uuid",
+            "title": "Category Id",
+            "type": "string"
+          },
+          "chance": {
+            "anyOf": [
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Chance"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/CategoryKind"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "point": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Point",
+            "type": "string"
+          },
+          "risk": {
+            "$ref": "#/components/schemas/Risk"
+          },
+          "target": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Target",
+            "type": "string"
+          },
+          "to_date": {
+            "anyOf": [
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "To Date"
+          }
+        },
+        "required": [
+          "category_id",
+          "name",
+          "kind",
+          "point",
+          "band",
+          "target",
+          "risk",
+          "chance",
+          "to_date"
+        ],
+        "title": "ForecastAgainstOut",
+        "type": "object"
+      },
+      "ForecastAheadMonthOut": {
+        "properties": {
+          "fixed": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Fixed",
+            "type": "string"
+          },
+          "income": {
+            "$ref": "#/components/schemas/ForecastBandOut"
+          },
+          "month": {
+            "title": "Month",
+            "type": "string"
+          },
+          "rest": {
+            "$ref": "#/components/schemas/ForecastBandOut"
+          },
+          "saved": {
+            "$ref": "#/components/schemas/ForecastBandOut"
+          },
+          "spent": {
+            "$ref": "#/components/schemas/ForecastBandOut"
+          }
+        },
+        "required": [
+          "month",
+          "income",
+          "spent",
+          "saved",
+          "rest",
+          "fixed"
+        ],
+        "title": "ForecastAheadMonthOut",
+        "type": "object"
+      },
+      "ForecastBandNoteOut": {
+        "properties": {
+          "none": {
+            "title": "None",
+            "type": "boolean"
+          },
+          "widened_from": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Widened From"
+          }
+        },
+        "required": [
+          "none",
+          "widened_from"
+        ],
+        "title": "ForecastBandNoteOut",
+        "type": "object"
+      },
+      "ForecastBandOut": {
+        "properties": {
+          "high": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "High",
+            "type": "string"
+          },
+          "low": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Low",
+            "type": "string"
+          },
+          "point": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Point",
+            "type": "string"
+          }
+        },
+        "required": [
+          "low",
+          "point",
+          "high"
+        ],
+        "title": "ForecastBandOut",
+        "type": "object"
+      },
+      "ForecastEngineOut": {
+        "properties": {
+          "cuts": {
+            "title": "Cuts",
+            "type": "integer"
+          },
+          "models": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Models",
+            "type": "object"
+          },
+          "months": {
+            "title": "Months",
+            "type": "integer"
+          },
+          "seed": {
+            "title": "Seed",
+            "type": "integer"
+          },
+          "version": {
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "cuts",
+          "months",
+          "seed",
+          "version",
+          "models"
+        ],
+        "title": "ForecastEngineOut",
+        "type": "object"
+      },
+      "ForecastHistoryMonthOut": {
+        "properties": {
+          "fixed": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Fixed",
+            "type": "string"
+          },
+          "income": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Income",
+            "type": "string"
+          },
+          "month": {
+            "title": "Month",
+            "type": "string"
+          },
+          "rest": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Rest",
+            "type": "string"
+          },
+          "saved": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Saved",
+            "type": "string"
+          },
+          "spent": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Spent",
+            "type": "string"
+          }
+        },
+        "required": [
+          "month",
+          "income",
+          "spent",
+          "saved",
+          "fixed",
+          "rest"
+        ],
+        "title": "ForecastHistoryMonthOut",
+        "type": "object"
+      },
+      "ForecastIncomeOut": {
+        "properties": {
+          "band": {
+            "$ref": "#/components/schemas/ForecastBandOut"
+          },
+          "category_id": {
+            "format": "uuid",
+            "title": "Category Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "category_id",
+          "name",
+          "band"
+        ],
+        "title": "ForecastIncomeOut",
+        "type": "object"
+      },
+      "ForecastMethodOut": {
+        "properties": {
+          "contest": {
+            "title": "Contest",
+            "type": "boolean"
+          },
+          "features": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Features",
+            "type": "array"
+          },
+          "model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model"
+          },
+          "set_aside": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ForecastSetAsideOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "model",
+          "contest",
+          "features",
+          "set_aside"
+        ],
+        "title": "ForecastMethodOut",
+        "type": "object"
+      },
+      "ForecastOut": {
+        "properties": {
+          "ahead": {
+            "items": {
+              "$ref": "#/components/schemas/ForecastAheadMonthOut"
+            },
+            "title": "Ahead",
+            "type": "array"
+          },
+          "backtest": {
+            "items": {
+              "$ref": "#/components/schemas/BacktestOut"
+            },
+            "title": "Backtest",
+            "type": "array"
+          },
+          "band": {
+            "$ref": "#/components/schemas/ForecastBandNoteOut"
+          },
+          "bias_limit": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Bias Limit",
+            "type": "string"
+          },
+          "engine": {
+            "$ref": "#/components/schemas/ForecastEngineOut"
+          },
+          "history": {
+            "items": {
+              "$ref": "#/components/schemas/ForecastHistoryMonthOut"
+            },
+            "title": "History",
+            "type": "array"
+          },
+          "income": {
+            "items": {
+              "$ref": "#/components/schemas/ForecastIncomeOut"
+            },
+            "title": "Income",
+            "type": "array"
+          },
+          "month": {
+            "$ref": "#/components/schemas/MonthSoFarOut"
+          },
+          "objectives": {
+            "items": {
+              "$ref": "#/components/schemas/ForecastAgainstOut"
+            },
+            "title": "Objectives",
+            "type": "array"
+          },
+          "origin": {
+            "title": "Origin",
+            "type": "string"
+          },
+          "reliability": {
+            "items": {
+              "$ref": "#/components/schemas/ForecastReliabilityOut"
+            },
+            "title": "Reliability",
+            "type": "array"
+          },
+          "rest_above": {
+            "anyOf": [
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rest Above"
+          },
+          "scores": {
+            "items": {
+              "$ref": "#/components/schemas/ForecastScoreOut"
+            },
+            "title": "Scores",
+            "type": "array"
+          },
+          "targets": {
+            "items": {
+              "$ref": "#/components/schemas/ForecastAgainstOut"
+            },
+            "title": "Targets",
+            "type": "array"
+          },
+          "totals": {
+            "$ref": "#/components/schemas/ForecastTotalsOut"
+          },
+          "year": {
+            "title": "Year",
+            "type": "integer"
+          },
+          "year_targets": {
+            "items": {
+              "$ref": "#/components/schemas/ForecastAgainstOut"
+            },
+            "title": "Year Targets",
+            "type": "array"
+          }
+        },
+        "required": [
+          "origin",
+          "history",
+          "ahead",
+          "totals",
+          "month",
+          "rest_above",
+          "band",
+          "targets",
+          "objectives",
+          "year",
+          "year_targets",
+          "income",
+          "reliability",
+          "bias_limit",
+          "scores",
+          "backtest",
+          "engine"
+        ],
+        "title": "ForecastOut",
+        "type": "object"
+      },
+      "ForecastPageOut": {
+        "properties": {
+          "complete_months": {
+            "title": "Complete Months",
+            "type": "integer"
+          },
+          "forecast": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ForecastOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "needed": {
+            "title": "Needed",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "complete_months",
+          "needed",
+          "forecast"
+        ],
+        "title": "ForecastPageOut",
+        "type": "object"
+      },
+      "ForecastReliabilityOut": {
+        "properties": {
+          "bias": {
+            "anyOf": [
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bias"
+          },
+          "category_id": {
+            "format": "uuid",
+            "title": "Category Id",
+            "type": "string"
+          },
+          "coverage": {
+            "anyOf": [
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Coverage"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/CategoryKind"
+          },
+          "known": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Known",
+            "type": "string"
+          },
+          "mase": {
+            "anyOf": [
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mase"
+          },
+          "method": {
+            "$ref": "#/components/schemas/ForecastMethodOut"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "optimism": {
+            "anyOf": [
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Optimism"
+          },
+          "versus": {
+            "anyOf": [
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Versus"
+          },
+          "wape": {
+            "anyOf": [
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Wape"
+          }
+        },
+        "required": [
+          "category_id",
+          "name",
+          "kind",
+          "method",
+          "known",
+          "mase",
+          "wape",
+          "versus",
+          "bias",
+          "optimism",
+          "coverage"
+        ],
+        "title": "ForecastReliabilityOut",
+        "type": "object"
+      },
+      "ForecastScoreOut": {
+        "properties": {
+          "bias_per_month": {
+            "anyOf": [
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bias Per Month"
+          },
+          "bias_share": {
+            "anyOf": [
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bias Share"
+          },
+          "mase": {
+            "anyOf": [
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mase"
+          },
+          "name": {
+            "$ref": "#/components/schemas/Total"
+          },
+          "rmsse": {
+            "anyOf": [
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rmsse"
+          },
+          "wape": {
+            "anyOf": [
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Wape"
+          }
+        },
+        "required": [
+          "name",
+          "mase",
+          "wape",
+          "rmsse",
+          "bias_share",
+          "bias_per_month"
+        ],
+        "title": "ForecastScoreOut",
+        "type": "object"
+      },
+      "ForecastSetAsideOut": {
+        "properties": {
+          "bias": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Bias",
+            "type": "string"
+          },
+          "gain": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Gain",
+            "type": "string"
+          },
+          "model": {
+            "title": "Model",
+            "type": "string"
+          }
+        },
+        "required": [
+          "model",
+          "gain",
+          "bias"
+        ],
+        "title": "ForecastSetAsideOut",
+        "type": "object"
+      },
+      "ForecastTotalsOut": {
+        "description": "The twelve months added up, with the band of twelve-month sums.",
+        "properties": {
+          "banded": {
+            "title": "Banded",
+            "type": "boolean"
+          },
+          "income": {
+            "$ref": "#/components/schemas/ForecastBandOut"
+          },
+          "rest": {
+            "$ref": "#/components/schemas/ForecastBandOut"
+          },
+          "saved": {
+            "$ref": "#/components/schemas/ForecastBandOut"
+          },
+          "spent": {
+            "$ref": "#/components/schemas/ForecastBandOut"
+          }
+        },
+        "required": [
+          "income",
+          "spent",
+          "saved",
+          "rest",
+          "banded"
+        ],
+        "title": "ForecastTotalsOut",
+        "type": "object"
       },
       "ForwardBandOut": {
         "properties": {
@@ -2621,6 +3370,42 @@
         "title": "MonthOut",
         "type": "object"
       },
+      "MonthSoFarOut": {
+        "properties": {
+          "elapsed": {
+            "anyOf": [
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Elapsed"
+          },
+          "entered": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Entered",
+            "type": "string"
+          },
+          "expected": {
+            "$ref": "#/components/schemas/ForecastBandOut"
+          },
+          "month": {
+            "title": "Month",
+            "type": "string"
+          }
+        },
+        "required": [
+          "month",
+          "entered",
+          "expected",
+          "elapsed"
+        ],
+        "title": "MonthSoFarOut",
+        "type": "object"
+      },
       "MyRetirementIn": {
         "properties": {
           "birth": {
@@ -3077,6 +3862,15 @@
         "title": "Preferences",
         "type": "object"
       },
+      "Problem": {
+        "enum": [
+          "no_wealth",
+          "no_member",
+          "horizon",
+          "no_allocation"
+        ],
+        "type": "string"
+      },
       "ProgressStatus": {
         "enum": [
           "on_track",
@@ -3259,6 +4053,204 @@
         "title": "ReportSection",
         "type": "string"
       },
+      "RetirementEngineOut": {
+        "properties": {
+          "paths": {
+            "title": "Paths",
+            "type": "integer"
+          },
+          "seed": {
+            "title": "Seed",
+            "type": "integer"
+          },
+          "version": {
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "paths",
+          "seed",
+          "version"
+        ],
+        "title": "RetirementEngineOut",
+        "type": "object"
+      },
+      "RetirementFanMonthOut": {
+        "properties": {
+          "liquid": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Liquid",
+            "type": "string"
+          },
+          "month": {
+            "title": "Month",
+            "type": "string"
+          },
+          "p10": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "P10",
+            "type": "string"
+          },
+          "p25": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "P25",
+            "type": "string"
+          },
+          "p50": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "P50",
+            "type": "string"
+          },
+          "p75": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "P75",
+            "type": "string"
+          },
+          "p90": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "P90",
+            "type": "string"
+          }
+        },
+        "required": [
+          "month",
+          "p10",
+          "p25",
+          "p50",
+          "p75",
+          "p90",
+          "liquid"
+        ],
+        "title": "RetirementFanMonthOut",
+        "type": "object"
+      },
+      "RetirementIncomeMonthOut": {
+        "properties": {
+          "month": {
+            "title": "Month",
+            "type": "string"
+          },
+          "pensions": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Pensions",
+            "type": "string"
+          },
+          "spending": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Spending",
+            "type": "string"
+          },
+          "withdrawal": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Withdrawal",
+            "type": "string"
+          }
+        },
+        "required": [
+          "month",
+          "pensions",
+          "withdrawal",
+          "spending"
+        ],
+        "title": "RetirementIncomeMonthOut",
+        "type": "object"
+      },
+      "RetirementLastsOut": {
+        "properties": {
+          "chance": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Chance",
+            "type": "string"
+          },
+          "half_age": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Half Age"
+          },
+          "shortfall": {
+            "title": "Shortfall",
+            "type": "boolean"
+          },
+          "ten_age": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ten Age"
+          }
+        },
+        "required": [
+          "chance",
+          "ten_age",
+          "half_age",
+          "shortfall"
+        ],
+        "title": "RetirementLastsOut",
+        "type": "object"
+      },
+      "RetirementLivingOut": {
+        "description": "At the household's retirement, once every pension has started.",
+        "properties": {
+          "later_pension": {
+            "title": "Later Pension",
+            "type": "boolean"
+          },
+          "pensions": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Pensions",
+            "type": "string"
+          },
+          "spending": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Spending",
+            "type": "string"
+          },
+          "withdrawal": {
+            "anyOf": [
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Withdrawal"
+          },
+          "withdrawal_half": {
+            "anyOf": [
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Withdrawal Half"
+          }
+        },
+        "required": [
+          "pensions",
+          "withdrawal",
+          "withdrawal_half",
+          "spending",
+          "later_pension"
+        ],
+        "title": "RetirementLivingOut",
+        "type": "object"
+      },
       "RetirementMemberOut": {
         "properties": {
           "age_at_pension": {
@@ -3391,6 +4383,216 @@
           "spending"
         ],
         "title": "RetirementOut",
+        "type": "object"
+      },
+      "RetirementPersonOut": {
+        "properties": {
+          "age_at_pension": {
+            "title": "Age At Pension",
+            "type": "integer"
+          },
+          "age_at_retirement": {
+            "title": "Age At Retirement",
+            "type": "integer"
+          },
+          "birth": {
+            "title": "Birth",
+            "type": "string"
+          },
+          "earnings": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Earnings",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "pension": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Pension",
+            "type": "string"
+          },
+          "pension_month": {
+            "title": "Pension Month",
+            "type": "string"
+          },
+          "retirement": {
+            "title": "Retirement",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "birth",
+          "retirement",
+          "age_at_retirement",
+          "earnings",
+          "pension_month",
+          "age_at_pension",
+          "pension"
+        ],
+        "title": "RetirementPersonOut",
+        "type": "object"
+      },
+      "RetirementPlanOut": {
+        "properties": {
+          "engine": {
+            "$ref": "#/components/schemas/RetirementEngineOut"
+          },
+          "horizon": {
+            "title": "Horizon",
+            "type": "string"
+          },
+          "horizon_age": {
+            "title": "Horizon Age",
+            "type": "integer"
+          },
+          "income": {
+            "items": {
+              "$ref": "#/components/schemas/RetirementIncomeMonthOut"
+            },
+            "title": "Income",
+            "type": "array"
+          },
+          "indexation": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Indexation",
+            "type": "string"
+          },
+          "lasts": {
+            "$ref": "#/components/schemas/RetirementLastsOut"
+          },
+          "left_out": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Left Out",
+            "type": "array"
+          },
+          "living": {
+            "$ref": "#/components/schemas/RetirementLivingOut"
+          },
+          "months": {
+            "items": {
+              "$ref": "#/components/schemas/RetirementFanMonthOut"
+            },
+            "title": "Months",
+            "type": "array"
+          },
+          "people": {
+            "items": {
+              "$ref": "#/components/schemas/RetirementPersonOut"
+            },
+            "title": "People",
+            "type": "array"
+          },
+          "retired": {
+            "title": "Retired",
+            "type": "string"
+          },
+          "spending": {
+            "$ref": "#/components/schemas/RetirementPlanSpendingOut"
+          },
+          "this_month": {
+            "title": "This Month",
+            "type": "string"
+          },
+          "youngest": {
+            "title": "Youngest",
+            "type": "string"
+          },
+          "youngest_age_at_horizon": {
+            "title": "Youngest Age At Horizon",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "this_month",
+          "retired",
+          "horizon",
+          "horizon_age",
+          "youngest",
+          "youngest_age_at_horizon",
+          "living",
+          "lasts",
+          "months",
+          "income",
+          "people",
+          "left_out",
+          "spending",
+          "indexation",
+          "engine"
+        ],
+        "title": "RetirementPlanOut",
+        "type": "object"
+      },
+      "RetirementPlanSpendingOut": {
+        "properties": {
+          "base": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Base",
+            "type": "string"
+          },
+          "months": {
+            "title": "Months",
+            "type": "integer"
+          },
+          "retirement": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Retirement",
+            "type": "string"
+          },
+          "share": {
+            "anyOf": [
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Share"
+          }
+        },
+        "required": [
+          "retirement",
+          "share",
+          "base",
+          "months"
+        ],
+        "title": "RetirementPlanSpendingOut",
+        "type": "object"
+      },
+      "RetirementRunOut": {
+        "properties": {
+          "plan": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RetirementPlanOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "problem": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Problem"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "problem",
+          "plan"
+        ],
+        "title": "RetirementRunOut",
         "type": "object"
       },
       "RetirementSettingsOut": {
@@ -3591,6 +4793,16 @@
         ],
         "title": "ReturnDraft",
         "type": "object"
+      },
+      "Risk": {
+        "description": "Of going over a target (likely over, may go over, within), or of falling short of a\nsavings objective (likely short, may fall short, on track).",
+        "enum": [
+          "likely",
+          "possible",
+          "unlikely"
+        ],
+        "title": "Risk",
+        "type": "string"
       },
       "RiskPointOut": {
         "description": "A funded goal on the horizon and risk chart (F-ANA-4).",
@@ -5653,6 +6865,15 @@
         "title": "TimelineOut",
         "type": "object"
       },
+      "Total": {
+        "enum": [
+          "income",
+          "spent",
+          "saved",
+          "rest"
+        ],
+        "type": "string"
+      },
       "TotpCode": {
         "properties": {
           "code": {
@@ -7321,6 +8542,56 @@
         "summary": "Reset",
         "tags": [
           "demo"
+        ]
+      }
+    },
+    "/api/forecast": {
+      "get": {
+        "description": "For the household: spending is the household's (spec \u00a73).",
+        "operationId": "getForecast",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "kwak_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Kwak Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ForecastPageOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Forecast",
+        "tags": [
+          "forecast"
         ]
       }
     },
@@ -9093,6 +10364,56 @@
           }
         },
         "summary": "Set My Retirement",
+        "tags": [
+          "retirement"
+        ]
+      }
+    },
+    "/api/retirement/run": {
+      "get": {
+        "description": "The household's plan, run on the Monte Carlo engine: nothing is saved.",
+        "operationId": "runRetirement",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "kwak_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Kwak Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RetirementRunOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Run Retirement",
         "tags": [
           "retirement"
         ]

@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, expect, test } from "vitest";
 import { fakeApi, owner } from "../test/fakeApi";
@@ -58,15 +58,13 @@ test("each member enters their retirement and anyone the household's settings", 
     "GET /api/retirement": () => Response.json(retirement),
     "PUT /api/retirement/me": () => Response.json(retirement),
     "PATCH /api/retirement/settings": () => Response.json(retirement),
+    "GET /api/retirement/run": () => Response.json({ problem: "no_member", plan: null }),
   });
   const user = userEvent.setup();
   render(<TestApp path="/wealth/retirement" />);
 
   expect(await screen.findByRole("heading", { name: "Retirement" })).toBeVisible();
-  expect(screen.getByTitle("The retirement's charts")).toHaveAttribute(
-    "src",
-    "/dash/retirement?lang=en&theme=dark",
-  );
+  expect(await screen.findByText(/Enter your birth month, your retirement/)).toBeVisible();
   expect(
     await screen.findByText(
       "Camille: stops working in May 2056 at 64, a pension of €1,500 a month.",
@@ -110,4 +108,82 @@ test("each member enters their retirement and anyone the household's settings", 
       horizon_age: 90,
     }),
   );
+});
+
+const months = Array.from({ length: 13 }, (_, k) => ({
+  month: `${2026 + Math.floor((11 + k) / 12)}-${String(((11 + k) % 12) + 1).padStart(2, "0")}`,
+  p10: "100000.00",
+  p25: "110000.00",
+  p50: "120000.00",
+  p75: "130000.00",
+  p90: "140000.00",
+  liquid: "120000.00",
+}));
+const plan = {
+  this_month: "2026-12",
+  retired: "2026-12",
+  horizon: "2027-12",
+  horizon_age: 95,
+  youngest: "Wilson",
+  youngest_age_at_horizon: 67,
+  living: {
+    pensions: "1000.00",
+    withdrawal: "300.00",
+    withdrawal_half: "320.00",
+    spending: "1000.00",
+    later_pension: false,
+  },
+  lasts: { chance: "0.9950", ten_age: null, half_age: null, shortfall: false },
+  months,
+  income: months.slice(1).map((m) => ({
+    month: m.month,
+    pensions: "1000.00",
+    withdrawal: "300.00",
+    spending: "1000.00",
+  })),
+  people: [
+    {
+      name: "Wilson",
+      birth: "1960-12",
+      retirement: "2026-12",
+      age_at_retirement: 66,
+      earnings: "0.00",
+      pension_month: "2026-12",
+      age_at_pension: 66,
+      pension: "1000.00",
+    },
+  ],
+  left_out: ["Camille"],
+  spending: { retirement: "1000.00", share: null, base: "2250.00", months: 6 },
+  indexation: "-0.003",
+  engine: { paths: 5000, seed: 20261022, version: 1 },
+};
+
+test("the plan answers first: the standard of living, the share covered, how long it lasts", async () => {
+  fakeApi({
+    "GET /api/auth/me": () => Response.json(owner),
+    "GET /api/retirement": () => Response.json(retirement),
+    "GET /api/retirement/run": () => Response.json({ problem: null, plan }),
+  });
+  render(<TestApp path="/wealth/retirement" />);
+
+  const living = await screen.findByLabelText("Standard of living from Dec 2026, 9 in 10");
+  expect(within(living).getByText("€1,300 a month")).toBeVisible();
+  expect(within(living).getByText("Pensions €1,000")).toBeVisible();
+  expect(within(living).getByText("Withdrawal €300")).toBeVisible();
+  expect(within(living).getByText("Spending €1,000")).toBeVisible();
+  expect(
+    within(living).getByText(
+      /pensions of €1,000 and a sustainable withdrawal of €300 a month give €1,300 a month in 9 outcomes in 10 \(€1,300 in half of them\), for spending of €1,000: 130% covered\./,
+    ),
+  ).toBeVisible();
+  const covered = screen.getByLabelText("Spending covered");
+  expect(within(covered).getByText("130%")).toBeVisible();
+  expect(within(covered).getByText("covered")).toBeVisible();
+  const lasts = screen.getByLabelText("The wealth lasts to the horizon");
+  expect(within(lasts).getByText("more than 99%")).toBeVisible();
+  expect(within(lasts).getByText(/does not run out before 95\./)).toBeVisible();
+  expect(screen.getByText("Pension €1,000")).toBeVisible();
+  expect(screen.getByText("Left out, without a retirement entered: Camille.")).toBeVisible();
+  expect(screen.getByText(/check yours on info-retraite\.fr/)).toBeVisible();
 });

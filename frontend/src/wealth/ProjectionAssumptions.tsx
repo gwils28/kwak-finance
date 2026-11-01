@@ -57,7 +57,7 @@ async function unwrap<D>(request: Promise<{ data?: D; error?: unknown }>): Promi
 /**
  * The projection's assumptions (F-SIM-1), a household setting any member can change: the
  * inflation, each asset category's return and volatility, and each debt's repayment. Saving
- * one reloads the Dash page through `onSaved`.
+ * one runs the simulator again through `onSaved`.
  */
 export function ProjectionAssumptions({ onSaved }: { onSaved: () => void }) {
   const { t } = useI18n();

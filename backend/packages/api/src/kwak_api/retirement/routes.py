@@ -1,5 +1,5 @@
 """Retirement (spec §4.13 F-RET-1, 2): each member enters their own, any member changes the
-household's settings. The Retirement page itself is a Dash page (kwak_api.dash)."""
+household's settings; the page's figures come from `run` (F-RET-4)."""
 
 import re
 from decimal import Decimal
@@ -17,6 +17,7 @@ from pydantic import AfterValidator, BaseModel, Field
 
 from kwak_api.auth.routes import CurrentSession, Db, Now
 from kwak_api.models import Household, MemberRetirement, User
+from kwak_api.retirement import run as figures
 from kwak_api.services import audit
 from kwak_api.services import retirement as service
 
@@ -227,3 +228,13 @@ def update_retirement_settings(
         audit.record(db, user, action, now, horizon_age=str(body.horizon_age or ""))
     db.flush()
     return _out(db, user_session.user, now)
+
+
+@router.get("/run")
+def run_retirement(user_session: CurrentSession, db: Db, now: Now) -> figures.RetirementRunOut:
+    """The household's plan, run on the Monte Carlo engine: nothing is saved."""
+    try:
+        plan = service.plan(db, user_session.user, now.date())
+    except service.PlanError as reason:
+        return figures.RetirementRunOut(problem=str(reason), plan=None)
+    return figures.RetirementRunOut(problem=None, plan=figures.plan_out(plan, service.run(plan)))
