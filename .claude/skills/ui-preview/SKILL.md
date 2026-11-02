@@ -21,10 +21,11 @@ The Docker stack on https://localhost:8443 runs the merged code on the real data
 3. **Servers**, in the background:
    - API: `cd backend && uv run uvicorn kwak_api.main:app --port 8000` with the same environment. Without `--reload`, so restart it after a backend change.
    - Web: `cd frontend && pnpm dev` (run `eval "$(fnm env)"` first if pnpm is missing). After `make openapi`, restart it with `--force` if a new export is reported missing.
-4. **Open http://127.0.0.1:5173, not localhost.** Cookies are scoped by host, not port: a login on `localhost` would overwrite the maintainer's real session on :8443.
+4. **Login relay**, in the background: a tiny Python HTTP server in the scratchpad on 127.0.0.1:8765, CORS for http://127.0.0.1:5173, that reads the credentials file and answers `{email, password, code}` with the current TOTP code. The `ui-verifier` agent (or `javascript_tool`) signs the tab in through it, so the credentials never enter the conversation. Stop it with `pkill -f "[c]reds_server.py"`.
+5. **Open http://127.0.0.1:5173, not localhost.** Cookies are scoped by host, not port: a login on `localhost` would overwrite the maintainer's real session on :8443.
 
 Frontend-only change with no new endpoint: skip steps 1 to 3 and point a scratch Vite config's `/api` proxy at `https://localhost:8443` (`secure: false`), then let the maintainer log in themselves. Never type their credentials.
 
 ## Stop
 
-Stop uvicorn and Vite, `docker stop kwak-preview`, and delete `~/.cache/kwak-preview`.
+Stop uvicorn, Vite and the relay, `docker stop kwak-preview`, and delete `~/.cache/kwak-preview`.
