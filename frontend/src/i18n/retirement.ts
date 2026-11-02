@@ -98,6 +98,14 @@ export const retirementEn = {
   howAmount: "set by hand",
   inputIndexation: (rate: string) => `Pensions follow inflation ${rate} a year.`,
   inputHorizon: (month: string, age: number) => `Horizon: ${month}, when the youngest is ${age}.`,
+  inputSavings: (declared: boolean, amount: string) =>
+    declared
+      ? `Savings until the retirement: declared, the Projection's monthly contributions, ${amount} a month today.`
+      : `Savings until the retirement: measured, the capacity, ${amount} a month today.`,
+  horizonShort: (age: number) =>
+    `The horizon is at ${age}, below 85: most people live beyond it (at 60, a French man may expect at least 24 more years and a woman 28). The withdrawal is sized to spend the wealth by then, leaving only the pensions after it, and the chance that the wealth lasts counts no year after it. Raise the horizon to 95 to plan with a margin.`,
+  savingsNegative: (capacity: string) =>
+    `Declared, the contributions are taken as all the household saves: once a member stops working, their earnings come out of them, and the savings turn negative before the household retires, drawn from the wealth. The measured capacity is ${capacity} a month; choose "Measured" in the Projection if the household saves more than it invests.`,
   leftOut: (names: string) => `Left out, without a retirement entered: ${names}.`,
   scope: "The wealth counted is the household's lines you see.",
   limitsTitle: "Limits",
@@ -202,6 +210,14 @@ export const retirementFr: typeof retirementEn = {
   howAmount: "saisies à la main",
   inputIndexation: (rate) => `Les pensions suivent l'inflation ${rate} par an.`,
   inputHorizon: (month, age) => `Horizon : ${month}, quand le plus jeune a ${age} ans.`,
+  inputSavings: (declared, amount) =>
+    declared
+      ? `Épargne jusqu'à la retraite : déclarée, les versements mensuels de la Projection, ${amount} par mois aujourd'hui.`
+      : `Épargne jusqu'à la retraite : mesurée, la capacité, ${amount} par mois aujourd'hui.`,
+  horizonShort: (age) =>
+    `L'horizon est à ${age} ans, sous 85 ans : la plupart des gens vivent au-delà (à 60 ans, un homme peut espérer au moins 24 ans de plus en France, une femme 28). Le retrait est calculé pour dépenser le patrimoine d'ici là, il ne reste ensuite que les pensions, et la chance que le patrimoine tienne ne compte aucune année après. Relevez l'horizon à 95 ans pour prévoir une marge.`,
+  savingsNegative: (capacity) =>
+    `En « Déclarée », les versements sont pris comme tout ce que le foyer épargne : quand un membre arrête de travailler, son revenu en est retiré, et l'épargne devient négative avant la retraite du foyer, prise sur le patrimoine. La capacité mesurée est de ${capacity} par mois ; choisissez « Mesurée » dans la Projection si le foyer épargne plus qu'il ne verse.`,
   leftOut: (names) => `Non compté, sans retraite saisie : ${names}.`,
   scope: "Le patrimoine compté est celui des lignes du foyer que vous voyez.",
   limitsTitle: "Limites",

@@ -40,7 +40,8 @@ const retirement = {
     horizon_age: 95,
     default_spending_share: "0.80",
     default_indexation: "-0.003",
-    default_horizon_age: 95,
+    default_horizon_age: 75,
+    warned_horizon_age: 85,
   },
   spending: {
     average: "3200.00",
@@ -97,9 +98,13 @@ test("each member enters their retirement and anyone the household's settings", 
   await user.clear(horizon);
   await user.type(horizon, "120");
   await user.click(screen.getByRole("button", { name: "Save the settings" }));
-  expect(await screen.findByText("The horizon is an age from 85 to 105.")).toBeVisible();
+  expect(await screen.findByText("The horizon is an age from 70 to 105.")).toBeVisible();
+  await user.clear(horizon);
+  await user.type(horizon, "72");
+  expect(screen.getByText(/Below 85, most people outlive the horizon/)).toBeVisible();
   await user.clear(horizon);
   await user.type(horizon, "90");
+  expect(screen.queryByText(/Below 85, most people outlive the horizon/)).toBeNull();
   await user.click(screen.getByRole("button", { name: "Save the settings" }));
   await waitFor(() =>
     expect(calls.find((c) => c.route === "PATCH /api/retirement/settings")?.body).toEqual({
@@ -124,6 +129,7 @@ const plan = {
   retired: "2026-12",
   horizon: "2027-12",
   horizon_age: 95,
+  warned: false,
   youngest: "Wilson",
   youngest_age_at_horizon: 67,
   living: {
@@ -154,6 +160,7 @@ const plan = {
     },
   ],
   left_out: ["Camille"],
+  savings: { source: "measured", monthly: "800.00", capacity: "800.00", negative: false },
   spending: { retirement: "1000.00", share: null, base: "2250.00", months: 6 },
   indexation: "-0.003",
   engine: { paths: 5000, seed: 20261022, version: 1 },
@@ -186,4 +193,35 @@ test("the plan answers first: the standard of living, the share covered, how lon
   expect(screen.getByText("Pension €1,000")).toBeVisible();
   expect(screen.getByText("Left out, without a retirement entered: Camille.")).toBeVisible();
   expect(screen.getByText(/check yours on info-retraite\.fr/)).toBeVisible();
+  expect(
+    screen.getByText("Savings until the retirement: measured, the capacity, €800 a month today."),
+  ).toBeVisible();
+  expect(screen.queryByText(/below 85: most people live beyond it/)).toBeNull();
+});
+
+test("a horizon below 85 and declared savings turned negative are flagged, in French too", async () => {
+  const declared = {
+    ...plan,
+    horizon_age: 75,
+    warned: true,
+    savings: { source: "declared", monthly: "200.00", capacity: "1200.00", negative: true },
+  };
+  fakeApi({
+    "GET /api/auth/me": () => Response.json({ ...owner, language: "fr" }),
+    "GET /api/retirement": () => Response.json(retirement),
+    "GET /api/retirement/run": () => Response.json({ problem: null, plan: declared }),
+  });
+  render(<TestApp path="/wealth/retirement" />);
+
+  expect(
+    await screen.findByText(
+      /L'horizon est à 75 ans, sous 85 ans : la plupart des gens vivent au-delà/,
+    ),
+  ).toBeVisible();
+  expect(screen.getByText(/La capacité mesurée est de 1\s200\s€ par mois/)).toBeVisible();
+  expect(
+    screen.getByText(
+      /Épargne jusqu'à la retraite : déclarée, les versements mensuels de la Projection, 200\s€ par mois aujourd'hui\./,
+    ),
+  ).toBeVisible();
 });

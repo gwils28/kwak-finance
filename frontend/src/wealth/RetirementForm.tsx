@@ -11,6 +11,7 @@ import {
   updateRetirementSettings,
 } from "../api/generated";
 import { detailSentence } from "../auth/errors";
+import { Callout } from "../components/analysis";
 import { Button, ErrorAlert } from "../components/ui";
 import { useI18n } from "../i18n";
 import {
@@ -319,7 +320,7 @@ function SettingsForm({ data, onSaved }: { data: RetirementOut; onSaved: Saved }
       return save.setError(w.indexationInvalid);
     }
     const age = Number(horizon);
-    if (!Number.isInteger(age) || age < 85 || age > 105) return save.setError(w.horizonInvalid);
+    if (!Number.isInteger(age) || age < 70 || age > 105) return save.setError(w.horizonInvalid);
     save.mutation.mutate({ ...body, indexation: rate, horizon_age: age });
   };
   const restore = () =>
@@ -406,6 +407,9 @@ function SettingsForm({ data, onSaved }: { data: RetirementOut; onSaved: Saved }
             )}
           </Field>
         </div>
+        {Number.isInteger(Number(horizon)) &&
+          Number(horizon) >= 70 &&
+          Number(horizon) < s.warned_horizon_age && <Callout>{w.horizonShort}</Callout>}
         <ErrorAlert message={save.error} />
         <div className="flex flex-wrap gap-3">
           <Button type="submit" disabled={save.mutation.isPending}>

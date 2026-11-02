@@ -117,8 +117,9 @@ class Basis:
 def basis(
     db: Session, viewer: User, scope: Scope, today: date, *, contributions: bool = False
 ) -> Basis | None:
-    """None without a wealth line in scope: the page asks to enter the wealth first. Only the
-    simulator reads the `contributions` (F-SIM-3); the retirement saves the capacity (F-RET-3)."""
+    """None without a wealth line in scope: the page asks to enter the wealth first. The
+    simulator and the retirement read the `contributions` and the savings choice (F-SIM-3,
+    F-RET-3); without them, no contribution and the default rule."""
     month = Month.of(today)
     scoped = wealth.scoped_lines(db, viewer, scope)
     if not scoped:

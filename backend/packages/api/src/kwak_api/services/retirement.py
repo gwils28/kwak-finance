@@ -4,6 +4,7 @@ measured on, and the plan read from the household, run on the Monte Carlo engine
 from dataclasses import dataclass
 from datetime import date
 from decimal import Decimal
+from uuid import UUID
 
 from kwak_analytics import montecarlo as mc
 from kwak_analytics import retirement as engine
@@ -11,7 +12,13 @@ from kwak_core import retirement as core
 from kwak_core.budget import Month
 from kwak_core.goals import months_between
 from kwak_core.money import quantize
-from kwak_core.projection import ProjectionError, amortise
+from kwak_core.projection import (
+    ProjectionError,
+    SavingsSource,
+    amortise,
+    contribution_plan,
+    contribution_shares,
+)
 from kwak_core.visibility import Scope
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -166,12 +173,16 @@ class Plan:
     retired_at: int
     """The household's retirement counted from now, 1 when already retired."""
     scenario: mc.Scenario
+    source: SavingsSource
+    """Where the savings until the retirement come from: the projection's choice (F-RET-3)."""
+    monthly: Decimal
+    """Those savings this month, today's euros: the contributions' sum or the capacity."""
 
 
 def plan(db: Session, viewer: User, today: date) -> Plan:
     """The household's plan of F-RET-3, the wealth lines the viewer sees."""
     this_month = Month.of(today)
-    b = projection.basis(db, viewer, Scope.HOUSEHOLD, today)
+    b = projection.basis(db, viewer, Scope.HOUSEHOLD, today, contributions=True)
     if b is None:
         raise PlanError("no_wealth")
     rows = members(db, viewer.household_id)
@@ -196,7 +207,24 @@ def plan(db: Session, viewer: User, today: date) -> Plan:
         owed = [
             a + o for a, o in zip(owed, amortise(d.owed, d.terms, months=months).owed, strict=True)
         ]
-    allocation = b.allocation
+    # F-RET-3: the projection's savings, by the household's choice (invariant 37).
+    source = b.source
+    put_in: list[Decimal] | None = None
+    split: list[list[Decimal]] | None = None
+    monthly = b.savings
+    if b.contributions:
+        allocation: dict[UUID, Decimal] | None = contribution_shares(b.contributions)
+        if source is SavingsSource.DECLARED:
+            contributed = contribution_plan(b.contributions, months=months, inflation=b.inflation)
+            put_in = contributed.put_in
+            split = [[row.get(c.id, ZERO) for c in b.categories] for row in contributed.split]
+            allocation = contributed.split[0]
+            monthly = sum((c.amount for c in b.contributions), ZERO)
+    else:
+        allocation = b.allocation
+        if source is SavingsSource.DECLARED:
+            put_in = [ZERO] * months
+            monthly = ZERO
     if allocation is None:
         raise PlanError("no_allocation")
     scenario = mc.Scenario(
@@ -219,12 +247,27 @@ def plan(db: Session, viewer: User, today: date) -> Plan:
             indexation=chosen.indexation,
             this_month=this_month,
             months=months,
+            put_in=put_in,
         ),
         debts=owed,
         start_debts=sum(b.start.debts.values(), ZERO),
         inflation=b.inflation,
+        split=split,
     )
-    return Plan(b, counted, left_out, chosen, spent, this_month, retired, end, retired_at, scenario)
+    return Plan(
+        b,
+        counted,
+        left_out,
+        chosen,
+        spent,
+        this_month,
+        retired,
+        end,
+        retired_at,
+        scenario,
+        source,
+        quantize(monthly),
+    )
 
 
 @dataclass(frozen=True)

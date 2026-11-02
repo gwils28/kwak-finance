@@ -52,7 +52,7 @@ def test_the_defaults_are_the_specs() -> None:
     assert (
         D("0.8"),
         D("-0.003"),
-        95,
+        75,
     ) == (DEFAULT_SPENDING_SHARE, DEFAULT_INDEXATION, DEFAULT_HORIZON_AGE)
     assert MAX_YEARS == 80
 
@@ -71,10 +71,12 @@ def test_the_indexation_is_from_minus_2_to_plus_1_percent_to_a_tenth(rate: Decim
     check_indexation(D("-0.02"))
 
 
-@pytest.mark.parametrize("years", [84, 106])
-def test_the_horizon_age_is_from_85_to_105(years: int) -> None:
+@pytest.mark.parametrize("years", [69, 106])
+def test_the_horizon_age_is_from_70_to_105(years: int) -> None:
     with pytest.raises(ProjectionError):
         check_horizon_age(years)
+    check_horizon_age(70)
+    check_horizon_age(105)
 
 
 def test_a_member_stops_working_before_claiming_and_after_being_born() -> None:
@@ -101,7 +103,7 @@ def test_the_household_retires_with_its_last_member_and_ends_with_its_youngest()
     assert counted([older, younger, unborn]) == [older, younger]
     assert household_retirement([older, younger]) == Month(2054, 3)
     assert household_retirement([]) is None
-    assert horizon([older, younger], DEFAULT_HORIZON_AGE, NOW) == Month(2085, 3)
+    assert horizon([older, younger], 95, NOW) == Month(2085, 3)
     # At most 80 years from now.
     baby = _member(birth=Month(2010, 1), retirement=Month(2074, 1))
     assert horizon([baby], 105, NOW) == Month(2106, 10)
@@ -139,6 +141,30 @@ def test_before_anyone_retires_the_plan_saves_the_projections_savings() -> None:
     freed = amortise(loan.owed, loan.terms, months=MONTHS).freed
     projection = savings_path(D(1000), months=MONTHS, inflation=D("0.02"), freed=freed)
     assert path[:7] == projection[:7]  # November 2026 to May 2027
+
+
+def test_declared_the_plan_saves_the_contributions_in_place_of_the_capacity() -> None:
+    """Invariant 37, declared (F-SIM-3): the contributions, then the same changes."""
+    loan = Debt(D(1500), DebtTerms(D(500), D(0), D(10)))
+    member = _member(retirement=Month(2027, 6), earnings="2500", pension="1800")
+    put_in = [D(400) + t for t in range(MONTHS)]
+    path = _plan([member], debts=[loan], put_in=put_in, spending=D(2000))
+    freed = amortise(loan.owed, loan.terms, months=MONTHS).freed
+    assert path[:7] == [p + f for p, f in zip(put_in[:7], freed[:7], strict=True)]
+    # From June 2027, the household is retired: pensions less spending, as measured.
+    assert path[7:] == _plan([member], debts=[loan], spending=D(2000))[7:]
+
+
+def test_declared_without_contributions_the_retirement_still_costs_the_earnings() -> None:
+    first = _member(retirement=Month(2027, 1), earnings="2500", pension_month=Month(2027, 3))
+    second = _member(retirement=Month(2028, 1))
+    path = _plan([first, second], put_in=[D(0)] * MONTHS)
+    assert path[:6] == [D(0), D(0), D(-2500), D(-2500), D(-700), D(-700)]
+
+
+def test_the_contributions_cover_the_plans_months() -> None:
+    with pytest.raises(ProjectionError):
+        _plan([_member()], put_in=[D(0)] * (MONTHS - 1))
 
 
 def test_a_member_retiring_first_takes_their_earnings_out_and_their_pension_in() -> None:
@@ -197,6 +223,12 @@ def test_earnings_and_pensions_move_the_savings_the_right_way(
     ]
     base, more = _plan(members, months=150), _plan(richer, months=150)
     assert all(b <= r for b, r in zip(base, more, strict=True))
+    # Invariant 38: earnings stop at the retirement, so more of them only take more away.
+    earning = [
+        Member(m.id, m.birth, m.retirement, m.earnings + extra, m.pension_month, m.pension)
+        for m in members
+    ]
+    assert all(e <= b for e, b in zip(_plan(earning, months=150), base, strict=True))
 
 
 def test_the_debts_cost_their_payments_and_insurance_until_repaid() -> None:

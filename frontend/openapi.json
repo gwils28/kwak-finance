@@ -4512,12 +4512,19 @@
             "title": "Retired",
             "type": "string"
           },
+          "savings": {
+            "$ref": "#/components/schemas/RetirementPlanSavingsOut"
+          },
           "spending": {
             "$ref": "#/components/schemas/RetirementPlanSpendingOut"
           },
           "this_month": {
             "title": "This Month",
             "type": "string"
+          },
+          "warned": {
+            "title": "Warned",
+            "type": "boolean"
           },
           "youngest": {
             "title": "Youngest",
@@ -4533,6 +4540,7 @@
           "retired",
           "horizon",
           "horizon_age",
+          "warned",
           "youngest",
           "youngest_age_at_horizon",
           "living",
@@ -4541,11 +4549,47 @@
           "income",
           "people",
           "left_out",
+          "savings",
           "spending",
           "indexation",
           "engine"
         ],
         "title": "RetirementPlanOut",
+        "type": "object"
+      },
+      "RetirementPlanSavingsOut": {
+        "description": "The savings until the household's retirement (F-RET-3), the projection's choice.",
+        "properties": {
+          "capacity": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Capacity",
+            "type": "string"
+          },
+          "monthly": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Monthly",
+            "type": "string"
+          },
+          "negative": {
+            "title": "Negative",
+            "type": "boolean"
+          },
+          "source": {
+            "enum": [
+              "declared",
+              "measured"
+            ],
+            "title": "Source",
+            "type": "string"
+          }
+        },
+        "required": [
+          "source",
+          "monthly",
+          "capacity",
+          "negative"
+        ],
+        "title": "RetirementPlanSavingsOut",
         "type": "object"
       },
       "RetirementPlanSpendingOut": {
@@ -4664,6 +4708,10 @@
               }
             ],
             "title": "Spending Share"
+          },
+          "warned_horizon_age": {
+            "title": "Warned Horizon Age",
+            "type": "integer"
           }
         },
         "required": [
@@ -4673,7 +4721,8 @@
           "horizon_age",
           "default_spending_share",
           "default_indexation",
-          "default_horizon_age"
+          "default_horizon_age",
+          "warned_horizon_age"
         ],
         "title": "RetirementSettingsOut",
         "type": "object"
