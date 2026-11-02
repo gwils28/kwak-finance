@@ -2,7 +2,7 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-Kwak Finance — self-hosted household budget and net-worth web app. FastAPI + PostgreSQL backend (uv workspace), React + TypeScript frontend, DuckDB analytics later. Phases 1 to 4 are done: spending entered by hand (lines, budget, reports, since v1.0), wealth and goals; phase 5 (analytics) has the wealth projection, the goals analysis, retirement and the cash-flow forecast (spec §4.11 to §4.14).
+Kwak Finance — self-hosted household budget and net-worth web app. FastAPI + PostgreSQL backend (uv workspace), React + TypeScript frontend, DuckDB analytics later. Phases 1 to 4 are done: spending entered by hand (lines, budget, reports, since v1.0), wealth and goals; phase 5 (analytics) has the wealth projection, the goals analysis, retirement and the cash-flow forecast (spec §4.11 to §4.14); phase 6 is the audit document for a chosen reader (§4.15).
 
 - Specs and roadmap: `docs/SPECIFICATIONS.md`
 - Architecture, stack, repo layout: `docs/ARCHITECTURE.md`

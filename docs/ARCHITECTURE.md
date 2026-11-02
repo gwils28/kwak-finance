@@ -11,9 +11,9 @@ Status: draft v0.1 — 2026-10-06. Complements `docs/SPECIFICATIONS.md`.
                            ▼
                     FastAPI (uvicorn)
                            │
-          ┌────────────────┼──────────────────┬───────────────┐
-          ▼                ▼                  ▼               ▼
-     PostgreSQL 17    Scheduler (jobs)   DuckDB (analytics) Ollama (phase 6)
+          ┌────────────────┼──────────────────┐
+          ▼                ▼                  ▼
+     PostgreSQL 17    Scheduler (jobs)   DuckDB (analytics)
      (system of       prices, snapshots, attaches Postgres
       record)         recurrences,       read-only + Parquet
           │           backups            snapshots
@@ -119,7 +119,7 @@ Conventions: UUIDv7 primary keys, `created_at` / `updated_at` in UTC (`timestamp
 
 1. **Phases 1–3**: dashboards query Postgres (SQL views / materialised views refreshed by the worker).
 2. **Phase 5**: the wealth projection needs no DuckDB: it starts from the current month of the wealth matrix, read through the API's services. Nor does the cash-flow forecast: a household's monthly series by category are a few thousand numbers, read through the services too. Forecasting follows a written protocol: temporal split only (rolling origins, nothing after a cut), a naive baseline first, scaled metrics (MASE, RMSSE) with WAPE, conformal bands checked for coverage, and fixed seeds. The experiments behind it run in `notebooks/forecasting/` on synthetic households, never on `data/` nor the real database, so DuckDB and Parquet snapshots are left for when a study needs the real history (read-only role).
-3. **Phase 6**: an Ollama service. The LLM only sees a curated read-only analytics schema (text-to-SQL validated against an allow-list, executed under the read-only role). pgvector is added if RAG over documents is needed.
+3. **Phase 6**: no model runs in the app (the Ollama assistant was dropped). The audit document (spec §4.15) is assembled by the API's services from the same figures as the pages, rendered by the web app as a printable page or Markdown, and never stored.
 
 ## 6. Decisions
 
