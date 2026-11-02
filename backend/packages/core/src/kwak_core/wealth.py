@@ -159,14 +159,17 @@ def in_scope(lines: Sequence[LineInput], scope: Scope, viewer_id: UUID) -> list[
     ]
 
 
-def to_update(lines: Sequence[LineInput], month: Month) -> list[tuple[LineInput, Decimal | None]]:
-    """ "Update this month": the lines still open, with their last value (None: none yet)."""
-    out: list[tuple[LineInput, Decimal | None]] = []
+def to_update(
+    lines: Sequence[LineInput], month: Month
+) -> list[tuple[LineInput, Decimal | None, bool]]:
+    """ "Update this month": the lines still open, with their last value (None: none yet) and
+    whether it is that month's own value rather than one carried forward (F-WLT-3)."""
+    out: list[tuple[LineInput, Decimal | None, bool]] = []
     for line in lines:
         if line.closed_from is not None and month >= line.closed_from:
             continue
         cell = line_cell(line.values, month)
-        out.append((line, cell.amount if cell else None))
+        out.append((line, cell.amount if cell else None, cell is not None and not cell.carried))
     return out
 
 

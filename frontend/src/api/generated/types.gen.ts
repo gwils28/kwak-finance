@@ -4051,6 +4051,10 @@ export type WealthUpdateLineOut = {
      */
     category_name: string;
     /**
+     * Entered
+     */
+    entered: boolean;
+    /**
      * Last Value
      */
     last_value: string | null;

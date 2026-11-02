@@ -15,6 +15,7 @@ import {
   type WealthLineOut,
   type WealthMatrixLineOut,
   type WealthMatrixOut,
+  type WealthUpdateLineOut,
   wealthLinesToUpdate,
 } from "../api/generated";
 import { detailSentence } from "../auth/errors";
@@ -648,15 +649,25 @@ function UpdateForm({
   onDone,
 }: {
   month: string;
-  lines: { line_id: string; name: string; category_name: string; last_value: string | null }[];
+  lines: WealthUpdateLineOut[];
   onDone: () => void;
 }) {
   const { t } = useI18n();
+  const prefilled = (l: WealthUpdateLineOut) =>
+    l.last_value ? amountInputShort(l.last_value) : "";
   const [values, setValues] = useState<Record<string, string>>(() =>
-    Object.fromEntries(
-      lines.map((l) => [l.line_id, l.last_value ? amountInputShort(l.last_value) : ""]),
-    ),
+    Object.fromEntries(lines.map((l) => [l.line_id, prefilled(l)])),
   );
+  // F-WLT-3: only the lines touched are saved, an edit or a tick "unchanged".
+  const [touched, setTouched] = useState<Set<string>>(() => new Set());
+  const touch = (id: string, on: boolean) =>
+    setTouched((now) => {
+      const next = new Set(now);
+      if (on) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+  const done = lines.filter((l) => l.entered).length;
   const [invalid, setInvalid] = useState(false);
   const save = useSave(
     (body: { month: string; values: { line_id: string; amount: string }[] }) =>
@@ -665,7 +676,9 @@ function UpdateForm({
   );
   const submit = (event: FormEvent) => {
     event.preventDefault();
-    const filled = lines.filter((l) => (values[l.line_id] ?? "").trim() !== "");
+    const filled = lines.filter(
+      (l) => touched.has(l.line_id) && (values[l.line_id] ?? "").trim() !== "",
+    );
     const parsed = filled.map((l) => ({
       line_id: l.line_id,
       amount: parseEurInput(values[l.line_id] ?? ""),
@@ -683,19 +696,53 @@ function UpdateForm({
       onCancel={onDone}
     >
       <p className="text-xs text-muted">{t.wealth.updateHelp}</p>
+      {lines.length > 0 && <p className="text-sm">{t.wealth.updatedCount(done, lines.length)}</p>}
       {lines.length === 0 ? (
         <p className="text-sm">{t.wealth.nothingToUpdate}</p>
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {lines.map((l) => (
-            <TextField
+            <div
               key={l.line_id}
-              label={`${l.name} (${l.category_name})`}
-              inputMode="decimal"
-              className="tabular"
-              value={values[l.line_id] ?? ""}
-              onChange={(e) => setValues({ ...values, [l.line_id]: e.target.value })}
-            />
+              data-entered={l.entered}
+              className={`flex flex-col gap-2 rounded-md border-l-4 p-2 ${
+                l.entered ? "border-progress-ok bg-progress-ok/10" : "border-transparent"
+              }`}
+            >
+              <TextField
+                label={`${l.name} (${l.category_name})`}
+                inputMode="decimal"
+                className="tabular"
+                value={values[l.line_id] ?? ""}
+                onChange={(e) => {
+                  setValues({ ...values, [l.line_id]: e.target.value });
+                  touch(l.line_id, true);
+                }}
+              />
+              <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+                {l.entered ? (
+                  <span className="font-medium text-progress-ok">
+                    <span aria-hidden="true">✓ </span>
+                    {t.wealth.updatedThisMonth}
+                  </span>
+                ) : (
+                  <span className="text-muted">{t.wealth.toUpdate}</span>
+                )}
+                {l.last_value !== null && (
+                  <label className="flex items-center gap-1">
+                    <input
+                      type="checkbox"
+                      checked={touched.has(l.line_id) && values[l.line_id] === prefilled(l)}
+                      onChange={(e) => {
+                        setValues({ ...values, [l.line_id]: prefilled(l) });
+                        touch(l.line_id, e.target.checked);
+                      }}
+                    />
+                    {t.wealth.unchanged}
+                  </label>
+                )}
+              </div>
+            </div>
           ))}
         </div>
       )}

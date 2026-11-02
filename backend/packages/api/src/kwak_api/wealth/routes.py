@@ -368,6 +368,8 @@ class WealthUpdateLineOut(BaseModel):
     category_id: UUID
     category_name: str
     last_value: Decimal | None
+    entered: bool
+    """The value is this month's own, not one carried forward: the line is up to date."""
 
 
 class WealthUpdateValue(BaseModel):
@@ -396,8 +398,9 @@ def wealth_lines_to_update(
             category_id=line.category_id,
             category_name=line.category.name,
             last_value=last,
+            entered=entered,
         )
-        for line, last in service.lines_to_update(db, user_session.user, when)
+        for line, last, entered in service.lines_to_update(db, user_session.user, when)
     ]
 
 
