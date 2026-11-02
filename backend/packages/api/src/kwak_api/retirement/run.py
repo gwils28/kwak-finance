@@ -12,6 +12,7 @@ from kwak_core import retirement as core
 from kwak_core.budget import Month
 from kwak_core.goals import add_months, months_between
 from kwak_core.money import quantize
+from kwak_core.projection import SavingsSource
 from pydantic import BaseModel
 
 from kwak_api.services import retirement as service
@@ -113,6 +114,18 @@ class RetirementPlanSpendingOut(BaseModel):
     months: int
 
 
+class RetirementPlanSavingsOut(BaseModel):
+    """The savings until the household's retirement (F-RET-3), the projection's choice."""
+
+    source: Literal["declared", "measured"]
+    monthly: Decimal
+    """This month, today's euros: the contributions' sum (declared) or the capacity."""
+    capacity: Decimal
+    """The measured capacity, for comparison."""
+    negative: bool
+    """Declared, a member's retirement turns them negative before the household's."""
+
+
 class RetirementEngineOut(BaseModel):
     paths: int
     seed: int
@@ -125,6 +138,8 @@ class RetirementPlanOut(BaseModel):
     """The household's retirement: its last member's."""
     horizon: str
     horizon_age: int
+    warned: bool
+    """The horizon is below the age the page warns under (F-RET-2)."""
     youngest: str
     youngest_age_at_horizon: int
     living: RetirementLivingOut
@@ -137,6 +152,7 @@ class RetirementPlanOut(BaseModel):
     """The members counted, by name."""
     left_out: list[str]
     """Members without a retirement entered."""
+    savings: RetirementPlanSavingsOut
     spending: RetirementPlanSpendingOut
     indexation: Decimal
     engine: RetirementEngineOut
@@ -238,6 +254,7 @@ def plan_out(p: service.Plan, result: service.Result) -> RetirementPlanOut:
         retired=str(p.retired),
         horizon=str(p.horizon),
         horizon_age=p.settings.horizon_age,
+        warned=p.settings.horizon_age < core.WARNED_HORIZON_AGE,
         youngest=youngest_name,
         youngest_age_at_horizon=core.age(youngest, p.horizon),
         living=living,
@@ -246,6 +263,13 @@ def plan_out(p: service.Plan, result: service.Result) -> RetirementPlanOut:
         income=income,
         people=people,
         left_out=p.left_out,
+        savings=RetirementPlanSavingsOut(
+            source=p.source.value,
+            monthly=p.monthly,
+            capacity=quantize(p.basis.savings),
+            negative=p.source is SavingsSource.DECLARED
+            and any(v < 0 for v in p.scenario.savings[: at - 1]),
+        ),
         spending=RetirementPlanSpendingOut(
             retirement=quantize(s.retirement),
             share=None if p.settings.share is None else p.settings.share.quantize(Decimal("0.01")),

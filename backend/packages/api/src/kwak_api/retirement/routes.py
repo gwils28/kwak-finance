@@ -91,6 +91,8 @@ class RetirementSettingsOut(BaseModel):
     default_spending_share: Decimal
     default_indexation: Decimal
     default_horizon_age: int
+    warned_horizon_age: int
+    """Below it, the form and the page warn: most people outlive the horizon."""
 
 
 class RetirementSpendingOut(BaseModel):
@@ -127,6 +129,7 @@ def _out(db: Db, viewer: User, now: Now) -> RetirementOut:
             default_spending_share=core.DEFAULT_SPENDING_SHARE.quantize(SHARE),
             default_indexation=core.DEFAULT_INDEXATION.quantize(RATE),
             default_horizon_age=core.DEFAULT_HORIZON_AGE,
+            warned_horizon_age=core.WARNED_HORIZON_AGE,
         ),
         spending=RetirementSpendingOut(
             average=spent.average,
@@ -191,7 +194,7 @@ class RetirementSettingsPatch(BaseModel):
     indexation: Annotated[Decimal, Field(gt=-1, lt=1)] | None = None
     """Against inflation, a share to 0.1 %, from -0.02 to 0.01."""
     horizon_age: Annotated[int, Field(ge=0, le=200)] | None = None
-    """From 85 to 105."""
+    """From 70 to 105."""
 
 
 @router.patch("/settings")

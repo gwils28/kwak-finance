@@ -105,13 +105,15 @@ export const wealthEn = {
     "Base pensions follow prices; supplementary ones (Agirc-Arrco) have often been raised by less.",
   horizonAge: "Horizon: the youngest member's age",
   horizonHint:
-    "At 60, about one woman in four and one man in six or seven may reach 95: a margin, not a ceiling.",
+    "From 70 to 105, 75 by default. At 60, about one woman in four and one man in six or seven may reach 95: planning to 95 gives a margin.",
+  horizonShort:
+    "Below 85, most people outlive the horizon: for a couple of 60, one of them reaches 85 in about 85 to 90 % of cases. The withdrawal is then sized to spend the wealth by that age, leaving only the pensions after it; 95 plans with a margin.",
   saveSettings: "Save the settings",
   restoreDefaults: "Restore the defaults",
   monthInvalid: "Enter the months as month and year.",
   shareInvalid: "The share is a whole percentage from 50 to 150.",
   indexationInvalid: "The indexation is from −2 to +1, to 0.1.",
-  horizonInvalid: "The horizon is an age from 85 to 105.",
+  horizonInvalid: "The horizon is an age from 70 to 105.",
   assumptionsTitle: "Projection assumptions",
   assumptionsIntro:
     "Shared by the household: any member can change them, and they stay until changed. Returns are yearly averages after a low-cost fund's fees and before tax; the median growth is what the middle outcome earns once volatility is counted.",
@@ -320,13 +322,15 @@ export const wealthFr: typeof wealthEn = {
     "Les pensions de base suivent les prix ; les complémentaires (Agirc-Arrco) ont souvent été moins revalorisées.",
   horizonAge: "Horizon : l'âge du plus jeune membre",
   horizonHint:
-    "À 60 ans, environ une femme sur quatre et un homme sur six ou sept peuvent atteindre 95 ans : une marge, pas un plafond.",
+    "De 70 à 105 ans, 75 par défaut. À 60 ans, environ une femme sur quatre et un homme sur six ou sept peuvent atteindre 95 ans : prévoir jusqu'à 95 ans donne une marge.",
+  horizonShort:
+    "Sous 85 ans, la plupart des gens vivent au-delà de l'horizon : pour un couple de 60 ans, l'un des deux atteint 85 ans dans environ 85 à 90 % des cas. Le retrait est alors calculé pour dépenser le patrimoine d'ici cet âge, il ne reste ensuite que les pensions ; 95 ans donne une marge.",
   saveSettings: "Enregistrer les réglages",
   restoreDefaults: "Rétablir les défauts",
   monthInvalid: "Saisissez les mois en mois et année.",
   shareInvalid: "La part est un pourcentage entier de 50 à 150.",
   indexationInvalid: "L'indexation va de −2 à +1, à 0,1 près.",
-  horizonInvalid: "L'horizon est un âge de 85 à 105 ans.",
+  horizonInvalid: "L'horizon est un âge de 70 à 105 ans.",
   assumptionsTitle: "Hypothèses de la projection",
   assumptionsIntro:
     "Communes au foyer : chaque membre peut les changer, et elles restent jusqu'au prochain changement. Les rendements sont des moyennes annuelles après les frais d'un fonds peu cher et avant impôts ; la croissance médiane est ce que rapporte le résultat du milieu, une fois la volatilité comptée.",

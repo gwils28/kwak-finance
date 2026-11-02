@@ -40,7 +40,7 @@ class Household(UUIDPrimaryKey, Timestamps, Base):
         CheckConstraint(
             "pension_indexation BETWEEN -0.02 AND 0.01", name="pension_indexation_range"
         ),
-        CheckConstraint("horizon_age BETWEEN 85 AND 105", name="horizon_age_range"),
+        CheckConstraint("horizon_age BETWEEN 70 AND 105", name="horizon_age_range"),
         CheckConstraint(
             "projection_savings IN ('declared', 'measured')", name="projection_savings_known"
         ),
@@ -63,7 +63,7 @@ class Household(UUIDPrimaryKey, Timestamps, Base):
     inflation: Mapped[Decimal | None] = mapped_column(Numeric(4, 3))
     # F-RET-2: the retirement spending, a share of today's spending outside the loans or an
     # amount; the pensions' indexation against inflation; the youngest member's age at the
-    # horizon. NULL: the defaults (80 %, -0.3 %, 95).
+    # horizon. NULL: the defaults (80 %, -0.3 %, 75).
     retirement_share: Mapped[Decimal | None] = mapped_column(Numeric(3, 2))
     retirement_spending: Mapped[Decimal | None] = mapped_column(Numeric(14, 2))
     pension_indexation: Mapped[Decimal | None] = mapped_column(Numeric(4, 3))

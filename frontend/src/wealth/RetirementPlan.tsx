@@ -132,6 +132,10 @@ function Plan({ plan }: { plan: RetirementPlanOut }) {
         />
         <Tile label={r.tileLasts} value={chance(lasts.chance)} note={lasting.join(" ")} />
       </Tiles>
+      {plan.warned && <Callout>{r.horizonShort(plan.horizon_age)}</Callout>}
+      {plan.savings.negative && (
+        <Callout>{r.savingsNegative(formatEurHundreds(plan.savings.capacity))}</Callout>
+      )}
       {withdrawal !== null && withdrawal > 0 && <Callout info>{r.model}</Callout>}
 
       <div className="grid gap-4 lg:grid-cols-2">
@@ -275,6 +279,12 @@ function Inputs({ plan }: { plan: RetirementPlanOut }) {
         ))}
       </div>
       <ul className="list-disc pl-5 text-sm text-muted">
+        <li>
+          {r.inputSavings(
+            plan.savings.source === "declared",
+            formatEurHundreds(plan.savings.monthly),
+          )}
+        </li>
         <li>{r.inputSpending(formatEurHundreds(s.retirement), how)}</li>
         <li>{r.inputIndexation(formatRateSigned(plan.indexation))}</li>
         <li>{r.inputHorizon(monthLabel(plan.horizon), plan.horizon_age)}</li>

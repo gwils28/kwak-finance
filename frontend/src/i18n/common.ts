@@ -82,7 +82,7 @@ export const API_MESSAGES_FR: Record<string, string> = {
     "l'indexation des pensions se règle à 0,1 % près",
   "the pensions' indexation is from -2 % to +1 % a year":
     "l'indexation des pensions va de -2 % à +1 % par an",
-  "the horizon is an age from 85 to 105": "l'horizon est un âge de 85 à 105 ans",
+  "the horizon is an age from 70 to 105": "l'horizon est un âge de 70 à 105 ans",
   "a joint goal uses joint lines only": "un objectif commun n'utilise que des lignes communes",
   "a goal uses its owner's lines and joint ones":
     "un objectif utilise les lignes de son titulaire et les lignes communes",

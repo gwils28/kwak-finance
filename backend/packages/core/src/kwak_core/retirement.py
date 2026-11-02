@@ -35,9 +35,12 @@ MIN_INDEXATION = Decimal("-0.02")
 MAX_INDEXATION = Decimal("0.01")
 INDEXATION_STEP = Decimal("0.001")
 
-DEFAULT_HORIZON_AGE = 95
-"""The youngest member's age at which the plan ends: a margin, not a ceiling."""
-MIN_HORIZON_AGE = 85
+DEFAULT_HORIZON_AGE = 75
+"""The youngest member's age at which the plan ends, the maintainer's choice; 95 plans with a
+margin."""
+MIN_HORIZON_AGE = 70
+WARNED_HORIZON_AGE = 85
+"""Below it, most people outlive the horizon: the page warns (F-RET-2)."""
 MAX_HORIZON_AGE = 105
 MAX_YEARS = 80
 """The plan never runs more than 80 years from now."""
@@ -59,7 +62,7 @@ def check_indexation(rate: Decimal) -> None:
 
 def check_horizon_age(years: int) -> None:
     if not MIN_HORIZON_AGE <= years <= MAX_HORIZON_AGE:
-        raise ProjectionError("the horizon is an age from 85 to 105")
+        raise ProjectionError("the horizon is an age from 70 to 105")
 
 
 # F-RET-1: the members
@@ -181,13 +184,18 @@ def plan_savings(
     indexation: Decimal,
     this_month: Month,
     months: int,
+    put_in: Sequence[Decimal] | None = None,
 ) -> list[Decimal]:
     """The savings of months 1 to n in current euros (negative: withdrawn). `members` are the
     counted ones. Before the household retires: the capacity, less the earnings of members who
     retire, plus their pensions as they start (one already received is in the capacity), and
     the debts' freed payments, as in the projection (invariant §8.37). From then on: the
     pensions, indexed to inflation plus `indexation`, less the retirement spending, indexed to
-    inflation, less what the debts still cost; a repaid debt then frees nothing."""
+    inflation, less what the debts still cost; a repaid debt then frees nothing. `put_in`:
+    declared savings (F-SIM-3), the contributions of months 1 to n in current euros, in place
+    of the capacity."""
+    if put_in is not None and len(put_in) != months:
+        raise ProjectionError("the contributions cover the plan's months")
     retired = household_retirement(members)
     freed = [ZERO] * months
     cost = [ZERO] * months
@@ -224,7 +232,8 @@ def plan_savings(
                 ),
                 ZERO,
             )
-            out.append(_grown(capacity, inflation, t) - lost + started + freed[t - 1])
+            saved = _grown(capacity, inflation, t) if put_in is None else put_in[t - 1]
+            out.append(saved - lost + started + freed[t - 1])
         else:
             out.append(pensions - _grown(spending, inflation, t) - cost[t - 1])
     return out

@@ -8,9 +8,9 @@ import pytest
 from fastapi.testclient import TestClient
 from kwak_api.models import User
 
-from tests.api.conftest import Clock, log_in
+from tests.api.conftest import Clock, csrf, log_in
 from tests.api.retirement.test_retirement import _flat, _mine, _settings
-from tests.api.wealth.test_wealth import TODAY, _line, _value
+from tests.api.wealth.test_wealth import TODAY, _categories, _line, _value
 
 D = Decimal
 
@@ -33,7 +33,7 @@ def _planned(client: TestClient) -> Any:
     livret = _line(client, "Savings accounts", "Livret A")
     _value(client, livret, "2026-12", "120000.00")
     _mine(client)  # born December 1960, retired this month, a pension of 1,000
-    _settings(client, spending_amount="1000.00")
+    _settings(client, spending_amount="1000.00", horizon_age=95)
     return _run(client)
 
 
@@ -69,7 +69,14 @@ def test_the_standard_of_living_and_how_long_the_wealth_lasts(owner_client: Test
     assert lasts["half_age"] is None
     assert lasts["shortfall"] is False
     assert plan["horizon_age"] == 95
+    assert plan["warned"] is False
     assert plan["youngest_age_at_horizon"] == 95
+    assert plan["savings"] == {
+        "source": "measured",
+        "monthly": "0.00",
+        "capacity": "0.00",
+        "negative": False,
+    }
 
 
 def test_the_fan_and_the_income_once_retired(owner_client: TestClient) -> None:
@@ -100,3 +107,25 @@ def test_the_inputs_are_given_back(owner_client: TestClient) -> None:
     assert plan["left_out"] == []
     assert D(plan["indexation"]) == D("-0.003")
     assert plan["engine"]["paths"] == 5000
+
+
+def test_declared_savings_turned_negative_by_a_retirement_are_flagged(
+    owner_client: TestClient, clock: Clock, member: User
+) -> None:
+    """F-RET-3: declared, the page says when the lost earnings outrun the contributions."""
+    _flat(owner_client)
+    livret = _line(owner_client, "Savings accounts", "Livret A")
+    _value(owner_client, livret, "2026-12", "100000.00")
+    savings = _categories(owner_client)["Savings accounts"]["id"]
+    response = owner_client.put(
+        "/api/projection/contributions",
+        json={"contributions": [{"category_id": savings, "amount": "200.00"}]},
+        headers=csrf(owner_client),
+    )
+    assert response.status_code == 200, response.text
+    # The owner stops in June 2027, the member in 2030: 200 - 2,500 in between.
+    _mine(owner_client, retirement="2027-06", earnings="2500.00", pension_month="2028-06")
+    log_in(owner_client, clock, "member@example.com")
+    _mine(owner_client, birth="1970-01", retirement="2030-01", earnings="2000.00")
+    out = _run(owner_client)["plan"]["savings"]
+    assert out == {"source": "declared", "monthly": "200.00", "capacity": "0.00", "negative": True}

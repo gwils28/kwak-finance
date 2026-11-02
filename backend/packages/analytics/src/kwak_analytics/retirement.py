@@ -71,6 +71,9 @@ def _retire(plan: Scenario, retired_at: int, paths: int, seed: int) -> _Retired:
     held = np.tile(np.array([float(c.start) for c in cats]), (paths, 1))
     short = np.zeros(paths)
     rate = float(SHORTFALL_RATE) / 12
+    split = (
+        None if plan.split is None else np.array([[float(v) for v in row] for row in plan.split])
+    )
     for t in range(1, retired_at):
         held = held * np.exp(r.mu + r.sigma * draw(generators, paths))
         short = short * (1 + rate)
@@ -78,7 +81,8 @@ def _retire(plan: Scenario, retired_at: int, paths: int, seed: int) -> _Retired:
         if saved >= 0:
             repaid = np.minimum(short, saved)
             short = short - repaid
-            held = held + (saved - repaid)[:, None] * r.share
+            share = r.share if split is None else split[t - 1]
+            held = held + (saved - repaid)[:, None] * share
         else:
             held, missing = withdraw(held, np.full(paths, -saved), r.first, r.pro_rata)
             short = short + missing

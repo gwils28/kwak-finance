@@ -7,7 +7,10 @@ from typing import Any
 import pytest
 from fastapi.testclient import TestClient
 from kwak_api.models import User
-from kwak_api.services import retirement
+from kwak_api.services import projection, retirement
+from kwak_core.budget import Month
+from kwak_core.projection import SavingsSource
+from kwak_core.visibility import Scope
 from sqlalchemy.orm import Session
 
 from tests.api.conftest import Clock, csrf, log_in
@@ -64,10 +67,11 @@ def test_a_new_household_has_the_defaults_and_no_retirement(owner_client: TestCl
         "spending_share": "0.80",
         "spending_amount": None,
         "indexation": "-0.003",
-        "horizon_age": 95,
+        "horizon_age": 75,
         "default_spending_share": "0.80",
         "default_indexation": "-0.003",
-        "default_horizon_age": 95,
+        "default_horizon_age": 75,
+        "warned_horizon_age": 85,
     }
     assert out["spending"] | {"months": None} == {
         "average": "0.00",
@@ -146,7 +150,7 @@ def test_the_settings_are_the_households_and_return_to_their_defaults(
     assert (settings["spending_share"], settings["indexation"], settings["horizon_age"]) == (
         "0.80",
         "-0.003",
-        95,
+        75,
     )
     log = owner_client.get("/api/audit").json()["items"]
     assert any(e["details"] == {"horizon_age": "90"} for e in log)
@@ -159,6 +163,7 @@ def test_the_settings_are_the_households_and_return_to_their_defaults(
         {"spending_share": "0.805"},
         {"indexation": "0.02"},
         {"horizon_age": 120},
+        {"horizon_age": 69},
         {"spending_amount": "-1"},
     ],
 )
@@ -193,7 +198,7 @@ def test_the_plan_runs_from_the_households_wealth_to_its_horizon(
     livret = _line(owner_client, "Savings accounts", "Livret A")
     _value(owner_client, livret, "2026-12", "120000.00")
     _mine(owner_client)  # born December 1960, retired this month, a pension of 1,000
-    _settings(owner_client, spending_amount="1000.00")
+    _settings(owner_client, spending_amount="1000.00", horizon_age=95)
 
     plan = retirement.plan(session, owner, TODAY.date())
     assert plan.retired_at == 1
@@ -214,3 +219,76 @@ def test_a_plan_needs_wealth_and_a_member_with_a_birth_month(
     _value(owner_client, livret, "2026-12", "1000.00")
     with pytest.raises(retirement.PlanError, match="no_member"):
         retirement.plan(session, owner, TODAY.date())
+
+
+def test_the_horizon_is_75_by_default_and_may_come_down_to_70(
+    owner_client: TestClient, session: Session, owner: User
+) -> None:
+    livret = _line(owner_client, "Savings accounts", "Livret A")
+    _value(owner_client, livret, "2026-12", "1000.00")
+    _mine(owner_client)  # born December 1960
+    assert retirement.plan(session, owner, TODAY.date()).horizon == Month(2035, 12)
+    assert _settings(owner_client, horizon_age=70).status_code == 200
+    assert retirement.plan(session, owner, TODAY.date()).horizon == Month(2030, 12)
+    _mine(owner_client, retirement="2031-01")
+    with pytest.raises(retirement.PlanError, match="horizon"):
+        retirement.plan(session, owner, TODAY.date())  # before the retirement
+
+
+def _contribute(client: TestClient, source: str | None = None) -> None:
+    ids = {name: c["id"] for name, c in _categories(client).items()}
+    body: dict[str, Any] = {
+        "contributions": [
+            {"category_id": ids["Stocks"], "amount": "300.00"},
+            {"category_id": ids["Savings accounts"], "amount": "100.00", "indexed": False},
+        ]
+    }
+    if source is not None:
+        body["savings_source"] = source
+    response = client.put("/api/projection/contributions", json=body, headers=csrf(client))
+    assert response.status_code == 200, response.text
+
+
+def test_the_savings_follow_the_projections_choice(
+    owner_client: TestClient, session: Session, owner: User
+) -> None:
+    """F-RET-3: declared, the contributions and their split; measured, the capacity."""
+    _flat(owner_client)
+    livret = _line(owner_client, "Savings accounts", "Livret A")
+    _value(owner_client, livret, "2026-12", "10000.00")
+    _mine(owner_client, retirement="2030-12", earnings="2000.00")
+    _settings(owner_client, horizon_age=95)
+
+    measured = retirement.plan(session, owner, TODAY.date())
+    assert measured.source is SavingsSource.MEASURED
+    assert measured.scenario.savings[0] == measured.basis.savings
+    assert measured.scenario.split is None
+
+    _contribute(owner_client)  # unset: declared once a contribution exists
+    session.expire_all()
+    declared = retirement.plan(session, owner, TODAY.date())
+    assert declared.source is SavingsSource.DECLARED
+    assert declared.scenario.savings[0] == D(400)
+    assert declared.scenario.split is not None
+    shares = dict(
+        zip((c.id for c in declared.basis.categories), declared.scenario.split[0], strict=True)
+    )
+    stocks = _categories(owner_client)["Stocks"]["id"]
+    assert str(max(shares, key=lambda k: shares[k])) == stocks
+    # Until the retirement, the projection's savings exactly (invariant 37).
+    run = projection.scenario(
+        projection.basis(session, owner, Scope.HOUSEHOLD, TODAY.date(), contributions=True),
+        years=4,
+    )
+    assert declared.scenario.savings[:47] == run.savings[:47]
+    assert run.split is not None
+    assert declared.scenario.split[:47] == run.split[:47]
+    assert declared.scenario.categories == run.categories
+
+    _contribute(owner_client, "measured")
+    session.expire_all()
+    back = retirement.plan(session, owner, TODAY.date())
+    assert back.source is SavingsSource.MEASURED
+    assert back.scenario.savings[0] == back.basis.savings
+    assert back.scenario.split is None
+    assert back.scenario.categories == run.categories

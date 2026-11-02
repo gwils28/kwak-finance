@@ -2394,11 +2394,16 @@ export type RetirementPlanOut = {
      * Retired
      */
     retired: string;
+    savings: RetirementPlanSavingsOut;
     spending: RetirementPlanSpendingOut;
     /**
      * This Month
      */
     this_month: string;
+    /**
+     * Warned
+     */
+    warned: boolean;
     /**
      * Youngest
      */
@@ -2407,6 +2412,30 @@ export type RetirementPlanOut = {
      * Youngest Age At Horizon
      */
     youngest_age_at_horizon: number;
+};
+
+/**
+ * RetirementPlanSavingsOut
+ *
+ * The savings until the household's retirement (F-RET-3), the projection's choice.
+ */
+export type RetirementPlanSavingsOut = {
+    /**
+     * Capacity
+     */
+    capacity: string;
+    /**
+     * Monthly
+     */
+    monthly: string;
+    /**
+     * Negative
+     */
+    negative: boolean;
+    /**
+     * Source
+     */
+    source: 'declared' | 'measured';
 };
 
 /**
@@ -2471,6 +2500,10 @@ export type RetirementSettingsOut = {
      * Spending Share
      */
     spending_share: string | null;
+    /**
+     * Warned Horizon Age
+     */
+    warned_horizon_age: number;
 };
 
 /**

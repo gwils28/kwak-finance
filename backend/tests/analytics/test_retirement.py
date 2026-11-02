@@ -8,7 +8,9 @@ from hypothesis import given, settings
 from hypothesis import strategies as st
 from kwak_analytics.montecarlo import Category, Scenario, simulate
 from kwak_analytics.retirement import failing_share, sustainable_withdrawal
+from kwak_core.budget import Month
 from kwak_core.projection import Assumption
+from kwak_core.retirement import Member, plan_savings
 
 D = Decimal
 FLAT = Assumption(D(0), D(0))
@@ -45,6 +47,19 @@ def test_the_savings_before_the_retirement_build_the_wealth_it_pays_from() -> No
     # 12 months of 1,000 saved, then 12 months paid from it: 1,000 a month.
     plan = _scenario([_livret("0")], [D(1000)] * 12 + [D(0)] * 12)
     assert sustainable_withdrawal(plan, retired_at=13, paths=5).nine_tenths == D(1000)
+
+
+def test_the_savings_before_the_retirement_follow_the_plans_split() -> None:
+    """Declared contributions (F-SIM-3) split month by month: only the liquid part pays."""
+    home = Category(uuid4(), "real-estate", D(0), FLAT, D("0.5"))
+    livret = _livret("0", share="0.5")
+    months = 24
+    split = [[D(1), D(0)]] * 12 + [[D("0.5"), D("0.5")]] * 12
+    plan = Scenario(
+        [home, livret], [D(1000)] * 12 + [D(0)] * 12, [D(0)] * months, D(0), D(0), split=split
+    )
+    # Every saving went to the home: nothing liquid to pay from.
+    assert sustainable_withdrawal(plan, retired_at=13, paths=5).nine_tenths == D(0)
 
 
 def test_the_home_and_locked_in_funds_pay_nothing() -> None:
@@ -100,3 +115,32 @@ def test_the_month_the_liquid_wealth_runs_out() -> None:
     assert out.ran_out_by(D("0.5")) == 4
     rich = simulate(_scenario([_livret("100000")], [D(-300)] * 12), paths=5)
     assert rich.ran_out_by(D("0.1")) is None
+
+
+@settings(max_examples=10, deadline=None)
+@given(st.integers(0, 4_000), st.integers(1, 2_000))
+def test_more_earnings_lost_at_a_retirement_never_raise_the_withdrawal(
+    earnings: int, extra: int
+) -> None:
+    """Invariant 38, on the earnings: they stop at the retirement, so more of them only lower
+    the savings until the household retires."""
+    now = Month(2026, 10)
+
+    def withdrawal(lost: int) -> Decimal:
+        first = Member(uuid4(), Month(1962, 1), Month(2027, 10), D(lost), Month(2027, 10), D(0))
+        last = Member(uuid4(), Month(1964, 1), Month(2028, 10), D(0), Month(2028, 10), D(0))
+        savings = plan_savings(
+            [first, last],
+            capacity=D(1500),
+            spending=D(0),
+            debts=[],
+            inflation=D(0),
+            indexation=D(0),
+            this_month=now,
+            months=120,
+        )
+        livret = Category(stable_id, "stocks", D(100_000), STOCKS, D(1))
+        w = sustainable_withdrawal(_scenario([livret], savings), retired_at=24, paths=100)
+        return w.nine_tenths if w.nine_tenths is not None else D(-1)
+
+    assert withdrawal(earnings + extra) <= withdrawal(earnings)
