@@ -1,6 +1,6 @@
 ---
 name: prepare-commit
-description: Prepare a commit for the maintainer to run: check the staged diff covers one topic, run checks, and propose a Conventional Commit message. Use when the user asks to commit, prepare a commit, or write a commit/PR message.
+description: "Prepare a commit for the maintainer to run: check the staged diff covers one topic, run checks, and propose a Conventional Commit message. Use when the user asks to commit, prepare a commit, or write a commit/PR message."
 ---
 
 Claude never runs `git commit` or `git push` in this repo: the maintainer must be the sole GitHub contributor.
