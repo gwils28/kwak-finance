@@ -135,7 +135,14 @@ def test_update_this_month_lists_the_open_lines_with_their_last_value() -> None:
     pea = _line(STOCKS, {SEP: D("900")})
     sold = _line(GOLD, {SEP: D("300")}, closed_from=OCT)
     new = _line(GOLD, {})
-    assert to_update([pea, sold, new], OCT) == [(pea, D("900")), (new, None)]
+    assert to_update([pea, sold, new], OCT) == [(pea, D("900"), False), (new, None, False)]
+
+
+def test_update_this_month_says_which_lines_already_have_this_months_value() -> None:
+    """F-WLT-3: a line updated this month holds its own value, not one carried forward."""
+    done = _line(STOCKS, {SEP: D("900"), OCT: D("950")})
+    carried = _line(GOLD, {SEP: D("300")})
+    assert to_update([done, carried], OCT) == [(done, D("950"), True), (carried, D("300"), False)]
 
 
 def test_scopes_select_lines_by_visibility() -> None:

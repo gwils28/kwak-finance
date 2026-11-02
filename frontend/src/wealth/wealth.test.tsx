@@ -245,7 +245,7 @@ test("a manual cell opens its value, saved for its month", async () => {
   );
 });
 
-test("update this month pre-fills the last values and saves what is filled", async () => {
+test("update this month marks the lines already updated and saves only those touched", async () => {
   const calls = api({
     "GET /api/wealth/update": () =>
       Response.json([
@@ -255,6 +255,23 @@ test("update this month pre-fills the last values and saves what is filled", asy
           category_id: "c-stocks",
           category_name: "Stocks",
           last_value: "10600.00",
+          entered: false,
+        },
+        {
+          line_id: "l-livret",
+          name: "Livret A",
+          category_id: "c-savings",
+          category_name: "Savings accounts",
+          last_value: "5200.00",
+          entered: true,
+        },
+        {
+          line_id: "l-gold",
+          name: "Or",
+          category_id: "c-gold",
+          category_name: "Gold",
+          last_value: "3000.00",
+          entered: false,
         },
         {
           line_id: "l-btc",
@@ -262,6 +279,7 @@ test("update this month pre-fills the last values and saves what is filled", asy
           category_id: "c-crypto",
           category_name: "Crypto",
           last_value: null,
+          entered: false,
         },
       ]),
     "POST /api/wealth/update": () => new Response(null, { status: 204 }),
@@ -271,12 +289,28 @@ test("update this month pre-fills the last values and saves what is filled", asy
   await user.click(await screen.findByRole("button", { name: "Update this month" }));
 
   const form = await screen.findByRole("form", { name: "Values for Dec 2026" });
-  expect(within(form).getByLabelText("PEA Fortuneo (Stocks)")).toHaveValue("10600");
+  const pea = within(form).getByLabelText("PEA Fortuneo (Stocks)");
+  expect(pea).toHaveValue("10600");
+  // The line already updated this month is marked; the others are still to update.
+  expect(within(form).getByText("1 of 4 lines updated this month.")).toBeVisible();
+  const livret = within(form)
+    .getByLabelText("Livret A (Savings accounts)")
+    .closest("[data-entered]");
+  expect(livret).toHaveAttribute("data-entered", "true");
+  expect(within(livret as HTMLElement).getByText("Updated this month")).toBeVisible();
+  // Only what is touched is saved: an edit, or a line ticked unchanged.
+  await user.clear(pea);
+  await user.type(pea, "10800");
+  const gold = within(form).getByLabelText("Or (Gold)").closest("[data-entered]") as HTMLElement;
+  await user.click(within(gold).getByLabelText("Unchanged"));
   await user.click(within(form).getByRole("button", { name: "Save" }));
 
   expect(calls.find((c) => c.route === "POST /api/wealth/update")?.body).toEqual({
     month: "2026-12",
-    values: [{ line_id: "l-pea", amount: "10600.00" }],
+    values: [
+      { line_id: "l-pea", amount: "10800.00" },
+      { line_id: "l-gold", amount: "3000.00" },
+    ],
   });
 });
 
@@ -726,4 +760,43 @@ test("each line says what goals set aside on it", async () => {
   expect(plain((await screen.findByText(/réservés aux objectifs/)).textContent)).toBe(
     "2 500 € réservés aux objectifs",
   );
+});
+
+test("in French, the lines already updated this month are counted and marked", async () => {
+  api({
+    "GET /api/auth/me": () => Response.json({ ...owner, language: "fr" }),
+    "GET /api/wealth/update": () =>
+      Response.json([
+        {
+          line_id: "a",
+          name: "PEA",
+          category_id: "c",
+          category_name: "Actions",
+          last_value: "1.00",
+          entered: true,
+        },
+        {
+          line_id: "b",
+          name: "Livret",
+          category_id: "c",
+          category_name: "Livrets",
+          last_value: "2.00",
+          entered: true,
+        },
+        {
+          line_id: "c",
+          name: "Or",
+          category_id: "c",
+          category_name: "Or",
+          last_value: "3.00",
+          entered: false,
+        },
+      ]),
+  });
+  render(<TestApp path="/wealth" />);
+  const user = userEvent.setup();
+  await user.click(await screen.findByRole("button", { name: "Mettre à jour ce mois-ci" }));
+  expect(await screen.findByText("2 lignes sur 3 mises à jour ce mois-ci.")).toBeVisible();
+  expect(screen.getAllByText("Mise à jour ce mois-ci")).toHaveLength(2);
+  expect(screen.getByText("À mettre à jour")).toBeVisible();
 });

@@ -153,16 +153,22 @@ def test_update_this_month_lists_the_open_lines_and_saves_them_at_once(
     _value(owner_client, pea, "2026-11", "1000.00")
     btc = _line(owner_client, "Crypto", "Kraken")
 
-    lines = owner_client.get("/api/wealth/update", params={"month": "2026-12"}).json()
-    assert [(x["name"], x["last_value"]) for x in lines] == [("PEA", "1000.00"), ("Kraken", None)]
+    def listed() -> list[tuple[str, str | None, bool]]:
+        lines = owner_client.get("/api/wealth/update", params={"month": "2026-12"}).json()
+        return [(x["name"], x["last_value"], x["entered"]) for x in lines]
 
-    body = {
-        "month": "2026-12",
-        "values": [{"line_id": pea, "amount": "1100.00"}, {"line_id": btc, "amount": "250.00"}],
-    }
+    assert listed() == [("PEA", "1000.00", False), ("Kraken", None, False)]
+
+    # Only the line touched is saved: the other keeps carrying its value, still to update.
+    body = {"month": "2026-12", "values": [{"line_id": btc, "amount": "250.00"}]}
     response = owner_client.post("/api/wealth/update", json=body, headers=csrf(owner_client))
     assert response.status_code == 204, response.text
-    assert _matrix(owner_client, start="2026-12", end="2026-12")["gross"] == ["1350.00"]
+    assert listed() == [("PEA", "1000.00", False), ("Kraken", "250.00", True)]
+    assert _matrix(owner_client, start="2026-12", end="2026-12")["gross"] == ["1250.00"]
+
+    body = {"month": "2026-12", "values": [{"line_id": pea, "amount": "1100.00"}]}
+    owner_client.post("/api/wealth/update", json=body, headers=csrf(owner_client))
+    assert listed() == [("PEA", "1100.00", True), ("Kraken", "250.00", True)]
 
 
 def _wealth_start(client: TestClient, month: str | None) -> Any:

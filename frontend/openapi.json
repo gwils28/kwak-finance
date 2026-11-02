@@ -7666,6 +7666,10 @@
             "title": "Category Name",
             "type": "string"
           },
+          "entered": {
+            "title": "Entered",
+            "type": "boolean"
+          },
           "last_value": {
             "anyOf": [
               {
@@ -7693,7 +7697,8 @@
           "name",
           "category_id",
           "category_name",
-          "last_value"
+          "last_value",
+          "entered"
         ],
         "title": "WealthUpdateLineOut",
         "type": "object"

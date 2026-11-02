@@ -58,7 +58,11 @@ export const wealthEn = {
   removeHelp: "The month will carry the previous value again.",
   updateTitle: (month: string) => `Values for ${month}`,
   updateHelp:
-    "Each line shows its last value: change what moved, leave the rest. Empty lines are left out.",
+    "Each line shows its last value: change what moved, or tick “Unchanged” when it did not move. Only the lines you touch are saved; the others keep last month's value and stay to update.",
+  updatedCount: (done: number, total: number) => `${done} of ${total} lines updated this month.`,
+  updatedThisMonth: "Updated this month",
+  toUpdate: "To update",
+  unchanged: "Unchanged",
   nothingToUpdate: "No line to update: add one first.",
   saveFailed: "Could not save. Check the values.",
   from: "From",
@@ -274,7 +278,12 @@ export const wealthFr: typeof wealthEn = {
   removeHelp: "Le mois reprendra la valeur précédente.",
   updateTitle: (month) => `Valeurs de ${month}`,
   updateHelp:
-    "Chaque ligne affiche sa dernière valeur : changez ce qui a bougé, laissez le reste. Les lignes vides sont laissées de côté.",
+    "Chaque ligne affiche sa dernière valeur : changez ce qui a bougé, ou cochez « Inchangée » si elle n'a pas bougé. Seules les lignes touchées sont enregistrées ; les autres gardent la valeur du mois dernier et restent à mettre à jour.",
+  updatedCount: (done, total) =>
+    `${done} ligne${done > 1 ? "s" : ""} sur ${total} mise${done > 1 ? "s" : ""} à jour ce mois-ci.`,
+  updatedThisMonth: "Mise à jour ce mois-ci",
+  toUpdate: "À mettre à jour",
+  unchanged: "Inchangée",
   nothingToUpdate: "Aucune ligne à mettre à jour : ajoutez-en une d'abord.",
   saveFailed: "Impossible d'enregistrer. Vérifiez les valeurs.",
   from: "Du",

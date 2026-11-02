@@ -221,8 +221,9 @@ def matrix(db: Session, viewer: User, months: list[Month], scope: Scope) -> Matr
 
 def lines_to_update(
     db: Session, viewer: User, month: Month
-) -> list[tuple[WealthLine, Decimal | None]]:
-    """The open lines the viewer sees, with their last value (F-WLT-3)."""
+) -> list[tuple[WealthLine, Decimal | None, bool]]:
+    """The open lines the viewer sees, with their last value and whether it was entered for
+    that month (F-WLT-3)."""
     manual = visible_lines(db, viewer)
     values = _values(db, manual)
     by_id = {line.id: line for line in manual}
@@ -231,4 +232,4 @@ def lines_to_update(
     listed = to_update(
         sorted(inputs, key=lambda i: (order.get(i.category_id, 0), by_id[i.id].name)), month
     )
-    return [(by_id[line.id], last) for line, last in listed]
+    return [(by_id[line.id], last, entered) for line, last, entered in listed]
