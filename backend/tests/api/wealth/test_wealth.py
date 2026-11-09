@@ -39,7 +39,7 @@ def _value(client: TestClient, line: str, month: str, amount: str) -> Any:
     )
 
 
-def _matrix(client: TestClient, **params: str) -> Any:
+def _matrix(client: TestClient, **params: str | list[str]) -> Any:
     response = client.get("/api/wealth/matrix", params=params)
     assert response.status_code == 200, response.text
     return response.json()
@@ -549,3 +549,23 @@ def test_a_line_moved_into_savings_takes_a_regulated_type_at_once(
     moved = _patch_line(owner_client, line, category_id=savings, regulated_type="livret_a")
     assert moved.status_code == 200, moved.text
     assert moved.json()["regulated_type"] == "livret_a"
+
+
+def test_the_analysis_can_leave_categories_out(owner_client: TestClient) -> None:
+    pea, gold, loan = (
+        _line(owner_client, c, n) for c, n in (("Stocks", "PEA"), ("Gold", "Or"), ("Debts", "Prêt"))
+    )
+    for line, amount in ((pea, "600.00"), (gold, "200.00"), (loan, "300.00")):
+        _value(owner_client, line, "2026-11", amount)
+    ids = {name: c["id"] for name, c in _categories(owner_client).items()}
+    m = _matrix(owner_client, start="2026-11", end="2026-11", exclude=[ids["Gold"]])
+    assert "Gold" not in [c["name"] for c in m["categories"]]
+    assert (m["gross"], m["debts"], m["net"]) == (["600.00"], ["300.00"], ["300.00"])
+    assert {c["name"]: c["share"] for c in m["categories"]}["Stocks"] == "1.0000"
+    both = _matrix(
+        owner_client, start="2026-11", end="2026-11", exclude=[ids["Gold"], ids["Debts"]]
+    )
+    assert both["net"] == ["600.00"]
+    # An id of no category of this household leaves nothing out.
+    unknown = _matrix(owner_client, exclude=["00000000-0000-0000-0000-000000000000"])
+    assert unknown["net"] == _matrix(owner_client)["net"]

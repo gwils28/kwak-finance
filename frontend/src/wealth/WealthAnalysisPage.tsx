@@ -1,7 +1,7 @@
 import { ErrorAlert } from "../components/ui";
 import { useI18n } from "../i18n";
 import { WealthCharts } from "./WealthCharts";
-import { Summary, useWealthView, ViewControls } from "./WealthView";
+import { CategoryFilter, Summary, useWealthView, ViewControls } from "./WealthView";
 
 /** The wealth analysis (F-WLT-6): the summary and the charts, over the months chosen. */
 export function WealthAnalysisPage() {
@@ -21,9 +21,14 @@ export function WealthAnalysisPage() {
           <ViewControls view={view} />
         </div>
       </div>
+      <CategoryFilter view={view} />
       {matrix.isError && <ErrorAlert message={t.wealth.loadFailed} />}
       {matrix.isPending && <p className="text-sm text-muted">{t.common.loading}</p>}
-      {data && empty && <p className="text-sm">{t.wealth.empty}</p>}
+      {data && empty && (
+        <p className="text-sm">
+          {view.excluded.length > 0 ? t.wealth.filterNothingLeft : t.wealth.empty}
+        </p>
+      )}
       {data && !empty && <Summary matrix={data} />}
       {data && !empty && <WealthCharts matrix={data} />}
     </div>

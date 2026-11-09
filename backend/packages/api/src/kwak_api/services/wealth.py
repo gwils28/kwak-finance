@@ -1,7 +1,7 @@
 """The monthly wealth matrix (F-WLT): categories, lines entered by hand and their values."""
 
 from collections import defaultdict
-from collections.abc import Sequence
+from collections.abc import Collection, Sequence
 from dataclasses import dataclass
 from decimal import Decimal
 from uuid import UUID
@@ -16,6 +16,7 @@ from kwak_core.wealth import (
     LineInput,
     WealthMatrix,
     in_scope,
+    leave_out,
     to_update,
     wealth_matrix,
 )
@@ -208,15 +209,26 @@ def scoped_lines(db: Session, viewer: User, scope: Scope) -> list[tuple[WealthLi
     return [(line, inputs[line.id]) for line in lines if line.id in kept]
 
 
-def matrix(db: Session, viewer: User, months: list[Month], scope: Scope) -> Matrix:
-    rows = categories(db, viewer.household_id)
+def matrix(
+    db: Session,
+    viewer: User,
+    months: list[Month],
+    scope: Scope,
+    excluded: Collection[UUID] = (),
+) -> Matrix:
+    """`excluded`: the categories the analysis leaves out (F-WLT-6)."""
     views = _line_views(db, viewer)
     kept = {line.id for line in in_scope([v.input for v in views], scope, viewer.id)}
-    scoped = [v for v in views if v.input.id in kept]
-    result = wealth_matrix(
-        [CategoryInput(c.id, c.kind) for c in rows], [v.input for v in scoped], months
+    all_rows = categories(db, viewer.household_id)
+    inputs, lines = leave_out(
+        [CategoryInput(c.id, c.kind) for c in all_rows],
+        [v.input for v in views if v.input.id in kept],
+        excluded,
     )
-    return Matrix(rows, scoped, result)
+    shown = {c.id for c in inputs}
+    rows = [c for c in all_rows if c.id in shown]
+    scoped = [v for v in views if v.input.id in kept and v.input.category_id in shown]
+    return Matrix(rows, scoped, wealth_matrix(inputs, lines, months))
 
 
 def lines_to_update(

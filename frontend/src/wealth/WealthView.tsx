@@ -4,12 +4,18 @@
  */
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { type ReactNode, useId, useState } from "react";
-import { type Scope, type WealthMatrixOut, wealthMatrix } from "../api/generated";
+import {
+  listWealthCategories,
+  type Scope,
+  type WealthMatrixOut,
+  wealthMatrix,
+} from "../api/generated";
 import { ScopeSelect } from "../components/ScopeSelect";
 import { Button, ErrorAlert } from "../components/ui";
 import { useI18n } from "../i18n";
 import { formatEurSigned, formatEurWhole, formatPercent, formatPercentSigned } from "../lib/money";
 import { isMonth, monthLabel, thisMonth } from "../lib/months";
+import { wealthColour } from "./colours";
 
 const fieldClass = "rounded-md border border-border bg-surface px-3 py-2";
 const labelClass = "flex flex-col gap-1 text-sm font-medium";
@@ -24,19 +30,83 @@ const monthIndex = (month: string) => {
 
 export type WealthView = ReturnType<typeof useWealthView>;
 
-/** The scope and the months asked for (null: the last 12, from the wealth start), and the matrix. */
+/**
+ * The scope and the months asked for (null: the last 12, from the wealth start), the categories
+ * left out (the analysis only, F-WLT-6), and the matrix.
+ */
 export function useWealthView() {
   const [scope, setScope] = useState<Scope>("household");
   const [period, setPeriod] = useState<Period | null>(null);
   // The months being typed, shown even while incomplete or wrong.
   const [draft, setDraft] = useState<Period | null>(null);
+  const [excluded, setExcluded] = useState<string[]>([]);
   const matrix = useQuery({
-    queryKey: ["wealth", "matrix", scope, period],
+    queryKey: ["wealth", "matrix", scope, period, excluded],
     queryFn: async () =>
-      (await wealthMatrix({ query: { scope, ...period }, throwOnError: true })).data,
+      (
+        await wealthMatrix({
+          query: { scope, ...period, ...(excluded.length ? { exclude: excluded } : {}) },
+          throwOnError: true,
+        })
+      ).data,
     placeholderData: keepPreviousData,
   });
-  return { scope, setScope, period, setPeriod, draft, setDraft, matrix };
+  return { scope, setScope, period, setPeriod, draft, setDraft, excluded, setExcluded, matrix };
+}
+
+/** Which categories the analysis counts: one box each, all ticked by default (F-WLT-6). */
+export function CategoryFilter({ view }: { view: WealthView }) {
+  const { t } = useI18n();
+  const { excluded, setExcluded } = view;
+  const categories = useQuery({
+    queryKey: ["wealth", "categories"],
+    queryFn: async () => (await listWealthCategories({ throwOnError: true })).data,
+  });
+  const rows = categories.data ?? [];
+  if (rows.length === 0) return null;
+  const toggle = (id: string) =>
+    setExcluded(
+      excluded.includes(id)
+        ? excluded.filter((e) => e !== id)
+        : // In the categories' order, whatever the order of the clicks.
+          rows.map((c) => c.id).filter((c) => c === id || excluded.includes(c)),
+    );
+  return (
+    <fieldset className="flex flex-col gap-2">
+      <legend className="mb-2 text-sm font-medium">{t.wealth.filterLegend}</legend>
+      <div className="flex flex-wrap items-center gap-2">
+        {rows.map((c) => {
+          const shown = !excluded.includes(c.id);
+          return (
+            <label
+              key={c.id}
+              className={`flex cursor-pointer items-center gap-2 rounded-full border border-border px-3 py-1 text-sm ${
+                shown ? "bg-surface" : "text-muted line-through"
+              }`}
+            >
+              <input type="checkbox" checked={shown} onChange={() => toggle(c.id)} />
+              <span
+                aria-hidden="true"
+                className="inline-block size-3 rounded-sm"
+                style={{ background: wealthColour(c.colour), opacity: shown ? 1 : 0.35 }}
+              />
+              {c.name}
+            </label>
+          );
+        })}
+        {excluded.length > 0 && (
+          <Button variant="ghost" onClick={() => setExcluded([])}>
+            {t.wealth.filterAll}
+          </Button>
+        )}
+      </div>
+      {excluded.length > 0 && (
+        <p className="text-xs text-muted" role="status">
+          {t.wealth.filterLeftOut(excluded.length)}
+        </p>
+      )}
+    </fieldset>
+  );
 }
 
 /** The scope and the From / To months. */
