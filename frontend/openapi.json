@@ -12782,6 +12782,28 @@
             }
           },
           {
+            "description": "Categories to leave out, as if they held nothing (F-WLT-6)",
+            "in": "query",
+            "name": "exclude",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "format": "uuid",
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Categories to leave out, as if they held nothing (F-WLT-6)",
+              "title": "Exclude"
+            }
+          },
+          {
             "in": "cookie",
             "name": "kwak_session",
             "required": false,

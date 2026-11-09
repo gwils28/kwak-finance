@@ -491,12 +491,16 @@ def wealth_matrix(
     start: Annotated[str | None, Query(description="First month, YYYY-MM")] = None,
     end: Annotated[str | None, Query(description="Last month, YYYY-MM")] = None,
     scope: Scope = Scope.HOUSEHOLD,
+    exclude: Annotated[
+        list[UUID] | None,
+        Query(description="Categories to leave out, as if they held nothing (F-WLT-6)"),
+    ] = None,
 ) -> WealthMatrixOut:
     """The wealth matrix (F-WLT-5). Without a window: the last 12 months, from the wealth start
     at the earliest."""
     user = user_session.user
     months = _window(start, end, now.date(), wealth_start(db, user.household_id))
-    m = service.matrix(db, user, months, scope)
+    m = service.matrix(db, user, months, scope, set(exclude or ()))
     r = m.result
     by_category: dict[UUID, list[service.LineView]] = {c.id: [] for c in m.categories}
     for view in m.lines:

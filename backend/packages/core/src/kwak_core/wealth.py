@@ -9,7 +9,7 @@ Ratios and shares are exact: the API rounds them for display.
 """
 
 import enum
-from collections.abc import Mapping, Sequence
+from collections.abc import Collection, Mapping, Sequence
 from dataclasses import dataclass
 from decimal import Decimal
 from types import MappingProxyType
@@ -171,6 +171,17 @@ def to_update(
         cell = line_cell(line.values, month)
         out.append((line, cell.amount if cell else None, cell is not None and not cell.carried))
     return out
+
+
+def leave_out(
+    categories: Sequence[CategoryInput], lines: Sequence[LineInput], excluded: Collection[UUID]
+) -> tuple[list[CategoryInput], list[LineInput]]:
+    """The analysis without some categories (F-WLT-6): their rows and lines go, as if they
+    held nothing; an id of no category leaves nothing out."""
+    return (
+        [c for c in categories if c.id not in excluded],
+        [ln for ln in lines if ln.category_id not in excluded],
+    )
 
 
 @dataclass(frozen=True)

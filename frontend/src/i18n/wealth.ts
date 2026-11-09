@@ -188,6 +188,13 @@ export const wealthEn = {
     debts: "Brick",
   } as Record<string, string>,
   debtRatio: (ratio: string) => `${ratio} of gross assets`,
+  filterLegend: "Categories in the analysis",
+  filterAll: "All categories",
+  filterNothingLeft: "The categories left in the analysis hold nothing: tick one more.",
+  filterLeftOut: (count: number) =>
+    count === 1
+      ? "1 category left out of the figures and charts."
+      : `${count} categories left out of the figures and charts.`,
   charts: {
     history: "Net worth over time",
     historyHelp:
@@ -410,6 +417,14 @@ export const wealthFr: typeof wealthEn = {
     debts: "Brique",
   },
   debtRatio: (ratio) => `${ratio} de l'actif brut`,
+  filterLegend: "Catégories dans l'analyse",
+  filterAll: "Toutes les catégories",
+  filterNothingLeft:
+    "Les catégories gardées dans l'analyse ne contiennent rien : cochez-en une autre.",
+  filterLeftOut: (count) =>
+    count === 1
+      ? "1 catégorie exclue des chiffres et des graphiques."
+      : `${count} catégories exclues des chiffres et des graphiques.`,
   charts: {
     history: "Patrimoine dans le temps",
     historyHelp:

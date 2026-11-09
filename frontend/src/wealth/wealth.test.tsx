@@ -619,6 +619,65 @@ test("the monthly tracking page keeps to the table, the charts are on the analys
   expect(screen.queryByRole("table", { name: "Wealth by month" })).not.toBeInTheDocument();
 });
 
+test("the analysis can leave categories out, back to all of them", async () => {
+  const asked: URL[] = [];
+  api({
+    "GET /api/wealth/matrix": (_, url) => {
+      asked.push(url);
+      return Response.json(matrix);
+    },
+  });
+  render(<TestApp path="/wealth/analysis" />);
+  const user = userEvent.setup();
+  const filter = await screen.findByRole("group", { name: "Categories in the analysis" });
+  const stocks = within(filter).getByRole("checkbox", { name: "Stocks" });
+  expect(stocks).toBeChecked();
+  expect(asked.at(-1)?.searchParams.getAll("exclude")).toEqual([]);
+
+  await user.click(stocks);
+  expect(stocks).not.toBeChecked();
+  await vi.waitFor(() =>
+    expect(asked.at(-1)?.searchParams.getAll("exclude")).toEqual(["c-stocks"]),
+  );
+  await user.click(within(filter).getByRole("checkbox", { name: "Debts" }));
+  await vi.waitFor(() =>
+    expect(asked.at(-1)?.searchParams.getAll("exclude")).toEqual(["c-stocks", "c-debts"]),
+  );
+  expect(screen.getByText("2 categories left out of the figures and charts.")).toBeInTheDocument();
+
+  // Nothing left to show: the page says why, not that the wealth is empty.
+  const nothing = { ...matrix, categories: [] };
+  api({
+    "GET /api/wealth/matrix": (_, url) => {
+      asked.push(url);
+      return Response.json(nothing);
+    },
+  });
+  await user.click(within(filter).getByRole("checkbox", { name: "Current accounts" }));
+  expect(
+    await screen.findByText("The categories left in the analysis hold nothing: tick one more."),
+  ).toBeInTheDocument();
+  api({
+    "GET /api/wealth/matrix": (_, url) => {
+      asked.push(url);
+      return Response.json(matrix);
+    },
+  });
+
+  await user.click(within(filter).getByRole("button", { name: "All categories" }));
+  await vi.waitFor(() => expect(asked.at(-1)?.searchParams.getAll("exclude")).toEqual([]));
+  expect(stocks).toBeChecked();
+});
+
+test("the monthly tracking page has no category filter", async () => {
+  api();
+  render(<TestApp path="/wealth" />);
+  await screen.findByRole("table", { name: "Wealth by month" });
+  expect(
+    screen.queryByRole("group", { name: "Categories in the analysis" }),
+  ).not.toBeInTheDocument();
+});
+
 test("the charts read the matrix: allocation, mosaic, and what moved net worth", async () => {
   api();
   render(<TestApp path="/wealth/analysis" />);

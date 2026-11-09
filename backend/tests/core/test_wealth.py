@@ -19,6 +19,7 @@ from kwak_core.wealth import (
     check_regulated,
     check_value,
     in_scope,
+    leave_out,
     line_cell,
     to_update,
     wealth_matrix,
@@ -224,6 +225,34 @@ def test_the_household_is_mine_plus_joint_plus_what_others_share(
     ]
     household = net(in_scope(lines, Scope.HOUSEHOLD, ME))
     assert household == [sum(column, D(0)) for column in zip(*parts, strict=True)]
+
+
+@given(lines_strategy, st.sets(st.sampled_from(CATEGORIES)))
+def test_leaving_categories_out_takes_exactly_their_part_off_net_worth(
+    lines: list[LineInput], left: set[CategoryInput]
+) -> None:
+    """F-WLT-6: the analysis without some categories, as if they held nothing."""
+    excluded = {c.id for c in left}
+    full = wealth_matrix(CATEGORIES, lines, ALL)
+    kept_categories, kept_lines = leave_out(CATEGORIES, lines, excluded)
+    assert [c for c in CATEGORIES if c.id not in excluded] == kept_categories
+    assert all(ln.category_id not in excluded for ln in kept_lines)
+    part = wealth_matrix(kept_categories, kept_lines, ALL)
+    assert list(part.categories) == [c.id for c in kept_categories]
+    for i in range(len(ALL)):
+        signed = sum(
+            (
+                -full.categories[c.id][i] if c.kind is WealthKind.DEBT else full.categories[c.id][i]
+                for c in left
+            ),
+            D(0),
+        )
+        assert part.net[i] == full.net[i] - signed
+
+
+def test_leaving_nothing_out_changes_nothing() -> None:
+    pea = _line(STOCKS, {OCT: D("100")})
+    assert leave_out(CATEGORIES, [pea], set()) == (CATEGORIES, [pea])
 
 
 # F-WLT-2: regulated savings accounts

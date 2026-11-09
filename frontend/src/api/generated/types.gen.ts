@@ -6514,6 +6514,12 @@ export type WealthMatrixData = {
          */
         end?: string | null;
         scope?: Scope;
+        /**
+         * Exclude
+         *
+         * Categories to leave out, as if they held nothing (F-WLT-6)
+         */
+        exclude?: Array<string> | null;
     };
     url: '/api/wealth/matrix';
 };
