@@ -200,7 +200,7 @@ test("the analysis tab shows the points, the effort against capacity, the timeli
     .getAllByRole("listitem")
     .filter((li) => li.parentElement?.parentElement === points);
   expect(cards).toHaveLength(3);
-  expect(plain(points.textContent)).toContain("You have no emergency fund yet.");
+  expect(plain(points.textContent)).toContain("You have no emergency fund to fill first yet.");
   expect(plain(points.textContent)).toContain(
     "Your goals need €50 a month more than your capacity (€250 a month).",
   );

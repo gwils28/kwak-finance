@@ -47,7 +47,7 @@ export const goalAnalysisEn = {
     update: "Update your wealth",
     spending: "Enter your spending",
   },
-  precautionNone: "You have no emergency fund yet.",
+  precautionNone: "You have no emergency fund to fill first yet.",
   precautionNoneWhy:
     "It comes before every other goal: a few months of your fixed expenses, kept apart for the unexpected.",
   precautionNoneAction: "Create it",
@@ -291,7 +291,7 @@ export const goalAnalysisFr: typeof goalAnalysisEn = {
     update: "Mettre à jour le patrimoine",
     spending: "Saisir vos dépenses",
   },
-  precautionNone: "Vous n'avez pas encore d'épargne de précaution.",
+  precautionNone: "Vous n'avez pas encore d'épargne de précaution à combler en priorité.",
   precautionNoneWhy:
     "Elle passe avant tout autre objectif : quelques mois de vos charges fixes, mis de côté pour les imprévus.",
   precautionNoneAction: "La créer",

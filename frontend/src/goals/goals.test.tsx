@@ -416,7 +416,7 @@ test("a new emergency fund takes the proposal and its wealth lines, never a debt
   await user.click(within(form).getByRole("checkbox", { name: "Permanent" }));
   expect(within(form).getByLabelText("Deadline")).not.toBeRequired();
   await user.click(within(form).getByRole("checkbox", { name: "Permanent" }));
-  await user.click(within(form).getByRole("checkbox", { name: "This is the emergency fund" }));
+  await user.click(within(form).getByRole("checkbox", { name: "This is an emergency fund" }));
   // the emergency fund is always permanent
   expect(within(form).getByRole("checkbox", { name: "Permanent" })).toBeChecked();
   expect(within(form).getByRole("checkbox", { name: "Permanent" })).toBeDisabled();
@@ -441,6 +441,7 @@ test("a new emergency fund takes the proposal and its wealth lines, never a debt
   expect(calls.find((c) => c.route === "POST /api/goals")?.body).toEqual({
     name: "Précaution",
     precaution: true,
+    fill_first: true,
     permanent: true,
     target: "3800.00",
     pleasure: false,
@@ -448,6 +449,88 @@ test("a new emergency fund takes the proposal and its wealth lines, never a debt
     start: "2026-10",
     visibility: "shared",
     fundings: [{ line_id: "l-livret", share: 80, opening: "1000.00" }],
+  });
+});
+
+test("a survival kitty waits its turn: no proposal, a warning on cash, a permanent goal's card", async () => {
+  const kitty = goal({
+    id: "g-kitty",
+    name: "Tirelire de survie",
+    tier: "precaution",
+    precaution: true,
+    fill_first: false,
+    permanent: true,
+    target: "500.00",
+    deadline: "2027-01",
+    value: "300.00",
+    progress: "0.60",
+    remaining: "200.00",
+    months_left: 3,
+    required: "50.00",
+    actual: "50.00",
+    estimated: "2027-02",
+    months_early: -1,
+    status: "on",
+    effort: "50.00",
+    fundings: [],
+  });
+  const calls = api(owner, { ...goals, goals: [...goals.goals, kitty] });
+  render(<TestApp path="/goals" />);
+
+  // in the plan, it asks for its required effort, never for what is missing as the fund does
+  const effort = await screen.findByRole("table", { name: "Effort by goal" });
+  expect(
+    within(effort)
+      .getAllByRole("row")
+      .map((r) => plain(r.textContent)),
+  ).toContain("Tirelire de survie€50 required€50");
+  const card = screen.getByRole("article", { name: "Tirelire de survie" });
+  expect(card).toHaveTextContent("Required effort");
+  expect(card).not.toHaveTextContent("Filled by");
+  expect(screen.getByRole("region", { name: "The pyramid" })).toHaveTextContent(
+    "The foundation counts every emergency fund; the warning and the capstone, only those to fill first.",
+  );
+
+  const user = userEvent.setup();
+  await user.click(screen.getByRole("button", { name: "New goal" }));
+  const form = screen.getByRole("form", { name: "New goal" });
+  expect(within(form).queryByRole("checkbox", { name: "To fill first" })).toBeNull();
+  await user.click(within(form).getByRole("checkbox", { name: "This is an emergency fund" }));
+  const first = within(form).getByRole("checkbox", { name: "To fill first" });
+  expect(first).toBeChecked();
+  expect(within(form).getByLabelText("Months of fixed expenses")).toBeInTheDocument();
+  await user.click(first);
+  // a kitty is a sum of its own: no proposal from the fixed expenses
+  expect(within(form).queryByLabelText("Months of fixed expenses")).toBeNull();
+  expect(form).toHaveTextContent("home insurance often leaves cash out or caps it low");
+  await user.type(within(form).getByLabelText("Name"), "Tirelire");
+  await user.type(within(form).getByLabelText("Target"), "500");
+  await user.click(within(form).getByRole("button", { name: "Create the goal" }));
+  await vi.waitFor(() => expect(calls.some((c) => c.route === "POST /api/goals")).toBe(true));
+  expect(calls.find((c) => c.route === "POST /api/goals")?.body).toMatchObject({
+    precaution: true,
+    fill_first: false,
+    permanent: true,
+  });
+});
+
+test("a goal that is no emergency fund is always to fill first, whatever the box said", async () => {
+  const calls = api();
+  render(<TestApp path="/goals" />);
+  const user = userEvent.setup();
+  await user.click(await screen.findByRole("button", { name: "New goal" }));
+  const form = screen.getByRole("form", { name: "New goal" });
+  await user.click(within(form).getByRole("checkbox", { name: "This is an emergency fund" }));
+  await user.click(within(form).getByRole("checkbox", { name: "To fill first" }));
+  await user.click(within(form).getByRole("checkbox", { name: "This is an emergency fund" }));
+  await user.click(within(form).getByRole("checkbox", { name: "Permanent" }));
+  await user.type(within(form).getByLabelText("Name"), "Fonds travaux");
+  await user.type(within(form).getByLabelText("Target"), "3000");
+  await user.click(within(form).getByRole("button", { name: "Create the goal" }));
+  await vi.waitFor(() => expect(calls.some((c) => c.route === "POST /api/goals")).toBe(true));
+  expect(calls.find((c) => c.route === "POST /api/goals")?.body).toMatchObject({
+    precaution: false,
+    fill_first: true,
   });
 });
 
@@ -502,7 +585,7 @@ test("a pleasure goal has no deadline and is neither permanent nor the emergency
   await user.click(within(form).getByRole("checkbox", { name: "This is a pleasure goal" }));
   expect(within(form).queryByLabelText("Deadline")).toBeNull();
   expect(within(form).getByRole("checkbox", { name: "Permanent" })).toBeDisabled();
-  expect(within(form).getByRole("checkbox", { name: "This is the emergency fund" })).toBeDisabled();
+  expect(within(form).getByRole("checkbox", { name: "This is an emergency fund" })).toBeDisabled();
   await user.type(within(form).getByLabelText("Name"), "Gants de boxe");
   await user.type(within(form).getByLabelText("Target"), "180");
   await user.click(within(form).getByRole("button", { name: "Create the goal" }));

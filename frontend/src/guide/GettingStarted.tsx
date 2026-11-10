@@ -89,7 +89,7 @@ export function GettingStarted() {
     {
       key: "goal",
       done: [...(goals.data?.goals ?? []), ...(goals.data?.closed ?? [])].some(
-        (goal) => goal.precaution,
+        (goal) => goal.precaution && goal.fill_first,
       ),
       link: { to: "/goals" },
     },

@@ -24,7 +24,8 @@ type Progress = {
   fixed?: boolean;
   plan?: boolean;
   members?: number;
-  goal?: boolean;
+  /** "kitty": only a precaution goal not to fill first. */
+  goal?: boolean | "kitty";
 };
 
 function api({
@@ -64,7 +65,7 @@ function api({
     "GET /api/goals": () =>
       Response.json({
         goals: [],
-        closed: goal ? [{ tier: "short", precaution: true }] : [],
+        closed: goal ? [{ tier: "short", precaution: true, fill_first: goal === true }] : [],
         pyramid: [],
       }),
   });
@@ -90,6 +91,16 @@ test("the overview's checklist ticks itself from the household's data", async ()
     "href",
     "/spending/fixed",
   );
+});
+
+test("a survival kitty alone does not set the emergency fund", async () => {
+  api({ income: true, lines: true, goal: "kitty" });
+  render(<TestApp path="/" />);
+  const region = await checklist();
+  await vi.waitFor(() =>
+    expect(step(region, /Enter this month's income/)).toHaveAttribute("data-done", "true"),
+  );
+  expect(step(region, /Set your emergency fund/)).toHaveAttribute("data-done", "false");
 });
 
 test("the income step stays done at the start of a month, before its salary line", async () => {
