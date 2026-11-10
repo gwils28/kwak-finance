@@ -276,6 +276,7 @@ def goal_analysis(
     names = {x.goal.id: x.goal.name for x in a.household}
     tiers = {x.goal.id: goals.tier(x.goal, a.this_month) for x in a.household}
     deadlines = {x.goal.id: x.facts.deadline for x in a.household}
+    first = {x.goal.id: x.facts.first for x in a.household}
 
     def figures(n: ga.Notice) -> dict[str, Decimal | int | bool | str | None]:
         out = {k: _figure(v) for k, v in n.figures.items()}
@@ -328,7 +329,7 @@ def goal_analysis(
 
     order = sorted(
         a.forward.bands,
-        key=lambda g: (tiers[g] is not core.Tier.PRECAUTION, deadlines[g] or reference),
+        key=lambda g: (not first[g], deadlines[g] or reference),
     )
     return GoalAnalysisOut(
         month=str(a.this_month),

@@ -2,6 +2,7 @@
 with the real household (invariant §8.40)."""
 
 from datetime import UTC, datetime, time, timedelta
+from decimal import Decimal
 from uuid import UUID
 
 from kwak_core.categories import DEFAULT_SPENDING_CATEGORIES
@@ -169,7 +170,21 @@ def build(db: Session, demo: Demo, now: datetime) -> User:
     wealth.seed_defaults(db, household.id, demo.language)
     by_name = {c.position: c.id for c in spending.categories(db, household.id)}
     category = {d.names.en: by_name[i] for i, d in enumerate(DEFAULT_SPENDING_CATEGORIES)}
-    wealth_categories = {c.preset: c for c in wealth.categories(db, household.id)}
+    wealth_categories: dict[str | None, WealthCategory] = {
+        c.preset: c for c in wealth.categories(db, household.id)
+    }
+    for position, added in enumerate(demo.wealth_categories, start=len(wealth_categories)):
+        wealth_categories[added.key] = WealthCategory(
+            household_id=household.id,
+            name=added.name,
+            kind=added.kind,
+            colour=added.colour,
+            position=position,
+            expected_return=Decimal(0),
+            volatility=Decimal(0),
+        )
+    db.add_all(c for c in wealth_categories.values() if c.preset is None)
+    db.flush()
     for preset, assumption in demo.assumptions.items():
         wealth_categories[preset].expected_return = assumption.ret
         wealth_categories[preset].volatility = assumption.volatility
@@ -243,6 +258,7 @@ def build(db: Session, demo: Demo, now: datetime) -> User:
             household_id=household.id,
             name=g.name,
             precaution=g.precaution,
+            fill_first=g.fill_first,
             permanent=g.permanent,
             pleasure=g.pleasure,
             target=g.target,

@@ -97,7 +97,9 @@ class GoalLineOut(BaseModel):
 class GoalIn(BaseModel):
     name: GoalName
     precaution: bool = False
-    """The emergency fund, filled first: always short-term and permanent."""
+    """In the foundation, always permanent (F-GOAL-1)."""
+    fill_first: bool = True
+    """A precaution goal filled before the others; ignored for another goal."""
     permanent: bool = False
     """Kept in view once reached, its deadline optional; any other goal archives itself."""
     pleasure: bool = False
@@ -116,6 +118,7 @@ class GoalPatch(BaseModel):
 
     name: GoalName | None = None
     precaution: bool | None = None
+    fill_first: bool | None = None
     permanent: bool | None = None
     pleasure: bool | None = None
     target: Target | None = None
@@ -136,6 +139,8 @@ class GoalOut(BaseModel):
     tier: core.Tier
     """Given by the deadline (F-GOAL-1): it moves down as the deadline nears."""
     precaution: bool
+    fill_first: bool
+    """Always true but for a precaution goal left unticked."""
     permanent: bool
     pleasure: bool
     target: Decimal
@@ -179,6 +184,7 @@ def _out(goal: Goal, t: core.Tracking, o: service.Overview, effort: Decimal | No
         name=goal.name,
         tier=service.tier(goal, this_month),
         precaution=goal.precaution,
+        fill_first=goal.fill_first,
         permanent=goal.permanent,
         pleasure=goal.pleasure,
         target=quantize(goal.target),
@@ -236,7 +242,7 @@ class GoalGateOut(BaseModel):
     month: str
     """YYYY-MM, the month judged."""
     precaution: Decimal | None
-    """The precaution goals' progress; null without one."""
+    """The progress of the precaution goals to fill first; null without one."""
     ahead: int
     """Of the open goals with a deadline, those ahead or reached."""
     counted: int
@@ -480,6 +486,7 @@ def create_goal(body: GoalIn, user_session: CurrentSession, db: Db, now: Now) ->
         household_id=user.household_id,
         name=body.name,
         precaution=body.precaution,
+        fill_first=body.fill_first or not body.precaution,
         permanent=body.permanent or body.precaution,
         pleasure=body.pleasure,
         target=body.target,
@@ -519,6 +526,10 @@ def update_goal(
     if body.precaution is not None:
         goal.precaution = body.precaution
         goal.permanent = goal.permanent or body.precaution
+    if body.fill_first is not None:
+        goal.fill_first = body.fill_first
+    # only a precaution goal is left unticked (ck_goal_fill_first_precaution)
+    goal.fill_first = goal.fill_first or not goal.precaution
     if body.permanent is not None:
         goal.permanent = body.permanent
     if body.pleasure is not None:
@@ -529,7 +540,7 @@ def update_goal(
         goal.deadline = _month(body.deadline).first_day() if body.deadline else None
     if body.start is not None:
         goal.start = _month(body.start).first_day()
-    if {"deadline", "start", "precaution", "permanent", "pleasure", "target"} & given:
+    if {"deadline", "start", "precaution", "fill_first", "permanent", "pleasure", "target"} & given:
         # An overdue goal stays editable: its deadline is only checked when it changes.
         kept = goal.deadline if "deadline" not in given else None
         _check(goal, min(this_month, Month.of(kept)) if kept else this_month)

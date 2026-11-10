@@ -1120,6 +1120,10 @@ export type GoalIn = {
      */
     deadline?: string | null;
     /**
+     * Fill First
+     */
+    fill_first?: boolean;
+    /**
      * Fundings
      */
     fundings?: Array<GoalFundingIn>;
@@ -1238,6 +1242,10 @@ export type GoalOut = {
      */
     extra: string | null;
     /**
+     * Fill First
+     */
+    fill_first: boolean;
+    /**
      * Fundings
      */
     fundings: Array<GoalFundingOut>;
@@ -1325,6 +1333,10 @@ export type GoalPatch = {
      * Deadline
      */
     deadline?: string | null;
+    /**
+     * Fill First
+     */
+    fill_first?: boolean | null;
     /**
      * Fundings
      */

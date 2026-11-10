@@ -49,6 +49,7 @@ class Goal(UUIDPrimaryKey, Timestamps, Base):
         CheckConstraint("target > 0", name="target_positive"),
         CheckConstraint("deadline IS NOT NULL OR permanent OR pleasure", name="deadline_needed"),
         CheckConstraint("permanent OR NOT precaution", name="precaution_permanent"),
+        CheckConstraint("precaution OR fill_first", name="fill_first_precaution"),
         CheckConstraint(
             "NOT pleasure OR (deadline IS NULL AND NOT permanent AND NOT precaution)",
             name="pleasure_alone",
@@ -62,11 +63,14 @@ class Goal(UUIDPrimaryKey, Timestamps, Base):
     household_id: Mapped[UUID] = mapped_column(ForeignKey("household.id"), index=True)
     name: Mapped[str] = mapped_column(String(100))
     precaution: Mapped[bool] = mapped_column(default=False, server_default=text("false"))
-    """The emergency fund, filled first (F-GOAL-6): a short-term goal."""
+    """In the foundation (F-GOAL-1), always permanent; filled first when `fill_first`."""
     permanent: Mapped[bool] = mapped_column(default=False, server_default=text("false"))
     """Kept in view once reached; any other goal archives itself then (F-GOAL-8)."""
     pleasure: Mapped[bool] = mapped_column(default=False, server_default=text("false"))
     """In the capstone, without a deadline, unlocked by the rest of the pyramid (F-GOAL-10)."""
+    fill_first: Mapped[bool] = mapped_column(default=True, server_default=text("true"))
+    """A precaution goal filled before the others (F-GOAL-1); unticked, it keeps to the
+    foundation only. Always true for another goal."""
     target: Mapped[Decimal] = mapped_column(Numeric(14, 2))
     start: Mapped[date] = mapped_column(Date)
     """The first month tracked (its first day)."""

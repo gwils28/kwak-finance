@@ -21,7 +21,7 @@ from kwak_core.money import quantize
 from kwak_core.projection import Assumption
 from kwak_core.users import Language
 from kwak_core.visibility import Visibility
-from kwak_core.wealth import RegulatedType
+from kwak_core.wealth import RegulatedType, WealthKind
 
 DEMO_SEED = 20261025
 HISTORY_MONTHS = 36
@@ -42,6 +42,8 @@ NANNY_LAST = 19
 """Léa starts school the month after: the canteen replaces the childminder."""
 REPAIR = 22
 """The clutch: money taken back from the Livret A, its transfer and the PEA's skipped."""
+KITTY = 30
+"""The survival kitty starts: 200 euros in small notes at home, then 50 a month up to 500."""
 SPOTIFY_LAST = 29
 LATE = "internet"
 """The fixed expense whose occurrence this month nobody has confirmed yet."""
@@ -112,6 +114,9 @@ _TEXT: Mapping[str, tuple[str, str]] = {
     "car": ("Car", "Voiture"),
     "mortgage_debt": ("Mortgage", "Crédit immobilier"),
     "car_debt": ("Car loan", "Prêt auto"),
+    "cash_home": ("Cash at home", "Espèces à la maison"),
+    # A wealth category added to the defaults.
+    "cash": ("Cash", "Espèces"),
     # Goals.
     "precaution": ("Emergency fund", "Épargne de précaution"),
     "holidays": ("Holidays in Portugal", "Vacances au Portugal"),
@@ -120,6 +125,7 @@ _TEXT: Mapping[str, tuple[str, str]] = {
     "spa": ("Spa weekend", "Week-end spa"),
     "guitar": ("Vintage guitar", "Guitare vintage"),
     "sofa": ("New sofa", "Nouveau canapé"),
+    "kitty": ("Survival kitty", "Tirelire de survie"),
 }
 """The texts of the demo in each language, by key; a shop's name reads the same in both."""
 
@@ -181,6 +187,17 @@ class DemoTarget:
 
 
 @dataclass(frozen=True)
+class DemoWealthCategory:
+    """A category added after the defaults, as a household would; its return and volatility
+    are 0."""
+
+    key: str
+    name: str
+    colour: str
+    kind: WealthKind = WealthKind.ASSET
+
+
+@dataclass(frozen=True)
 class DemoWealthLine:
     key: str
     name: str
@@ -217,6 +234,7 @@ class DemoGoal:
     pleasure: bool = False
     closed_from: Month | None = None
     closed_as: Literal["archived", "cancelled"] | None = None
+    fill_first: bool = True
 
 
 @dataclass(frozen=True)
@@ -235,6 +253,8 @@ class Demo:
     targets: tuple[DemoTarget, ...]
     wealth_lines: tuple[DemoWealthLine, ...]
     goals: tuple[DemoGoal, ...]
+    wealth_categories: tuple[DemoWealthCategory, ...]
+    """Added after the defaults; lines name them by key."""
     assumptions: Mapping[str, Assumption]
     """By wealth category colour key; the others keep the defaults."""
 
@@ -478,6 +498,7 @@ def generate(today: date, language: Language, seed: int = DEMO_SEED) -> Demo:
         targets=targets,
         wealth_lines=_wealth(rng, months, t),
         goals=_goals(at, this_month, t),
+        wealth_categories=(DemoWealthCategory("cash", t("cash"), "jade"),),
         assumptions={
             "bonds": Assumption(D("0.025"), D("0.01")),
             "stocks": Assumption(D("0.065"), D("0.16")),
@@ -624,6 +645,14 @@ def _wealth(
             series(CAR, 14000, amortised("0.049", "263")),
             debt=("263.00", "0.049", "0"),
         ),
+        # A survival kitty in small notes, put together 50 euros at a time.
+        line(
+            "cash_home",
+            "cash",
+            CAMILLE,
+            SHARED,
+            series(KITTY, 200, lambda i, v: min(D(500), v + 50)),
+        ),
     )
 
 
@@ -647,6 +676,7 @@ def _goals(
         precaution: bool = False,
         pleasure: bool = False,
         closed_from: Month | None = None,
+        fill_first: bool = True,
     ) -> DemoGoal:
         """Funded by one line: `share` % of its rises and `opening` taken at the start."""
         return DemoGoal(
@@ -663,6 +693,7 @@ def _goals(
             pleasure=pleasure,
             closed_from=closed_from,
             closed_as="archived" if closed_from else None,
+            fill_first=fill_first,
         )
 
     def months(n: int) -> Month:
@@ -670,6 +701,18 @@ def _goals(
 
     return (
         goal("precaution", 12000, at(0), CAMILLE, SHARED, "livret_a", 60, 9000, precaution=True),
+        goal(
+            "kitty",
+            500,
+            at(KITTY),
+            CAMILLE,
+            SHARED,
+            "cash_home",
+            100,
+            200,
+            precaution=True,
+            fill_first=False,
+        ),
         goal(
             "holidays",
             3000,

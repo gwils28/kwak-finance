@@ -149,7 +149,7 @@ def _risk_points(
                 if dated and months is not None and ga.SHORT_RISK_MONTHS < months <= ga.GLIDE_MONTHS
                 else None,
                 ga.zone(months, sigma, risky, ret - inflation)
-                if dated and months is not None and not f.precaution
+                if dated and months is not None and not f.first
                 else None,
                 ga.loss_one_in_ten(ret, sigma, max(1, months))
                 if dated and months is not None
@@ -268,13 +268,14 @@ def _facts(
             start,
             _month(goal.deadline),
             env.value(goal.id)[k0 : k + 1],
-            first=goal.precaution,
+            first=goal.precaution and goal.fill_first,
             locked=[goal.pleasure and not g.unlocked for g in env.gates(goal.id)[k0 : k + 1]],
             band=band,
         ),
         held=held,
         shares=shares,
         precaution=goal.precaution,
+        fill_first=goal.fill_first,
         pleasure=goal.pleasure,
         volatility=ga.weighted(w, {line: r.volatility for line, r in risks.items()}),
     )
@@ -330,7 +331,7 @@ def _chances(
     out = []
     for a in analyzed:
         f = a.facts
-        if f.deadline is None or f.precaution or f.pleasure or not f.shares:
+        if f.deadline is None or f.first or f.pleasure or not f.shares:
             continue
         if not f.now.remaining:
             continue
@@ -368,11 +369,11 @@ def _plan(facts: list[ga.GoalFacts], cap: Decimal, share: Decimal) -> core.Effor
     return core.effort_plan(
         cap,
         share,
-        precaution={f.id: f.now.remaining for f in facts if f.precaution},
+        precaution={f.id: f.now.remaining for f in facts if f.first},
         others={
             f.id: f.now.required
             for f in facts
-            if not f.precaution and f.now.required is not None and f.now.remaining
+            if not f.first and f.now.required is not None and f.now.remaining
         },
         pleasure={
             f.id: f.now.remaining
@@ -430,11 +431,11 @@ def analysis(
     bands = {
         f.id: (f.now.required or Decimal(0), f.now.months_left or 0)
         for f in facts
-        if f.deadline is not None and not (f.precaution or f.pleasure) and f.now.remaining
+        if f.deadline is not None and not (f.first or f.pleasure) and f.now.remaining
     } | {
         f.id: (household_plan.allocations.get(f.id, Decimal(0)), household_plan.months_to_fill or 0)
         for f in facts
-        if f.precaution and household_plan.allocations.get(f.id)
+        if f.first and household_plan.allocations.get(f.id)
     }
     forward = ga.forward_efforts(
         household_reference or this_month, bands, capacity=cap, horizon=horizon
