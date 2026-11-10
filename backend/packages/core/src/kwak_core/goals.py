@@ -126,21 +126,6 @@ def tier_of(
     return Tier.MEDIUM if months <= MEDIUM_MONTHS else Tier.LONG
 
 
-def check_precaution_slot(
-    open_precautions: Iterable[tuple[UUID, Visibility]], owner_id: UUID, visibility: Visibility
-) -> None:
-    """At most one open precaution goal per member, and one joint for the household."""
-    for other_owner, other_visibility in open_precautions:
-        if visibility is Visibility.JOINT and other_visibility is Visibility.JOINT:
-            raise GoalError("the household already has a joint precaution goal")
-        if (
-            visibility is not Visibility.JOINT
-            and other_visibility is not Visibility.JOINT
-            and other_owner == owner_id
-        ):
-            raise GoalError("this member already has a precaution goal")
-
-
 # F-GOAL-2
 
 
@@ -227,6 +212,13 @@ class FundedGoal:
     pleasure: bool = False
     owner: UUID | None = None
     visibility: Visibility = Visibility.SHARED
+    fill_first: bool = True
+    """A precaution goal's setting: unticked, it keeps to the foundation only (F-GOAL-1)."""
+
+    @property
+    def first(self) -> bool:
+        """One of the precaution goals to fill first: "the precaution" of the rules."""
+        return self.precaution and self.fill_first
 
 
 # F-GOAL-10
@@ -240,7 +232,8 @@ class Gate:
     """What unlocks the capstone, at the end of a month."""
 
     precaution: Decimal | None
-    """The precaution goals' progress, each counting up to its target; None without one."""
+    """The progress of the precaution goals to fill first, each counting up to its target; None
+    without one."""
     ahead: int
     """Of the goals with a deadline, those ahead or reached."""
     counted: int
@@ -259,8 +252,8 @@ LOCKED = Gate(None, 0, 0)
 
 
 def gate_of(precautions: Iterable[tuple[Decimal, Decimal]], statuses: Iterable[GoalStatus]) -> Gate:
-    """`precautions`: each precaution goal's (value, target); `statuses`: those of the open goals
-    with a deadline, the precaution and pleasure goals left out."""
+    """`precautions`: each precaution goal to fill first's (value, target); `statuses`: those of
+    the open goals with a deadline, the precaution and pleasure goals left out."""
     precautions = list(precautions)
     statuses = list(statuses)
     target = sum((t for _, t in precautions), ZERO)
@@ -295,11 +288,11 @@ def gate_at(
 
     open_ = [g for g in goals if counts(g)]
     return gate_of(
-        ((values(g)[-1], g.target) for g in open_ if g.precaution),
+        ((values(g)[-1], g.target) for g in open_ if g.first),
         (
             track(g.target, g.start, g.deadline, values(g), this_month=month, band=band).status
             for g in open_
-            if not g.precaution and g.deadline is not None
+            if not g.first and g.deadline is not None
         ),
     )
 
@@ -425,7 +418,7 @@ def envelopes(
             claims = sorted(
                 (g for g in active if (g.id, line) in held),
                 key=lambda g: (
-                    g.precaution,
+                    g.first,
                     not g.pleasure,
                     -months_between(month, g.deadline) if g.deadline is not None else 0,
                 ),
@@ -484,12 +477,13 @@ def track(
     values: Sequence[Decimal],
     *,
     this_month: Month,
-    precaution: bool = False,
+    first: bool = False,
     locked: bool = False,
     band: Decimal = DEFAULT_BAND,
 ) -> Tracking:
-    """`values` are the goal's values for every month from `start` to `this_month`; `locked`
-    for a pleasure goal whose capstone is locked."""
+    """`values` are the goal's values for every month from `start` to `this_month`; `first`
+    for a precaution goal to fill first (not any precaution goal: F-GOAL-4); `locked` for a
+    pleasure goal whose capstone is locked."""
     months = month_range(start, this_month)
     if len(values) != len(months):
         raise ValueError("values must cover every month from the start to this month")
@@ -546,7 +540,7 @@ def track(
 
     if remaining == 0:
         status = GoalStatus.REACHED
-    elif precaution:
+    elif first:
         status = GoalStatus.FILL_FIRST
     elif locked:
         status = GoalStatus.LOCKED

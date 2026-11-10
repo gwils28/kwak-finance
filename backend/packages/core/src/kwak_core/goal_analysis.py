@@ -321,13 +321,14 @@ def history(
     deadline: Month | None,
     values: Sequence[Decimal],
     *,
-    precaution: bool = False,
+    first: bool = False,
     locked: Sequence[bool] = (),
     band: Decimal = DEFAULT_BAND,
 ) -> list[Tracking]:
     """The goal tracked at each month from its start, as F-GOAL-4 and 5 judged it then, with
-    today's target and deadline; `values` run from the start to the reference month, and
-    `locked`, for a pleasure goal, tells the months its capstone was locked."""
+    today's target and deadline; `values` run from the start to the reference month, `first`
+    is for a precaution goal to fill first, and `locked`, for a pleasure goal, tells the
+    months its capstone was locked."""
     return [
         track(
             target,
@@ -335,7 +336,7 @@ def history(
             deadline,
             values[: k + 1],
             this_month=month,
-            precaution=precaution,
+            first=first,
             locked=k < len(locked) and locked[k],
             band=band,
         )
@@ -451,6 +452,13 @@ class GoalFacts:
     pleasure: bool = False
     volatility: Decimal = ZERO
     """Weighted over its lines (F-ANA-1)."""
+    fill_first: bool = True
+    """A precaution goal's setting (F-GOAL-1)."""
+
+    @property
+    def first(self) -> bool:
+        """One of the precaution goals to fill first: "the precaution" of the rules."""
+        return self.precaution and self.fill_first
 
     @property
     def now(self) -> Tracking:
@@ -474,32 +482,36 @@ def data_notices(stale: Sequence[UUID], *, capacity_months: int) -> list[Notice]
 def precaution_notices(
     goals: Sequence[GoalFacts], risks: Mapping[UUID, LineRisk], *, monthly_fixed: Decimal
 ) -> list[Notice]:
-    """R5: no precaution, one below months of fixed expenses, or one on risky lines."""
-    precautions = [g for g in goals if g.precaution]
-    if not precautions:
-        return [Notice(Rule.PRECAUTION_NONE, Severity.WARNING)]
-    out = []
-    for g in precautions:
-        if monthly_fixed > 0:
-            months = g.target / monthly_fixed
-            if months < PRECAUTION_SHORT:
-                low = months < PRECAUTION_LOW
-                out.append(
-                    Notice(
-                        Rule.PRECAUTION_LOW,
-                        Severity.WARNING if low else Severity.INFO,
-                        goal=g.id,
-                        amount=quantize(
-                            (PRECAUTION_LOW if low else PRECAUTION_SHORT) * monthly_fixed - g.target
-                        ),
-                        figures={"months": quantize(months), "monthly_fixed": monthly_fixed},
-                    )
+    """R5: no precaution, the scope's precaution goals to fill first below months of the
+    household's fixed expenses together (the point names the goal when there is one), or a
+    precaution goal on risky lines; the precaution only on a current account."""
+    first = [g for g in goals if g.first]
+    if not first:
+        out = [Notice(Rule.PRECAUTION_NONE, Severity.WARNING)]
+    else:
+        out = []
+        target = sum((g.target for g in first), ZERO)
+        if monthly_fixed > 0 and (months := target / monthly_fixed) < PRECAUTION_SHORT:
+            low = months < PRECAUTION_LOW
+            out.append(
+                Notice(
+                    Rule.PRECAUTION_LOW,
+                    Severity.WARNING if low else Severity.INFO,
+                    goal=first[0].id if len(first) == 1 else None,
+                    amount=quantize(
+                        (PRECAUTION_LOW if low else PRECAUTION_SHORT) * monthly_fixed - target
+                    ),
+                    figures={"months": quantize(months), "monthly_fixed": monthly_fixed},
                 )
+            )
+    for g in goals:
+        if not g.precaution:
+            continue
         risky = sum((v for k, v in g.held.items() if risks[k].risky), ZERO)
         if risky > 0:
             out.append(Notice(Rule.PRECAUTION_RISKY, Severity.WARNING, goal=g.id, amount=risky))
         current = sum((v for k, v in g.held.items() if risks[k].current), ZERO)
-        if current > 0:
+        if g.first and current > 0:
             out.append(Notice(Rule.PRECAUTION_CURRENT, Severity.INFO, goal=g.id, amount=current))
     return out
 
@@ -514,7 +526,7 @@ def unfunded_notices(goals: Sequence[GoalFacts]) -> list[Notice]:
 
 
 def _dated(goals: Sequence[GoalFacts]) -> list[GoalFacts]:
-    return [g for g in goals if g.deadline is not None and not (g.precaution or g.pleasure)]
+    return [g for g in goals if g.deadline is not None and not (g.first or g.pleasure)]
 
 
 def _postpone(remaining: Decimal, months: int, room: Decimal) -> int | None:
@@ -544,7 +556,7 @@ def overcommitted_notices(
         return []
     dated = _dated(goals)
     required = {g.id: g.now.required or ZERO for g in dated}
-    precaution = sum((allocations.get(g.id, ZERO) for g in goals if g.precaution), ZERO)
+    precaution = sum((allocations.get(g.id, ZERO) for g in goals if g.first), ZERO)
     excess = sum(required.values(), ZERO) + precaution - capacity
     if excess <= max(OVER_FLOOR, OVER_SHARE * capacity):
         return []
@@ -812,7 +824,7 @@ def idle_notices(
         (g for g in _dated(goals) if g.now.status is GoalStatus.BEHIND),
         key=lambda g: g.deadline or g.start,
     )
-    short = [g for g in goals if g.precaution and g.now.remaining]
+    short = [g for g in goals if g.first and g.now.remaining]
     if behind:
         subject, gap = behind[0], -(behind[0].now.months[-1].gap or ZERO)
     elif short:
@@ -926,7 +938,7 @@ def capstone_notices(goals: Sequence[GoalFacts], *, band: Decimal = DEFAULT_BAND
     what it would take each month, in all, to be ahead in three months."""
     if not any(g.pleasure for g in goals):
         return []
-    precautions = [g for g in goals if g.precaution]
+    precautions = [g for g in goals if g.first]
     dated = _dated(goals)
     gate = gate_of(((g.now.value, g.target) for g in precautions), (g.now.status for g in dated))
     if gate.precaution is None:

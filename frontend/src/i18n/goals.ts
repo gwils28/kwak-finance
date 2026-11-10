@@ -200,7 +200,7 @@ export const goalsEn = {
     "Something you want just for the pleasure of it (a record player, a fine bottle): no deadline, in the golden capstone, funded only once the emergency fund is full and most goals are ahead.",
   isPrecaution: "This is the emergency fund",
   isPrecautionHint:
-    "Kept apart for the unexpected, filled first and always permanent: the foundation of the pyramid. One per member, and one for the household.",
+    "Kept apart for the unexpected, filled first and always permanent: the foundation of the pyramid. You can have several, alone or with the household.",
   start: "Tracked from",
   startHint: "An earlier month counts the progress already made.",
   visibility: "Who sees it",
@@ -434,7 +434,7 @@ export const goalsFr: typeof goalsEn = {
     "Une envie, juste pour se faire plaisir (une platine vinyle, une belle bouteille) : sans échéance, dans la pointe dorée, financée seulement une fois l'épargne de précaution pleine et la plupart des objectifs en avance.",
   isPrecaution: "C'est l'épargne de précaution",
   isPrecautionHint:
-    "Mise de côté pour les imprévus, servie en premier et toujours permanente : le socle de la pyramide. Une par membre, et une pour le foyer.",
+    "Mise de côté pour les imprévus, servie en premier et toujours permanente : le socle de la pyramide. Vous pouvez en avoir plusieurs, seul ou avec le foyer.",
   start: "Suivi à partir de",
   startHint: "Un mois plus ancien compte le chemin déjà parcouru.",
   visibility: "Qui le voit",

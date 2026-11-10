@@ -1,3 +1,4 @@
+from dataclasses import replace
 from decimal import Decimal
 from typing import Any
 from uuid import UUID, uuid4
@@ -21,7 +22,6 @@ from kwak_core.goals import (
     check_funding_line,
     check_goal,
     check_line_shares,
-    check_precaution_slot,
     effort_plan,
     envelopes,
     fixed_expenses,
@@ -105,14 +105,13 @@ def test_the_precaution_is_the_pyramids_foundation() -> None:
     assert tier_of(None, this_month=OCT) is Tier.SHORT
 
 
-def test_one_open_precaution_per_member_and_one_joint() -> None:
-    check_precaution_slot([], ME, Visibility.PRIVATE)
-    taken = [(ME, Visibility.SHARED), (OTHER, Visibility.JOINT)]
-    with pytest.raises(GoalError, match="precaution"):
-        check_precaution_slot(taken, ME, Visibility.PRIVATE)
-    with pytest.raises(GoalError, match="precaution"):
-        check_precaution_slot(taken, ME, Visibility.JOINT)
-    check_precaution_slot(taken, OTHER, Visibility.SHARED)
+def test_a_precaution_is_to_fill_first_unless_unticked() -> None:
+    # Several precaution goals may sit in the foundation; only those to fill first are "the
+    # precaution" of the rules (F-GOAL-1).
+    fund = _funded("9000", deadline=None, precaution=True)
+    kitty = _funded("500", deadline=None, precaution=True, fill_first=False)
+    trip = _funded("900")
+    assert (fund.first, kitty.first, trip.first) == (True, False, False)
 
 
 # F-GOAL-2: the precaution's proposal
@@ -192,6 +191,7 @@ def _funded(
     pleasure: bool = False,
     owner: UUID = ME,
     visibility: Visibility = Visibility.SHARED,
+    fill_first: bool = True,
 ) -> FundedGoal:
     return FundedGoal(
         uuid4(),
@@ -205,6 +205,7 @@ def _funded(
         pleasure,
         owner,
         visibility,
+        fill_first,
     )
 
 
@@ -338,7 +339,7 @@ def test_ahead_reached_and_fill_first() -> None:
     assert ahead.status is GoalStatus.AHEAD
     reached = track(D("2000"), Month(2026, 9), Month(2027, 9), values, this_month=OCT)
     assert (reached.status, reached.remaining, reached.estimated) == (GoalStatus.REACHED, 0, OCT)
-    prec = track(D("5000"), Month(2026, 9), None, values, this_month=OCT, precaution=True)
+    prec = track(D("5000"), Month(2026, 9), None, values, this_month=OCT, first=True)
     assert prec.status is GoalStatus.FILL_FIRST
     assert (prec.months_left, prec.required, prec.months[-1].expected) == (None, None, None)
     # another short-term goal is tracked against its deadline
@@ -634,6 +635,38 @@ def test_the_gate_looks_at_the_owners_goals_and_the_joint_ones() -> None:
     assert held.value(my_gloves.id) == [D("0"), D("50")]
 
 
+def test_a_precaution_not_to_fill_first_never_holds_the_capstone_back() -> None:
+    fund = _funded("1000", Envelope(PEA, 100, D("1000")), deadline=None, precaution=True)
+    kitty = _funded("500", Envelope(SAVINGS, 100), deadline=None, precaution=True, fill_first=False)
+    gloves = _funded("180", Envelope(LDDS, 100), pleasure=True)
+    lines = {PEA: Line(_series(1000)), SAVINGS: Line(_series(0)), LDDS: Line(_series(0, 100))}
+    held = envelopes(lines, [fund, kitty, gloves], _months(JUL, 2))
+    assert held.gates(gloves.id)[1].unlocked
+    # alone, it is no precaution to fill first: the capstone stays locked
+    alone = envelopes(lines, [kitty, gloves], _months(JUL, 2))
+    assert not alone.gates(gloves.id)[1].unlocked
+
+
+def test_a_dated_precaution_not_to_fill_first_counts_among_the_goals_ahead() -> None:
+    fund = _funded("1000", Envelope(PEA, 100, D("1000")), deadline=None, precaution=True)
+    # behind in August: nothing gathered towards its 1000 by May
+    kitty = _funded("1000", Envelope(SAVINGS, 100), deadline=MAY, precaution=True, fill_first=False)
+    gloves = _funded("180", Envelope(LDDS, 100), pleasure=True)
+    lines = {PEA: Line(_series(1000)), SAVINGS: Line(_series(0)), LDDS: Line(_series(0, 0, 100))}
+    held = envelopes(lines, [fund, kitty, gloves], _months(JUL, 3))
+    assert held.gates(gloves.id)[2] == Gate(D(1), ahead=0, counted=1)
+
+
+def test_a_fall_cuts_a_precaution_not_to_fill_first_before_the_precaution() -> None:
+    fund = _funded("400", Envelope(LDDS, 40, D("400")), deadline=None, precaution=True)
+    kitty = _funded(
+        "300", Envelope(LDDS, 30, D("300")), deadline=None, precaution=True, fill_first=False
+    )
+    held = envelopes({LDDS: Line(_series(700, 500))}, [fund, kitty], _months(JUL, 2))
+    assert held.value(kitty.id) == [D("300"), D("100")]
+    assert held.value(fund.id) == [D("400"), D("400")]
+
+
 def test_an_opening_amount_or_an_adjustment_still_fills_a_locked_pleasure_goal() -> None:
     gloves = _funded(
         "180", Envelope(LDDS, 100, D("60")), pleasure=True, adjustments={(LDDS, SEP): D("90")}
@@ -722,6 +755,52 @@ def test_a_locked_pleasure_goal_never_gains_from_a_rise(
         for k in range(1, len(MONTHS)):
             if MONTHS[k] > g.start and not gates[k].unlocked:
                 assert values[k] <= values[k - 1]
+
+
+@given(
+    st.lists(st.dictionaries(st.sampled_from(MONTHS), amounts, max_size=6), min_size=1, max_size=2),
+    st.lists(
+        st.tuples(
+            st.sampled_from(MONTHS),
+            amounts,
+            st.integers(0, 1),
+            st.sampled_from(["pleasure", "precaution", "dated", "kitty"]),
+            st.sampled_from([None, Month(2027, 1)]),
+        ),
+        min_size=1,
+        max_size=5,
+    ),
+)
+def test_a_precaution_not_to_fill_first_is_the_same_permanent_goal_outside_the_foundation(
+    series: list[dict[Month, Decimal]], drawn: list[tuple[Any, ...]]
+) -> None:
+    # Invariant §8.50: the envelopes and the capstone's gates are the same whether the kitty
+    # is a precaution goal not to fill first or a permanent goal of the tiers.
+    line_ids = [uuid4() for _ in series]
+    lines = {i: Line(v) for i, v in zip(line_ids, series, strict=True)}
+    left = dict.fromkeys(line_ids, 100)
+    goals = []
+    for start, target, index, kind, deadline in drawn:
+        line = line_ids[index % len(line_ids)]
+        share = min(40, left[line])
+        left[line] -= share
+        envs = [Envelope(line, share)] if share else []
+        goals.append(
+            _funded(
+                str(target + 1),
+                *envs,
+                start=start,
+                deadline=deadline if kind in ("dated", "kitty") else None,
+                precaution=kind in ("precaution", "kitty"),
+                pleasure=kind == "pleasure",
+                fill_first=kind != "kitty",
+            )
+        )
+    outside = [replace(g, precaution=False) if g.precaution and not g.first else g for g in goals]
+    a, b = envelopes(lines, goals, MONTHS), envelopes(lines, outside, MONTHS)
+    for g in goals:
+        assert a.value(g.id) == b.value(g.id)
+        assert a.gates(g.id) == b.gates(g.id)
 
 
 @given(

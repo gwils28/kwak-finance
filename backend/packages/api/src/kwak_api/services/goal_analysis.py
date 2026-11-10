@@ -268,7 +268,7 @@ def _facts(
             start,
             _month(goal.deadline),
             env.value(goal.id)[k0 : k + 1],
-            precaution=goal.precaution,
+            first=goal.precaution,
             locked=[goal.pleasure and not g.unlocked for g in env.gates(goal.id)[k0 : k + 1]],
             band=band,
         ),

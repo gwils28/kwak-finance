@@ -63,9 +63,6 @@ export const API_MESSAGES_FR: Record<string, string> = {
   "a target is a positive amount in cents": "une cible est un montant positif, en centimes",
   "a goal's start is never a month to come": "un objectif ne commence jamais dans un mois à venir",
   "a deadline is never a past month": "une échéance n'est jamais un mois passé",
-  "the household already has a joint precaution goal":
-    "le foyer a déjà une épargne de précaution commune",
-  "this member already has a precaution goal": "ce membre a déjà une épargne de précaution",
   "the proposal counts 1 to 12 months": "la proposition compte de 1 à 12 mois",
   "a debt cannot fund a goal": "une dette ne peut pas financer un objectif",
   "a pension starts with the retirement or later":

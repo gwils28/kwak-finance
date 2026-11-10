@@ -36,10 +36,6 @@ class SharesExceededError(Exception):
         self.line, self.left = line, left
 
 
-class PrecautionTakenError(Exception):
-    """The owner (or the household, for a joint goal) already has an open precaution goal."""
-
-
 def _loaded() -> list[object]:
     return [
         joinedload(Goal.owner),
@@ -95,19 +91,6 @@ def check_open(db: Session, goal: Goal) -> None:
             core.check_line_shares([*taken, funding.share])
         except core.GoalError:
             raise SharesExceededError(funding.line.name, max(0, 100 - sum(taken))) from None
-    if goal.precaution:
-        others = db.execute(
-            select(Goal.owner_id, Goal.visibility).where(
-                Goal.household_id == goal.household_id,
-                Goal.precaution.is_(True),
-                Goal.closed_from.is_(None),
-                Goal.id != goal.id,
-            )
-        )
-        try:
-            core.check_precaution_slot([(o, v) for o, v in others], goal.owner_id, goal.visibility)
-        except core.GoalError as exc:
-            raise PrecautionTakenError(str(exc)) from None
 
 
 def check_line_visibility(db: Session, line: WealthLine, visibility: Visibility) -> None:
@@ -220,7 +203,7 @@ def track(goal: Goal, env: core.Envelopes, this_month: Month, band: Decimal) -> 
         Month.of(goal.deadline) if goal.deadline else None,
         values,
         this_month=last,
-        precaution=goal.precaution,
+        first=goal.precaution,
         locked=goal.pleasure and not env.gates(goal.id)[_at(env, last)].unlocked,
         band=band,
     )
