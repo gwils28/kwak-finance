@@ -11,6 +11,11 @@ export const PYRAMID: Tier[] = ["precaution", "long", "medium", "short", "pleasu
 
 export const GOALS_KEY = ["goals"];
 
+/** A precaution goal to fill first: the emergency fund the effort plan serves before the other
+ * goals (F-GOAL-1). Another precaution goal, a survival kitty say, is a permanent goal otherwise. */
+export const fillsFirst = (goal: Pick<GoalOut, "precaution" | "fill_first">) =>
+  goal.precaution && goal.fill_first;
+
 /** Each visible asset line this month, and what the viewer's goals set aside on it. */
 export const goalLinesQuery = {
   queryKey: [...GOALS_KEY, "lines"],

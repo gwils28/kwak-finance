@@ -8,7 +8,7 @@ import { useI18n } from "../i18n";
 import { formatEurWhole, formatPercent } from "../lib/money";
 import { monthLabel, shiftMonth } from "../lib/months";
 import { GoalForm } from "./GoalForm";
-import { Gauge, GOALS_KEY, StatusChip, tierColour } from "./shared";
+import { fillsFirst, Gauge, GOALS_KEY, StatusChip, tierColour } from "./shared";
 
 /** The sentence under a goal with a deadline: early, on time or late at its actual pace. */
 export function paceSentence(goal: GoalOut, t: ReturnType<typeof useI18n>["t"]): string | null {
@@ -62,7 +62,8 @@ export function GoalCard({
     onError: (failure) => setError(detailSentence(failure) ?? t.errors.generic),
   });
   const sentence = paceSentence(goal, t);
-  const precaution = goal.precaution;
+  // A precaution goal not to fill first reads as a permanent goal (F-GOAL-1).
+  const precaution = fillsFirst(goal);
   const fillBy =
     precaution && plan.months_to_fill !== null ? shiftMonth(month, plan.months_to_fill) : null;
   if (editing) {

@@ -1,12 +1,15 @@
 import type { GoalOut, GoalsOut } from "../api/generated";
 import { useI18n } from "../i18n";
 import { formatEurWhole } from "../lib/money";
-import { tierColour } from "./shared";
+import { fillsFirst, tierColour } from "./shared";
 
-/** What a goal asks of this month: what is missing for the emergency fund and pleasure goals,
- * its required effort else. */
+/** Whether a goal asks for what it still lacks: the emergency fund to fill first and pleasure
+ * goals; any other asks for its required effort. */
+const asksRemaining = (goal: GoalOut) => fillsFirst(goal) || goal.pleasure;
+
+/** What a goal asks of this month. */
 function need(goal: GoalOut): string | null {
-  if (goal.precaution || goal.pleasure) return goal.remaining;
+  if (asksRemaining(goal)) return goal.remaining;
   return goal.required;
 }
 
@@ -17,7 +20,7 @@ export function EffortPlan({ data }: { data: GoalsOut }) {
   const plan = data.plan;
   const capacity = Number(plan.capacity);
   const rows = data.goals.filter((goal) => goal.effort !== null);
-  const others = rows.filter((goal) => !goal.precaution && !goal.pleasure);
+  const others = rows.filter((goal) => !asksRemaining(goal));
   const given = others.reduce((sum, goal) => sum + Number(goal.effort), 0);
   const needed = others.reduce((sum, goal) => sum + Number(goal.required ?? 0), 0);
   return (
@@ -82,7 +85,7 @@ export function EffortPlan({ data }: { data: GoalsOut }) {
                         />
                         <span>
                           {goal.name}
-                          {goal.precaution && plan.months_to_fill !== null && (
+                          {fillsFirst(goal) && plan.months_to_fill !== null && (
                             <span className="text-muted"> · {g.filledIn(plan.months_to_fill)}</span>
                           )}
                         </span>
@@ -91,7 +94,7 @@ export function EffortPlan({ data }: { data: GoalsOut }) {
                     <td className="px-2 py-1.5 text-right text-muted tabular whitespace-nowrap">
                       {amount === null
                         ? ""
-                        : goal.precaution || goal.pleasure
+                        : asksRemaining(goal)
                           ? g.missing(formatEurWhole(amount))
                           : g.required(formatEurWhole(amount))}
                     </td>

@@ -41,6 +41,7 @@ export function GoalForm({ goal, onDone }: { goal?: GoalOut; onDone: () => void 
     start: useId(),
     who: useId(),
     precaution: useId(),
+    fillFirst: useId(),
     permanent: useId(),
     pleasure: useId(),
   };
@@ -57,10 +58,13 @@ export function GoalForm({ goal, onDone }: { goal?: GoalOut; onDone: () => void 
     select: (rows) => new Map(rows.map((row) => [row.line_id, row.free])),
   });
   const [precaution, setPrecaution] = useState(goal?.precaution ?? false);
+  // Only a precaution goal can wait its turn, a survival kitty say (F-GOAL-1).
+  const [fillFirst, setFillFirst] = useState(goal?.fill_first ?? true);
   const [isPermanent, setPermanent] = useState(goal?.permanent ?? false);
   const [pleasure, setPleasure] = useState(goal?.pleasure ?? false);
   // The emergency fund is always permanent; a pleasure goal never, and has no deadline.
   const permanent = !pleasure && (precaution || isPermanent);
+  const isPrecaution = precaution && !pleasure;
   const [name, setName] = useState(goal?.name ?? "");
   const [target, setTarget] = useState(goal ? amountInputShort(goal.target) : "");
   const [deadline, setDeadline] = useState(goal?.deadline ?? "");
@@ -87,7 +91,8 @@ export function GoalForm({ goal, onDone }: { goal?: GoalOut; onDone: () => void 
     mutationFn: async ({ amount, fundings }: { amount: string; fundings: GoalFundingIn[] }) => {
       const body = {
         name,
-        precaution: precaution && !pleasure,
+        precaution: isPrecaution,
+        fill_first: !isPrecaution || fillFirst,
         permanent,
         pleasure,
         target: amount,
@@ -148,7 +153,7 @@ export function GoalForm({ goal, onDone }: { goal?: GoalOut; onDone: () => void 
             id={ids.precaution}
             type="checkbox"
             aria-describedby={`${ids.precaution}-hint`}
-            checked={precaution && !pleasure}
+            checked={isPrecaution}
             disabled={pleasure}
             onChange={(e) => setPrecaution(e.target.checked)}
           />
@@ -158,6 +163,23 @@ export function GoalForm({ goal, onDone }: { goal?: GoalOut; onDone: () => void 
           {g.isPrecautionHint}
         </p>
       </div>
+      {isPrecaution && (
+        <div className="ml-6 flex flex-col gap-1 text-sm">
+          <label htmlFor={ids.fillFirst} className="flex items-center gap-2 font-medium">
+            <input
+              id={ids.fillFirst}
+              type="checkbox"
+              aria-describedby={`${ids.fillFirst}-hint`}
+              checked={fillFirst}
+              onChange={(e) => setFillFirst(e.target.checked)}
+            />
+            {g.fillFirst}
+          </label>
+          <p id={`${ids.fillFirst}-hint`} className={hintClass}>
+            {fillFirst ? g.fillFirstHint : g.notFillFirstHint}
+          </p>
+        </div>
+      )}
       <div className="flex flex-col gap-1 text-sm">
         <label htmlFor={ids.permanent} className="flex items-center gap-2 font-medium">
           <input
@@ -212,7 +234,7 @@ export function GoalForm({ goal, onDone }: { goal?: GoalOut; onDone: () => void 
           onChange={(e) => setTarget(e.target.value)}
         />
       </label>
-      {precaution && !pleasure && (
+      {isPrecaution && fillFirst && (
         <Proposal onUse={(amount) => setTarget(amountInputShort(amount))} />
       )}
       <div className="grid gap-4 sm:grid-cols-2">

@@ -26,7 +26,7 @@ export const goalsEn = {
     pleasure: "Pleasure",
   } satisfies Record<Tier, string>,
   horizons: {
-    precaution: "the foundation, filled first",
+    precaution: "the foundation, kept for the unexpected",
     short: "up to a year",
     medium: "over a year, up to five",
     long: "beyond five years",
@@ -49,7 +49,8 @@ export const goalsEn = {
   precautionFirst:
     "It comes before your other goals: part of your monthly effort is kept for it until it is filled.",
   pyramid: "The pyramid",
-  pyramidCaption: "The foundation and each tier fill with the savings that fund their goals.",
+  pyramidCaption:
+    "The foundation and each tier fill with the savings that fund their goals. The foundation counts every emergency fund; the warning and the capstone, only those to fill first.",
   tierGoals: (n: number) => (n === 1 ? "1 goal" : `${n} goals`),
   ofTarget: (value: string, target: string) => `${value} of ${target}`,
   noGoalInTier: "No goal",
@@ -198,9 +199,14 @@ export const goalsEn = {
   isPleasure: "This is a pleasure goal",
   isPleasureHint:
     "Something you want just for the pleasure of it (a record player, a fine bottle): no deadline, in the golden capstone, funded only once the emergency fund is full and most goals are ahead.",
-  isPrecaution: "This is the emergency fund",
+  isPrecaution: "This is an emergency fund",
   isPrecautionHint:
-    "Kept apart for the unexpected, filled first and always permanent: the foundation of the pyramid. You can have several, alone or with the household.",
+    "Kept apart for the unexpected and always permanent: the foundation of the pyramid. You can have several, alone or with the household (an emergency fund on a savings account, a survival kitty in cash at home).",
+  fillFirst: "To fill first",
+  fillFirstHint:
+    "This month's effort fills it before your other goals, and the pleasure goals wait for it.",
+  notFillFirstHint:
+    "It stays in the foundation but waits its turn like a permanent goal: neither the warning nor the pleasure goals wait for it. Cash at home earns nothing, and home insurance often leaves cash out or caps it low: check your contract.",
   start: "Tracked from",
   startHint: "An earlier month counts the progress already made.",
   visibility: "Who sees it",
@@ -263,7 +269,7 @@ export const goalsFr: typeof goalsEn = {
     pleasure: "Plaisir",
   },
   horizons: {
-    precaution: "le socle, servi en premier",
+    precaution: "le socle, pour les imprévus",
     short: "jusqu'à un an",
     medium: "plus d'un an, jusqu'à cinq",
     long: "au-delà de cinq ans",
@@ -287,7 +293,7 @@ export const goalsFr: typeof goalsEn = {
     "Elle passe avant vos autres objectifs : une part de votre effort mensuel lui est réservée jusqu'à ce qu'elle soit comblée.",
   pyramid: "La pyramide",
   pyramidCaption:
-    "Le socle et chaque étage se remplissent avec l'épargne qui finance leurs objectifs.",
+    "Le socle et chaque étage se remplissent avec l'épargne qui finance leurs objectifs. Le socle compte toute épargne de précaution ; l'alerte et la pointe dorée, seulement celles à combler en priorité.",
   tierGoals: (n) => (n <= 1 ? `${n} objectif` : `${n} objectifs`),
   ofTarget: (value, target) => `${value} sur ${target}`,
   noGoalInTier: "Aucun objectif",
@@ -432,9 +438,14 @@ export const goalsFr: typeof goalsEn = {
   isPleasure: "C'est un objectif plaisir",
   isPleasureHint:
     "Une envie, juste pour se faire plaisir (une platine vinyle, une belle bouteille) : sans échéance, dans la pointe dorée, financée seulement une fois l'épargne de précaution pleine et la plupart des objectifs en avance.",
-  isPrecaution: "C'est l'épargne de précaution",
+  isPrecaution: "C'est une épargne de précaution",
   isPrecautionHint:
-    "Mise de côté pour les imprévus, servie en premier et toujours permanente : le socle de la pyramide. Vous pouvez en avoir plusieurs, seul ou avec le foyer.",
+    "Mise de côté pour les imprévus et toujours permanente : le socle de la pyramide. Vous pouvez en avoir plusieurs, seul ou avec le foyer (un fonds d'urgence sur un livret, une tirelire de survie en espèces chez vous).",
+  fillFirst: "À combler en priorité",
+  fillFirstHint:
+    "L'effort du mois la remplit avant vos autres objectifs, et les objectifs plaisir l'attendent.",
+  notFillFirstHint:
+    "Elle reste dans le socle mais attend son tour comme un objectif permanent : ni l'alerte ni les objectifs plaisir ne l'attendent. Des espèces chez soi ne rapportent rien, et l'assurance habitation exclut souvent les espèces ou les plafonne bas : vérifiez votre contrat.",
   start: "Suivi à partir de",
   startHint: "Un mois plus ancien compte le chemin déjà parcouru.",
   visibility: "Qui le voit",
