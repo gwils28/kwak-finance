@@ -289,13 +289,15 @@ def test_a_line_funding_a_visible_goal_cannot_turn_private(owner_client: TestCli
     assert response.status_code == 409
 
 
-def test_one_open_precaution_per_member(owner_client: TestClient) -> None:
+def test_several_precaution_goals_per_member_and_joint(owner_client: TestClient) -> None:
     body = {"name": "Précaution", "precaution": True, "deadline": None}
     assert _post(owner_client, **body).status_code == 201
-    assert _post(owner_client, **body).status_code == 409
-    # other short-term goals are not the precaution
-    assert _post(owner_client, name="Été", deadline="2027-06").status_code == 201
+    kitty = body | {"name": "Tirelire de survie", "target": "500.00"}
+    assert _post(owner_client, **kitty).status_code == 201
     assert _post(owner_client, **body | {"visibility": "joint"}).status_code == 201
+    assert _post(owner_client, **kitty | {"visibility": "joint"}).status_code == 201
+    tiers = [g["tier"] for g in _goals(owner_client)["goals"]]
+    assert tiers.count("precaution") == 4
 
 
 def test_a_member_sees_shared_goals_not_private_ones(

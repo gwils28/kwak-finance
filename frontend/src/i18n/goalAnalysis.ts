@@ -53,6 +53,9 @@ export const goalAnalysisEn = {
   precautionNoneAction: "Create it",
   precautionLow: (goal: string, months: string, monthly: string) =>
     `${goal} covers ${months} months of your fixed expenses (${monthly} a month).`,
+  precautionLowAction: "See the goals",
+  precautionLowAll: (months: string, monthly: string) =>
+    `Together, your emergency funds cover ${months} months of your fixed expenses (${monthly} a month).`,
   precautionLowWarning: (missing: string) => `Below 3 months: ${missing} more would bring it to 3.`,
   precautionLowInfo: (missing: string) => `Below 6 months: ${missing} more would bring it to 6.`,
   precautionLowWhy:
@@ -294,6 +297,9 @@ export const goalAnalysisFr: typeof goalAnalysisEn = {
   precautionNoneAction: "La créer",
   precautionLow: (goal, months, monthly) =>
     `${goal} couvre ${months} mois de vos charges fixes (${monthly} par mois).`,
+  precautionLowAction: "Voir les objectifs",
+  precautionLowAll: (months, monthly) =>
+    `Ensemble, vos épargnes de précaution couvrent ${months} mois de vos charges fixes (${monthly} par mois).`,
   precautionLowWarning: (missing) => `Moins de 3 mois : ${missing} de plus la porteraient à 3.`,
   precautionLowInfo: (missing) => `Moins de 6 mois : ${missing} de plus la porteraient à 6.`,
   precautionLowWhy:

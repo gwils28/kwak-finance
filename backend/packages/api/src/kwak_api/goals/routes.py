@@ -463,8 +463,6 @@ def _check_open(db: Db, goal: Goal) -> None:
             status.HTTP_409_CONFLICT,
             f"{exc.line} would fund open goals beyond 100 %: {exc.left} % of its rises left",
         ) from None
-    except service.PrecautionTakenError as exc:
-        raise HTTPException(status.HTTP_409_CONFLICT, str(exc)) from None
 
 
 def _detail(db: Db, user_session: CurrentSession, now: Now, goal: Goal) -> GoalOut:

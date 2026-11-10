@@ -180,7 +180,7 @@ def statuses(demo: Demo) -> dict[str, GoalStatus]:
             g.deadline,
             values,
             this_month=demo.this_month,
-            precaution=g.precaution,
+            first=g.precaution,
             locked=locked,
         ).status
     return out

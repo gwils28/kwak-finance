@@ -90,16 +90,26 @@ function useSaid(point: PointOut, data: GoalAnalysisOut): Said {
           </Link>
         ),
       };
-    case "precaution_low":
+    case "precaution_low": {
+      const months = numberFormat({ maximumFractionDigits: 1 }).format(Number(f.months ?? 0));
+      // Several precaution goals to fill first are judged together, under no goal's name.
+      const covers = goal
+        ? a.precautionLow(goal, months, eur(f.monthly_fixed))
+        : a.precautionLowAll(months, eur(f.monthly_fixed));
       return {
-        fact: `${a.precautionLow(goal, numberFormat({ maximumFractionDigits: 1 }).format(Number(f.months ?? 0)), eur(f.monthly_fixed))} ${
+        fact: `${covers} ${
           point.severity === "warning"
             ? a.precautionLowWarning(amount)
             : a.precautionLowInfo(amount)
         }`,
         why: a.precautionLowWhy,
-        link: goalLink,
+        link: goalLink || (
+          <Link to="/goals" className="text-accent hover:underline">
+            {a.precautionLowAction}
+          </Link>
+        ),
       };
+    }
     case "precaution_risky":
       return { fact: a.precautionRisky(goal, amount), why: a.precautionRiskyWhy, link: goalLink };
     case "precaution_current":

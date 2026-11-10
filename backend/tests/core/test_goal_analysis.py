@@ -64,6 +64,7 @@ def _facts(
     deadline: Month | None,
     start: Month = JAN,
     precaution: bool = False,
+    fill_first: bool = True,
     held: dict[UUID, Decimal] | None = None,
     shares: dict[UUID, int] | None = None,
     volatility: str = "0",
@@ -75,10 +76,11 @@ def _facts(
         target=D(target),
         start=start,
         deadline=deadline,
-        history=history(D(target), start, deadline, vals, precaution=precaution),
+        history=history(D(target), start, deadline, vals, first=precaution and fill_first),
         held=held if held is not None else {A: vals[-1]},
         shares=shares if shares is not None else {A: 100},
         precaution=precaution,
+        fill_first=fill_first,
         volatility=D(volatility),
     )
 
@@ -253,6 +255,51 @@ def test_a_precaution_below_months_of_fixed_expenses(target: str, severity: Seve
     )
     if severity is Severity.WARNING:
         assert notices[0].amount == D(500)
+
+
+def test_a_precaution_not_to_fill_first_is_no_precaution_for_r5() -> None:
+    kitty = _facts("500", ["500"], deadline=None, start=OCT, precaution=True, fill_first=False)
+    (notice,) = precaution_notices([kitty], {A: LineRisk()}, monthly_fixed=D(1000))
+    assert (notice.rule, notice.severity) == (Rule.PRECAUTION_NONE, Severity.WARNING)
+
+
+def test_r5_adds_up_the_precaution_goals_to_fill_first_of_the_scope() -> None:
+    mine = _facts("2000", ["0"], deadline=None, start=OCT, precaution=True, held={})
+    theirs = _facts("1000", ["0"], deadline=None, start=OCT, precaution=True, held={})
+    kitty = _facts(
+        "500", ["0"], deadline=None, start=OCT, precaution=True, fill_first=False, held={}
+    )
+    # 3000 of 1000 a month: 3 months, information only; the kitty adds nothing
+    (notice,) = precaution_notices([mine, theirs, kitty], {}, monthly_fixed=D(1000))
+    assert (notice.rule, notice.severity, notice.goal) == (
+        Rule.PRECAUTION_LOW,
+        Severity.INFO,
+        None,
+    )
+    assert notice.amount == D(3000)
+    assert notice.figures["months"] == D(3)
+    # a single one keeps its name on the point
+    (alone,) = precaution_notices([mine], {}, monthly_fixed=D(1000))
+    assert (alone.severity, alone.goal) == (Severity.WARNING, mine.id)
+
+
+def test_a_kitty_on_a_volatile_line_is_a_warning_on_a_current_account_nothing() -> None:
+    fund = _facts("6000", ["6000"], deadline=None, start=OCT, precaution=True, held={})
+    kitty = _facts(
+        "500",
+        ["500"],
+        deadline=None,
+        start=OCT,
+        precaution=True,
+        fill_first=False,
+        held={A: D(200), B: D(300)},
+        shares={A: 100, B: 100},
+    )
+    risks = {A: LineRisk(volatility=D("0.16"), ret=D("0.07")), B: LineRisk(current=True)}
+    notices = precaution_notices([fund, kitty], risks, monthly_fixed=D(1000))
+    assert [(n.rule, n.goal, n.amount) for n in notices] == [
+        (Rule.PRECAUTION_RISKY, kitty.id, D(200))
+    ]
 
 
 def test_a_precaution_on_a_volatile_or_current_account_line() -> None:
@@ -687,6 +734,21 @@ def test_a_far_target_is_not_indexed() -> None:
     assert (notice.rule, notice.amount) == (Rule.NOT_INDEXED, D(30000))
     assert notice.figures["indexed"] == D("36569.83")  # 30,000 x 1.02^10
     assert not_indexed_notices([_held("0", 60, {}, target="30000")], inflation=D("0.02")) == []
+
+
+def test_a_kitty_has_the_status_of_a_permanent_goal_and_is_not_the_precaution_to_fill() -> None:
+    kitty = _facts("500", ["0", "100"], deadline=None, precaution=True, fill_first=False)
+    assert kitty.now.status is GoalStatus.OPEN
+    dated = _facts("500", ["0", "100"], deadline=Month(2026, 6), precaution=True, fill_first=False)
+    assert dated.now.status is GoalStatus.ON  # tracked against its deadline
+    fund = _facts("9000", ["0", "100"], deadline=None, precaution=True)
+    assert fund.now.status is GoalStatus.FILL_FIRST
+    kwargs = {"income": D(3000), "spending": D(2000), "history_months": 6, "monthly_fixed": D(900)}
+    # R7 names the precaution to fill, never the kitty
+    (idle,) = idle_notices([kitty, fund], current_free=D(6000), **kwargs)
+    assert idle.subject == fund.id
+    (calm,) = idle_notices([kitty], current_free=D(6000), **kwargs)
+    assert (calm.severity, calm.subject) == (Severity.INFO, None)
 
 
 def test_idle_money_on_current_accounts() -> None:

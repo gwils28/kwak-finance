@@ -300,6 +300,24 @@ test("a goal due in the reference month takes that month, as the total counts it
   expect(plain(rows[2]?.textContent)).toBe("Nov 2026€0€0€250");
 });
 
+test("several emergency funds are judged together, under no goal's name", async () => {
+  const low = point({
+    rule: "precaution_low",
+    amount: "3000.00",
+    figures: { months: "3.00", monthly_fixed: "1000.00" },
+  });
+  api(owner, { ...analysis, points: { shown: [low], more: [] } });
+  render(<TestApp path="/goals/analysis" />);
+  const points = await screen.findByRole("region", { name: "Points to look at" });
+  expect(plain(points.textContent)).toContain(
+    "Together, your emergency funds cover 3 months of your fixed expenses (€1,000 a month).",
+  );
+  expect(within(points).getByRole("link", { name: "See the goals" })).toHaveAttribute(
+    "href",
+    "/goals",
+  );
+});
+
 test("a capacity measured over too few months is not judged", async () => {
   api(owner, { ...analysis, capacity_months: 2 });
   render(<TestApp path="/goals/analysis" />);
