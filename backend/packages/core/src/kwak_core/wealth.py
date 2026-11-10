@@ -60,7 +60,12 @@ DEFAULT_WEALTH_CATEGORIES: tuple[DefaultWealthCategory, ...] = (
 )
 
 
-WEALTH_COLOURS = frozenset(c.colour for c in DEFAULT_WEALTH_CATEGORIES)
+SPARE_WEALTH_COLOURS: tuple[str, ...] = ("jade", "plum", "olive")
+"""Colours no default takes, so a category added later stands apart (§7)."""
+
+WEALTH_COLOURS = frozenset(c.colour for c in DEFAULT_WEALTH_CATEGORIES) | frozenset(
+    SPARE_WEALTH_COLOURS
+)
 """The colour keys a category can take (§7)."""
 
 

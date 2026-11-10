@@ -10,6 +10,7 @@ from kwak_core.visibility import Scope, Visibility
 from kwak_core.wealth import (
     CEILINGS,
     DEFAULT_WEALTH_CATEGORIES,
+    WEALTH_COLOURS,
     CategoryInput,
     LineInput,
     RegulatedType,
@@ -165,6 +166,13 @@ def test_default_categories_end_with_the_debts() -> None:
     assert len({c.colour for c in DEFAULT_WEALTH_CATEGORIES}) == len(DEFAULT_WEALTH_CATEGORIES)
     # Every category takes lines entered by hand, the bank accounts' ones too (F-WLT-4).
     assert not any(hasattr(c, "holds") for c in DEFAULT_WEALTH_CATEGORIES)
+
+
+def test_spare_colours_are_left_for_categories_added_later() -> None:
+    # Every default takes its own colour: a category added later needs one of its own (§7).
+    defaults = {c.colour for c in DEFAULT_WEALTH_CATEGORIES}
+    assert defaults < WEALTH_COLOURS
+    assert WEALTH_COLOURS - defaults == {"jade", "plum", "olive"}
 
 
 ALL = month_range(Month(2026, 1), Month(2026, 12))

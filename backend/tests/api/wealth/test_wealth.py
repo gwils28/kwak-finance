@@ -220,7 +220,7 @@ def test_only_the_owner_sets_the_wealth_start(
 def test_categories_are_managed(owner_client: TestClient) -> None:
     response = owner_client.post(
         "/api/wealth/categories",
-        json={"name": "Montres", "kind": "asset", "colour": "exotic"},
+        json={"name": "Montres", "kind": "asset", "colour": "jade"},
         headers=csrf(owner_client),
     )
     assert response.status_code == 201, response.text

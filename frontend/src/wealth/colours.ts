@@ -11,6 +11,10 @@ export const WEALTH_COLOURS = [
   "equipment",
   "exotic",
   "debts",
+  // Spares no default takes, for categories added later.
+  "jade",
+  "plum",
+  "olive",
 ] as const;
 
 /** A category's colour: its `wealth-*` token (spec §7). */

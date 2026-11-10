@@ -146,6 +146,11 @@
   --color-wealth-equipment: rgb(140 137 205);
   --color-wealth-exotic: rgb(74 192 185);
   --color-wealth-debts: rgb(178 57 43);
+  /* Spares no default category takes, so one added later stands apart: a jade, a plum and an
+     olive, in the gaps between the hues above, still alternating light and dark after the debts. */
+  --color-wealth-jade: rgb(15 169 116);
+  --color-wealth-plum: rgb(131 49 110);
+  --color-wealth-olive: rgb(161 140 0);
 
   /* Spending categories in the reports' monthly chart (F-DSH-5, spec §7): the six largest
      categories of the period, in this order, the rest in grey. Hues from the wealth set, its
@@ -241,6 +246,10 @@
     --color-wealth-equipment: rgb(138 135 207);
     --color-wealth-exotic: rgb(0 144 137);
     --color-wealth-debts: rgb(189 104 85);
+    /* The jade leans to blue so it stays apart from the debts' brick for deuteranopes. */
+    --color-wealth-jade: rgb(41 169 135);
+    --color-wealth-plum: rgb(136 75 118);
+    --color-wealth-olive: rgb(147 119 0);
     /* CVD dE 8.6, normal 16.9 on the dark surface, every hue >= 3:1. */
     --color-spend-1: rgb(58 109 172);
     --color-spend-2: rgb(190 123 169);
