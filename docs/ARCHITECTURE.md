@@ -39,7 +39,7 @@ Everything runs from a single `docker compose up`. The front end is served from 
 | Logging | structlog (JSON) | |
 | Lint / format | **ruff** (lint + format) | |
 | Types | **mypy --strict** (or pyright strict, to be decided in phase 0) | Money code must be typed |
-| Tests | **pytest**, **hypothesis** (property-based), pytest-cov, **testcontainers** (real Postgres) | Financial invariants are tested as properties, never with a mocked DB |
+| Tests | **pytest**, **hypothesis** (property-based), pytest-cov, pytest-xdist (4 workers), **testcontainers** (real Postgres, one per worker) | Financial invariants are tested as properties, never with a mocked DB |
 
 ### Frontend
 

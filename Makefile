@@ -32,17 +32,21 @@ dev-api: ## Run the API with reload on :8000
 dev-web: ## Run the Vite dev server on :5173 (proxies /api to :8000)
 	cd $(FRONTEND) && pnpm dev
 
+# Four workers, each with its own Postgres container; a file stays on one worker so its
+# module-scoped fixtures (the demo's forecast) are built once.
+PYTEST_PARALLEL := -n 4 --dist loadfile
+
 check: check-backend check-frontend ## Full lint + types + tests (what CI runs)
 
 check-backend:
-	cd $(BACKEND) && uv run ruff format --check . && uv run ruff check . && uv run mypy && uv run pytest -q
+	cd $(BACKEND) && uv run ruff format --check . && uv run ruff check . && uv run mypy && uv run pytest -q $(PYTEST_PARALLEL)
 	cd $(BACKEND) && $(OPS_LINT)
 
 check-frontend:
 	cd $(FRONTEND) && pnpm check && pnpm typecheck && pnpm test
 
 check-fast: ## Lint + types + unit tests, used by the Claude Stop hook
-	cd $(BACKEND) && uv run ruff check -q . && uv run mypy && uv run pytest -q -x -p no:cacheprovider
+	cd $(BACKEND) && uv run ruff check -q . && uv run mypy && uv run pytest -q -x -p no:cacheprovider $(PYTEST_PARALLEL)
 	cd $(FRONTEND) && pnpm -s check && pnpm -s typecheck && pnpm -s test
 
 fmt: ## Format everything
@@ -50,7 +54,7 @@ fmt: ## Format everything
 	cd $(FRONTEND) && pnpm fix
 
 test: ## Tests only
-	cd $(BACKEND) && uv run pytest
+	cd $(BACKEND) && uv run pytest $(PYTEST_PARALLEL)
 	cd $(FRONTEND) && pnpm test
 
 up: ## Build and start the full stack (https://localhost:8443)
