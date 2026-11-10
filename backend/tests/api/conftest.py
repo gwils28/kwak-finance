@@ -1,4 +1,5 @@
 from collections.abc import Iterator
+from contextlib import contextmanager
 from datetime import UTC, datetime, timedelta
 
 import pytest
@@ -65,8 +66,10 @@ def clock() -> Clock:
     return Clock()
 
 
-@pytest.fixture
-def client(session: Session, clock: Clock) -> Iterator[TestClient]:
+@contextmanager
+def app_client(session: Session, clock: Clock) -> Iterator[TestClient]:
+    """A client on the app, its requests in `session` and its time from `clock`."""
+
     def db() -> Iterator[Session]:
         # Same commit/rollback as the real get_db; commits only release a savepoint.
         yield from request_scope(session)
@@ -81,8 +84,21 @@ def client(session: Session, clock: Clock) -> Iterator[TestClient]:
 
 
 @pytest.fixture
-def unenrolled_owner(session: Session) -> User:
-    """An owner straight out of `kwak create-owner`: no TOTP yet."""
+def client(session: Session, clock: Clock) -> Iterator[TestClient]:
+    with app_client(session, clock) as client:
+        yield client
+
+
+def enrol(owner: User, session: Session, clock: Clock) -> User:
+    """Enrols TOTP on TOTP_SECRET for `owner`, committed."""
+    owner.totp_secret_enc = SecretBox(Settings().encryption_key).encrypt(TOTP_SECRET, owner.id)
+    owner.totp_confirmed_at = clock.now
+    session.commit()
+    return owner
+
+
+def create_owner(session: Session) -> User:
+    """An owner straight out of `kwak create-owner`: no TOTP yet, committed."""
     owner = create_household(
         session,
         household_name="Home",
@@ -96,13 +112,14 @@ def unenrolled_owner(session: Session) -> User:
 
 
 @pytest.fixture
+def unenrolled_owner(session: Session) -> User:
+    return create_owner(session)
+
+
+@pytest.fixture
 def owner(unenrolled_owner: User, session: Session, clock: Clock) -> User:
     """An owner with TOTP enrolled on TOTP_SECRET."""
-    box = SecretBox(Settings().encryption_key)
-    unenrolled_owner.totp_secret_enc = box.encrypt(TOTP_SECRET, unenrolled_owner.id)
-    unenrolled_owner.totp_confirmed_at = clock.now
-    session.commit()
-    return unenrolled_owner
+    return enrol(unenrolled_owner, session, clock)
 
 
 def totp_code(clock: Clock) -> str:

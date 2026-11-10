@@ -1,6 +1,7 @@
 """The Forecast page's data (spec §4.14 F-FCT-6), on the demo's three years of fictitious data
 (F-ADM-5): every figure the page shows, its words left to the page."""
 
+from collections.abc import Iterator
 from datetime import UTC, datetime
 from decimal import Decimal
 from typing import Any
@@ -9,8 +10,10 @@ import pytest
 from fastapi.testclient import TestClient
 from kwak_analytics import foundation
 from kwak_api.models import User
+from sqlalchemy import Engine
+from sqlalchemy.orm import Session
 
-from tests.api.conftest import Clock, csrf, log_in
+from tests.api.conftest import Clock, app_client, create_owner, csrf, enrol, log_in
 
 D = Decimal
 NOW = datetime(2026, 10, 28, 9, tzinfo=UTC)
@@ -23,16 +26,30 @@ def owner_client(client: TestClient, clock: Clock, owner: User) -> TestClient:
     return client
 
 
-@pytest.fixture
-def demo(owner_client: TestClient, monkeypatch: pytest.MonkeyPatch) -> dict[str, Any]:
-    monkeypatch.setattr(foundation, "available", lambda: False)
-    response = owner_client.post("/api/demo/enter", headers=csrf(owner_client))
-    assert response.status_code in (200, 204), response.text
-    response = owner_client.get("/api/forecast")
-    assert response.status_code == 200, response.text
-    body: dict[str, Any] = response.json()
-    assert body["forecast"] is not None
-    return body
+@pytest.fixture(scope="module")
+def demo(engine: Engine) -> Iterator[dict[str, Any]]:
+    """The demo's forecast, entered and read once for the module: it takes seconds. Its own
+    transaction, rolled back at the end."""
+    clock = Clock()
+    clock.now = NOW
+    with (
+        engine.connect() as conn,
+        conn.begin() as tx,
+        Session(bind=conn, join_transaction_mode="create_savepoint") as session,
+        pytest.MonkeyPatch.context() as monkeypatch,
+    ):
+        monkeypatch.setattr(foundation, "available", lambda: False)
+        enrol(create_owner(session), session, clock)
+        with app_client(session, clock) as client:
+            log_in(client, clock)
+            response = client.post("/api/demo/enter", headers=csrf(client))
+            assert response.status_code in (200, 204), response.text
+            response = client.get("/api/forecast")
+            assert response.status_code == 200, response.text
+        body: dict[str, Any] = response.json()
+        assert body["forecast"] is not None
+        yield body
+        tx.rollback()
 
 
 def test_a_new_household_is_told_how_many_months_it_has(owner_client: TestClient) -> None:

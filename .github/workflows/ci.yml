@@ -41,7 +41,9 @@ jobs:
       - run: uv run ruff format --check .
       - run: uv run ruff check .
       - run: uv run mypy
-      - run: uv run pytest --cov --cov-report=term-missing
+      # Four workers (a public repo's runner has 4 vCPUs), each with its own Postgres container;
+      # a file stays on one worker, so its module-scoped fixtures are built once.
+      - run: uv run pytest --cov --cov-report=term-missing -n 4 --dist loadfile
       - name: Lint ops scripts
         run: uv run ruff format --check --config pyproject.toml ../ops && uv run ruff check --config pyproject.toml ../ops && uv run mypy --strict ../ops/backup/backup.py
 
@@ -88,8 +90,8 @@ jobs:
             || { echo "::error::Run 'make openapi' and commit the result."; exit 1; }
 
   docker:
+    # Alongside the tests rather than after them: the images build in about a minute and a half.
     runs-on: ubuntu-latest
-    needs: [backend, frontend]
     steps:
       - uses: actions/checkout@v5
       - run: docker build backend && docker build frontend && docker build ops/backup

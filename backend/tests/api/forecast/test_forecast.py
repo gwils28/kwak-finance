@@ -1,6 +1,7 @@
 """The cash-flow forecast read from a household (spec §4.14), on the demo's three years of
 fictitious data (F-ADM-5)."""
 
+from collections.abc import Iterator
 from datetime import UTC, date, datetime
 from decimal import Decimal
 
@@ -12,6 +13,7 @@ from kwak_core.categories import CategoryKind
 from kwak_core.demo import generate
 from kwak_core.forecast import HORIZON
 from kwak_core.users import Language
+from sqlalchemy import Connection, Engine
 from sqlalchemy.orm import Session
 
 D = Decimal
@@ -19,14 +21,40 @@ TODAY = date(2026, 10, 28)
 NOW = datetime(2026, 10, 28, 9, tzinfo=UTC)
 
 
-@pytest.fixture
-def demo_owner(session: Session) -> User:
-    return demo.build(session, generate(TODAY, Language.EN), NOW)
+# The demo and its forecast are built once for the module, the forecast taking seconds: every
+# test runs in a savepoint of the module's transaction, rolled back after it.
+
+
+@pytest.fixture(scope="module")
+def module_connection(engine: Engine) -> Iterator[Connection]:
+    with engine.connect() as conn, conn.begin() as tx:
+        yield conn
+        tx.rollback()
 
 
 @pytest.fixture
-def result(session: Session, demo_owner: User) -> forecast.Result:
-    return forecast.compute(session, demo_owner.household_id, TODAY)
+def connection(module_connection: Connection) -> Iterator[Connection]:
+    nested = module_connection.begin_nested()
+    yield module_connection
+    nested.rollback()
+
+
+@pytest.fixture(scope="module")
+def module_session(module_connection: Connection) -> Iterator[Session]:
+    with Session(
+        bind=module_connection, join_transaction_mode="create_savepoint", expire_on_commit=False
+    ) as s:
+        yield s
+
+
+@pytest.fixture(scope="module")
+def demo_owner(module_session: Session) -> User:
+    return demo.build(module_session, generate(TODAY, Language.EN), NOW)
+
+
+@pytest.fixture(scope="module")
+def result(module_session: Session, demo_owner: User) -> forecast.Result:
+    return forecast.compute(module_session, demo_owner.household_id, TODAY)
 
 
 def test_the_demo_is_forecast_from_its_last_complete_month(result: forecast.Result) -> None:
