@@ -54,6 +54,7 @@ const goal = (fields: Partial<GoalOut>): GoalOut => ({
   status: "ahead",
   effort: "290.00",
   precaution: false,
+  fill_first: true,
   permanent: false,
   pleasure: false,
   ...fields,

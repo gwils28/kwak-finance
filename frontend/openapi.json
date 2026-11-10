@@ -2110,6 +2110,11 @@
             ],
             "title": "Deadline"
           },
+          "fill_first": {
+            "default": true,
+            "title": "Fill First",
+            "type": "boolean"
+          },
           "fundings": {
             "default": [],
             "items": {
@@ -2367,6 +2372,10 @@
             ],
             "title": "Extra"
           },
+          "fill_first": {
+            "title": "Fill First",
+            "type": "boolean"
+          },
           "fundings": {
             "items": {
               "$ref": "#/components/schemas/GoalFundingOut"
@@ -2481,6 +2490,7 @@
           "name",
           "tier",
           "precaution",
+          "fill_first",
           "permanent",
           "pleasure",
           "target",
@@ -2545,6 +2555,17 @@
               }
             ],
             "title": "Deadline"
+          },
+          "fill_first": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fill First"
           },
           "fundings": {
             "anyOf": [

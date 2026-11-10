@@ -95,18 +95,23 @@ def check_fixed(demo: Demo) -> None:
             assert any(o.due <= demo.today for o in waiting), "one is late this month"
 
 
+def kinds(demo: Demo) -> dict[str, WealthKind]:
+    """The kind of every wealth category, the defaults and those the demo adds."""
+    return WEALTH_KINDS | {c.key: c.kind for c in demo.wealth_categories}
+
+
 def check_wealth(demo: Demo) -> None:
     keys = {w.key for w in demo.wealth_lines}
     assert len(keys) == len(demo.wealth_lines)
     for w in demo.wealth_lines:
-        assert w.category in WEALTH_KINDS
+        assert w.category in kinds(demo)
         check_regulated(w.regulated, preset=w.category, visibility=w.visibility)
         assert w.values, w.key
         for month, amount in w.values.items():
             check_value(amount)
             assert demo.wealth_start <= month <= demo.this_month
             assert w.closed_from is None or month < w.closed_from
-        if WEALTH_KINDS[w.category] is WealthKind.DEBT:
+        if kinds(demo)[w.category] is WealthKind.DEBT:
             assert w.debt_payment is not None
             assert w.debt_payment > 0
 
@@ -131,7 +136,7 @@ def check_goals(demo: Demo) -> None:
                 goal_visibility=g.visibility,
                 line_owner_id=owners[w.owner],
                 line_visibility=w.visibility,
-                line_kind=WEALTH_KINDS[w.category],
+                line_kind=kinds(demo)[w.category],
             )
     for month in month_range(demo.start, demo.this_month):
         shares: dict[str, list[int]] = {}
@@ -149,7 +154,7 @@ def statuses(demo: Demo) -> dict[str, GoalStatus]:
     lines = {
         uid(w.key): Line(dict(w.values), w.closed_from)
         for w in demo.wealth_lines
-        if WEALTH_KINDS[w.category] is WealthKind.ASSET
+        if kinds(demo)[w.category] is WealthKind.ASSET
     }
     funded = [
         FundedGoal(
@@ -160,6 +165,7 @@ def statuses(demo: Demo) -> dict[str, GoalStatus]:
             deadline=g.deadline,
             precaution=g.precaution,
             closed_from=g.closed_from,
+            fill_first=g.fill_first,
             pleasure=g.pleasure,
             owner=owners[g.owner],
             visibility=g.visibility,
@@ -180,7 +186,7 @@ def statuses(demo: Demo) -> dict[str, GoalStatus]:
             g.deadline,
             values,
             this_month=demo.this_month,
-            first=g.precaution,
+            first=g.precaution and g.fill_first,
             locked=locked,
         ).status
     return out
@@ -307,6 +313,20 @@ def test_the_pyramid_has_every_tier_and_the_statuses_to_show() -> None:
     assert found[GoalStatus.LOCKED] == 1
     pleasure = [g.key for g in demo.goals if g.pleasure]
     assert sum(statuses(demo)[k] is not GoalStatus.LOCKED for k in pleasure) == 1
+
+
+def test_a_survival_kitty_in_cash_is_a_precaution_not_to_fill_first() -> None:
+    demo = generate(TODAY, Language.FR)
+    (kitty,) = [g for g in demo.goals if g.precaution and not g.fill_first]
+    assert kitty.name == "Tirelire de survie"
+    (line,) = [w for w in demo.wealth_lines if w.key == kitty.fundings[0].line]
+    # funded by a cash line in a category of its own, not a current account
+    (cash,) = demo.wealth_categories
+    assert (line.category, cash.name, cash.colour) == (cash.key, "Espèces", "jade")
+    assert cash.colour not in WEALTH_KINDS
+    assert statuses(demo)[kitty.key] in (GoalStatus.OPEN, GoalStatus.REACHED)
+    # Camille's emergency fund alone still unlocks her pleasure goal
+    assert statuses(demo)["spa"] is not GoalStatus.LOCKED
 
 
 def test_the_members_retirement_is_valid_and_matches_their_salary() -> None:

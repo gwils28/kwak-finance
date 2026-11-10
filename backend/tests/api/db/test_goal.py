@@ -26,8 +26,7 @@ def _rum(session: Session, **fields: object) -> Goal:
         start=date(2026, 10, 1),
         owner_id=owner.id,
         visibility=Visibility.SHARED,
-        pleasure=True,
-        **fields,
+        **{"pleasure": True, **fields},
     )
 
 
@@ -88,4 +87,30 @@ def test_a_household_wide_point_has_no_goal_nor_line(session: Session) -> None:
             )
         )
     with pytest.raises(IntegrityError, match="uq_goal_notice_dismissal"):
+        session.flush()
+
+
+def test_a_precaution_goal_is_to_fill_first_unless_unticked(session: Session) -> None:
+    kitty = _rum(session, pleasure=False, permanent=True, precaution=True, fill_first=False)
+    session.add(kitty)
+    session.flush()
+    fund = Goal(
+        household_id=kitty.household_id,
+        name="Fonds d'urgence",
+        target=Decimal("9000.00"),
+        start=date(2026, 10, 1),
+        owner_id=kitty.owner_id,
+        visibility=Visibility.SHARED,
+        permanent=True,
+        precaution=True,
+    )
+    session.add(fund)
+    session.flush()
+    session.refresh(fund)
+    assert fund.fill_first
+
+
+def test_only_a_precaution_goal_can_be_left_unticked(session: Session) -> None:
+    session.add(_rum(session, fill_first=False))
+    with pytest.raises(IntegrityError, match="ck_goal_fill_first_precaution"):
         session.flush()

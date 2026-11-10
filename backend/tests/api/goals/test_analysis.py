@@ -711,6 +711,40 @@ def test_each_goal_has_its_chance_at_the_plan_and_at_the_required_effort(
     assert car["months_left"] == 24
 
 
+def test_a_kitty_not_to_fill_first_is_analysed_as_a_permanent_goal(
+    owner_client: TestClient,
+) -> None:
+    """Invariant §8.50: a precaution goal not to fill first, with a deadline, has a chance and a
+    band by its deadline; alone, it leaves the scope without a precaution."""
+    _capacity(owner_client, "500.00")
+    livret = _livret(owner_client, ("2026-09", "2026-10"))
+    _goal(
+        owner_client,
+        name="Tirelire",
+        precaution=True,
+        fill_first=False,
+        target="2000.00",
+        deadline="2028-10",
+        start="2026-09",
+        fundings=[{"line_id": livret, "share": 50}],
+    )
+    _goal(
+        owner_client,
+        name="Vacances",
+        target="2000.00",
+        deadline="2027-10",
+        start="2026-09",
+        fundings=[{"line_id": livret, "share": 50}],
+    )
+    out = _analysis(owner_client)
+    assert [b["name"] for b in out["forward"]["bands"]] == ["Vacances", "Tirelire"]
+    assert {c["name"] for c in out["chances"]} == {"Vacances", "Tirelire"}
+    assert out["precaution_months"] is None
+    assert ("precaution_none", None) in _points(owner_client)
+    kitty = next(p for p in out["risk"] if p["name"] == "Tirelire")
+    assert (kitty["tier"], kitty["months_left"]) == ("precaution", 0)
+
+
 def test_a_costly_debt_and_heavy_payments_are_points_to_look_at(
     owner_client: TestClient,
 ) -> None:

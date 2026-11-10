@@ -360,6 +360,58 @@ def test_the_effort_plan_fills_the_precaution_first(owner_client: TestClient) ->
     assert plan["shortfall"] == "0.00"
 
 
+def test_a_precaution_goal_not_to_fill_first_keeps_to_the_foundation(
+    owner_client: TestClient,
+) -> None:
+    owner_client.patch(
+        "/api/household/settings",
+        json={"goal_capacity": "1350.00", "precaution_share": "0.70"},
+        headers=csrf(owner_client),
+    )
+    fund = _goal(owner_client, name="Précaution", precaution=True, deadline=None, target="2300.00")
+    assert fund["fill_first"] is True
+    kitty = _goal(
+        owner_client,
+        name="Tirelire de survie",
+        precaution=True,
+        fill_first=False,
+        deadline=None,
+        target="500.00",
+    )
+    assert (kitty["tier"], kitty["fill_first"], kitty["permanent"]) == ("precaution", False, True)
+    # the status of a permanent goal without a deadline, and nothing from the plan
+    assert kitty["status"] == "open"
+    japan = _goal(owner_client, target="2900.00")
+    goals = _goals(owner_client)
+    efforts = {g["id"]: g["effort"] for g in goals["goals"]}
+    assert efforts[fund["id"]] == "1060.00"
+    assert efforts[japan["id"]] == "290.00"
+    assert efforts[kitty["id"]] is None
+    assert goals["plan"]["months_to_fill"] == 3
+    # the foundation counts it with the precaution
+    foundation = next(t for t in goals["pyramid"] if t["tier"] == "precaution")
+    assert foundation["target"] == "2800.00"
+    # ticked again, it is filled first
+    ticked = owner_client.patch(
+        f"/api/goals/{kitty['id']}", json={"fill_first": True}, headers=csrf(owner_client)
+    )
+    assert (ticked.json()["fill_first"], ticked.json()["status"]) == (True, "fill_first")
+
+
+def test_only_a_precaution_goal_is_left_unticked(owner_client: TestClient) -> None:
+    trip = _goal(owner_client, fill_first=False)
+    assert trip["fill_first"] is True
+    # a goal that stops being a precaution is filled first again, should it come back
+    kitty = _goal(owner_client, name="Tirelire", precaution=True, fill_first=False, deadline=None)
+    moved = owner_client.patch(
+        f"/api/goals/{kitty['id']}",
+        json={"precaution": False, "permanent": True},
+        headers=csrf(owner_client),
+    )
+    assert moved.status_code == 200, moved.text
+    assert moved.json()["fill_first"] is True
+
+
 def _spending_categories(client: TestClient) -> dict[str, str]:
     return {c["name"]: c["id"] for c in client.get("/api/spending/categories").json()}
 

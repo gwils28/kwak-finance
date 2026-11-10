@@ -119,6 +119,16 @@ def test_the_demo_holds_three_years_of_lines(signed_in: TestClient) -> None:
     assert "Carrefour" in _labels(signed_in, "2025-12")
 
 
+def test_the_demo_keeps_cash_at_home_for_a_survival_kitty(signed_in: TestClient) -> None:
+    _enter(signed_in)
+    cash = next(c for c in signed_in.get("/api/wealth/categories").json() if c["name"] == "Cash")
+    assert (cash["colour"], cash["preset"], cash["kind"]) == ("jade", None, "asset")
+    kitty = next(
+        g for g in signed_in.get("/api/goals").json()["goals"] if g["name"] == "Survival kitty"
+    )
+    assert (kitty["tier"], kitty["fill_first"]) == ("precaution", False)
+
+
 def test_the_demo_follows_the_language_of_who_opens_it(signed_in: TestClient) -> None:
     signed_in.patch("/api/auth/me", json={"language": "fr"}, headers=csrf(signed_in))
     me = _enter(signed_in)

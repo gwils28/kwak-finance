@@ -146,6 +146,7 @@ def _funded(goal: Goal) -> core.FundedGoal:
         goal.pleasure,
         goal.owner_id,
         goal.visibility,
+        goal.fill_first,
     )
 
 
@@ -203,7 +204,7 @@ def track(goal: Goal, env: core.Envelopes, this_month: Month, band: Decimal) -> 
         Month.of(goal.deadline) if goal.deadline else None,
         values,
         this_month=last,
-        first=goal.precaution,
+        first=goal.precaution and goal.fill_first,
         locked=goal.pleasure and not env.gates(goal.id)[_at(env, last)].unlocked,
         band=band,
     )
@@ -335,11 +336,11 @@ def overview(db: Session, viewer: User, scope: Scope, today: date, band: Decimal
     plan = core.effort_plan(
         cap,
         household.precaution_share,
-        precaution={g.id: t.remaining for g, t in open_ if g.precaution},
+        precaution={g.id: t.remaining for g, t in open_ if g.precaution and g.fill_first},
         others={
             g.id: t.required
             for g, t in open_
-            if not g.precaution and t.required is not None and t.remaining
+            if not (g.precaution and g.fill_first) and t.required is not None and t.remaining
         },
         pleasure={
             g.id: t.remaining
