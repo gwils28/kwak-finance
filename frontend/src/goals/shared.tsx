@@ -123,3 +123,48 @@ export function Gauge({ goal }: { goal: GoalOut }) {
     </>
   );
 }
+
+/** A professional goal's mark (F-GOAL-11): a briefcase in `goal-pro-mark`. */
+export function Briefcase({ className = "" }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 16 14"
+      aria-hidden="true"
+      className={`inline-block h-3.5 w-4 ${className}`}
+      fill="none"
+      stroke="var(--color-goal-pro-mark)"
+      strokeWidth={1.5}
+    >
+      <rect
+        x={1}
+        y={3.5}
+        width={14}
+        height={9.5}
+        rx={1.5}
+        fill="var(--color-goal-pro-mark)"
+        fillOpacity={0.18}
+      />
+      <path d="M5.5 3.5V1.5h5v2M1 8h14" />
+    </svg>
+  );
+}
+
+/** A professional goal's cost and what others pay: "€2,400, of which €1,500 from the CPF: €900
+ * to gather" (F-GOAL-11). */
+export function costSentence(goal: GoalOut, t: ReturnType<typeof useI18n>["t"]): string | null {
+  if (goal.pro_type === null || goal.cost === null) return null;
+  const aids = goal.aids.map((a) => t.goals.aidFrom[a.source](formatEurWhole(a.amount)));
+  return t.goals.costOf(formatEurWhole(goal.cost), aids, formatEurWhole(goal.target));
+}
+
+/** The professional goal's type with its briefcase. */
+export function ProBadge({ goal }: { goal: GoalOut }) {
+  const { t } = useI18n();
+  if (goal.pro_type === null) return null;
+  return (
+    <span className="inline-flex items-center gap-1 text-xs font-semibold text-fg">
+      <Briefcase />
+      {t.goals.professional} · {t.goals.proTypes[goal.pro_type]}
+    </span>
+  );
+}

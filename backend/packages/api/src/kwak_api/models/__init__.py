@@ -6,8 +6,10 @@ from kwak_api.models.goal import (
     ClosedAs,
     Goal,
     GoalAdjustment,
+    GoalAid,
     GoalFunding,
     GoalNoticeDismissal,
+    NextCycle,
 )
 from kwak_api.models.household import Household, Role, User
 from kwak_api.models.invite import Invite
@@ -32,11 +34,13 @@ __all__ = [
     "FixedSkip",
     "Goal",
     "GoalAdjustment",
+    "GoalAid",
     "GoalFunding",
     "GoalNoticeDismissal",
     "Household",
     "Invite",
     "MemberRetirement",
+    "NextCycle",
     "RecoveryCode",
     "Role",
     "SpendingCategory",

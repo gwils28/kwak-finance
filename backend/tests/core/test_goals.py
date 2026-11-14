@@ -9,14 +9,19 @@ from hypothesis import strategies as st
 from kwak_core.budget import Month
 from kwak_core.fixed import FixedFrequency as Frequency
 from kwak_core.goals import (
+    CPF_TYPES,
+    Aid,
+    AidSource,
     Envelope,
     FundedGoal,
     Gate,
     GoalError,
     GoalStatus,
     Line,
+    ProType,
     PyramidGoal,
     Tier,
+    add_months,
     archives_itself,
     capacity,
     check_funding_line,
@@ -27,8 +32,11 @@ from kwak_core.goals import (
     fixed_expenses,
     gate_of,
     line_worth,
+    next_deadline,
     precaution_proposal,
+    professional_target,
     pyramid,
+    renewal_monthly,
     tier_of,
     track,
 )
@@ -826,3 +834,177 @@ def test_the_pleasure_goals_take_only_what_every_other_goal_leaves(
         assert 0 <= plan.allocations[goal_id] <= lack
     if any(plan.allocations[g] for g in pleasure):
         assert all(plan.allocations[g] == need for g, need in (precaution | others).items())
+
+
+# F-GOAL-11: professional goals
+
+EQUIP, TRAINING, BUSINESS = ProType.EQUIPMENT, ProType.TRAINING, ProType.BUSINESS
+
+
+def test_a_professional_goals_target_is_its_cost_less_what_others_pay() -> None:
+    aids = [Aid(AidSource.CPF, D("1500")), Aid(AidSource.EMPLOYER, D("200"), received=True)]
+    assert professional_target(D("2400"), aids, TRAINING) == D("700")
+    assert professional_target(D("650"), [], EQUIP) == D("650")
+
+
+def test_what_others_pay_leaves_something_to_gather() -> None:
+    with pytest.raises(GoalError, match="above zero"):
+        professional_target(D("900"), [Aid(AidSource.CPF, D("900"))], TRAINING)
+    with pytest.raises(GoalError, match="amount"):
+        professional_target(D("900"), [Aid(AidSource.EMPLOYER, D("0"))], TRAINING)
+    with pytest.raises(GoalError, match="cost"):
+        professional_target(D("10.001"), [], TRAINING)
+
+
+@pytest.mark.parametrize("pro_type", [ProType.EQUIPMENT, ProType.MOVE])
+def test_the_cpf_pays_for_training_a_business_or_a_career_change_only(pro_type: ProType) -> None:
+    with pytest.raises(GoalError, match="CPF"):
+        professional_target(D("900"), [Aid(AidSource.CPF, D("100"))], pro_type)
+    for ok in (ProType.TRAINING, ProType.BUSINESS, ProType.CAREER_CHANGE):
+        assert professional_target(D("900"), [Aid(AidSource.CPF, D("100"))], ok) == D("800")
+
+
+def test_a_professional_goal_has_a_deadline_and_no_other_kind() -> None:
+    def check(**kwargs: Any) -> None:
+        args: dict[str, Any] = {"deadline": Month(2027, 3), "start": OCT, "this_month": OCT}
+        check_goal(D("900"), pro_type=EQUIP, **(args | kwargs))
+
+    check()
+    with pytest.raises(GoalError, match="deadline"):
+        check(deadline=None)
+    for kind in ("precaution", "pleasure"):
+        with pytest.raises(GoalError, match="professional"):
+            check(**{kind: True, "permanent": kind == "precaution", "deadline": None})
+    with pytest.raises(GoalError, match="professional"):
+        check(permanent=True)
+
+
+def test_only_equipment_is_renewed_every_1_to_10_years() -> None:
+    def check(pro_type: ProType | None, years: int) -> None:
+        check_goal(
+            D("900"),
+            pro_type=pro_type,
+            renew_years=years,
+            deadline=Month(2027, 3),
+            start=OCT,
+            this_month=OCT,
+        )
+
+    check(EQUIP, 4)
+    check(EQUIP, 10)
+    for pro_type, years in ((EQUIP, 0), (EQUIP, 11), (TRAINING, 4), (None, 4)):
+        with pytest.raises(GoalError, match="renew"):
+            check(pro_type, years)
+
+
+def test_a_professional_goal_sits_in_the_tier_of_its_deadline() -> None:
+    assert tier_of(Month(2027, 3), this_month=OCT) is Tier.SHORT
+    assert tier_of(Month(2029, 6), this_month=OCT) is Tier.MEDIUM
+
+
+def test_a_goal_to_renew_keeps_its_money_once_reached_until_its_deadline() -> None:
+    values = [D("0"), D("2000")]
+    reached = track(D("2000"), Month(2026, 9), Month(2027, 9), values, this_month=OCT)
+    assert not archives_itself(reached, permanent=False, renew=True, deadline=Month(2027, 9))
+    at_deadline = track(
+        D("2000"), Month(2026, 9), Month(2026, 10), values, this_month=Month(2026, 10)
+    )
+    assert archives_itself(at_deadline, permanent=False, renew=True, deadline=Month(2026, 10))
+    short = track(D("9000"), Month(2026, 9), Month(2026, 10), values, this_month=OCT)
+    assert not archives_itself(short, permanent=False, renew=True, deadline=Month(2026, 10))
+
+
+def test_the_next_cycle_is_due_n_years_after_the_previous_deadline() -> None:
+    assert next_deadline(Month(2027, 3), 4, start=Month(2027, 4)) == Month(2031, 3)
+    # Archived late: the next deadline must still come after the cycle starts.
+    assert next_deadline(Month(2027, 3), 1, start=Month(2028, 5)) == Month(2029, 5)
+
+
+def test_renewing_costs_the_target_over_the_cycles_months() -> None:
+    assert renewal_monthly(D("1800"), 4) == D("37.50")
+    assert renewal_monthly(D("650"), 8) == D("6.77")
+
+
+def test_a_tiers_professional_part_is_the_bottom_of_its_fill() -> None:
+    tiers = pyramid(
+        [
+            PyramidGoal(Tier.SHORT, D("1296"), D("1800"), professional=True),
+            PyramidGoal(Tier.SHORT, D("900"), D("650"), professional=True),
+            PyramidGoal(Tier.SHORT, D("2400"), D("4000")),
+            PyramidGoal(Tier.LONG, D("100"), D("1000")),
+        ]
+    )
+    short = tiers[Tier.SHORT]
+    assert short.progress == D("4346") / D("6450")
+    assert short.professional == D("1946") / D("6450")
+    assert tiers[Tier.LONG].professional is None
+
+
+# §8 invariants 51 and 52
+
+
+@given(
+    st.integers(1, 10_000_000).map(lambda c: D(c) / 100),
+    st.lists(
+        st.tuples(
+            st.sampled_from(list(AidSource)),
+            st.integers(1, 1_000_000).map(lambda c: D(c) / 100),
+            st.booleans(),
+        ),
+        max_size=4,
+    ),
+    st.sampled_from(list(ProType)),
+)
+def test_a_professional_target_is_its_cost_less_the_aids_and_above_zero(
+    cost: Decimal, drawn: list[tuple[AidSource, Decimal, bool]], pro_type: ProType
+) -> None:
+    aids = [Aid(s, a, r) for s, a, r in drawn]
+    paid = sum((a.amount for a in aids), D(0))
+    cpf_refused = pro_type not in CPF_TYPES and any(a.source is AidSource.CPF for a in aids)
+    if cpf_refused or paid >= cost:
+        with pytest.raises(GoalError):
+            professional_target(cost, aids, pro_type)
+    else:
+        target = professional_target(cost, aids, pro_type)
+        assert target == cost - paid
+        assert target > 0
+
+
+@given(
+    st.lists(
+        st.tuples(
+            st.sampled_from(list(Tier)),
+            amounts,
+            st.integers(1, 1_000_000).map(lambda c: D(c) / 100),
+            st.booleans(),
+        ),
+        max_size=8,
+    )
+)
+def test_a_tiers_professional_part_is_never_more_than_its_fill(
+    drawn: list[tuple[Tier, Decimal, Decimal, bool]],
+) -> None:
+    for p in pyramid(PyramidGoal(*g[:3], professional=g[3]) for g in drawn).values():
+        if p.professional is not None:
+            assert p.progress is not None
+            assert 0 <= p.professional <= p.progress
+
+
+@given(
+    st.sampled_from(MONTHS),
+    st.integers(-30, 30),
+    st.integers(1, 10),
+    st.integers(0, 2),
+    st.integers(0, 20_000),
+)
+def test_a_goal_to_renew_is_never_archived_before_its_deadline_and_its_next_one_comes_after(
+    start: Month, offset: int, years: int, months_on: int, value: int
+) -> None:
+    deadline = add_months(start, abs(offset))
+    this_month = add_months(start, months_on)
+    values = [D(value)] * (months_on + 1)
+    t = track(D("1000"), start, deadline, values, this_month=this_month)
+    if this_month < deadline:
+        assert not archives_itself(t, permanent=False, renew=True, deadline=deadline)
+    cycle_start = add_months(this_month, 1)
+    assert next_deadline(deadline, years, start=cycle_start) > cycle_start

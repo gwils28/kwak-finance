@@ -182,6 +182,10 @@
   /* The capstone (F-GOAL-10): pleasure goals in gold, lit on its left face. */
   --color-goal-gold: var(--color-secondary-400);
   --color-goal-gold-shine: var(--color-secondary-200);
+  /* Professional goals (F-GOAL-11): their part of a tier hatched in the darkest green over the
+     tier's colour, edged with goal-stone-top; the briefcase, badge and card edge in goal-pro-mark. */
+  --color-goal-pro: var(--color-primary-900);
+  --color-goal-pro-mark: var(--color-primary-900);
 }
 
 @layer base {
@@ -267,6 +271,8 @@
     --color-goal-stone-edge: var(--color-neutral-500);
     --color-goal-gold: var(--color-secondary-300);
     --color-goal-gold-shine: var(--color-secondary-100);
+    --color-goal-pro: var(--color-primary-900);
+    --color-goal-pro-mark: var(--color-primary-600);
   }
 
   body {

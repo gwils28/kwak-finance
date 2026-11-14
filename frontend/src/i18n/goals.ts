@@ -1,4 +1,4 @@
-import type { ClosedAs, GoalStatus, Tier } from "../api/generated";
+import type { AidSource, ClosedAs, GoalStatus, ProType, Tier } from "../api/generated";
 
 export const goalsEn = {
   title: "Goals",
@@ -226,6 +226,73 @@ export const goalsEn = {
   openingLabel: "from the start",
   save: "Save",
   create: "Create the goal",
+  // Professional goals (F-GOAL-11)
+  isProfessional: "This is a professional goal",
+  isProfessionalHint:
+    "For your work or your career: equipment (an office chair, a computer), a training, a business, a career change, a move. It sits in the tier of its deadline, marked with a briefcase.",
+  professional: "Professional",
+  proType: "Kind of project",
+  proTypes: {
+    equipment: "Equipment",
+    training: "Training",
+    business: "Setting up or taking over a business",
+    career_change: "Career change",
+    move: "Move for a job",
+  } satisfies Record<ProType, string>,
+  cost: "Cost",
+  aids: "Paid by others",
+  aidsHint:
+    "Count only what is paid for you: directly to the seller or the training body, or received by the household before the expense. A refund after the purchase is money to advance, so to gather. If an amount does not come, the target rises by it.",
+  aidSources: {
+    cpf: "Personal training account (CPF)",
+    employer: "Employer",
+    france_travail: "France Travail (training aid or ARCE)",
+    honour_loan: "Honour loan",
+    other: "Another aid",
+  } satisfies Record<AidSource, string>,
+  aidNotes: {
+    cpf: "What the account pays, as shown on Mon Compte Formation; the flat fee you owe (€150 since April 2026, none for a jobseeker) stays to gather.",
+    employer:
+      "Only if the employer pays the bill; a refund after the purchase is money to advance.",
+    france_travail:
+      "Never the monthly unemployment benefit, which is income. The ARCE comes in two halves six months apart, the second only if the business still runs, and is taxed as income: only the first half is paid by the business's start.",
+    honour_loan: "A debt to repay: enter it as a debt line once received.",
+    other: "",
+  } satisfies Record<AidSource, string>,
+  aidFrom: {
+    cpf: (amount: string) => `${amount} from the CPF`,
+    employer: (amount: string) => `${amount} from the employer`,
+    france_travail: (amount: string) => `${amount} from France Travail`,
+    honour_loan: (amount: string) => `${amount} from an honour loan, to repay`,
+    other: (amount: string) => `${amount} from another aid`,
+  } satisfies Record<AidSource, (amount: string) => string>,
+  aidSourceOf: (n: number) => `Source of amount ${n}`,
+  aidAmountOf: (n: number) => `Amount ${n} paid by others`,
+  aidReceived: "Received by the household",
+  addAid: "Add an amount",
+  removeAidOf: (n: number) => `Remove amount ${n}`,
+  receivedNote:
+    "Money received counts twice if it lands on a line funding this goal: keep it on another line, or adjust the goal's envelope once it arrives.",
+  toGather: (target: string) => `${target} to gather`,
+  costOf: (cost: string, aids: string[], target: string) =>
+    aids.length ? `${cost}, of which ${aids.join(", ")}: ${target} to gather` : cost,
+  noTarget: "What others pay must leave something to gather.",
+  renew: "Renew it every",
+  renewYears: "years",
+  renewHint:
+    "Once reached it keeps its money until you archive it (the purchase) or its deadline passes; then its next cycle starts, at the same cost and without what others paid, due that many years after this deadline.",
+  renewed: "Renewed",
+  renewEvery: (years: number, monthly: string) =>
+    `every ${years === 1 ? "year" : `${years} years`} · about ${monthly} a month over a full cycle`,
+  renewCostNote:
+    "The cost is the previous cycle's, in today's euros: update it before the purchase.",
+  nextCycleQuestion: "It is short of its target. Start its next cycle?",
+  archiveWithNext: "Archive and start the next cycle",
+  archiveWithoutNext: "Archive with no next cycle",
+  nextCycle: "Start its next cycle",
+  ofWhichPro: "of which professional",
+  tierGoalsPro: (n: number, pro: number) =>
+    `${n === 1 ? "1 goal" : `${n} goals`}, ${pro} professional`,
   // Settings
   settingsTitle: "Effort settings",
   settingsOwnerOnly: "Only the household owner changes these settings.",
@@ -465,6 +532,73 @@ export const goalsFr: typeof goalsEn = {
   openingLabel: "au départ",
   save: "Enregistrer",
   create: "Créer l'objectif",
+  // Objectifs professionnels (F-GOAL-11)
+  isProfessional: "C'est un objectif professionnel",
+  isProfessionalHint:
+    "Pour votre travail ou votre carrière : du matériel (un fauteuil de bureau, un ordinateur), une formation, une entreprise, une reconversion, un déménagement. Il se place dans l'étage de son échéance, marqué d'une mallette.",
+  professional: "Professionnel",
+  proType: "Type de projet",
+  proTypes: {
+    equipment: "Matériel",
+    training: "Formation",
+    business: "Création ou reprise d'entreprise",
+    career_change: "Reconversion",
+    move: "Déménagement pour un emploi",
+  },
+  cost: "Coût",
+  aids: "Payé par d'autres",
+  aidsHint:
+    "Ne comptez que ce qui est payé pour vous : directement au vendeur ou à l'organisme de formation, ou reçu par le foyer avant la dépense. Un remboursement après l'achat est de l'argent à avancer, donc à réunir. Si un montant ne vient pas, la cible augmente d'autant.",
+  aidSources: {
+    cpf: "Compte personnel de formation (CPF)",
+    employer: "Employeur",
+    france_travail: "France Travail (aide à la formation ou ARCE)",
+    honour_loan: "Prêt d'honneur",
+    other: "Autre aide",
+  },
+  aidNotes: {
+    cpf: "Ce que le compte paie, tel qu'affiché sur Mon Compte Formation ; le reste à charge (150 € depuis avril 2026, rien pour un demandeur d'emploi) reste à réunir.",
+    employer:
+      "Seulement si l'employeur règle la facture ; un remboursement après l'achat est de l'argent à avancer.",
+    france_travail:
+      "Jamais l'allocation chômage mensuelle, qui est un revenu. L'ARCE est versée en deux moitiés à six mois d'écart, la seconde seulement si l'entreprise tourne encore, et elle est imposable : seule la première moitié est versée au démarrage.",
+    honour_loan: "Une dette à rembourser : saisissez-la en ligne de dette une fois reçue.",
+    other: "",
+  },
+  aidFrom: {
+    cpf: (amount) => `${amount} du CPF`,
+    employer: (amount) => `${amount} de l'employeur`,
+    france_travail: (amount) => `${amount} de France Travail`,
+    honour_loan: (amount) => `${amount} d'un prêt d'honneur, à rembourser`,
+    other: (amount) => `${amount} d'une autre aide`,
+  },
+  aidSourceOf: (n) => `Source du montant ${n}`,
+  aidAmountOf: (n) => `Montant ${n} payé par d'autres`,
+  aidReceived: "Reçu par le foyer",
+  addAid: "Ajouter un montant",
+  removeAidOf: (n) => `Retirer le montant ${n}`,
+  receivedNote:
+    "L'argent reçu compte deux fois s'il arrive sur une ligne qui finance cet objectif : gardez-le sur une autre ligne, ou ajustez l'enveloppe de l'objectif à son arrivée.",
+  toGather: (target) => `${target} à réunir`,
+  costOf: (cost, aids, target) =>
+    aids.length ? `${cost}, dont ${aids.join(", ")} : ${target} à réunir` : cost,
+  noTarget: "Ce que paient les autres doit laisser quelque chose à réunir.",
+  renew: "Le renouveler tous les",
+  renewYears: "ans",
+  renewHint:
+    "Une fois atteint, il garde son argent jusqu'à ce que vous l'archiviez (l'achat) ou que son échéance passe ; son cycle suivant démarre alors, au même coût et sans ce que d'autres ont payé, dû autant d'années après cette échéance.",
+  renewed: "Renouvelé",
+  renewEvery: (years, monthly) =>
+    `tous les ${years === 1 ? "ans" : `${years} ans`} · environ ${monthly} par mois sur un cycle complet`,
+  renewCostNote:
+    "Le coût est celui du cycle précédent, en euros d'aujourd'hui : mettez-le à jour avant l'achat.",
+  nextCycleQuestion: "Il n'a pas atteint sa cible. Lancer son cycle suivant ?",
+  archiveWithNext: "Archiver et lancer le cycle suivant",
+  archiveWithoutNext: "Archiver sans cycle suivant",
+  nextCycle: "Lancer son cycle suivant",
+  ofWhichPro: "dont pro",
+  tierGoalsPro: (n, pro) =>
+    `${n <= 1 ? `${n} objectif` : `${n} objectifs`}, dont ${pro} ${pro <= 1 ? "professionnel" : "professionnels"}`,
   settingsTitle: "Réglages de l'effort",
   settingsOwnerOnly: "Seul le propriétaire du foyer change ces réglages.",
   precautionShare: "Part de l'effort réservée à la précaution",

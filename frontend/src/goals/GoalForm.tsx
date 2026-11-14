@@ -2,12 +2,15 @@ import { useMutation, useQuery, useQueryClient, useSuspenseQuery } from "@tansta
 import { Link } from "@tanstack/react-router";
 import { type FormEvent, useId, useState } from "react";
 import {
+  type AidSource,
   createGoal,
+  type GoalAidIn,
   type GoalFundingIn,
   type GoalOut,
   listWealthCategories,
   listWealthLines,
   type PrecautionProposalOut,
+  type ProType,
   precautionProposal,
   updateGoal,
   type Visibility,
@@ -18,15 +21,21 @@ import { Button, ErrorAlert } from "../components/ui";
 import { useI18n } from "../i18n";
 import { amountInputShort, formatEurWhole, parseEurInput } from "../lib/money";
 import { thisMonth } from "../lib/months";
-import { GOALS_KEY, goalLinesQuery, tierOf } from "./shared";
+import { Briefcase, GOALS_KEY, goalLinesQuery, tierOf } from "./shared";
 
 type Envelope = { share: number; opening: string };
+type Aid = { source: AidSource; amount: string; received: boolean };
 
 const fieldClass = "rounded-md border border-border bg-surface px-3 py-2";
 const labelClass = "flex flex-col gap-1 text-sm font-medium";
 const hintClass = "font-normal text-muted";
 const VISIBILITIES: Visibility[] = ["shared", "private", "joint"];
 const MONTHS = Array.from({ length: 12 }, (_, i) => i + 1);
+const PRO_TYPES: ProType[] = ["equipment", "training", "business", "career_change", "move"];
+const SOURCES: AidSource[] = ["cpf", "employer", "france_travail", "honour_loan", "other"];
+/** The CPF never pays for equipment nor a move (F-GOAL-11). */
+const CPF_TYPES: ProType[] = ["training", "business", "career_change"];
+const RENEW_YEARS = Array.from({ length: 10 }, (_, i) => i + 1);
 
 /** Create a goal, or edit one (F-GOAL-1 to 3). */
 export function GoalForm({ goal, onDone }: { goal?: GoalOut; onDone: () => void }) {
@@ -44,6 +53,11 @@ export function GoalForm({ goal, onDone }: { goal?: GoalOut; onDone: () => void 
     fillFirst: useId(),
     permanent: useId(),
     pleasure: useId(),
+    professional: useId(),
+    proType: useId(),
+    cost: useId(),
+    renew: useId(),
+    renewYears: useId(),
   };
   const lines = useQuery({
     queryKey: ["wealth", "lines"],
@@ -62,9 +76,24 @@ export function GoalForm({ goal, onDone }: { goal?: GoalOut; onDone: () => void 
   const [fillFirst, setFillFirst] = useState(goal?.fill_first ?? true);
   const [isPermanent, setPermanent] = useState(goal?.permanent ?? false);
   const [pleasure, setPleasure] = useState(goal?.pleasure ?? false);
+  // A goal has one kind: a professional goal is neither permanent, the precaution nor pleasure.
+  const [professional, setProfessional] = useState((goal?.pro_type ?? null) !== null);
+  const [proType, setProType] = useState<ProType>(goal?.pro_type ?? "equipment");
+  const [cost, setCost] = useState(goal?.cost ? amountInputShort(goal.cost) : "");
+  const [aids, setAids] = useState<Aid[]>(
+    () =>
+      goal?.aids.map((a) => ({
+        source: a.source,
+        amount: amountInputShort(a.amount),
+        received: a.received,
+      })) ?? [],
+  );
+  const [renew, setRenew] = useState((goal?.renew_years ?? null) !== null);
+  const [renewYears, setRenewYears] = useState(goal?.renew_years ?? 4);
   // The emergency fund is always permanent; a pleasure goal never, and has no deadline.
-  const permanent = !pleasure && (precaution || isPermanent);
-  const isPrecaution = precaution && !pleasure;
+  const permanent = !pleasure && !professional && (precaution || isPermanent);
+  const isPrecaution = precaution && !pleasure && !professional;
+  const sources = SOURCES.filter((s) => s !== "cpf" || CPF_TYPES.includes(proType));
   const [name, setName] = useState(goal?.name ?? "");
   const [target, setTarget] = useState(goal ? amountInputShort(goal.target) : "");
   const [deadline, setDeadline] = useState(goal?.deadline ?? "");
@@ -88,14 +117,29 @@ export function GoalForm({ goal, onDone }: { goal?: GoalOut; onDone: () => void 
   );
 
   const save = useMutation({
-    mutationFn: async ({ amount, fundings }: { amount: string; fundings: GoalFundingIn[] }) => {
+    mutationFn: async ({
+      amount,
+      fundings,
+      paid,
+    }: {
+      amount: string;
+      fundings: GoalFundingIn[];
+      paid: { cost: string; aids: GoalAidIn[] } | null;
+    }) => {
       const body = {
         name,
         precaution: isPrecaution,
         fill_first: !isPrecaution || fillFirst,
         permanent,
         pleasure,
-        target: amount,
+        pro_type: paid ? proType : null,
+        ...(paid
+          ? {
+              cost: paid.cost,
+              aids: paid.aids,
+              renew_years: proType === "equipment" && renew ? renewYears : null,
+            }
+          : { target: amount }),
         deadline: pleasure ? null : deadline || null,
         start,
         fundings,
@@ -115,7 +159,19 @@ export function GoalForm({ goal, onDone }: { goal?: GoalOut; onDone: () => void 
 
   const submit = (event: FormEvent) => {
     event.preventDefault();
-    const amount = parseEurInput(target);
+    let paid: { cost: string; aids: GoalAidIn[] } | null = null;
+    if (professional) {
+      const total = parseEurInput(cost);
+      if (total === null || Number(total) <= 0) return setError(g.targetInvalid);
+      const given: GoalAidIn[] = [];
+      for (const aid of aids) {
+        const parsed = parseEurInput(aid.amount);
+        if (parsed === null || Number(parsed) <= 0) return setError(g.targetInvalid);
+        given.push({ source: aid.source, amount: parsed, received: aid.received });
+      }
+      paid = { cost: total, aids: given };
+    }
+    const amount = paid ? paid.cost : parseEurInput(target);
     if (amount === null || Number(amount) <= 0) return setError(g.targetInvalid);
     const fundings: GoalFundingIn[] = [];
     for (const [line_id, { share, opening }] of shares) {
@@ -124,8 +180,15 @@ export function GoalForm({ goal, onDone }: { goal?: GoalOut; onDone: () => void 
       fundings.push({ line_id, share, opening: parsed });
     }
     setError(null);
-    save.mutate({ amount, fundings });
+    save.mutate({ amount, fundings, paid });
   };
+
+  // In cents, so a preview never rounds a few cents to nothing.
+  const cents = (text: string) => Math.round(Number(parseEurInput(text) ?? 0) * 100);
+  const parsedCost = cents(cost);
+  const gather = parsedCost - aids.reduce((sum, a) => sum + cents(a.amount), 0);
+  const changeAid = (index: number, fields: Partial<Aid>) =>
+    setAids((current) => current.map((a, i) => (i === index ? { ...a, ...fields } : a)));
 
   const toggle = (lineId: string, on: boolean) =>
     setShares((current) => {
@@ -154,7 +217,7 @@ export function GoalForm({ goal, onDone }: { goal?: GoalOut; onDone: () => void 
             type="checkbox"
             aria-describedby={`${ids.precaution}-hint`}
             checked={isPrecaution}
-            disabled={pleasure}
+            disabled={pleasure || professional}
             onChange={(e) => setPrecaution(e.target.checked)}
           />
           {g.isPrecaution}
@@ -187,7 +250,7 @@ export function GoalForm({ goal, onDone }: { goal?: GoalOut; onDone: () => void 
             type="checkbox"
             aria-describedby={`${ids.permanent}-hint`}
             checked={permanent}
-            disabled={precaution || pleasure}
+            disabled={precaution || pleasure || professional}
             onChange={(e) => setPermanent(e.target.checked)}
           />
           {g.isPermanent}
@@ -203,13 +266,30 @@ export function GoalForm({ goal, onDone }: { goal?: GoalOut; onDone: () => void 
             type="checkbox"
             aria-describedby={`${ids.pleasure}-hint`}
             checked={pleasure}
-            disabled={precaution}
+            disabled={precaution || professional}
             onChange={(e) => setPleasure(e.target.checked)}
           />
           {g.isPleasure}
         </label>
         <p id={`${ids.pleasure}-hint`} className={hintClass}>
           {g.isPleasureHint}
+        </p>
+      </div>
+      <div className="flex flex-col gap-1 text-sm">
+        <label htmlFor={ids.professional} className="flex items-center gap-2 font-medium">
+          <input
+            id={ids.professional}
+            type="checkbox"
+            aria-describedby={`${ids.professional}-hint`}
+            checked={professional}
+            disabled={isPrecaution || pleasure}
+            onChange={(e) => setProfessional(e.target.checked)}
+          />
+          <Briefcase />
+          {g.isProfessional}
+        </label>
+        <p id={`${ids.professional}-hint`} className={hintClass}>
+          {g.isProfessionalHint}
         </p>
       </div>
       <label htmlFor={ids.name} className={labelClass}>
@@ -223,17 +303,36 @@ export function GoalForm({ goal, onDone }: { goal?: GoalOut; onDone: () => void 
           onChange={(e) => setName(e.target.value)}
         />
       </label>
-      <label htmlFor={ids.target} className={labelClass}>
-        {g.target}
-        <input
-          id={ids.target}
-          required
-          inputMode="decimal"
-          className={`${fieldClass} tabular`}
-          value={target}
-          onChange={(e) => setTarget(e.target.value)}
+      {professional ? (
+        <ProfessionalFields
+          ids={ids}
+          proType={proType}
+          setProType={setProType}
+          cost={cost}
+          setCost={setCost}
+          aids={aids}
+          setAids={setAids}
+          changeAid={changeAid}
+          sources={sources}
+          gather={parsedCost > 0 ? gather : null}
+          renew={renew}
+          setRenew={setRenew}
+          renewYears={renewYears}
+          setRenewYears={setRenewYears}
         />
-      </label>
+      ) : (
+        <label htmlFor={ids.target} className={labelClass}>
+          {g.target}
+          <input
+            id={ids.target}
+            required
+            inputMode="decimal"
+            className={`${fieldClass} tabular`}
+            value={target}
+            onChange={(e) => setTarget(e.target.value)}
+          />
+        </label>
+      )}
       {isPrecaution && fillFirst && (
         <Proposal onUse={(amount) => setTarget(amountInputShort(amount))} />
       )}
@@ -425,6 +524,182 @@ function Proposal({ onUse }: { onUse: (amount: string) => void }) {
             </Button>
           </div>
         </>
+      )}
+    </div>
+  );
+}
+
+/** A professional goal's kind, cost, what others pay and renewal (F-GOAL-11). */
+function ProfessionalFields({
+  ids,
+  proType,
+  setProType,
+  cost,
+  setCost,
+  aids,
+  setAids,
+  changeAid,
+  sources,
+  gather,
+  renew,
+  setRenew,
+  renewYears,
+  setRenewYears,
+}: {
+  ids: { proType: string; cost: string; renew: string; renewYears: string };
+  proType: ProType;
+  setProType: (value: ProType) => void;
+  cost: string;
+  setCost: (value: string) => void;
+  aids: Aid[];
+  setAids: (update: (current: Aid[]) => Aid[]) => void;
+  changeAid: (index: number, fields: Partial<Aid>) => void;
+  sources: AidSource[];
+  gather: number | null;
+  renew: boolean;
+  setRenew: (value: boolean) => void;
+  renewYears: number;
+  setRenewYears: (value: number) => void;
+}) {
+  const { t } = useI18n();
+  const g = t.goals;
+  const notes = [...new Set(aids.map((a) => g.aidNotes[a.source]).filter(Boolean))];
+  return (
+    <div className="flex min-w-0 flex-col gap-3 rounded-md border border-border p-3">
+      <div className="grid gap-4 sm:grid-cols-2">
+        <label htmlFor={ids.proType} className={labelClass}>
+          {g.proType}
+          <select
+            id={ids.proType}
+            className={fieldClass}
+            value={proType}
+            onChange={(e) => setProType(e.target.value as ProType)}
+          >
+            {PRO_TYPES.map((type) => (
+              <option key={type} value={type}>
+                {g.proTypes[type]}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label htmlFor={ids.cost} className={labelClass}>
+          {g.cost}
+          <input
+            id={ids.cost}
+            required
+            inputMode="decimal"
+            className={`${fieldClass} tabular`}
+            value={cost}
+            onChange={(e) => setCost(e.target.value)}
+          />
+        </label>
+      </div>
+      <fieldset className="flex min-w-0 flex-col gap-2 text-sm">
+        <legend className="mb-1 font-medium">{g.aids}</legend>
+        <p className="text-muted">{g.aidsHint}</p>
+        {aids.map((aid, index) => {
+          const n = index + 1;
+          return (
+            <div
+              // biome-ignore lint/suspicious/noArrayIndexKey: rows have no id of their own
+              key={index}
+              className="flex flex-wrap items-center gap-2 rounded-md border border-border px-3 py-2"
+            >
+              <select
+                aria-label={g.aidSourceOf(n)}
+                className={`${fieldClass} w-full min-w-0 py-1 sm:w-auto`}
+                value={aid.source}
+                onChange={(e) => changeAid(index, { source: e.target.value as AidSource })}
+              >
+                {[...new Set([...sources, aid.source])].map((source) => (
+                  <option key={source} value={source}>
+                    {g.aidSources[source]}
+                  </option>
+                ))}
+              </select>
+              <input
+                aria-label={g.aidAmountOf(n)}
+                inputMode="decimal"
+                required
+                className={`${fieldClass} w-28 py-1 text-right tabular`}
+                value={aid.amount}
+                onChange={(e) => changeAid(index, { amount: e.target.value })}
+              />
+              <span aria-hidden="true">€</span>
+              <label className="flex items-center gap-1">
+                <input
+                  type="checkbox"
+                  checked={aid.received}
+                  onChange={(e) => changeAid(index, { received: e.target.checked })}
+                />
+                {g.aidReceived}
+              </label>
+              <Button
+                variant="ghost"
+                aria-label={g.removeAidOf(n)}
+                onClick={() => setAids((current) => current.filter((_, i) => i !== index))}
+              >
+                ×
+              </Button>
+            </div>
+          );
+        })}
+        <div>
+          <Button
+            variant="ghost"
+            onClick={() =>
+              setAids((current) => [
+                ...current,
+                { source: sources[0] ?? "employer", amount: "", received: false },
+              ])
+            }
+          >
+            {g.addAid}
+          </Button>
+        </div>
+        {notes.map((note) => (
+          <p key={note} className={hintClass}>
+            {note}
+          </p>
+        ))}
+        {aids.some((a) => a.received) && <p className={hintClass}>{g.receivedNote}</p>}
+        {gather !== null && (
+          <p className="font-semibold tabular">
+            {gather > 0 ? g.toGather(formatEurWhole((gather / 100).toFixed(2))) : g.noTarget}
+          </p>
+        )}
+      </fieldset>
+      {proType === "equipment" && (
+        <div className="flex flex-col gap-1 text-sm">
+          <div className="flex flex-wrap items-center gap-2 font-medium">
+            <input
+              id={ids.renew}
+              type="checkbox"
+              aria-describedby={`${ids.renew}-hint`}
+              checked={renew}
+              onChange={(e) => setRenew(e.target.checked)}
+            />
+            <label htmlFor={ids.renew}>{g.renew}</label>
+            <select
+              id={ids.renewYears}
+              aria-label={`${g.renew} (${g.renewYears})`}
+              disabled={!renew}
+              className={`${fieldClass} py-1`}
+              value={renewYears}
+              onChange={(e) => setRenewYears(Number(e.target.value))}
+            >
+              {RENEW_YEARS.map((n) => (
+                <option key={n} value={n}>
+                  {n}
+                </option>
+              ))}
+            </select>
+            <span>{g.renewYears}</span>
+          </div>
+          <p id={`${ids.renew}-hint`} className={hintClass}>
+            {g.renewHint}
+          </p>
+        </div>
       )}
     </div>
   );

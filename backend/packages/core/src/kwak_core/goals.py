@@ -1,4 +1,5 @@
-"""Financial goals: a three-tier pyramid funded by wealth lines (F-GOAL, invariants §8.19-20, 22).
+"""Financial goals: a three-tier pyramid funded by wealth lines (F-GOAL, invariants §8.19-20, 22,
+51-52).
 
 A goal is an amount to gather by a date. Its value in a month is the sum of the values of the
 wealth lines that fund it, each times its share, so it follows the wealth matrix with nothing
@@ -66,6 +67,45 @@ class GoalError(ValueError):
     """A goal, a funding or a setting that breaks a rule of F-GOAL."""
 
 
+class ProType(enum.StrEnum):
+    """What a professional goal is for (F-GOAL-11)."""
+
+    EQUIPMENT = "equipment"
+    TRAINING = "training"
+    BUSINESS = "business"
+    """Setting up or taking over one."""
+    CAREER_CHANGE = "career_change"
+    MOVE = "move"
+
+
+class AidSource(enum.StrEnum):
+    """Who pays part of a professional goal's cost (F-GOAL-11)."""
+
+    CPF = "cpf"
+    """The personal training account."""
+    EMPLOYER = "employer"
+    FRANCE_TRAVAIL = "france_travail"
+    """A training aid or the lump sum paid to a business creator (ARCE), never the monthly
+    unemployment benefit, which is income."""
+    HONOUR_LOAN = "honour_loan"
+    """A debt to repay."""
+    OTHER = "other"
+
+
+CPF_TYPES = frozenset({ProType.TRAINING, ProType.BUSINESS, ProType.CAREER_CHANGE})
+"""The CPF never pays for equipment nor a move."""
+RENEW_YEARS = range(1, 11)
+
+
+@dataclass(frozen=True)
+class Aid:
+    source: AidSource
+    amount: Decimal
+    received: bool = False
+    """Paid to the household before the expense, rather than directly to the seller: it counts
+    twice if it lands on a line funding the goal."""
+
+
 def _floor(amount: Decimal) -> Decimal:
     return amount.quantize(CENT, rounding=ROUND_DOWN)
 
@@ -89,12 +129,22 @@ def check_goal(
     precaution: bool = False,
     permanent: bool = False,
     pleasure: bool = False,
+    pro_type: ProType | None = None,
+    renew_years: int | None = None,
     deadline: Month | None,
     start: Month,
     this_month: Month,
 ) -> None:
     if target <= 0 or target != target.quantize(CENT):
         raise GoalError("a target is a positive amount in cents")
+    if pro_type is not None and (precaution or permanent or pleasure):
+        raise GoalError("a professional goal is neither permanent, the precaution nor a pleasure")
+    if pro_type is not None and deadline is None:
+        raise GoalError("a professional goal needs a deadline")
+    if renew_years is not None and (
+        pro_type is not ProType.EQUIPMENT or renew_years not in RENEW_YEARS
+    ):
+        raise GoalError("only equipment is renewed, every 1 to 10 years")
     if precaution and not permanent:
         raise GoalError("the precaution is permanent")
     if pleasure and (precaution or permanent):
@@ -124,6 +174,36 @@ def tier_of(
     if months <= SHORT_MONTHS:
         return Tier.SHORT
     return Tier.MEDIUM if months <= MEDIUM_MONTHS else Tier.LONG
+
+
+# F-GOAL-11
+
+
+def professional_target(cost: Decimal, aids: Iterable[Aid], pro_type: ProType) -> Decimal:
+    """What the household itself must gather: the cost less what others pay, above zero."""
+    if cost <= 0 or cost != cost.quantize(CENT):
+        raise GoalError("a cost is a positive amount in cents")
+    aids = list(aids)
+    if any(a.amount <= 0 or a.amount != a.amount.quantize(CENT) for a in aids):
+        raise GoalError("an amount paid by others is positive, in cents")
+    if pro_type not in CPF_TYPES and any(a.source is AidSource.CPF for a in aids):
+        raise GoalError("the CPF pays for training, a business or a career change only")
+    target = cost - sum((a.amount for a in aids), ZERO)
+    if target <= 0:
+        raise GoalError("what others pay must leave the target above zero")
+    return target
+
+
+def next_deadline(deadline: Month, years: int, *, start: Month) -> Month:
+    """The next cycle's deadline: N years after the previous one, or after its start when that
+    is not later."""
+    due = add_months(deadline, 12 * years)
+    return due if due > start else add_months(start, 12 * years)
+
+
+def renewal_monthly(target: Decimal, years: int) -> Decimal:
+    """What renewing costs a month over a full cycle."""
+    return quantize(target / (12 * years))
 
 
 # F-GOAL-2
@@ -564,9 +644,18 @@ def track(
     )
 
 
-def archives_itself(tracking: Tracking, *, permanent: bool) -> bool:
-    """A goal that is not permanent is archived once it reaches its target (F-GOAL-8)."""
-    return not permanent and tracking.status is GoalStatus.REACHED
+def archives_itself(
+    tracking: Tracking,
+    *,
+    permanent: bool,
+    renew: bool = False,
+    deadline: Month | None = None,
+) -> bool:
+    """A goal that is not permanent is archived once it reaches its target (F-GOAL-8); one to
+    renew keeps its money for the purchase until its deadline month (F-GOAL-11)."""
+    if permanent or tracking.status is not GoalStatus.REACHED:
+        return False
+    return not renew or (deadline is not None and tracking.months[-1].month >= deadline)
 
 
 _STATUS = {
@@ -661,6 +750,7 @@ class PyramidGoal:
     tier: Tier
     value: Decimal
     target: Decimal
+    professional: bool = False
 
 
 @dataclass(frozen=True)
@@ -669,6 +759,9 @@ class TierProgress:
     target: Decimal
     progress: Decimal | None
     """Each goal counting up to its target; None for a tier without a goal."""
+    professional: Decimal | None = None
+    """The professional goals' part of the progress, the bottom of the fill (F-GOAL-11); None
+    without one."""
 
 
 def pyramid(goals: Iterable[PyramidGoal]) -> dict[Tier, TierProgress]:
@@ -678,7 +771,11 @@ def pyramid(goals: Iterable[PyramidGoal]) -> dict[Tier, TierProgress]:
         mine = [g for g in goals if g.tier is tier]
         target = sum((g.target for g in mine), ZERO)
         capped = sum((min(g.value, g.target) for g in mine), ZERO)
+        pro = [g for g in mine if g.professional]
         out[tier] = TierProgress(
-            sum((g.value for g in mine), ZERO), target, capped / target if target else None
+            sum((g.value for g in mine), ZERO),
+            target,
+            capped / target if target else None,
+            sum((min(g.value, g.target) for g in pro), ZERO) / target if pro else None,
         )
     return out

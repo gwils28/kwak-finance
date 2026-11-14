@@ -5,6 +5,13 @@ export type ClientOptions = {
 };
 
 /**
+ * AidSource
+ *
+ * Who pays part of a professional goal's cost (F-GOAL-11).
+ */
+export type AidSource = 'cpf' | 'employer' | 'france_travail' | 'honour_loan' | 'other';
+
+/**
  * AssumptionsOut
  */
 export type AssumptionsOut = {
@@ -30,7 +37,7 @@ export type AssumptionsOut = {
 /**
  * AuditAction
  */
-export type AuditAction = 'signed_in' | 'sign_in_failed' | 'signed_out' | 'recovery_codes_renewed' | 'invite_created' | 'invite_revoked' | 'member_joined' | 'settings_changed' | 'wealth_line_deleted' | 'wealth_category_deleted' | 'goal_deleted' | 'spending_line_deleted' | 'spending_category_deleted' | 'fixed_expense_deleted' | 'categories_restored';
+export type AuditAction = 'signed_in' | 'sign_in_failed' | 'signed_out' | 'recovery_codes_renewed' | 'invite_created' | 'invite_revoked' | 'member_joined' | 'settings_changed' | 'wealth_line_deleted' | 'wealth_category_deleted' | 'goal_deleted' | 'goal_renewed' | 'spending_line_deleted' | 'spending_category_deleted' | 'fixed_expense_deleted' | 'categories_restored';
 
 /**
  * AuditEntryOut
@@ -894,6 +901,38 @@ export type GoalAdjustmentOut = {
 };
 
 /**
+ * GoalAidIn
+ *
+ * An amount of a professional goal's cost paid by others (F-GOAL-11).
+ */
+export type GoalAidIn = {
+    /**
+     * Amount
+     */
+    amount: number | string;
+    /**
+     * Received
+     */
+    received?: boolean;
+    source: AidSource;
+};
+
+/**
+ * GoalAidOut
+ */
+export type GoalAidOut = {
+    /**
+     * Amount
+     */
+    amount: string;
+    /**
+     * Received
+     */
+    received: boolean;
+    source: AidSource;
+};
+
+/**
  * GoalAnalysisOut
  */
 export type GoalAnalysisOut = {
@@ -1116,6 +1155,14 @@ export type GoalGateOut = {
  */
 export type GoalIn = {
     /**
+     * Aids
+     */
+    aids?: Array<GoalAidIn>;
+    /**
+     * Cost
+     */
+    cost?: number | string | null;
+    /**
      * Deadline
      */
     deadline?: string | null;
@@ -1143,6 +1190,11 @@ export type GoalIn = {
      * Precaution
      */
     precaution?: boolean;
+    pro_type?: ProType | null;
+    /**
+     * Renew Years
+     */
+    renew_years?: number | null;
     /**
      * Start
      */
@@ -1150,7 +1202,7 @@ export type GoalIn = {
     /**
      * Target
      */
-    target: number | string;
+    target?: number | string | null;
     visibility?: Visibility;
 };
 
@@ -1216,11 +1268,19 @@ export type GoalOut = {
      * Actual
      */
     actual: string | null;
+    /**
+     * Aids
+     */
+    aids: Array<GoalAidOut>;
     closed_as: ClosedAs | null;
     /**
      * Closed From
      */
     closed_from: string | null;
+    /**
+     * Cost
+     */
+    cost: string | null;
     /**
      * Deadline
      */
@@ -1289,6 +1349,7 @@ export type GoalOut = {
      * Precaution
      */
     precaution: boolean;
+    pro_type: ProType | null;
     /**
      * Progress
      */
@@ -1297,6 +1358,14 @@ export type GoalOut = {
      * Remaining
      */
     remaining: string;
+    /**
+     * Renew Years
+     */
+    renew_years: number | null;
+    /**
+     * Renewal Monthly
+     */
+    renewal_monthly: string | null;
     /**
      * Required
      */
@@ -1324,11 +1393,19 @@ export type GoalOut = {
  * Only the fields present change.
  */
 export type GoalPatch = {
+    /**
+     * Aids
+     */
+    aids?: Array<GoalAidIn> | null;
     closed_as?: ClosedAs | null;
     /**
      * Closed From
      */
     closed_from?: string | null;
+    /**
+     * Cost
+     */
+    cost?: number | string | null;
     /**
      * Deadline
      */
@@ -1346,6 +1423,10 @@ export type GoalPatch = {
      */
     name?: string | null;
     /**
+     * Next Cycle
+     */
+    next_cycle?: boolean;
+    /**
      * Permanent
      */
     permanent?: boolean | null;
@@ -1357,6 +1438,11 @@ export type GoalPatch = {
      * Precaution
      */
     precaution?: boolean | null;
+    pro_type?: ProType | null;
+    /**
+     * Renew Years
+     */
+    renew_years?: number | null;
     /**
      * Start
      */
@@ -1407,6 +1493,10 @@ export type GoalStatus = 'reached' | 'ahead' | 'on' | 'behind' | 'fill_first' | 
  * GoalTierOut
  */
 export type GoalTierOut = {
+    /**
+     * Professional
+     */
+    professional: string | null;
     /**
      * Progress
      */
@@ -2053,6 +2143,13 @@ export type PrecautionProposalOut = {
 export type Preferences = {
     language: Language;
 };
+
+/**
+ * ProType
+ *
+ * What a professional goal is for (F-GOAL-11).
+ */
+export type ProType = 'equipment' | 'training' | 'business' | 'career_change' | 'move';
 
 export type Problem = 'no_wealth' | 'no_member' | 'horizon' | 'no_allocation';
 
