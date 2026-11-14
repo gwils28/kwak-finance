@@ -38,3 +38,6 @@ class AuditAction(enum.StrEnum):
     SPENDING_CATEGORY_DELETED = "spending_category_deleted", AuditKind.DELETION
     FIXED_EXPENSE_DELETED = "fixed_expense_deleted", AuditKind.DELETION
     CATEGORIES_RESTORED = "categories_restored", AuditKind.HOUSEHOLD
+    AUDIT_DOCUMENT_ISSUED = "audit_document_issued", AuditKind.HOUSEHOLD
+    """An audit document printed, copied or downloaded (F-AUD-1): its audience, scope and
+    period, never a figure."""

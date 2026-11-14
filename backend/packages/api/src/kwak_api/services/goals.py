@@ -458,6 +458,8 @@ class FixedItem:
     amount: Decimal
     """The outflow each time, positive."""
     monthly: Decimal
+    category: str = ""
+    """Its category's name: the audit document shows it instead of the label (F-AUD-4)."""
 
 
 def fixed_items(db: Session, viewer: User, today: date) -> list[FixedItem]:
@@ -479,6 +481,7 @@ def fixed_items(db: Session, viewer: User, today: date) -> list[FixedItem]:
                 item.frequency,
                 -item.amount,
                 core.fixed_expenses([(item.frequency, item.amount)]),
+                item.category.name,
             )
         )
     return sorted(out, key=lambda i: i.label.lower())

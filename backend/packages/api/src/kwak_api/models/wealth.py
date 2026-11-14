@@ -3,7 +3,7 @@ from decimal import Decimal
 from uuid import UUID
 
 from kwak_core.visibility import Visibility
-from kwak_core.wealth import RegulatedType, WealthKind
+from kwak_core.wealth import RegulatedType, TaxEnvelope, WealthKind
 from sqlalchemy import (
     CheckConstraint,
     Date,
@@ -12,6 +12,7 @@ from sqlalchemy import (
     Index,
     Integer,
     Numeric,
+    SmallInteger,
     String,
     UniqueConstraint,
     text,
@@ -23,7 +24,8 @@ from kwak_api.models.household import User
 
 
 def _string_enum(
-    enum_type: type[WealthKind] | type[Visibility] | type[RegulatedType], name: str
+    enum_type: type[WealthKind] | type[Visibility] | type[RegulatedType] | type[TaxEnvelope],
+    name: str,
 ) -> Enum:
     """VARCHAR + CHECK (not a native enum), so adding a value is a plain migration."""
     return Enum(
@@ -84,6 +86,10 @@ class WealthLine(UUIDPrimaryKey, Timestamps, Base):
         CheckConstraint("debt_payment >= 0", name="debt_payment_positive"),
         CheckConstraint("debt_rate BETWEEN 0 AND 1", name="debt_rate_range"),
         CheckConstraint("debt_insurance >= 0", name="debt_insurance_positive"),
+        CheckConstraint("opening_year >= 1900", name="opening_year_range"),
+        CheckConstraint(
+            "tax_envelope IS NULL OR regulated_type IS NULL", name="envelope_or_regulated"
+        ),
     )
 
     household_id: Mapped[UUID] = mapped_column(ForeignKey("household.id"), index=True)
@@ -97,6 +103,13 @@ class WealthLine(UUIDPrimaryKey, Timestamps, Base):
         _string_enum(RegulatedType, "regulated_type")
     )
     """A regulated savings account's (F-WLT-2): a Savings-accounts line, never a joint one."""
+    tax_envelope: Mapped[TaxEnvelope | None] = mapped_column(
+        _string_enum(TaxEnvelope, "tax_envelope")
+    )
+    """An asset line's tax wrapper (F-WLT-2), never with a regulated type; the API refuses one
+    on a debt line."""
+    opening_year: Mapped[int | None] = mapped_column(SmallInteger)
+    """The year the envelope or account was opened, for its age in the audit document."""
     debt_payment: Mapped[Decimal | None] = mapped_column(Numeric(14, 2))
     """A debt line's monthly payment, borrower insurance excluded (F-SIM-1); NULL: not set, the
     projection keeps the debt as owed."""

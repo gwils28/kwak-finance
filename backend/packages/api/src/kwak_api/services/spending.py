@@ -51,6 +51,7 @@ def seed_categories(db: Session, household_id: UUID, language: Language = Langua
             household_id=household_id,
             name=default.name(language),
             kind=default.kind,
+            preset=default.preset,
             one_off=default.one_off,
             position=position,
         )
@@ -138,6 +139,7 @@ def restore_categories(db: Session, household_id: UUID, language: Language) -> i
         if default.name(language).casefold() not in have:
             category = create_category(db, household_id, default.name(language), default.kind)
             category.one_off = default.one_off
+            category.preset = default.preset
             added += 1
     db.flush()
     return added
