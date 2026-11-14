@@ -59,6 +59,9 @@ class SpendingCategory(UUIDPrimaryKey, Timestamps, Base):
         _string_enum(CategoryKind, "category_kind", check=False)
     )
     """The table's own CHECK: the legacy categories share the enum's name."""
+    preset: Mapped[str | None] = mapped_column(String(20))
+    """Which default category it is, whatever its name becomes ("refunds", F-AUD-2); None for
+    a category added later."""
     one_off: Mapped[bool] = mapped_column(server_default=text("false"))
     """F-CAT-6: paid once in the month, never judged against the month's pace."""
     position: Mapped[int] = mapped_column(Integer)

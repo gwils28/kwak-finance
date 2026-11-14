@@ -70,6 +70,8 @@ export const activityEn = {
       d.count !== undefined
         ? `Restored the default categories: ${d.count} added back`
         : `Restored the default categories: ${d.created} created, ${d.merged} merged, ${d.deleted} deleted`,
+    audit_document_issued: (d) =>
+      `${{ print: "Printed", copy: "Copied", download: "Downloaded" }[String(d.how)] ?? "Issued"} an audit document for ${{ banker: "a banker", advisor: "a wealth advisor", notary: "an accountant or notary", ai: "an AI chat" }[String(d.audience)] ?? d.audience} (${{ household: "household", mine: "mine", joint: "joint" }[String(d.scope)] ?? d.scope}, ${d.start} to ${d.end})`,
   }),
 };
 
@@ -139,5 +141,7 @@ export const activityFr: typeof activityEn = {
       d.count !== undefined
         ? `Catégories par défaut restaurées : ${d.count} rajoutée(s)`
         : `Catégories par défaut restaurées : ${d.created} créées, ${d.merged} fusionnées, ${d.deleted} supprimées`,
+    audit_document_issued: (d) =>
+      `Document d'audit ${{ print: "imprimé", copy: "copié", download: "téléchargé" }[String(d.how)] ?? "généré"} pour ${{ banker: "un banquier", advisor: "un conseiller en patrimoine", notary: "un comptable ou un notaire", ai: "une IA" }[String(d.audience)] ?? d.audience} (${{ household: "foyer", mine: "moi", joint: "commun" }[String(d.scope)] ?? d.scope}, de ${d.start} à ${d.end})`,
   },
 };

@@ -35,9 +35,74 @@ export type AssumptionsOut = {
 };
 
 /**
+ * Audience
+ */
+export type Audience = 'banker' | 'advisor' | 'notary' | 'ai';
+
+/**
  * AuditAction
  */
-export type AuditAction = 'signed_in' | 'sign_in_failed' | 'signed_out' | 'recovery_codes_renewed' | 'invite_created' | 'invite_revoked' | 'member_joined' | 'settings_changed' | 'wealth_line_deleted' | 'wealth_category_deleted' | 'goal_deleted' | 'goal_renewed' | 'spending_line_deleted' | 'spending_category_deleted' | 'fixed_expense_deleted' | 'categories_restored';
+export type AuditAction = 'signed_in' | 'sign_in_failed' | 'signed_out' | 'recovery_codes_renewed' | 'invite_created' | 'invite_revoked' | 'member_joined' | 'settings_changed' | 'wealth_line_deleted' | 'wealth_category_deleted' | 'goal_deleted' | 'goal_renewed' | 'spending_line_deleted' | 'spending_category_deleted' | 'fixed_expense_deleted' | 'categories_restored' | 'audit_document_issued';
+
+/**
+ * AuditAidOut
+ */
+export type AuditAidOut = {
+    /**
+     * Amount
+     */
+    amount: string;
+    /**
+     * Received
+     */
+    received: boolean;
+    source: AidSource;
+};
+
+/**
+ * AuditAssumptionOut
+ */
+export type AuditAssumptionOut = {
+    /**
+     * Category
+     */
+    category: string;
+    /**
+     * Expected Return
+     */
+    expected_return: string;
+    /**
+     * Volatility
+     */
+    volatility: string;
+};
+
+/**
+ * AuditDebtOut
+ */
+export type AuditDebtOut = {
+    /**
+     * Ends
+     */
+    ends: string | null;
+    /**
+     * Insurance
+     */
+    insurance: string;
+    label: AuditLabelOut;
+    /**
+     * Owed
+     */
+    owed: string;
+    /**
+     * Payment
+     */
+    payment: string | null;
+    /**
+     * Rate
+     */
+    rate: string;
+};
 
 /**
  * AuditEntryOut
@@ -74,9 +139,319 @@ export type AuditEntryOut = {
 };
 
 /**
+ * AuditFixedOut
+ */
+export type AuditFixedOut = {
+    /**
+     * Category
+     */
+    category: string;
+    frequency: FixedFrequency;
+    /**
+     * Monthly
+     */
+    monthly: string;
+};
+
+/**
+ * AuditGoalOut
+ */
+export type AuditGoalOut = {
+    /**
+     * Aids
+     */
+    aids: Array<AuditAidOut>;
+    /**
+     * Cost
+     */
+    cost: string | null;
+    /**
+     * Deadline
+     */
+    deadline: string | null;
+    label: AuditLabelOut;
+    pro_type: ProType | null;
+    status: GoalStatus;
+    /**
+     * Target
+     */
+    target: string;
+    tier: Tier;
+    /**
+     * Value
+     */
+    value: string;
+};
+
+/**
+ * AuditGoalsOut
+ */
+export type AuditGoalsOut = {
+    /**
+     * Goals
+     */
+    goals: Array<AuditGoalOut>;
+    /**
+     * Precaution
+     */
+    precaution: string;
+    /**
+     * Precaution Months
+     */
+    precaution_months: string | null;
+};
+
+/**
+ * AuditHolderOut
+ */
+export type AuditHolderOut = {
+    holder: AuditLabelOut | null;
+    /**
+     * Net
+     */
+    net: string;
+};
+
+/**
+ * AuditHouseholdOut
+ */
+export type AuditHouseholdOut = {
+    /**
+     * Members
+     */
+    members: Array<AuditMemberOut>;
+    /**
+     * Name
+     */
+    name: string | null;
+};
+
+/**
+ * AuditIn
+ */
+export type AuditIn = {
+    audience: Audience;
+    /**
+     * Counted
+     */
+    counted?: Array<string> | null;
+    /**
+     * End
+     */
+    end?: string | null;
+    language?: Language | null;
+    privacy?: AuditPrivacyIn | null;
+    project?: AuditProjectIn | null;
+    scope?: Scope;
+    /**
+     * Start
+     */
+    start?: string | null;
+    /**
+     * Withholding
+     */
+    withholding?: number | string | null;
+};
+
+/**
+ * AuditIssuedIn
+ *
+ * A document printed, copied or downloaded: logged without a figure.
+ */
+export type AuditIssuedIn = {
+    audience: Audience;
+    /**
+     * End
+     */
+    end: string;
+    /**
+     * How
+     */
+    how: 'print' | 'copy' | 'download';
+    scope: Scope;
+    /**
+     * Start
+     */
+    start: string;
+};
+
+/**
  * AuditKind
  */
 export type AuditKind = 'sign_in' | 'household' | 'deletion';
+
+/**
+ * AuditLabelOut
+ *
+ * A name, or the pseudonym to show instead: Member A, PEA 1, Savings accounts 2,
+ * Long-term goal 1.
+ */
+export type AuditLabelOut = {
+    /**
+     * Group
+     */
+    group?: 'member' | 'envelope' | 'category' | 'tier' | null;
+    /**
+     * Key
+     */
+    key?: string | null;
+    /**
+     * Name
+     */
+    name?: string | null;
+    /**
+     * Number
+     */
+    number?: number | null;
+};
+
+/**
+ * AuditMemberOut
+ */
+export type AuditMemberOut = {
+    /**
+     * Age
+     */
+    age: number | null;
+    label: AuditLabelOut;
+};
+
+/**
+ * AuditMoneyOut
+ *
+ * Always the household's, in every scope (F-AUD-2).
+ */
+export type AuditMoneyOut = {
+    /**
+     * Capacity
+     */
+    capacity: string;
+    /**
+     * Capacity End
+     */
+    capacity_end: string | null;
+    /**
+     * Capacity Set
+     */
+    capacity_set: boolean;
+    /**
+     * Capacity Start
+     */
+    capacity_start: string | null;
+    /**
+     * Fixed
+     */
+    fixed: Array<AuditFixedOut>;
+    /**
+     * Fixed Monthly
+     */
+    fixed_monthly: string;
+    income: AuditSpreadOut;
+    /**
+     * Income By Category
+     */
+    income_by_category: Array<AuditNamedAmountOut>;
+    /**
+     * Months
+     */
+    months: Array<AuditMonthOut>;
+    /**
+     * No Income
+     */
+    no_income: Array<string>;
+    rest: AuditSpreadOut;
+    saved: AuditSpreadOut;
+    /**
+     * Saved Share
+     */
+    saved_share: string | null;
+    /**
+     * Savings Rate
+     */
+    savings_rate: string | null;
+    /**
+     * Spending By Category
+     */
+    spending_by_category: Array<AuditNamedAmountOut>;
+    /**
+     * Spending Rest
+     */
+    spending_rest: string;
+    spent: AuditSpreadOut;
+    /**
+     * Years
+     */
+    years: Array<AuditYearOut>;
+};
+
+/**
+ * AuditMonthOut
+ */
+export type AuditMonthOut = {
+    /**
+     * Income
+     */
+    income: string;
+    /**
+     * Month
+     */
+    month: string;
+    /**
+     * Rest
+     */
+    rest: string;
+    /**
+     * Saved
+     */
+    saved: string;
+    /**
+     * Spent
+     */
+    spent: string;
+};
+
+/**
+ * AuditNamedAmountOut
+ */
+export type AuditNamedAmountOut = {
+    /**
+     * Amount
+     */
+    amount: string;
+    /**
+     * Name
+     */
+    name: string;
+};
+
+/**
+ * AuditOut
+ */
+export type AuditOut = {
+    /**
+     * Assumptions
+     */
+    assumptions: Array<AuditAssumptionOut>;
+    audience: Audience;
+    /**
+     * Generated At
+     */
+    generated_at: string;
+    goals: AuditGoalsOut;
+    household: AuditHouseholdOut;
+    language: Language;
+    money: AuditMoneyOut;
+    period: AuditPeriodOut;
+    privacy: AuditPrivacyIn;
+    project: AuditProjectOut | null;
+    ratio: AuditRatioOut;
+    /**
+     * Retirement
+     */
+    retirement: Array<AuditRetirementOut>;
+    scope: Scope;
+    wealth: AuditWealthOut;
+};
 
 /**
  * AuditPage
@@ -90,6 +465,468 @@ export type AuditPage = {
      * Total
      */
     total: number;
+};
+
+/**
+ * AuditPeriodOut
+ */
+export type AuditPeriodOut = {
+    /**
+     * End
+     */
+    end: string;
+    /**
+     * Months
+     */
+    months: number;
+    /**
+     * Shortened
+     */
+    shortened: boolean;
+    /**
+     * Start
+     */
+    start: string;
+};
+
+/**
+ * AuditPrivacyIn
+ */
+export type AuditPrivacyIn = {
+    /**
+     * Exact Amounts
+     */
+    exact_amounts: boolean;
+    /**
+     * Named Lines
+     */
+    named_lines: boolean;
+    /**
+     * Named Members
+     */
+    named_members: boolean;
+};
+
+/**
+ * AuditProjectIn
+ *
+ * F-AUD-5: never saved.
+ */
+export type AuditProjectIn = {
+    /**
+     * Agency Fees
+     */
+    agency_fees?: number | string;
+    /**
+     * Down Payment
+     */
+    down_payment?: number | string;
+    /**
+     * Guarantee Fees
+     */
+    guarantee_fees?: number | string;
+    /**
+     * Insurance
+     */
+    insurance?: number | string;
+    /**
+     * Loan
+     */
+    loan?: number | string | null;
+    /**
+     * Notary Fees
+     */
+    notary_fees?: number | string | null;
+    /**
+     * Price
+     */
+    price: number | string;
+    property_age?: PropertyAge;
+    /**
+     * Rate
+     */
+    rate: number | string;
+    /**
+     * Rent
+     */
+    rent?: number | string;
+    /**
+     * Rent Stops
+     */
+    rent_stops?: boolean;
+    /**
+     * Years
+     */
+    years: number;
+};
+
+/**
+ * AuditProjectOut
+ */
+export type AuditProjectOut = {
+    /**
+     * Above Ceiling
+     */
+    above_ceiling: boolean;
+    /**
+     * Agency Fees
+     */
+    agency_fees: string;
+    /**
+     * Average Saved
+     */
+    average_saved: string;
+    /**
+     * Before Tax Above
+     */
+    before_tax_above: boolean;
+    /**
+     * Before Tax Ratio After
+     */
+    before_tax_ratio_after: string | null;
+    /**
+     * Capacity
+     */
+    capacity: string;
+    /**
+     * Cost
+     */
+    cost: string;
+    /**
+     * Down Payment
+     */
+    down_payment: string;
+    /**
+     * Down Share
+     */
+    down_share: string;
+    duration: Duration;
+    /**
+     * Guarantee Fees
+     */
+    guarantee_fees: string;
+    /**
+     * Housing Change
+     */
+    housing_change: string;
+    /**
+     * Insurance
+     */
+    insurance: string;
+    /**
+     * Liquid Left
+     */
+    liquid_left: string;
+    /**
+     * Loan
+     */
+    loan: string;
+    /**
+     * Notary Estimated
+     */
+    notary_estimated: boolean;
+    /**
+     * Notary Fees
+     */
+    notary_fees: string;
+    /**
+     * Payment
+     */
+    payment: string;
+    /**
+     * Precaution
+     */
+    precaution: string;
+    /**
+     * Price
+     */
+    price: string;
+    /**
+     * Rate
+     */
+    rate: string;
+    /**
+     * Ratio After
+     */
+    ratio_after: string | null;
+    /**
+     * Remaining After Housing
+     */
+    remaining_after_housing: string;
+    /**
+     * Rent
+     */
+    rent: string;
+    /**
+     * Rent Stops
+     */
+    rent_stops: boolean;
+    /**
+     * Years
+     */
+    years: number;
+};
+
+/**
+ * AuditRatioOut
+ */
+export type AuditRatioOut = {
+    /**
+     * Above Ceiling
+     */
+    above_ceiling: boolean;
+    /**
+     * Before Tax Above
+     */
+    before_tax_above: boolean;
+    /**
+     * Before Tax Ratio
+     */
+    before_tax_ratio: string | null;
+    /**
+     * Counted
+     */
+    counted: Array<string>;
+    /**
+     * Debts
+     */
+    debts: Array<AuditDebtOut>;
+    /**
+     * Income
+     */
+    income: string;
+    /**
+     * Left Out
+     */
+    left_out: Array<string>;
+    /**
+     * Left Out Debts
+     */
+    left_out_debts: Array<AuditLabelOut>;
+    /**
+     * Payments
+     */
+    payments: string;
+    /**
+     * Ratio
+     */
+    ratio: string | null;
+    /**
+     * Remaining
+     */
+    remaining: string;
+    /**
+     * Withholding
+     */
+    withholding: string | null;
+};
+
+/**
+ * AuditRetirementOut
+ */
+export type AuditRetirementOut = {
+    member: AuditLabelOut;
+    /**
+     * Pension
+     */
+    pension: string;
+    /**
+     * Pension Month
+     */
+    pension_month: string;
+    /**
+     * Retirement
+     */
+    retirement: string;
+};
+
+/**
+ * AuditSpreadOut
+ */
+export type AuditSpreadOut = {
+    /**
+     * Average
+     */
+    average: string;
+    /**
+     * Highest
+     */
+    highest: string;
+    /**
+     * Highest Month
+     */
+    highest_month: string;
+    /**
+     * Lowest
+     */
+    lowest: string;
+    /**
+     * Lowest Month
+     */
+    lowest_month: string;
+    /**
+     * Total
+     */
+    total: string;
+};
+
+/**
+ * AuditWealthCategoryOut
+ */
+export type AuditWealthCategoryOut = {
+    /**
+     * Colour
+     */
+    colour: string;
+    kind: WealthKind;
+    /**
+     * Liquid
+     */
+    liquid: boolean;
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Share
+     */
+    share: string | null;
+    /**
+     * Value
+     */
+    value: string;
+};
+
+/**
+ * AuditWealthLineOut
+ */
+export type AuditWealthLineOut = {
+    /**
+     * Age
+     */
+    age: number | null;
+    /**
+     * Carried
+     */
+    carried: boolean;
+    /**
+     * Category
+     */
+    category: string;
+    /**
+     * Ceiling
+     */
+    ceiling: string | null;
+    envelope: TaxEnvelope | null;
+    holder: AuditLabelOut | null;
+    kind: WealthKind;
+    label: AuditLabelOut;
+    milestone: Milestone | null;
+    /**
+     * Opening Year
+     */
+    opening_year: number | null;
+    regulated: RegulatedType | null;
+    /**
+     * Value
+     */
+    value: string;
+};
+
+/**
+ * AuditWealthOut
+ */
+export type AuditWealthOut = {
+    /**
+     * Carried
+     */
+    carried: boolean;
+    /**
+     * Categories
+     */
+    categories: Array<AuditWealthCategoryOut>;
+    /**
+     * Change
+     */
+    change: string;
+    /**
+     * Debt Lines
+     */
+    debt_lines: Array<AuditDebtOut>;
+    /**
+     * Debts
+     */
+    debts: string;
+    /**
+     * Gross
+     */
+    gross: string;
+    /**
+     * Holders
+     */
+    holders: Array<AuditHolderOut>;
+    /**
+     * Illiquid
+     */
+    illiquid: string;
+    /**
+     * Lines
+     */
+    lines: Array<AuditWealthLineOut>;
+    /**
+     * Liquid
+     */
+    liquid: string;
+    /**
+     * Month
+     */
+    month: string;
+    /**
+     * Net
+     */
+    net: string;
+    /**
+     * Start Month
+     */
+    start_month: string;
+    /**
+     * Start Net
+     */
+    start_net: string;
+};
+
+/**
+ * AuditYearOut
+ */
+export type AuditYearOut = {
+    /**
+     * Income
+     */
+    income: string;
+    /**
+     * Months
+     */
+    months: number;
+    /**
+     * Partial
+     */
+    partial: boolean;
+    /**
+     * Rest
+     */
+    rest: string;
+    /**
+     * Saved
+     */
+    saved: string;
+    /**
+     * Spent
+     */
+    spent: string;
+    /**
+     * Year
+     */
+    year: number;
 };
 
 /**
@@ -336,6 +1173,11 @@ export type DebtTermsIn = {
      */
     rate?: number | string;
 };
+
+/**
+ * Duration
+ */
+export type Duration = 'within' | 'deferred_only' | 'above';
 
 /**
  * FixedFrequency
@@ -1830,6 +2672,11 @@ export type MemberOut = {
 };
 
 /**
+ * Milestone
+ */
+export type Milestone = 'reached' | 'this_year' | 'not_yet';
+
+/**
  * MonthLinesOut
  */
 export type MonthLinesOut = {
@@ -2157,6 +3004,11 @@ export type Problem = 'no_wealth' | 'no_member' | 'horizon' | 'no_allocation';
  * ProgressStatus
  */
 export type ProgressStatus = 'on_track' | 'watch' | 'over';
+
+/**
+ * PropertyAge
+ */
+export type PropertyAge = 'old' | 'new';
 
 /**
  * QuickIn
@@ -3739,6 +4591,13 @@ export type StatusRowOut = {
 };
 
 /**
+ * TaxEnvelope
+ *
+ * The tax wrapper an asset line is held in (F-WLT-2), which the audit document shows.
+ */
+export type TaxEnvelope = 'pea' | 'pea_pme' | 'life_insurance' | 'capitalisation' | 'per' | 'cto' | 'employee_savings';
+
+/**
  * Tier
  *
  * The pyramid's levels, from its foundation up.
@@ -3975,7 +4834,12 @@ export type WealthLineIn = {
      * Name
      */
     name: string;
+    /**
+     * Opening Year
+     */
+    opening_year?: number | null;
     regulated_type?: RegulatedType | null;
+    tax_envelope?: TaxEnvelope | null;
     visibility?: Visibility;
 };
 
@@ -4000,6 +4864,10 @@ export type WealthLineOut = {
      */
     name: string;
     /**
+     * Opening Year
+     */
+    opening_year: number | null;
+    /**
      * Owner Id
      */
     owner_id: string;
@@ -4008,6 +4876,7 @@ export type WealthLineOut = {
      */
     owner_name: string;
     regulated_type: RegulatedType | null;
+    tax_envelope: TaxEnvelope | null;
     visibility: Visibility;
 };
 
@@ -4029,7 +4898,12 @@ export type WealthLinePatch = {
      * Name
      */
     name?: string | null;
+    /**
+     * Opening Year
+     */
+    opening_year?: number | null;
     regulated_type?: RegulatedType | null;
+    tax_envelope?: TaxEnvelope | null;
     visibility?: Visibility | null;
 };
 
@@ -4301,6 +5175,83 @@ export type ActivityLogResponses = {
 };
 
 export type ActivityLogResponse = ActivityLogResponses[keyof ActivityLogResponses];
+
+export type AuditDocumentData = {
+    body: AuditIn;
+    path?: never;
+    query?: never;
+    url: '/api/audit-document';
+};
+
+export type AuditDocumentErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type AuditDocumentError = AuditDocumentErrors[keyof AuditDocumentErrors];
+
+export type AuditDocumentResponses = {
+    /**
+     * Successful Response
+     */
+    200: AuditOut;
+};
+
+export type AuditDocumentResponse = AuditDocumentResponses[keyof AuditDocumentResponses];
+
+export type AuditDocumentIssuedData = {
+    body: AuditIssuedIn;
+    path?: never;
+    query?: never;
+    url: '/api/audit-document/issued';
+};
+
+export type AuditDocumentIssuedErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type AuditDocumentIssuedError = AuditDocumentIssuedErrors[keyof AuditDocumentIssuedErrors];
+
+export type AuditDocumentIssuedResponses = {
+    /**
+     * Successful Response
+     */
+    204: void;
+};
+
+export type AuditDocumentIssuedResponse = AuditDocumentIssuedResponses[keyof AuditDocumentIssuedResponses];
+
+export type AuditPrivacyDefaultsData = {
+    body?: never;
+    path: {
+        audience: Audience;
+    };
+    query?: never;
+    url: '/api/audit-document/privacy/{audience}';
+};
+
+export type AuditPrivacyDefaultsErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type AuditPrivacyDefaultsError = AuditPrivacyDefaultsErrors[keyof AuditPrivacyDefaultsErrors];
+
+export type AuditPrivacyDefaultsResponses = {
+    /**
+     * Successful Response
+     */
+    200: AuditPrivacyIn;
+};
+
+export type AuditPrivacyDefaultsResponse = AuditPrivacyDefaultsResponses[keyof AuditPrivacyDefaultsResponses];
 
 export type LoginData = {
     body: LoginRequest;

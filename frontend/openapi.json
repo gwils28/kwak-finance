@@ -60,6 +60,16 @@
         "title": "AssumptionsOut",
         "type": "object"
       },
+      "Audience": {
+        "enum": [
+          "banker",
+          "advisor",
+          "notary",
+          "ai"
+        ],
+        "title": "Audience",
+        "type": "string"
+      },
       "AuditAction": {
         "enum": [
           "signed_in",
@@ -77,10 +87,114 @@
           "spending_line_deleted",
           "spending_category_deleted",
           "fixed_expense_deleted",
-          "categories_restored"
+          "categories_restored",
+          "audit_document_issued"
         ],
         "title": "AuditAction",
         "type": "string"
+      },
+      "AuditAidOut": {
+        "properties": {
+          "amount": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Amount",
+            "type": "string"
+          },
+          "received": {
+            "title": "Received",
+            "type": "boolean"
+          },
+          "source": {
+            "$ref": "#/components/schemas/AidSource"
+          }
+        },
+        "required": [
+          "source",
+          "amount",
+          "received"
+        ],
+        "title": "AuditAidOut",
+        "type": "object"
+      },
+      "AuditAssumptionOut": {
+        "properties": {
+          "category": {
+            "title": "Category",
+            "type": "string"
+          },
+          "expected_return": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Expected Return",
+            "type": "string"
+          },
+          "volatility": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Volatility",
+            "type": "string"
+          }
+        },
+        "required": [
+          "category",
+          "expected_return",
+          "volatility"
+        ],
+        "title": "AuditAssumptionOut",
+        "type": "object"
+      },
+      "AuditDebtOut": {
+        "properties": {
+          "ends": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ends"
+          },
+          "insurance": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Insurance",
+            "type": "string"
+          },
+          "label": {
+            "$ref": "#/components/schemas/AuditLabelOut"
+          },
+          "owed": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Owed",
+            "type": "string"
+          },
+          "payment": {
+            "anyOf": [
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Payment"
+          },
+          "rate": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Rate",
+            "type": "string"
+          }
+        },
+        "required": [
+          "label",
+          "owed",
+          "payment",
+          "insurance",
+          "rate",
+          "ends"
+        ],
+        "title": "AuditDebtOut",
+        "type": "object"
       },
       "AuditEntryOut": {
         "properties": {
@@ -162,6 +276,334 @@
         "title": "AuditEntryOut",
         "type": "object"
       },
+      "AuditFixedOut": {
+        "properties": {
+          "category": {
+            "title": "Category",
+            "type": "string"
+          },
+          "frequency": {
+            "$ref": "#/components/schemas/FixedFrequency"
+          },
+          "monthly": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Monthly",
+            "type": "string"
+          }
+        },
+        "required": [
+          "category",
+          "frequency",
+          "monthly"
+        ],
+        "title": "AuditFixedOut",
+        "type": "object"
+      },
+      "AuditGoalOut": {
+        "properties": {
+          "aids": {
+            "items": {
+              "$ref": "#/components/schemas/AuditAidOut"
+            },
+            "title": "Aids",
+            "type": "array"
+          },
+          "cost": {
+            "anyOf": [
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cost"
+          },
+          "deadline": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Deadline"
+          },
+          "label": {
+            "$ref": "#/components/schemas/AuditLabelOut"
+          },
+          "pro_type": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProType"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/GoalStatus"
+          },
+          "target": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Target",
+            "type": "string"
+          },
+          "tier": {
+            "$ref": "#/components/schemas/Tier"
+          },
+          "value": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Value",
+            "type": "string"
+          }
+        },
+        "required": [
+          "label",
+          "tier",
+          "target",
+          "deadline",
+          "value",
+          "status",
+          "pro_type",
+          "cost",
+          "aids"
+        ],
+        "title": "AuditGoalOut",
+        "type": "object"
+      },
+      "AuditGoalsOut": {
+        "properties": {
+          "goals": {
+            "items": {
+              "$ref": "#/components/schemas/AuditGoalOut"
+            },
+            "title": "Goals",
+            "type": "array"
+          },
+          "precaution": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Precaution",
+            "type": "string"
+          },
+          "precaution_months": {
+            "anyOf": [
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Precaution Months"
+          }
+        },
+        "required": [
+          "goals",
+          "precaution",
+          "precaution_months"
+        ],
+        "title": "AuditGoalsOut",
+        "type": "object"
+      },
+      "AuditHolderOut": {
+        "properties": {
+          "holder": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AuditLabelOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "net": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Net",
+            "type": "string"
+          }
+        },
+        "required": [
+          "holder",
+          "net"
+        ],
+        "title": "AuditHolderOut",
+        "type": "object"
+      },
+      "AuditHouseholdOut": {
+        "properties": {
+          "members": {
+            "items": {
+              "$ref": "#/components/schemas/AuditMemberOut"
+            },
+            "title": "Members",
+            "type": "array"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          }
+        },
+        "required": [
+          "name",
+          "members"
+        ],
+        "title": "AuditHouseholdOut",
+        "type": "object"
+      },
+      "AuditIn": {
+        "properties": {
+          "audience": {
+            "$ref": "#/components/schemas/Audience"
+          },
+          "counted": {
+            "anyOf": [
+              {
+                "items": {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Counted"
+          },
+          "end": {
+            "anyOf": [
+              {
+                "pattern": "^(19|20)[0-9]{2}-(0[1-9]|1[0-2])$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End"
+          },
+          "language": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Language"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "privacy": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AuditPrivacyIn"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "project": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AuditProjectIn"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "scope": {
+            "$ref": "#/components/schemas/Scope",
+            "default": "household"
+          },
+          "start": {
+            "anyOf": [
+              {
+                "pattern": "^(19|20)[0-9]{2}-(0[1-9]|1[0-2])$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Start"
+          },
+          "withholding": {
+            "anyOf": [
+              {
+                "maximum": 0.45,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Withholding"
+          }
+        },
+        "required": [
+          "audience"
+        ],
+        "title": "AuditIn",
+        "type": "object"
+      },
+      "AuditIssuedIn": {
+        "description": "A document printed, copied or downloaded: logged without a figure.",
+        "properties": {
+          "audience": {
+            "$ref": "#/components/schemas/Audience"
+          },
+          "end": {
+            "pattern": "^(19|20)[0-9]{2}-(0[1-9]|1[0-2])$",
+            "title": "End",
+            "type": "string"
+          },
+          "how": {
+            "enum": [
+              "print",
+              "copy",
+              "download"
+            ],
+            "title": "How",
+            "type": "string"
+          },
+          "scope": {
+            "$ref": "#/components/schemas/Scope"
+          },
+          "start": {
+            "pattern": "^(19|20)[0-9]{2}-(0[1-9]|1[0-2])$",
+            "title": "Start",
+            "type": "string"
+          }
+        },
+        "required": [
+          "audience",
+          "scope",
+          "start",
+          "end",
+          "how"
+        ],
+        "title": "AuditIssuedIn",
+        "type": "object"
+      },
       "AuditKind": {
         "enum": [
           "sign_in",
@@ -170,6 +612,370 @@
         ],
         "title": "AuditKind",
         "type": "string"
+      },
+      "AuditLabelOut": {
+        "description": "A name, or the pseudonym to show instead: Member A, PEA 1, Savings accounts 2,\nLong-term goal 1.",
+        "properties": {
+          "group": {
+            "anyOf": [
+              {
+                "enum": [
+                  "member",
+                  "envelope",
+                  "category",
+                  "tier"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Group"
+          },
+          "key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Key"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "number": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Number"
+          }
+        },
+        "title": "AuditLabelOut",
+        "type": "object"
+      },
+      "AuditMemberOut": {
+        "properties": {
+          "age": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Age"
+          },
+          "label": {
+            "$ref": "#/components/schemas/AuditLabelOut"
+          }
+        },
+        "required": [
+          "label",
+          "age"
+        ],
+        "title": "AuditMemberOut",
+        "type": "object"
+      },
+      "AuditMoneyOut": {
+        "description": "Always the household's, in every scope (F-AUD-2).",
+        "properties": {
+          "capacity": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Capacity",
+            "type": "string"
+          },
+          "capacity_end": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Capacity End"
+          },
+          "capacity_set": {
+            "title": "Capacity Set",
+            "type": "boolean"
+          },
+          "capacity_start": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Capacity Start"
+          },
+          "fixed": {
+            "items": {
+              "$ref": "#/components/schemas/AuditFixedOut"
+            },
+            "title": "Fixed",
+            "type": "array"
+          },
+          "fixed_monthly": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Fixed Monthly",
+            "type": "string"
+          },
+          "income": {
+            "$ref": "#/components/schemas/AuditSpreadOut"
+          },
+          "income_by_category": {
+            "items": {
+              "$ref": "#/components/schemas/AuditNamedAmountOut"
+            },
+            "title": "Income By Category",
+            "type": "array"
+          },
+          "months": {
+            "items": {
+              "$ref": "#/components/schemas/AuditMonthOut"
+            },
+            "title": "Months",
+            "type": "array"
+          },
+          "no_income": {
+            "items": {
+              "type": "string"
+            },
+            "title": "No Income",
+            "type": "array"
+          },
+          "rest": {
+            "$ref": "#/components/schemas/AuditSpreadOut"
+          },
+          "saved": {
+            "$ref": "#/components/schemas/AuditSpreadOut"
+          },
+          "saved_share": {
+            "anyOf": [
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Saved Share"
+          },
+          "savings_rate": {
+            "anyOf": [
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Savings Rate"
+          },
+          "spending_by_category": {
+            "items": {
+              "$ref": "#/components/schemas/AuditNamedAmountOut"
+            },
+            "title": "Spending By Category",
+            "type": "array"
+          },
+          "spending_rest": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Spending Rest",
+            "type": "string"
+          },
+          "spent": {
+            "$ref": "#/components/schemas/AuditSpreadOut"
+          },
+          "years": {
+            "items": {
+              "$ref": "#/components/schemas/AuditYearOut"
+            },
+            "title": "Years",
+            "type": "array"
+          }
+        },
+        "required": [
+          "months",
+          "income",
+          "spent",
+          "saved",
+          "rest",
+          "no_income",
+          "income_by_category",
+          "spending_by_category",
+          "spending_rest",
+          "fixed",
+          "fixed_monthly",
+          "savings_rate",
+          "saved_share",
+          "capacity",
+          "capacity_start",
+          "capacity_end",
+          "capacity_set",
+          "years"
+        ],
+        "title": "AuditMoneyOut",
+        "type": "object"
+      },
+      "AuditMonthOut": {
+        "properties": {
+          "income": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Income",
+            "type": "string"
+          },
+          "month": {
+            "title": "Month",
+            "type": "string"
+          },
+          "rest": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Rest",
+            "type": "string"
+          },
+          "saved": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Saved",
+            "type": "string"
+          },
+          "spent": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Spent",
+            "type": "string"
+          }
+        },
+        "required": [
+          "month",
+          "income",
+          "spent",
+          "saved",
+          "rest"
+        ],
+        "title": "AuditMonthOut",
+        "type": "object"
+      },
+      "AuditNamedAmountOut": {
+        "properties": {
+          "amount": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Amount",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "amount"
+        ],
+        "title": "AuditNamedAmountOut",
+        "type": "object"
+      },
+      "AuditOut": {
+        "properties": {
+          "assumptions": {
+            "items": {
+              "$ref": "#/components/schemas/AuditAssumptionOut"
+            },
+            "title": "Assumptions",
+            "type": "array"
+          },
+          "audience": {
+            "$ref": "#/components/schemas/Audience"
+          },
+          "generated_at": {
+            "format": "date-time",
+            "title": "Generated At",
+            "type": "string"
+          },
+          "goals": {
+            "$ref": "#/components/schemas/AuditGoalsOut"
+          },
+          "household": {
+            "$ref": "#/components/schemas/AuditHouseholdOut"
+          },
+          "language": {
+            "$ref": "#/components/schemas/Language"
+          },
+          "money": {
+            "$ref": "#/components/schemas/AuditMoneyOut"
+          },
+          "period": {
+            "$ref": "#/components/schemas/AuditPeriodOut"
+          },
+          "privacy": {
+            "$ref": "#/components/schemas/AuditPrivacyIn"
+          },
+          "project": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AuditProjectOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "ratio": {
+            "$ref": "#/components/schemas/AuditRatioOut"
+          },
+          "retirement": {
+            "items": {
+              "$ref": "#/components/schemas/AuditRetirementOut"
+            },
+            "title": "Retirement",
+            "type": "array"
+          },
+          "scope": {
+            "$ref": "#/components/schemas/Scope"
+          },
+          "wealth": {
+            "$ref": "#/components/schemas/AuditWealthOut"
+          }
+        },
+        "required": [
+          "audience",
+          "scope",
+          "language",
+          "privacy",
+          "generated_at",
+          "period",
+          "household",
+          "money",
+          "wealth",
+          "ratio",
+          "goals",
+          "retirement",
+          "assumptions",
+          "project"
+        ],
+        "title": "AuditOut",
+        "type": "object"
       },
       "AuditPage": {
         "properties": {
@@ -190,6 +996,872 @@
           "total"
         ],
         "title": "AuditPage",
+        "type": "object"
+      },
+      "AuditPeriodOut": {
+        "properties": {
+          "end": {
+            "title": "End",
+            "type": "string"
+          },
+          "months": {
+            "title": "Months",
+            "type": "integer"
+          },
+          "shortened": {
+            "title": "Shortened",
+            "type": "boolean"
+          },
+          "start": {
+            "title": "Start",
+            "type": "string"
+          }
+        },
+        "required": [
+          "start",
+          "end",
+          "months",
+          "shortened"
+        ],
+        "title": "AuditPeriodOut",
+        "type": "object"
+      },
+      "AuditPrivacyIn": {
+        "properties": {
+          "exact_amounts": {
+            "title": "Exact Amounts",
+            "type": "boolean"
+          },
+          "named_lines": {
+            "title": "Named Lines",
+            "type": "boolean"
+          },
+          "named_members": {
+            "title": "Named Members",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "named_members",
+          "named_lines",
+          "exact_amounts"
+        ],
+        "title": "AuditPrivacyIn",
+        "type": "object"
+      },
+      "AuditProjectIn": {
+        "description": "F-AUD-5: never saved.",
+        "properties": {
+          "agency_fees": {
+            "anyOf": [
+              {
+                "exclusiveMaximum": 1000000000000.0,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              }
+            ],
+            "default": "0",
+            "title": "Agency Fees"
+          },
+          "down_payment": {
+            "anyOf": [
+              {
+                "exclusiveMaximum": 1000000000000.0,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              }
+            ],
+            "default": "0",
+            "title": "Down Payment"
+          },
+          "guarantee_fees": {
+            "anyOf": [
+              {
+                "exclusiveMaximum": 1000000000000.0,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              }
+            ],
+            "default": "0",
+            "title": "Guarantee Fees"
+          },
+          "insurance": {
+            "anyOf": [
+              {
+                "exclusiveMaximum": 1000000000000.0,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              }
+            ],
+            "default": "0",
+            "title": "Insurance"
+          },
+          "loan": {
+            "anyOf": [
+              {
+                "exclusiveMaximum": 1000000000000.0,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Loan"
+          },
+          "notary_fees": {
+            "anyOf": [
+              {
+                "exclusiveMaximum": 1000000000000.0,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notary Fees"
+          },
+          "price": {
+            "anyOf": [
+              {
+                "exclusiveMaximum": 1000000000000.0,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              }
+            ],
+            "title": "Price"
+          },
+          "property_age": {
+            "$ref": "#/components/schemas/PropertyAge",
+            "default": "old"
+          },
+          "rate": {
+            "anyOf": [
+              {
+                "maximum": 0.2,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              }
+            ],
+            "title": "Rate"
+          },
+          "rent": {
+            "anyOf": [
+              {
+                "exclusiveMaximum": 1000000000000.0,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              }
+            ],
+            "default": "0",
+            "title": "Rent"
+          },
+          "rent_stops": {
+            "default": true,
+            "title": "Rent Stops",
+            "type": "boolean"
+          },
+          "years": {
+            "maximum": 30.0,
+            "minimum": 1.0,
+            "title": "Years",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "price",
+          "years",
+          "rate"
+        ],
+        "title": "AuditProjectIn",
+        "type": "object"
+      },
+      "AuditProjectOut": {
+        "properties": {
+          "above_ceiling": {
+            "title": "Above Ceiling",
+            "type": "boolean"
+          },
+          "agency_fees": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Agency Fees",
+            "type": "string"
+          },
+          "average_saved": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Average Saved",
+            "type": "string"
+          },
+          "before_tax_above": {
+            "title": "Before Tax Above",
+            "type": "boolean"
+          },
+          "before_tax_ratio_after": {
+            "anyOf": [
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Before Tax Ratio After"
+          },
+          "capacity": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Capacity",
+            "type": "string"
+          },
+          "cost": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Cost",
+            "type": "string"
+          },
+          "down_payment": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Down Payment",
+            "type": "string"
+          },
+          "down_share": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Down Share",
+            "type": "string"
+          },
+          "duration": {
+            "$ref": "#/components/schemas/Duration"
+          },
+          "guarantee_fees": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Guarantee Fees",
+            "type": "string"
+          },
+          "housing_change": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Housing Change",
+            "type": "string"
+          },
+          "insurance": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Insurance",
+            "type": "string"
+          },
+          "liquid_left": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Liquid Left",
+            "type": "string"
+          },
+          "loan": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Loan",
+            "type": "string"
+          },
+          "notary_estimated": {
+            "title": "Notary Estimated",
+            "type": "boolean"
+          },
+          "notary_fees": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Notary Fees",
+            "type": "string"
+          },
+          "payment": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Payment",
+            "type": "string"
+          },
+          "precaution": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Precaution",
+            "type": "string"
+          },
+          "price": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Price",
+            "type": "string"
+          },
+          "rate": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Rate",
+            "type": "string"
+          },
+          "ratio_after": {
+            "anyOf": [
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ratio After"
+          },
+          "remaining_after_housing": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Remaining After Housing",
+            "type": "string"
+          },
+          "rent": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Rent",
+            "type": "string"
+          },
+          "rent_stops": {
+            "title": "Rent Stops",
+            "type": "boolean"
+          },
+          "years": {
+            "title": "Years",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "price",
+          "notary_fees",
+          "notary_estimated",
+          "agency_fees",
+          "guarantee_fees",
+          "down_payment",
+          "cost",
+          "loan",
+          "years",
+          "duration",
+          "rate",
+          "payment",
+          "insurance",
+          "ratio_after",
+          "above_ceiling",
+          "before_tax_ratio_after",
+          "before_tax_above",
+          "remaining_after_housing",
+          "rent",
+          "rent_stops",
+          "housing_change",
+          "average_saved",
+          "capacity",
+          "down_share",
+          "liquid_left",
+          "precaution"
+        ],
+        "title": "AuditProjectOut",
+        "type": "object"
+      },
+      "AuditRatioOut": {
+        "properties": {
+          "above_ceiling": {
+            "title": "Above Ceiling",
+            "type": "boolean"
+          },
+          "before_tax_above": {
+            "title": "Before Tax Above",
+            "type": "boolean"
+          },
+          "before_tax_ratio": {
+            "anyOf": [
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Before Tax Ratio"
+          },
+          "counted": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Counted",
+            "type": "array"
+          },
+          "debts": {
+            "items": {
+              "$ref": "#/components/schemas/AuditDebtOut"
+            },
+            "title": "Debts",
+            "type": "array"
+          },
+          "income": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Income",
+            "type": "string"
+          },
+          "left_out": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Left Out",
+            "type": "array"
+          },
+          "left_out_debts": {
+            "items": {
+              "$ref": "#/components/schemas/AuditLabelOut"
+            },
+            "title": "Left Out Debts",
+            "type": "array"
+          },
+          "payments": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Payments",
+            "type": "string"
+          },
+          "ratio": {
+            "anyOf": [
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ratio"
+          },
+          "remaining": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Remaining",
+            "type": "string"
+          },
+          "withholding": {
+            "anyOf": [
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Withholding"
+          }
+        },
+        "required": [
+          "income",
+          "counted",
+          "left_out",
+          "payments",
+          "ratio",
+          "above_ceiling",
+          "withholding",
+          "before_tax_ratio",
+          "before_tax_above",
+          "remaining",
+          "debts",
+          "left_out_debts"
+        ],
+        "title": "AuditRatioOut",
+        "type": "object"
+      },
+      "AuditRetirementOut": {
+        "properties": {
+          "member": {
+            "$ref": "#/components/schemas/AuditLabelOut"
+          },
+          "pension": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Pension",
+            "type": "string"
+          },
+          "pension_month": {
+            "title": "Pension Month",
+            "type": "string"
+          },
+          "retirement": {
+            "title": "Retirement",
+            "type": "string"
+          }
+        },
+        "required": [
+          "member",
+          "retirement",
+          "pension_month",
+          "pension"
+        ],
+        "title": "AuditRetirementOut",
+        "type": "object"
+      },
+      "AuditSpreadOut": {
+        "properties": {
+          "average": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Average",
+            "type": "string"
+          },
+          "highest": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Highest",
+            "type": "string"
+          },
+          "highest_month": {
+            "title": "Highest Month",
+            "type": "string"
+          },
+          "lowest": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Lowest",
+            "type": "string"
+          },
+          "lowest_month": {
+            "title": "Lowest Month",
+            "type": "string"
+          },
+          "total": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Total",
+            "type": "string"
+          }
+        },
+        "required": [
+          "total",
+          "average",
+          "lowest_month",
+          "lowest",
+          "highest_month",
+          "highest"
+        ],
+        "title": "AuditSpreadOut",
+        "type": "object"
+      },
+      "AuditWealthCategoryOut": {
+        "properties": {
+          "colour": {
+            "title": "Colour",
+            "type": "string"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/WealthKind"
+          },
+          "liquid": {
+            "title": "Liquid",
+            "type": "boolean"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "share": {
+            "anyOf": [
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Share"
+          },
+          "value": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Value",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "kind",
+          "colour",
+          "value",
+          "share",
+          "liquid"
+        ],
+        "title": "AuditWealthCategoryOut",
+        "type": "object"
+      },
+      "AuditWealthLineOut": {
+        "properties": {
+          "age": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Age"
+          },
+          "carried": {
+            "title": "Carried",
+            "type": "boolean"
+          },
+          "category": {
+            "title": "Category",
+            "type": "string"
+          },
+          "ceiling": {
+            "anyOf": [
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ceiling"
+          },
+          "envelope": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TaxEnvelope"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "holder": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AuditLabelOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "kind": {
+            "$ref": "#/components/schemas/WealthKind"
+          },
+          "label": {
+            "$ref": "#/components/schemas/AuditLabelOut"
+          },
+          "milestone": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Milestone"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "opening_year": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Opening Year"
+          },
+          "regulated": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RegulatedType"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "value": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Value",
+            "type": "string"
+          }
+        },
+        "required": [
+          "label",
+          "category",
+          "kind",
+          "holder",
+          "value",
+          "carried",
+          "envelope",
+          "opening_year",
+          "age",
+          "milestone",
+          "regulated",
+          "ceiling"
+        ],
+        "title": "AuditWealthLineOut",
+        "type": "object"
+      },
+      "AuditWealthOut": {
+        "properties": {
+          "carried": {
+            "title": "Carried",
+            "type": "boolean"
+          },
+          "categories": {
+            "items": {
+              "$ref": "#/components/schemas/AuditWealthCategoryOut"
+            },
+            "title": "Categories",
+            "type": "array"
+          },
+          "change": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Change",
+            "type": "string"
+          },
+          "debt_lines": {
+            "items": {
+              "$ref": "#/components/schemas/AuditDebtOut"
+            },
+            "title": "Debt Lines",
+            "type": "array"
+          },
+          "debts": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Debts",
+            "type": "string"
+          },
+          "gross": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Gross",
+            "type": "string"
+          },
+          "holders": {
+            "items": {
+              "$ref": "#/components/schemas/AuditHolderOut"
+            },
+            "title": "Holders",
+            "type": "array"
+          },
+          "illiquid": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Illiquid",
+            "type": "string"
+          },
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/AuditWealthLineOut"
+            },
+            "title": "Lines",
+            "type": "array"
+          },
+          "liquid": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Liquid",
+            "type": "string"
+          },
+          "month": {
+            "title": "Month",
+            "type": "string"
+          },
+          "net": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Net",
+            "type": "string"
+          },
+          "start_month": {
+            "title": "Start Month",
+            "type": "string"
+          },
+          "start_net": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Start Net",
+            "type": "string"
+          }
+        },
+        "required": [
+          "month",
+          "categories",
+          "lines",
+          "gross",
+          "debts",
+          "net",
+          "liquid",
+          "illiquid",
+          "start_month",
+          "start_net",
+          "change",
+          "holders",
+          "debt_lines",
+          "carried"
+        ],
+        "title": "AuditWealthOut",
+        "type": "object"
+      },
+      "AuditYearOut": {
+        "properties": {
+          "income": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Income",
+            "type": "string"
+          },
+          "months": {
+            "title": "Months",
+            "type": "integer"
+          },
+          "partial": {
+            "title": "Partial",
+            "type": "boolean"
+          },
+          "rest": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Rest",
+            "type": "string"
+          },
+          "saved": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Saved",
+            "type": "string"
+          },
+          "spent": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Spent",
+            "type": "string"
+          },
+          "year": {
+            "title": "Year",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "year",
+          "months",
+          "partial",
+          "income",
+          "spent",
+          "saved",
+          "rest"
+        ],
+        "title": "AuditYearOut",
         "type": "object"
       },
       "BacktestOut": {
@@ -666,6 +2338,15 @@
         ],
         "title": "DebtTermsIn",
         "type": "object"
+      },
+      "Duration": {
+        "enum": [
+          "within",
+          "deferred_only",
+          "above"
+        ],
+        "title": "Duration",
+        "type": "string"
       },
       "FixedFrequency": {
         "enum": [
@@ -3551,6 +5232,15 @@
         "title": "MemberOut",
         "type": "object"
       },
+      "Milestone": {
+        "enum": [
+          "reached",
+          "this_year",
+          "not_yet"
+        ],
+        "title": "Milestone",
+        "type": "string"
+      },
       "MonthLinesOut": {
         "properties": {
           "last_entry": {
@@ -4182,6 +5872,14 @@
           "over"
         ],
         "title": "ProgressStatus",
+        "type": "string"
+      },
+      "PropertyAge": {
+        "enum": [
+          "old",
+          "new"
+        ],
+        "title": "PropertyAge",
         "type": "string"
       },
       "QuickIn": {
@@ -7154,6 +8852,20 @@
         "title": "StatusRowOut",
         "type": "object"
       },
+      "TaxEnvelope": {
+        "description": "The tax wrapper an asset line is held in (F-WLT-2), which the audit document shows.",
+        "enum": [
+          "pea",
+          "pea_pme",
+          "life_insurance",
+          "capitalisation",
+          "per",
+          "cto",
+          "employee_savings"
+        ],
+        "title": "TaxEnvelope",
+        "type": "string"
+      },
       "Tier": {
         "description": "The pyramid's levels, from its foundation up.",
         "enum": [
@@ -7551,10 +9263,31 @@
             "title": "Name",
             "type": "string"
           },
+          "opening_year": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Opening Year"
+          },
           "regulated_type": {
             "anyOf": [
               {
                 "$ref": "#/components/schemas/RegulatedType"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "tax_envelope": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TaxEnvelope"
               },
               {
                 "type": "null"
@@ -7600,6 +9333,17 @@
             "title": "Name",
             "type": "string"
           },
+          "opening_year": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Opening Year"
+          },
           "owner_id": {
             "format": "uuid",
             "title": "Owner Id",
@@ -7619,6 +9363,16 @@
               }
             ]
           },
+          "tax_envelope": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TaxEnvelope"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "visibility": {
             "$ref": "#/components/schemas/Visibility"
           }
@@ -7631,7 +9385,9 @@
           "owner_name",
           "visibility",
           "closed_from",
-          "regulated_type"
+          "regulated_type",
+          "tax_envelope",
+          "opening_year"
         ],
         "title": "WealthLineOut",
         "type": "object"
@@ -7676,10 +9432,31 @@
             ],
             "title": "Name"
           },
+          "opening_year": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Opening Year"
+          },
           "regulated_type": {
             "anyOf": [
               {
                 "$ref": "#/components/schemas/RegulatedType"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "tax_envelope": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TaxEnvelope"
               },
               {
                 "type": "null"
@@ -8295,6 +10072,176 @@
         "summary": "Activity Log",
         "tags": [
           "audit"
+        ]
+      }
+    },
+    "/api/audit-document": {
+      "post": {
+        "description": "Rebuilt as the form changes: writes nothing, not even to the activity log.",
+        "operationId": "auditDocument",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "kwak_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Kwak Session"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AuditIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuditOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Audit Document",
+        "tags": [
+          "audit-document"
+        ]
+      }
+    },
+    "/api/audit-document/issued": {
+      "post": {
+        "operationId": "auditDocumentIssued",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "kwak_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Kwak Session"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AuditIssuedIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Audit Document Issued",
+        "tags": [
+          "audit-document"
+        ]
+      }
+    },
+    "/api/audit-document/privacy/{audience}": {
+      "get": {
+        "description": "The audience's privacy defaults, which the form starts from (F-AUD-4).",
+        "operationId": "auditPrivacyDefaults",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "audience",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Audience"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "kwak_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Kwak Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuditPrivacyIn"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Audit Privacy Defaults",
+        "tags": [
+          "audit-document"
         ]
       }
     },

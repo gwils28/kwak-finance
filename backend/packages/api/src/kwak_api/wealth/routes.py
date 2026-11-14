@@ -1,5 +1,5 @@
 import re
-from datetime import date
+from datetime import date, datetime
 from decimal import ROUND_HALF_UP, Decimal
 from typing import Annotated
 from uuid import UUID
@@ -15,8 +15,11 @@ from kwak_core.wealth import (
     Cell,
     RegulatedType,
     RegulatedTypeError,
+    TaxEnvelope,
     WealthKind,
     WealthValueError,
+    check_envelope,
+    check_opening_year,
     check_regulated,
     check_value,
 )
@@ -184,6 +187,8 @@ class WealthLineOut(BaseModel):
     visibility: Visibility
     closed_from: str | None
     regulated_type: RegulatedType | None
+    tax_envelope: TaxEnvelope | None
+    opening_year: int | None
 
     @classmethod
     def of(cls, line: WealthLine) -> "WealthLineOut":
@@ -196,6 +201,8 @@ class WealthLineOut(BaseModel):
             visibility=line.visibility,
             closed_from=str(Month.of(line.closed_from)) if line.closed_from else None,
             regulated_type=line.regulated_type,
+            tax_envelope=line.tax_envelope,
+            opening_year=line.opening_year,
         )
 
 
@@ -205,6 +212,10 @@ class WealthLineIn(BaseModel):
     visibility: Visibility = Visibility.SHARED
     regulated_type: RegulatedType | None = None
     """A Savings-accounts line's, not a joint one's (F-WLT-2)."""
+    tax_envelope: TaxEnvelope | None = None
+    """An asset line's, without a regulated type (F-WLT-2)."""
+    opening_year: int | None = None
+    """An asset line's, from 1900 to this year."""
 
 
 class WealthLinePatch(BaseModel):
@@ -216,6 +227,10 @@ class WealthLinePatch(BaseModel):
     closed_from: MonthText | None = None
     """YYYY-MM, the first month it no longer holds anything; null to reopen it."""
     regulated_type: RegulatedType | None = None
+    """Null clears it."""
+    tax_envelope: TaxEnvelope | None = None
+    """Null clears it."""
+    opening_year: int | None = None
     """Null clears it."""
 
 
@@ -242,6 +257,20 @@ def _regulated(
         raise _unprocessable(str(exc)) from None
 
 
+def _envelope(
+    envelope: TaxEnvelope | None,
+    opening_year: int | None,
+    category: WealthCategory,
+    regulated: RegulatedType | None,
+    now: datetime,
+) -> None:
+    try:
+        check_envelope(envelope, kind=category.kind, regulated=regulated)
+        check_opening_year(opening_year, kind=category.kind, current_year=now.year)
+    except WealthValueError as exc:
+        raise _unprocessable(str(exc)) from None
+
+
 @router.get("/lines")
 def list_wealth_lines(user_session: CurrentSession, db: Db) -> list[WealthLineOut]:
     """The lines the user can see, closed ones included."""
@@ -249,11 +278,14 @@ def list_wealth_lines(user_session: CurrentSession, db: Db) -> list[WealthLineOu
 
 
 @router.post("/lines", status_code=status.HTTP_201_CREATED)
-def create_wealth_line(body: WealthLineIn, user_session: CurrentSession, db: Db) -> WealthLineOut:
+def create_wealth_line(
+    body: WealthLineIn, user_session: CurrentSession, db: Db, now: Now
+) -> WealthLineOut:
     """The user owns the lines they create."""
     user = user_session.user
     category = _category_of(db, user_session, body.category_id)
     _regulated(body.regulated_type, category, body.visibility)
+    _envelope(body.tax_envelope, body.opening_year, category, body.regulated_type, now)
     line = WealthLine(
         household_id=user.household_id,
         category_id=category.id,
@@ -261,6 +293,8 @@ def create_wealth_line(body: WealthLineIn, user_session: CurrentSession, db: Db)
         owner_id=user.id,
         visibility=body.visibility,
         regulated_type=body.regulated_type,
+        tax_envelope=body.tax_envelope,
+        opening_year=body.opening_year,
     )
     db.add(line)
     db.flush()
@@ -270,7 +304,7 @@ def create_wealth_line(body: WealthLineIn, user_session: CurrentSession, db: Db)
 
 @router.patch("/lines/{line_id}")
 def update_wealth_line(
-    line_id: UUID, body: WealthLinePatch, user_session: CurrentSession, db: Db
+    line_id: UUID, body: WealthLinePatch, user_session: CurrentSession, db: Db, now: Now
 ) -> WealthLineOut:
     """Anyone who sees a line edits it; only its owner changes who sees it. A regulated type
     stays valid: moving the line out of Savings accounts or making it joint is refused unless
@@ -285,10 +319,14 @@ def update_wealth_line(
         if body.category_id is not None
         else line.category
     )
-    _regulated(
-        body.regulated_type if "regulated_type" in given else line.regulated_type,
+    regulated = body.regulated_type if "regulated_type" in given else line.regulated_type
+    _regulated(regulated, category, body.visibility or line.visibility)
+    _envelope(
+        body.tax_envelope if "tax_envelope" in given else line.tax_envelope,
+        body.opening_year if "opening_year" in given else line.opening_year,
         category,
-        body.visibility or line.visibility,
+        regulated,
+        now,
     )
     if moving and body.visibility is not None:
         try:
@@ -300,6 +338,10 @@ def update_wealth_line(
         line.category_id = category.id
     if "regulated_type" in given:
         line.regulated_type = body.regulated_type
+    if "tax_envelope" in given:
+        line.tax_envelope = body.tax_envelope
+    if "opening_year" in given:
+        line.opening_year = body.opening_year
     if body.name is not None:
         line.name = body.name
     if "closed_from" in given:
