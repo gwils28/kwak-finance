@@ -2,7 +2,7 @@ from decimal import Decimal
 from uuid import UUID, uuid4
 
 import pytest
-from hypothesis import given
+from hypothesis import given, settings
 from hypothesis import strategies as st
 from kwak_core.budget import DEFAULT_BAND, Month
 from kwak_core.goal_analysis import (
@@ -409,6 +409,8 @@ def test_over_committed_with_no_postponement_that_fits() -> None:
     st.decimals(0, 3000, places=2),
     st.decimals(0, 1000, places=2),
 )
+# A capacity of a cent against a large target walks thousands of months: slow, not wrong.
+@settings(deadline=None)
 def test_a_postponement_fits_exactly(
     goals: list[tuple[Decimal, int]], cap: Decimal, filling: Decimal
 ) -> None:
