@@ -22,7 +22,7 @@ function formatted(details: AuditEntryOut["details"]): Record<string, string> {
     else if (key === "date") out[key] = formatDate(text);
     else if (key === "warn_at" || key === "precaution_share") out[key] = formatPercent(text);
     else if (key === "goal_capacity") out[key] = text && formatEur(text);
-    else if (key === "analysis_start" || key === "wealth_start")
+    else if (key === "analysis_start" || key === "wealth_start" || key === "deadline")
       out[key] = text && monthLabel(text);
     else out[key] = text;
   }

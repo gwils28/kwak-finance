@@ -57,6 +57,11 @@ const goal = (fields: Partial<GoalOut>): GoalOut => ({
   fill_first: true,
   permanent: false,
   pleasure: false,
+  pro_type: null,
+  cost: null,
+  aids: [],
+  renew_years: null,
+  renewal_monthly: null,
   ...fields,
 });
 
@@ -125,11 +130,17 @@ const summer = goal({
 const goals: GoalsOut = {
   month: "2026-10",
   pyramid: [
-    { tier: "precaution", value: "12400.00", target: "14700.00", progress: "0.8435" },
-    { tier: "short", value: "0.00", target: "0.00", progress: null },
-    { tier: "medium", value: "4000.00", target: "8500.00", progress: "0.4706" },
-    { tier: "long", value: "0.00", target: "0.00", progress: null },
-    { tier: "pleasure", value: "0.00", target: "0.00", progress: null },
+    {
+      tier: "precaution",
+      value: "12400.00",
+      target: "14700.00",
+      progress: "0.8435",
+      professional: null,
+    },
+    { tier: "short", value: "0.00", target: "0.00", progress: null, professional: null },
+    { tier: "medium", value: "4000.00", target: "8500.00", progress: "0.4706", professional: null },
+    { tier: "long", value: "0.00", target: "0.00", progress: null, professional: null },
+    { tier: "pleasure", value: "0.00", target: "0.00", progress: null, professional: null },
   ],
   capstone: {
     month: "2026-09",
@@ -445,6 +456,7 @@ test("a new emergency fund takes the proposal and its wealth lines, never a debt
     permanent: true,
     target: "3800.00",
     pleasure: false,
+    pro_type: null,
     deadline: null,
     start: "2026-10",
     visibility: "shared",
@@ -712,4 +724,154 @@ test("the pyramid shows no link when there is nothing to look at", async () => {
   render(<TestApp path="/goals" />);
   expect(await screen.findByRole("heading", { level: 1, name: "Goals" })).toBeInTheDocument();
   expect(screen.queryByRole("link", { name: /points? to look at/ })).toBeNull();
+});
+
+// F-GOAL-11: professional goals
+
+const pc = goal({
+  id: "g-pc",
+  name: "PC portable",
+  tier: "short",
+  deadline: "2027-03",
+  pro_type: "equipment",
+  cost: "1800.00",
+  target: "1600.00",
+  value: "800.00",
+  progress: "0.5000",
+  status: "on",
+  aids: [{ source: "employer", amount: "200.00", received: true }],
+  renew_years: 4,
+  renewal_monthly: "33.33",
+});
+
+const withPc: GoalsOut = {
+  ...goals,
+  pyramid: goals.pyramid.map((p) =>
+    p.tier === "short"
+      ? { ...p, value: "800.00", target: "1600.00", progress: "0.5000", professional: "0.5000" }
+      : p,
+  ),
+  goals: [...goals.goals, pc],
+};
+
+test("a professional goal sits in its tier with a briefcase, its cost and its renewal", async () => {
+  api(owner, withPc);
+  render(<TestApp path="/goals" />);
+  const card = await screen.findByRole("article", { name: "PC portable" });
+  const text = plain(card.textContent);
+  expect(text).toContain("Professional · Equipment");
+  expect(text).toContain("€1,800, of which €200 from the employer: €1,600 to gather");
+  expect(text).toContain("every 4 years · about €33 a month over a full cycle");
+  expect(text).toContain("update it before the purchase");
+  // money received counts twice on a funding line: the card says so until reached
+  expect(text).toContain("Money received counts twice");
+  expect(
+    plain(screen.getByRole("img", { name: /Short term/ }).getAttribute("aria-label")),
+  ).toContain("Short term: 50% · of which professional");
+  expect(plain(document.body.textContent)).toContain("Short term · 1 goal, 1 professional");
+});
+
+test("archiving a goal to renew short of its target asks about its next cycle", async () => {
+  const calls = api(owner, withPc);
+  calls.length = 0;
+  render(<TestApp path="/goals" />);
+  const card = await screen.findByRole("article", { name: "PC portable" });
+  const user = userEvent.setup();
+  await user.click(within(card).getByRole("button", { name: "Archive PC portable" }));
+  expect(calls.some((c) => c.route.startsWith("PATCH"))).toBe(false);
+  await user.click(within(card).getByRole("button", { name: "Archive with no next cycle" }));
+  await vi.waitFor(() =>
+    expect(calls.find((c) => c.route === "PATCH /api/goals/g-pc")?.body).toEqual({
+      closed_from: "2026-11",
+      closed_as: "archived",
+      next_cycle: false,
+    }),
+  );
+});
+
+test("a new professional goal sends its cost, what others pay and its renewal", async () => {
+  const calls = api();
+  render(<TestApp path="/goals" />);
+  const user = userEvent.setup();
+  await user.click(await screen.findByRole("button", { name: "New goal" }));
+  const form = screen.getByRole("form", { name: "New goal" });
+  await user.click(within(form).getByRole("checkbox", { name: /This is a professional goal/ }));
+  // one kind only
+  expect(within(form).getByRole("checkbox", { name: "This is an emergency fund" })).toBeDisabled();
+  expect(within(form).getByRole("checkbox", { name: "Permanent" })).toBeDisabled();
+  expect(within(form).queryByLabelText("Target")).toBeNull();
+
+  await user.type(within(form).getByLabelText("Name"), "Certification");
+  await user.selectOptions(within(form).getByLabelText("Kind of project"), "training");
+  await user.type(within(form).getByLabelText("Cost"), "2400");
+  await user.click(within(form).getByRole("button", { name: "Add an amount" }));
+  expect(
+    within(within(form).getByLabelText("Source of amount 1")).getByRole("option", {
+      name: "Personal training account (CPF)",
+    }),
+  ).toBeInTheDocument();
+  await user.type(within(form).getByLabelText("Amount 1 paid by others"), "1500");
+  expect(plain(form.textContent)).toContain("€900 to gather");
+  expect(form).toHaveTextContent("the flat fee you owe");
+  // only equipment is renewed
+  expect(within(form).queryByLabelText("Renew it every")).toBeNull();
+  fireEvent.change(within(form).getByLabelText("Deadline"), { target: { value: "2027-09" } });
+  await user.click(within(form).getByRole("button", { name: "Create the goal" }));
+
+  await vi.waitFor(() =>
+    expect(calls.find((c) => c.route === "POST /api/goals")?.body).toMatchObject({
+      name: "Certification",
+      pro_type: "training",
+      cost: "2400.00",
+      aids: [{ source: "cpf", amount: "1500.00", received: false }],
+      renew_years: null,
+      deadline: "2027-09",
+    }),
+  );
+  expect(calls.find((c) => c.route === "POST /api/goals")?.body).not.toHaveProperty("target");
+});
+
+test("equipment is renewed every few years, and the CPF never pays for it", async () => {
+  const calls = api();
+  render(<TestApp path="/goals" />);
+  const user = userEvent.setup();
+  await user.click(await screen.findByRole("button", { name: "New goal" }));
+  const form = screen.getByRole("form", { name: "New goal" });
+  await user.click(within(form).getByRole("checkbox", { name: /This is a professional goal/ }));
+  await user.type(within(form).getByLabelText("Name"), "Fauteuil");
+  await user.type(within(form).getByLabelText("Cost"), "650");
+  await user.click(within(form).getByRole("button", { name: "Add an amount" }));
+  expect(
+    within(within(form).getByLabelText("Source of amount 1")).queryByRole("option", {
+      name: "Personal training account (CPF)",
+    }),
+  ).toBeNull();
+  await user.click(within(form).getByRole("button", { name: "Remove amount 1" }));
+  await user.click(within(form).getByRole("checkbox", { name: "Renew it every" }));
+  await user.selectOptions(within(form).getByLabelText("Renew it every (years)"), "8");
+  fireEvent.change(within(form).getByLabelText("Deadline"), { target: { value: "2026-12" } });
+  await user.click(within(form).getByRole("button", { name: "Create the goal" }));
+  await vi.waitFor(() =>
+    expect(calls.find((c) => c.route === "POST /api/goals")?.body).toMatchObject({
+      pro_type: "equipment",
+      cost: "650.00",
+      aids: [],
+      renew_years: 8,
+    }),
+  );
+});
+
+test("a professional goal reads in French", async () => {
+  setCurrentLanguage("fr");
+  api({ ...owner, language: "fr" }, withPc);
+  render(<TestApp path="/goals" />);
+  const card = await screen.findByRole("article", { name: "PC portable" });
+  const text = plain(card.textContent);
+  expect(text).toContain("Professionnel · Matériel");
+  expect(text).toContain("1 800 €, dont 200 € de l'employeur : 1 600 € à réunir");
+  expect(text).toContain("tous les 4 ans · environ 33 € par mois sur un cycle complet");
+  expect(plain(document.body.textContent)).toContain(
+    "Court terme · 1 objectif, dont 1 professionnel",
+  );
+  setCurrentLanguage("en");
 });

@@ -90,6 +90,26 @@ export const API_MESSAGES_FR: Record<string, string> = {
   "the precaution share is from 50 % to 100 %": "la part de la précaution va de 50 % à 100 %",
   "no such goal": "objectif introuvable",
   "a line funds a goal once": "une ligne finance un objectif une seule fois",
+  "a professional goal needs a deadline": "un objectif professionnel a besoin d'une échéance",
+  "a professional goal is neither permanent, the precaution nor a pleasure":
+    "un objectif professionnel n'est ni permanent, ni une précaution, ni un plaisir",
+  "only equipment is renewed, every 1 to 10 years":
+    "seul le matériel se renouvelle, tous les 1 à 10 ans",
+  "a cost is a positive amount in cents": "un coût est un montant positif, en centimes",
+  "an amount paid by others is positive, in cents":
+    "un montant payé par d'autres est positif, en centimes",
+  "the CPF pays for training, a business or a career change only":
+    "le CPF ne paie qu'une formation, une entreprise ou une reconversion",
+  "what others pay must leave the target above zero":
+    "ce que paient les autres doit laisser une cible au-dessus de zéro",
+  "a professional goal needs its cost": "un objectif professionnel a besoin de son coût",
+  "a goal needs a target": "un objectif a besoin d'une cible",
+  "only a professional goal has a cost, aids or a renewal":
+    "seul un objectif professionnel a un coût, des montants payés par d'autres ou un renouvellement",
+  "its next cycle has started: reopen that one instead":
+    "son cycle suivant a démarré : rouvrez plutôt celui-là",
+  "this goal is reached: raise its cost to reopen it":
+    "cet objectif est atteint : augmentez son coût pour le rouvrir",
   "unknown wealth line": "ligne de patrimoine inconnue",
   "only its owner changes who sees it": "seul son titulaire change qui le voit",
   "only its owner deletes it": "seul son titulaire peut le supprimer",

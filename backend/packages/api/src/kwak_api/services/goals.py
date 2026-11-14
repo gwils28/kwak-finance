@@ -3,17 +3,19 @@ and the month's effort plan."""
 
 from collections import defaultdict
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, datetime
 from decimal import Decimal
 from uuid import UUID
 
 from kwak_core import goals as core
+from kwak_core.audit import AuditAction
 from kwak_core.budget import Month, month_range
 from kwak_core.categories import CategoryKind
 from kwak_core.fixed import FixedFrequency
 from kwak_core.visibility import Scope, Visibility, can_view, in_scope
 from kwak_core.wealth import WealthKind
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload, selectinload
 
 from kwak_api.models import (
@@ -21,11 +23,12 @@ from kwak_api.models import (
     Goal,
     GoalFunding,
     Household,
+    NextCycle,
     User,
     WealthLine,
     WealthValue,
 )
-from kwak_api.services import spending, spending_budget, wealth
+from kwak_api.services import audit, spending, spending_budget, wealth
 
 
 class SharesExceededError(Exception):
@@ -39,6 +42,7 @@ class SharesExceededError(Exception):
 def _loaded() -> list[object]:
     return [
         joinedload(Goal.owner),
+        selectinload(Goal.aids),
         selectinload(Goal.fundings).joinedload(GoalFunding.line).joinedload(WealthLine.category),
     ]
 
@@ -156,7 +160,9 @@ def _household_goals(db: Session, household_id: UUID) -> list[Goal]:
             select(Goal)
             .where(Goal.household_id == household_id)
             .options(
-                selectinload(Goal.fundings).joinedload(GoalFunding.line),
+                selectinload(Goal.fundings)
+                .joinedload(GoalFunding.line)
+                .joinedload(WealthLine.category),
                 selectinload(Goal.adjustments),
             )
         )
@@ -238,11 +244,90 @@ def capstone(
     )
 
 
+def archives_itself(goal: Goal, t: core.Tracking) -> bool:
+    """A goal reached archives itself, but for a permanent one, and one to renew before its
+    deadline (F-GOAL-8, F-GOAL-11)."""
+    return core.archives_itself(
+        t,
+        permanent=goal.permanent,
+        renew=goal.renew_years is not None,
+        deadline=Month.of(goal.deadline) if goal.deadline else None,
+    )
+
+
 def reached(db: Session, goal: Goal, today: date, band: Decimal) -> bool:
     """Whether an open goal that is not permanent would archive itself at once."""
     this_month = Month.of(today)
     t = track(goal, envelopes(db, goal.household_id, this_month), this_month, band)
-    return core.archives_itself(t, permanent=goal.permanent)
+    return archives_itself(goal, t)
+
+
+def start_cycles(db: Session, viewer: User, now: datetime) -> None:
+    """Start the next cycle of each goal to renew archived from this month or before
+    (F-GOAL-11): the same goal at its cost, without what others paid, its opening amounts 0,
+    due N years after the previous deadline. A goal starts one next cycle over its life
+    (§8.52), even once that cycle is deleted; a line's shares stay within 100 %, so a share
+    taken since by another goal is not copied. Logged as the goal's owner, whoever reads."""
+    this_month = Month.of(now.date())
+    for g in _household_goals(db, viewer.household_id):
+        if (
+            g.renew_years is None
+            or g.next_cycle is not None
+            or g.closed_as is not ClosedAs.ARCHIVED
+            or g.closed_from is None
+            or Month.of(g.closed_from) > this_month
+            or g.deadline is None
+            or g.cost is None
+        ):
+            continue
+        start = Month.of(g.closed_from)
+        due = core.next_deadline(Month.of(g.deadline), g.renew_years, start=start)
+        fundings = []
+        for f in g.fundings:
+            # A line closed or no longer fit to fund it since (a debt now) is left out.
+            if f.line.closed_from is not None and Month.of(f.line.closed_from) <= start:
+                continue
+            try:
+                check_funding(g, f.line)
+            except core.GoalError:
+                continue
+            share = min(f.share, 100 - sum(_open_shares(db, f.line_id, None)))
+            if share > 0:
+                fundings.append(GoalFunding(line_id=f.line_id, share=share))
+        try:
+            # Two reads at once may both start it: the second one finds it started.
+            with db.begin_nested():
+                g.next_cycle = NextCycle.STARTED
+                db.add(
+                    Goal(
+                        household_id=g.household_id,
+                        name=g.name,
+                        target=g.cost,
+                        cost=g.cost,
+                        pro_type=g.pro_type,
+                        renew_years=g.renew_years,
+                        renewed_from=g.id,
+                        start=start.first_day(),
+                        deadline=due.first_day(),
+                        owner_id=g.owner_id,
+                        visibility=g.visibility,
+                        fundings=fundings,
+                    )
+                )
+                db.flush()
+        except IntegrityError:
+            db.refresh(g)
+            continue
+        audit.record(
+            db,
+            db.get_one(User, g.owner_id),
+            AuditAction.GOAL_RENEWED,
+            now,
+            private_to=g.owner_id if g.visibility is Visibility.PRIVATE else None,
+            name=g.name,
+            deadline=str(due),
+        )
+    db.flush()
 
 
 @dataclass
@@ -311,8 +396,9 @@ class Overview:
     envelopes: core.Envelopes
 
 
-def overview(db: Session, viewer: User, scope: Scope, today: date, band: Decimal) -> Overview:
-    this_month = Month.of(today)
+def overview(db: Session, viewer: User, scope: Scope, now: datetime, band: Decimal) -> Overview:
+    this_month = Month.of(now.date())
+    start_cycles(db, viewer, now)
     goals = [
         g
         for g in visible_goals(db, viewer)
@@ -321,7 +407,7 @@ def overview(db: Session, viewer: User, scope: Scope, today: date, band: Decimal
     env = envelopes(db, viewer.household_id, this_month)
     tracked = [(g, track(g, env, this_month, band)) for g in goals]
     for g, t in tracked:
-        if g.closed_from is None and core.archives_itself(t, permanent=g.permanent):
+        if g.closed_from is None and archives_itself(g, t):
             # From next month: this month, when it got there, still counts.
             g.closed_from, g.closed_as = this_month.next().first_day(), ClosedAs.ARCHIVED
     open_ = [(g, t) for g, t in tracked if g.closed_from is None]
@@ -352,7 +438,10 @@ def overview(db: Session, viewer: User, scope: Scope, today: date, band: Decimal
         this_month,
         open_,
         closed,
-        core.pyramid(core.PyramidGoal(tier(g, this_month), t.value, g.target) for g, t in open_),
+        core.pyramid(
+            core.PyramidGoal(tier(g, this_month), t.value, g.target, g.pro_type is not None)
+            for g, t in open_
+        ),
         capstone(db, viewer, scope, env, this_month, band),
         cap,
         household.goal_capacity is not None,

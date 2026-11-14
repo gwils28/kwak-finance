@@ -8,7 +8,7 @@ import { PYRAMID, TIERS, tierColour } from "./shared";
  * The pyramid (F-GOAL-7) as a stone monument: three tiers of block courses on a Roman column,
  * the emergency fund, under a gilded capstone, the pleasure goals (F-GOAL-10), bare stone with
  * a padlock while locked. Each tier fills from the bottom to its progress, the column from its
- * foot. Colours are tokens (§7): the tiers', the foundation's, the capstone's `goal-gold*` and
+ * foot; a tier's professional goals' part is the bottom of its fill, hatched (F-GOAL-11). Colours are tokens (§7): the tiers', the foundation's, the capstone's `goal-gold*` and
  * the `goal-stone*` greys; light and shade are the palette's lightest and darkest greys at low
  * opacity.
  */
@@ -234,11 +234,21 @@ export function Pyramid({ data }: { data: GoalsOut }) {
   const id = (name: string) => `${uid}-${name}`;
   const byTier = new Map(data.pyramid.map((p) => [p.tier, p]));
   const counts = new Map(TIERS.map((tier) => [tier, 0]));
-  for (const goal of data.goals) counts.set(goal.tier, (counts.get(goal.tier) ?? 0) + 1);
+  const pros = new Map(TIERS.map((tier) => [tier, 0]));
+  for (const goal of data.goals) {
+    counts.set(goal.tier, (counts.get(goal.tier) ?? 0) + 1);
+    if (goal.pro_type !== null) pros.set(goal.tier, (pros.get(goal.tier) ?? 0) + 1);
+  }
+  const proPart = (tier: Tier) => {
+    const part = byTier.get(tier)?.professional;
+    return part == null ? null : clamp(Number(part));
+  };
   const progress = (tier: Tier) => clamp(Number(byTier.get(tier)?.progress ?? 0));
   const label = (tier: Tier) => {
     const p = byTier.get(tier);
-    return p?.progress == null ? g.noGoalInTier : formatPercent(p.progress);
+    if (p?.progress == null) return g.noGoalInTier;
+    const value = formatPercent(p.progress);
+    return proPart(tier) === null ? value : `${value} · ${g.ofWhichPro}`;
   };
   const locked = !data.capstone.unlocked;
   const fundLevel = COLUMN_BOTTOM - (COLUMN_BOTTOM - COLUMN_TOP) * progress("precaution");
@@ -302,6 +312,15 @@ export function Pyramid({ data }: { data: GoalsOut }) {
             <stop offset="0" stopColor="var(--color-goal-gold-shine)" stopOpacity="0.85" />
             <stop offset="0.7" stopColor="var(--color-goal-gold-shine)" stopOpacity="0" />
           </linearGradient>
+          <pattern
+            id={id("pro-hatch")}
+            width={6}
+            height={6}
+            patternUnits="userSpaceOnUse"
+            patternTransform="rotate(45)"
+          >
+            <line x1={0} y1={0} x2={0} y2={6} stroke="var(--color-goal-pro)" strokeWidth={3} />
+          </pattern>
           <clipPath id={id("cap-left")}>
             <polygon points={CAPSTONE.left} />
           </clipPath>
@@ -412,7 +431,29 @@ export function Pyramid({ data }: { data: GoalsOut }) {
           const tier = TIERS_ABOVE[i] as Tier;
           const height = shape.bottom - shape.top;
           const filled = height * progress(tier);
+          const pro = height * (proPart(tier) ?? 0);
           const mid = (shape.bottom + shape.top) / 2;
+          // The professional part: the bottom of the fill, hatched, edged with a lit line so it
+          // reads on the darkest tier too (§7).
+          const hatch = pro > 0 && (
+            <>
+              <rect
+                x={0}
+                y={shape.bottom - pro}
+                width={WIDTH}
+                height={pro}
+                fill={shade("pro-hatch")}
+              />
+              <line
+                x1={0}
+                x2={WIDTH}
+                y1={shape.bottom - pro}
+                y2={shape.bottom - pro}
+                stroke="var(--color-goal-stone-top)"
+                strokeWidth={1.2}
+              />
+            </>
+          );
           return (
             <g key={tier}>
               <polygon points={shape.left} fill={STONE} />
@@ -425,6 +466,7 @@ export function Pyramid({ data }: { data: GoalsOut }) {
                   height={filled}
                   fill={tierColour(tier)}
                 />
+                {hatch}
                 <Blocks blocks={shape.leftBlocks} joints={shape.joints} highlight />
               </g>
               <g clipPath={`url(#${id(`right-${i}`)})`}>
@@ -435,6 +477,7 @@ export function Pyramid({ data }: { data: GoalsOut }) {
                   height={filled}
                   fill={tierColour(tier)}
                 />
+                {hatch}
                 <rect
                   x={0}
                   y={shape.top}
@@ -459,6 +502,7 @@ export function Pyramid({ data }: { data: GoalsOut }) {
                 name={g.tierShort[tier]}
                 value={label(tier)}
               />
+              {proPart(tier) !== null && <SvgBriefcase x={LABEL_X + 100} y={mid - 16} />}
             </g>
           );
         })}
@@ -531,7 +575,10 @@ export function Pyramid({ data }: { data: GoalsOut }) {
                   className="h-3 w-3 rounded-sm"
                   style={{ background: tierColour(tier) }}
                 />
-                {g.tiers[tier]} · {g.tierGoals(counts.get(tier) ?? 0)}
+                {g.tiers[tier]} ·{" "}
+                {pros.get(tier)
+                  ? g.tierGoalsPro(counts.get(tier) ?? 0, pros.get(tier) ?? 0)
+                  : g.tierGoals(counts.get(tier) ?? 0)}
               </span>
               <span className="tabular">
                 {g.ofTarget(formatEurWhole(p?.value ?? "0"), formatEurWhole(p?.target ?? "0"))}
@@ -643,6 +690,24 @@ function Blocks({
         </g>
       ))}
     </>
+  );
+}
+
+/** A professional tier's briefcase, its top left at (x, y), in `goal-pro-mark`. */
+function SvgBriefcase({ x, y }: { x: number; y: number }) {
+  return (
+    <g stroke="var(--color-goal-pro-mark)" strokeWidth={1.5} fill="none">
+      <rect
+        x={x}
+        y={y + 3}
+        width={14}
+        height={10}
+        rx={1.5}
+        fill="var(--color-goal-pro-mark)"
+        fillOpacity={0.18}
+      />
+      <path d={`M ${x + 4.5} ${y + 3} v -2.5 h 5 v 2.5 M ${x} ${y + 7.5} h 14`} />
+    </g>
   );
 }
 

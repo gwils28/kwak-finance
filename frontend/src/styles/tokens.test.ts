@@ -27,6 +27,8 @@ test("goal colours survive the build in both themes", () => {
     "gold",
     "gold-shine",
     "priority",
+    "pro",
+    "pro-mark",
     "stone",
     "stone-edge",
     "stone-top",

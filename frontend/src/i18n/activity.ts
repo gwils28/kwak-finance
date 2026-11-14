@@ -59,6 +59,7 @@ export const activityEn = {
     wealth_line_deleted: (d) => `Deleted the wealth line ${d.name} (${d.category})`,
     wealth_category_deleted: (d) => `Deleted the wealth category ${d.name}`,
     goal_deleted: (d) => `Deleted the goal ${d.name}`,
+    goal_renewed: (d) => `Started the next cycle of ${d.name}, due ${d.deadline}`,
     spending_line_deleted: (d) => `Deleted the line “${d.label}” (${d.amount}, ${d.date})`,
     spending_category_deleted: (d) =>
       d.moved_to
@@ -127,6 +128,7 @@ export const activityFr: typeof activityEn = {
     wealth_line_deleted: (d) => `Ligne de patrimoine ${d.name} (${d.category}) supprimée`,
     wealth_category_deleted: (d) => `Catégorie de patrimoine ${d.name} supprimée`,
     goal_deleted: (d) => `Objectif ${d.name} supprimé`,
+    goal_renewed: (d) => `Cycle suivant de ${d.name} lancé, dû en ${d.deadline}`,
     spending_line_deleted: (d) => `Ligne « ${d.label} » supprimée (${d.amount}, ${d.date})`,
     spending_category_deleted: (d) =>
       d.moved_to

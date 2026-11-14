@@ -3,6 +3,7 @@ from datetime import date
 from decimal import Decimal
 from uuid import UUID
 
+from kwak_core.goals import AidSource, ProType
 from kwak_core.visibility import Visibility
 from sqlalchemy import (
     CheckConstraint,
@@ -11,6 +12,7 @@ from sqlalchemy import (
     ForeignKey,
     Integer,
     Numeric,
+    SmallInteger,
     String,
     UniqueConstraint,
     text,
@@ -20,6 +22,15 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from kwak_api.db import Base, Timestamps, UUIDPrimaryKey
 from kwak_api.models.household import User
 from kwak_api.models.wealth import WealthLine
+
+
+class NextCycle(enum.StrEnum):
+    """What became of a goal to renew's next cycle (F-GOAL-11)."""
+
+    STARTED = "started"
+    """Once over its life, even if that cycle is deleted later (invariant §8.52)."""
+    DECLINED = "declined"
+    """Archived with no next cycle asked for; reopening it forgets the choice."""
 
 
 class ClosedAs(enum.StrEnum):
@@ -58,6 +69,19 @@ class Goal(UUIDPrimaryKey, Timestamps, Base):
         CheckConstraint("extract(day from deadline) = 1", name="deadline_month"),
         CheckConstraint("extract(day from closed_from) = 1", name="closed_from_month"),
         CheckConstraint("(closed_from IS NULL) = (closed_as IS NULL)", name="closed_as_given"),
+        CheckConstraint(
+            "pro_type IS NULL OR (deadline IS NOT NULL AND NOT permanent AND NOT precaution"
+            " AND NOT pleasure)",
+            name="professional_alone",
+        ),
+        CheckConstraint(
+            "(pro_type IS NULL) = (cost IS NULL) AND (cost IS NULL OR cost >= target)",
+            name="cost_professional",
+        ),
+        CheckConstraint(
+            "renew_years IS NULL OR (pro_type = 'equipment' AND renew_years BETWEEN 1 AND 10)",
+            name="renew_equipment",
+        ),
     )
 
     household_id: Mapped[UUID] = mapped_column(ForeignKey("household.id"), index=True)
@@ -80,6 +104,18 @@ class Goal(UUIDPrimaryKey, Timestamps, Base):
     closed_from: Mapped[date | None] = mapped_column(Date)
     """The first month the goal is closed: it leaves the pyramid and frees its lines."""
     closed_as: Mapped[ClosedAs | None] = mapped_column(_string_enum(ClosedAs, "goal_closed_as"))
+    pro_type: Mapped[ProType | None] = mapped_column(_string_enum(ProType, "goal_pro_type"))
+    """Set for a professional goal, in its tier (F-GOAL-11)."""
+    cost: Mapped[Decimal | None] = mapped_column(Numeric(14, 2))
+    """A professional goal's cost: its target plus what others pay."""
+    renew_years: Mapped[int | None] = mapped_column(SmallInteger)
+    """Equipment renewed every so many years: archiving it starts its next cycle."""
+    renewed_from: Mapped[UUID | None] = mapped_column(
+        ForeignKey("goal.id", ondelete="SET NULL"), unique=True
+    )
+    """The cycle this one renews: each has one next cycle at most (invariant §8.52)."""
+    next_cycle: Mapped[NextCycle | None] = mapped_column(_string_enum(NextCycle, "goal_next_cycle"))
+    """Set once its next cycle has started or was declined: none is started (again)."""
 
     owner: Mapped[User] = relationship()
     fundings: Mapped[list["GoalFunding"]] = relationship(
@@ -87,6 +123,9 @@ class Goal(UUIDPrimaryKey, Timestamps, Base):
     )
     adjustments: Mapped[list["GoalAdjustment"]] = relationship(
         cascade="all, delete-orphan", order_by="GoalAdjustment.month"
+    )
+    aids: Mapped[list["GoalAid"]] = relationship(
+        cascade="all, delete-orphan", order_by="GoalAid.id"
     )
 
 
@@ -111,6 +150,19 @@ class GoalFunding(UUIDPrimaryKey, Base):
 
     goal: Mapped[Goal] = relationship(back_populates="fundings")
     line: Mapped[WealthLine] = relationship()
+
+
+class GoalAid(UUIDPrimaryKey, Base):
+    """An amount of a professional goal's cost paid by others (F-GOAL-11)."""
+
+    __tablename__ = "goal_aid"
+    __table_args__ = (CheckConstraint("amount > 0", name="amount_positive"),)
+
+    goal_id: Mapped[UUID] = mapped_column(ForeignKey("goal.id", ondelete="CASCADE"), index=True)
+    source: Mapped[AidSource] = mapped_column(_string_enum(AidSource, "goal_aid_source"))
+    amount: Mapped[Decimal] = mapped_column(Numeric(14, 2))
+    received: Mapped[bool] = mapped_column(default=False, server_default=text("false"))
+    """Paid to the household rather than directly to the seller or the training body."""
 
 
 class GoalAdjustment(UUIDPrimaryKey, Base):

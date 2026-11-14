@@ -13,7 +13,7 @@ from kwak_core.visibility import Scope, Visibility
 from pydantic import AfterValidator, BaseModel, Field, StringConstraints
 
 from kwak_api.auth.routes import CurrentSession, Db, Now
-from kwak_api.models import ClosedAs, Goal, GoalAdjustment, GoalFunding
+from kwak_api.models import ClosedAs, Goal, GoalAdjustment, GoalAid, GoalFunding, NextCycle
 from kwak_api.services import audit
 from kwak_api.services import goals as service
 
@@ -80,6 +80,22 @@ class GoalFundingOut(BaseModel):
     adjustments: list[GoalAdjustmentOut]
 
 
+class GoalAidIn(BaseModel):
+    """An amount of a professional goal's cost paid by others (F-GOAL-11)."""
+
+    source: core.AidSource
+    amount: Target
+    received: bool = False
+    """Paid to the household before the expense, rather than directly to the seller or the
+    training body."""
+
+
+class GoalAidOut(BaseModel):
+    source: core.AidSource
+    amount: Decimal
+    received: bool
+
+
 class GoalAdjustmentIn(BaseModel):
     amount: Opening
 
@@ -104,7 +120,15 @@ class GoalIn(BaseModel):
     """Kept in view once reached, its deadline optional; any other goal archives itself."""
     pleasure: bool = False
     """In the capstone: no deadline, unlocked by the rest of the pyramid."""
-    target: Target
+    pro_type: core.ProType | None = None
+    """Set for a professional goal, in its tier (F-GOAL-11)."""
+    target: Target | None = None
+    """Required but for a professional goal, whose target is its cost less what others pay."""
+    cost: Target | None = None
+    """A professional goal's cost, required for one."""
+    aids: list[GoalAidIn] = Field(default=[], max_length=10)
+    renew_years: int | None = Field(default=None, ge=1, le=10)
+    """Equipment only: renewed every so many years."""
     deadline: MonthText | None = None
     """YYYY-MM; required but for the precaution."""
     start: MonthText | None = None
@@ -121,7 +145,17 @@ class GoalPatch(BaseModel):
     fill_first: bool | None = None
     permanent: bool | None = None
     pleasure: bool | None = None
+    pro_type: core.ProType | None = None
+    """null makes it a goal of another kind, its cost and aids dropped."""
     target: Target | None = None
+    """Ignored for a professional goal: its cost less what others pay."""
+    cost: Target | None = None
+    aids: list[GoalAidIn] | None = Field(default=None, max_length=10)
+    """The whole list: it replaces the goal's."""
+    renew_years: int | None = Field(default=None, ge=1, le=10)
+    """null: not renewed."""
+    next_cycle: bool = True
+    """Archiving by hand a goal to renew starts its next cycle unless false."""
     deadline: MonthText | None = None
     start: MonthText | None = None
     visibility: Visibility | None = None
@@ -143,7 +177,13 @@ class GoalOut(BaseModel):
     """Always true but for a precaution goal left unticked."""
     permanent: bool
     pleasure: bool
+    pro_type: core.ProType | None
     target: Decimal
+    cost: Decimal | None
+    aids: list[GoalAidOut]
+    renew_years: int | None
+    renewal_monthly: Decimal | None
+    """What renewing costs a month over a full cycle."""
     start: str
     deadline: str | None
     owner_id: UUID
@@ -187,7 +227,17 @@ def _out(goal: Goal, t: core.Tracking, o: service.Overview, effort: Decimal | No
         fill_first=goal.fill_first,
         permanent=goal.permanent,
         pleasure=goal.pleasure,
+        pro_type=goal.pro_type,
         target=quantize(goal.target),
+        cost=_money(goal.cost),
+        aids=[
+            GoalAidOut(source=a.source, amount=quantize(a.amount), received=a.received)
+            for a in goal.aids
+        ],
+        renew_years=goal.renew_years,
+        renewal_monthly=(
+            core.renewal_monthly(goal.target, goal.renew_years) if goal.renew_years else None
+        ),
         start=str(Month.of(goal.start)),
         deadline=_text(Month.of(goal.deadline) if goal.deadline else None),
         owner_id=goal.owner_id,
@@ -232,6 +282,8 @@ class GoalTierOut(BaseModel):
     target: Decimal
     progress: Decimal | None
     """Each goal counting up to its target; null for a tier without a goal."""
+    professional: Decimal | None
+    """The professional goals' part of the progress (F-GOAL-11); null without one."""
 
 
 class GoalGateOut(BaseModel):
@@ -287,7 +339,7 @@ class GoalDetailOut(BaseModel):
 
 
 def _overview(db: Db, user_session: CurrentSession, now: Now, scope: Scope) -> service.Overview:
-    return service.overview(db, user_session.user, scope, now.date(), DEFAULT_BAND)
+    return service.overview(db, user_session.user, scope, now, DEFAULT_BAND)
 
 
 @router.get("")
@@ -306,6 +358,7 @@ def list_goals(
                 value=quantize(p.value),
                 target=quantize(p.target),
                 progress=_ratio(p.progress),
+                professional=_ratio(p.professional),
             )
             for tier, p in o.pyramid.items()
         ],
@@ -444,6 +497,30 @@ def _fundings(
     return out
 
 
+def _professional(goal: Goal, cost: Decimal | None, aids: list[GoalAidIn] | None) -> None:
+    """A professional goal's target is its cost less what others pay (F-GOAL-11); another
+    goal keeps no cost, aid nor renewal."""
+    if goal.pro_type is None:
+        if cost is not None or aids or goal.renew_years is not None:
+            raise _unprocessable("only a professional goal has a cost, aids or a renewal")
+        goal.cost, goal.aids = None, []
+        return
+    if cost is not None:
+        goal.cost = cost
+    if aids is not None:
+        goal.aids = [GoalAid(source=a.source, amount=a.amount, received=a.received) for a in aids]
+    if goal.cost is None:
+        raise _unprocessable("a professional goal needs its cost")
+    try:
+        goal.target = core.professional_target(
+            goal.cost,
+            [core.Aid(a.source, a.amount, a.received) for a in goal.aids],
+            goal.pro_type,
+        )
+    except core.GoalError as exc:
+        raise _unprocessable(str(exc)) from None
+
+
 def _check(goal: Goal, this_month: Month) -> None:
     deadline = Month.of(goal.deadline) if goal.deadline else None
     try:
@@ -452,6 +529,8 @@ def _check(goal: Goal, this_month: Month) -> None:
             precaution=goal.precaution,
             permanent=goal.permanent,
             pleasure=goal.pleasure,
+            pro_type=goal.pro_type,
+            renew_years=goal.renew_years,
             deadline=deadline,
             start=Month.of(goal.start),
             this_month=this_month,
@@ -489,12 +568,17 @@ def create_goal(body: GoalIn, user_session: CurrentSession, db: Db, now: Now) ->
         fill_first=body.fill_first or not body.precaution,
         permanent=body.permanent or body.precaution,
         pleasure=body.pleasure,
-        target=body.target,
+        pro_type=body.pro_type,
+        renew_years=body.renew_years,
+        target=body.target or Decimal(0),
         start=(_month(body.start) if body.start else this_month).first_day(),
         deadline=_month(body.deadline).first_day() if body.deadline else None,
         owner_id=user.id,
         visibility=body.visibility,
     )
+    _professional(goal, body.cost, body.aids)
+    if goal.pro_type is None and body.target is None:
+        raise _unprocessable("a goal needs a target")
     _check(goal, this_month)
     goal.fundings = _fundings(db, user_session, goal, body.fundings)
     db.add(goal)
@@ -536,17 +620,40 @@ def update_goal(
         goal.pleasure = body.pleasure
     if body.target is not None:
         goal.target = body.target
+    if "pro_type" in given:
+        goal.pro_type = body.pro_type
+        if body.pro_type is None and "renew_years" not in given:
+            goal.renew_years = None  # another kind keeps no renewal
+    if "renew_years" in given:
+        goal.renew_years = body.renew_years
+    if goal.pro_type is not None or {"pro_type", "cost", "aids", "renew_years"} & given:
+        # A professional goal's target always follows its cost and aids, whatever is sent.
+        _professional(goal, body.cost, body.aids)
     if "deadline" in given:
         goal.deadline = _month(body.deadline).first_day() if body.deadline else None
     if body.start is not None:
         goal.start = _month(body.start).first_day()
-    if {"deadline", "start", "precaution", "fill_first", "permanent", "pleasure", "target"} & given:
+    if {
+        "deadline",
+        "start",
+        "precaution",
+        "fill_first",
+        "permanent",
+        "pleasure",
+        "target",
+        "pro_type",
+        "cost",
+        "aids",
+        "renew_years",
+    } & given:
         # An overdue goal stays editable: its deadline is only checked when it changes.
         kept = goal.deadline if "deadline" not in given else None
         _check(goal, min(this_month, Month.of(kept)) if kept else this_month)
     if "closed_from" in given:
         if body.closed_from is None:
-            goal.closed_from, goal.closed_as = None, None
+            if goal.next_cycle is NextCycle.STARTED:
+                raise _unprocessable("its next cycle has started: reopen that one instead")
+            goal.closed_from, goal.closed_as, goal.next_cycle = None, None, None
         else:
             closed = _month(body.closed_from)
             if body.closed_as is None:
@@ -555,6 +662,8 @@ def update_goal(
             if not Month.of(goal.start) <= closed <= this_month.next():
                 raise _unprocessable("a goal closes from a month between its start and the next")
             goal.closed_from, goal.closed_as = closed.first_day(), body.closed_as
+            if body.closed_as is ClosedAs.ARCHIVED and not body.next_cycle:
+                goal.next_cycle = NextCycle.DECLINED  # no next cycle asked for (F-GOAL-11)
     if body.fundings is not None:
         goal.fundings = _fundings(db, user_session, goal, body.fundings)
     elif "visibility" in given:
@@ -567,7 +676,9 @@ def update_goal(
         _check_open(db, goal)
         if "closed_from" in given and service.reached(db, goal, now.date(), DEFAULT_BAND):
             raise _unprocessable(
-                "this goal is reached: raise its target or make it permanent to reopen it"
+                "this goal is reached: raise its cost to reopen it"
+                if goal.pro_type is not None
+                else "this goal is reached: raise its target or make it permanent to reopen it"
             )
     return _detail(db, user_session, now, goal)
 

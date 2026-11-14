@@ -18,7 +18,7 @@ import { monthLabel, shiftMonth, thisMonth } from "../lib/months";
 import { Envelopes } from "./Envelopes";
 import { estimateText, paceSentence } from "./GoalCard";
 import { GoalForm } from "./GoalForm";
-import { GOALS_KEY, StatusChip } from "./shared";
+import { costSentence, GOALS_KEY, ProBadge, StatusChip } from "./shared";
 import { Trajectory } from "./Trajectory";
 
 type Panel = "edit" | "close" | "delete" | null;
@@ -107,6 +107,14 @@ function Header({ goal, onAction }: { goal: GoalOut; onAction: (panel: Panel) =>
               formatEurWhole(goal.target),
             )}
           </p>
+          <ProBadge goal={goal} />
+          {costSentence(goal, t) && <p className="text-sm">{costSentence(goal, t)}</p>}
+          {goal.renew_years !== null && goal.renewal_monthly !== null && (
+            <p className="text-sm text-muted">
+              {g.renewed} {g.renewEvery(goal.renew_years, formatEurWhole(goal.renewal_monthly))}.{" "}
+              {g.renewCostNote}
+            </p>
+          )}
           {sentence && !goal.closed_as && <p className="text-sm">{sentence}</p>}
           <p className="text-sm text-muted">
             {g.fundedByList(
@@ -249,12 +257,14 @@ function CloseGoal({ goal, onDone }: { goal: GoalOut; onDone: () => void }) {
   const id = useId();
   const [month, setMonth] = useState(thisMonth());
   const [as, setAs] = useState<ClosedAs>(goal.permanent ? "cancelled" : "archived");
+  // Archiving a goal to renew starts its next cycle unless unticked (F-GOAL-11).
+  const [nextCycle, setNextCycle] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const close = useMutation({
     mutationFn: async () => {
       const { error: failure } = await updateGoal({
         path: { goal_id: goal.id },
-        body: { closed_from: month, closed_as: as },
+        body: { closed_from: month, closed_as: as, ...(nextCycle ? {} : { next_cycle: false }) },
       });
       if (failure) throw failure;
     },
@@ -300,6 +310,16 @@ function CloseGoal({ goal, onDone }: { goal: GoalOut; onDone: () => void }) {
           ),
         )}
       </fieldset>
+      {as === "archived" && goal.renew_years !== null && goal.status !== "reached" && (
+        <label className="flex items-center gap-2 font-medium">
+          <input
+            type="checkbox"
+            checked={nextCycle}
+            onChange={(e) => setNextCycle(e.target.checked)}
+          />
+          {g.nextCycle}
+        </label>
+      )}
       <ErrorAlert message={error} />
       <div className="flex gap-3">
         <Button type="submit" disabled={close.isPending}>

@@ -8,7 +8,15 @@ import { useI18n } from "../i18n";
 import { formatEurWhole, formatPercent } from "../lib/money";
 import { monthLabel, shiftMonth } from "../lib/months";
 import { GoalForm } from "./GoalForm";
-import { fillsFirst, Gauge, GOALS_KEY, StatusChip, tierColour } from "./shared";
+import {
+  costSentence,
+  fillsFirst,
+  Gauge,
+  GOALS_KEY,
+  ProBadge,
+  StatusChip,
+  tierColour,
+} from "./shared";
 
 /** The sentence under a goal with a deadline: early, on time or late at its actual pace. */
 export function paceSentence(goal: GoalOut, t: ReturnType<typeof useI18n>["t"]): string | null {
@@ -48,13 +56,19 @@ export function GoalCard({
   const queryClient = useQueryClient();
   const [editing, setEditing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // A goal to renew archived short of its target asks about its next cycle (F-GOAL-11).
+  const [asking, setAsking] = useState(false);
   // The goal leaves the pyramid and the page at once (F-GOAL-8).
   const close = useMutation({
-    mutationFn: async (as: ClosedAs) => {
+    mutationFn: async ({ as, nextCycle = true }: { as: ClosedAs; nextCycle?: boolean }) => {
       const { error: failure } = await updateGoal({
         path: { goal_id: goal.id },
         // From next month: this month still counts.
-        body: { closed_from: shiftMonth(month, 1), closed_as: as },
+        body: {
+          closed_from: shiftMonth(month, 1),
+          closed_as: as,
+          ...(nextCycle ? {} : { next_cycle: false }),
+        },
       });
       if (failure) throw failure;
     },
@@ -62,6 +76,9 @@ export function GoalCard({
     onError: (failure) => setError(detailSentence(failure) ?? t.errors.generic),
   });
   const sentence = paceSentence(goal, t);
+  const cost = costSentence(goal, t);
+  const received = goal.aids.some((a) => a.received) && goal.status !== "reached";
+  const toRenew = goal.renew_years !== null;
   // A precaution goal not to fill first reads as a permanent goal (F-GOAL-1).
   const precaution = fillsFirst(goal);
   const fillBy =
@@ -77,7 +94,10 @@ export function GoalCard({
     <article
       aria-label={goal.name}
       className="flex flex-col gap-2 rounded-lg border border-l-4 border-border bg-surface p-4"
-      style={{ borderLeftColor: tierColour(goal.tier) }}
+      style={{
+        borderLeftColor:
+          goal.pro_type === null ? tierColour(goal.tier) : "var(--color-goal-pro-mark)",
+      }}
     >
       <div className="flex items-start justify-between gap-2">
         <h3 className="font-bold">
@@ -92,6 +112,7 @@ export function GoalCard({
         <StatusChip status={goal.status} />
       </div>
       {goal.permanent && <p className="-mt-1 text-xs text-muted">{g.permanent}</p>}
+      <ProBadge goal={goal} />
       <Gauge goal={goal} />
       <p className="flex justify-between text-sm">
         <span className="tabular">
@@ -130,6 +151,12 @@ export function GoalCard({
             )}
           </>
         )}
+        {cost && <Fact term={g.cost}>{cost}</Fact>}
+        {goal.renew_years !== null && goal.renewal_monthly !== null && (
+          <Fact term={g.renewed}>
+            {g.renewEvery(goal.renew_years, formatEurWhole(goal.renewal_monthly))}
+          </Fact>
+        )}
         <Fact term={g.fundedBy}>
           {goal.fundings.length === 0
             ? g.noFunding
@@ -137,6 +164,8 @@ export function GoalCard({
         </Fact>
       </dl>
       {sentence && <p className="text-xs text-muted">{sentence}</p>}
+      {toRenew && <p className="text-xs text-muted">{g.renewCostNote}</p>}
+      {received && <p className="text-xs">{g.receivedNote}</p>}
       <div className="mt-auto flex flex-wrap gap-2 border-t border-border pt-2">
         <Button variant="ghost" aria-label={g.editOf(goal.name)} onClick={() => setEditing(true)}>
           {g.edit}
@@ -149,13 +178,37 @@ export function GoalCard({
               variant="ghost"
               aria-label={as === "archived" ? g.archiveOf(goal.name) : g.cancelOf(goal.name)}
               disabled={close.isPending}
-              onClick={() => close.mutate(as)}
+              onClick={() =>
+                as === "archived" && toRenew && goal.status !== "reached"
+                  ? setAsking(true)
+                  : close.mutate({ as })
+              }
             >
               {as === "archived" ? g.archive : g.cancelGoal}
             </Button>
           ),
         )}
       </div>
+      {asking && (
+        <fieldset className="flex flex-col gap-2 text-sm">
+          <legend>{g.nextCycleQuestion}</legend>
+          <div className="flex flex-wrap gap-2">
+            <Button disabled={close.isPending} onClick={() => close.mutate({ as: "archived" })}>
+              {g.archiveWithNext}
+            </Button>
+            <Button
+              variant="ghost"
+              disabled={close.isPending}
+              onClick={() => close.mutate({ as: "archived", nextCycle: false })}
+            >
+              {g.archiveWithoutNext}
+            </Button>
+            <Button variant="ghost" onClick={() => setAsking(false)}>
+              {g.cancel}
+            </Button>
+          </div>
+        </fieldset>
+      )}
       <ErrorAlert message={error} />
     </article>
   );
