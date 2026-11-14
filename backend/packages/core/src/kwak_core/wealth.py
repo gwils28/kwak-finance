@@ -109,6 +109,81 @@ def check_regulated(
         raise RegulatedTypeError("a joint line cannot have a regulated type: it is a person's own")
 
 
+class TaxEnvelope(enum.StrEnum):
+    """The tax wrapper an asset line is held in (F-WLT-2), which the audit document shows."""
+
+    PEA = "pea"
+    PEA_PME = "pea_pme"
+    LIFE_INSURANCE = "life_insurance"
+    CAPITALISATION = "capitalisation"
+    """A capitalisation contract."""
+    PER = "per"
+    CTO = "cto"
+    """A securities account (compte-titres ordinaire)."""
+    EMPLOYEE_SAVINGS = "employee_savings"
+    """PEE, PERCOL."""
+
+
+TAX_MILESTONES: Mapping[TaxEnvelope, int] = MappingProxyType(
+    {
+        TaxEnvelope.LIFE_INSURANCE: 8,
+        TaxEnvelope.CAPITALISATION: 8,
+        TaxEnvelope.PEA: 5,
+        TaxEnvelope.PEA_PME: 5,
+    }
+)
+"""The age, in years, from which an envelope's tax treatment changes."""
+
+MIN_OPENING_YEAR = 1900
+
+
+def check_envelope(
+    envelope: TaxEnvelope | None, *, kind: WealthKind, regulated: RegulatedType | None
+) -> None:
+    """An asset line's only, and never a regulated account's: the regulated type says it."""
+    if envelope is None:
+        return
+    if kind is not WealthKind.ASSET:
+        raise WealthValueError("only an asset line can have a tax envelope")
+    if regulated is not None:
+        raise WealthValueError("a regulated savings account has no tax envelope")
+
+
+def check_opening_year(year: int | None, *, kind: WealthKind, current_year: int) -> None:
+    """An asset line's only, from 1900 to this year."""
+    if year is None:
+        return
+    if kind is not WealthKind.ASSET:
+        raise WealthValueError("only an asset line has an opening year")
+    if not MIN_OPENING_YEAR <= year <= current_year:
+        raise WealthValueError(f"an opening year is from {MIN_OPENING_YEAR} to this year")
+
+
+def envelope_age(opening_year: int, *, current_year: int) -> int:
+    """The difference of the years: the opening month is not known, so the envelope may be a
+    year younger (see `milestone`)."""
+    return current_year - opening_year
+
+
+class Milestone(enum.StrEnum):
+    REACHED = "reached"
+    THIS_YEAR = "this_year"
+    """Reached during this year, on the anniversary of an opening month not known."""
+    NOT_YET = "not_yet"
+
+
+def milestone(envelope: TaxEnvelope, opening_year: int, *, current_year: int) -> Milestone | None:
+    """Whether the envelope is past the age its tax treatment changes at (8 years for a life
+    insurance, 5 for a PEA); None for one without."""
+    years = TAX_MILESTONES.get(envelope)
+    if years is None:
+        return None
+    age = envelope_age(opening_year, current_year=current_year)
+    if age > years:
+        return Milestone.REACHED
+    return Milestone.THIS_YEAR if age == years else Milestone.NOT_YET
+
+
 def check_value(amount: Decimal) -> None:
     """Cents at most, and positive: a debt is what is still owed."""
     if amount != amount.quantize(CENT):

@@ -24,3 +24,10 @@ def test_the_spending_defaults_have_four_income_categories() -> None:
         "Remboursements",
         "Autres revenus",
     ]
+
+
+def test_each_default_has_its_own_preset_and_refunds_are_known_as_such() -> None:
+    presets = [c.preset for c in DEFAULT_SPENDING_CATEGORIES]
+    assert len(set(presets)) == len(presets)
+    assert "refunds" in presets
+    assert "other_income" in presets
