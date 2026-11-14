@@ -35,6 +35,11 @@ class DefaultCategory:
     def name(self, language: Language) -> str:
         return self.names.name(language)
 
+    @property
+    def preset(self) -> str:
+        """Which default it is, whatever its name becomes: "refunds" (F-AUD-2)."""
+        return self.names.en.lower().replace(" ", "_")
+
 
 _E, _I, _S, N = CategoryKind.EXPENSE, CategoryKind.INCOME, CategoryKind.SAVINGS, Names
 

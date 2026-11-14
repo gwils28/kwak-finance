@@ -13,15 +13,21 @@ from kwak_core.wealth import (
     WEALTH_COLOURS,
     CategoryInput,
     LineInput,
+    Milestone,
     RegulatedType,
     RegulatedTypeError,
+    TaxEnvelope,
     WealthKind,
     WealthValueError,
+    check_envelope,
+    check_opening_year,
     check_regulated,
     check_value,
+    envelope_age,
     in_scope,
     leave_out,
     line_cell,
+    milestone,
     to_update,
     wealth_matrix,
 )
@@ -291,3 +297,48 @@ def test_a_joint_line_cannot_be_regulated() -> None:
 def test_only_a_savings_line_can_be_regulated(preset: str | None) -> None:
     with pytest.raises(RegulatedTypeError, match="savings"):
         check_regulated(RegulatedType.PEL, preset=preset, visibility=Visibility.PRIVATE)
+
+
+# F-WLT-2: the tax envelope and opening year
+
+
+def test_an_asset_line_can_have_a_tax_envelope() -> None:
+    check_envelope(TaxEnvelope.PEA, kind=WealthKind.ASSET, regulated=None)
+    check_envelope(None, kind=WealthKind.DEBT, regulated=None)
+
+
+def test_a_debt_line_has_no_tax_envelope() -> None:
+    with pytest.raises(WealthValueError):
+        check_envelope(TaxEnvelope.LIFE_INSURANCE, kind=WealthKind.DEBT, regulated=None)
+
+
+def test_a_regulated_line_has_no_tax_envelope() -> None:
+    with pytest.raises(WealthValueError):
+        check_envelope(TaxEnvelope.CTO, kind=WealthKind.ASSET, regulated=RegulatedType.LIVRET_A)
+
+
+def test_the_opening_year_is_from_1900_to_the_current_one() -> None:
+    asset = WealthKind.ASSET
+    check_opening_year(1900, kind=asset, current_year=2026)
+    check_opening_year(2026, kind=asset, current_year=2026)
+    check_opening_year(None, kind=WealthKind.DEBT, current_year=2026)
+    for bad in (1899, 2027):
+        with pytest.raises(WealthValueError):
+            check_opening_year(bad, kind=asset, current_year=2026)
+    with pytest.raises(WealthValueError):
+        check_opening_year(2020, kind=WealthKind.DEBT, current_year=2026)
+
+
+def test_an_envelope_age_is_in_whole_years() -> None:
+    assert envelope_age(2018, current_year=2026) == 8
+    assert envelope_age(2026, current_year=2026) == 0
+
+
+def test_a_milestone_is_certain_only_the_year_after_its_anniversary_year() -> None:
+    # Opened some month of 2018: 8 years old during 2026, surely past 8 in 2027.
+    life = TaxEnvelope.LIFE_INSURANCE
+    assert milestone(life, 2018, current_year=2025) is Milestone.NOT_YET
+    assert milestone(life, 2018, current_year=2026) is Milestone.THIS_YEAR
+    assert milestone(life, 2018, current_year=2027) is Milestone.REACHED
+    assert milestone(TaxEnvelope.PEA, 2020, current_year=2026) is Milestone.REACHED
+    assert milestone(TaxEnvelope.CTO, 2000, current_year=2026) is None
