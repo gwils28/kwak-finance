@@ -1,4 +1,5 @@
 import { activityEn } from "./activity";
+import { auditEn } from "./audit";
 import { authEn, navEn } from "./auth";
 import { commonEn, errorsEn } from "./common";
 import { dashboardEn } from "./dashboard";
@@ -31,6 +32,7 @@ export const en = {
   reports: reportsEn,
   forecast: forecastEn,
   activity: activityEn,
+  audit: auditEn,
   demo: demoEn,
   wealth: wealthEn,
   projection: projectionEn,

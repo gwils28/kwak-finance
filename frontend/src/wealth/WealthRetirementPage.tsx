@@ -1,5 +1,6 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useI18n } from "../i18n";
+import { ProjectionTabs } from "./ProjectionTabs";
 import { RetirementForm } from "./RetirementForm";
 import { RETIREMENT_RUN_KEY, RetirementPlan } from "./RetirementPlan";
 
@@ -9,6 +10,7 @@ export function WealthRetirementPage() {
   const queryClient = useQueryClient();
   return (
     <div className="flex flex-col gap-4">
+      <ProjectionTabs />
       <h1 className="text-3xl font-black tracking-tight">{t.wealth.retirementTitle}</h1>
       <RetirementPlan />
       <RetirementForm

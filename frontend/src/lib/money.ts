@@ -2,12 +2,18 @@
  * The API sends amounts as decimal strings ("1234.56"), never floats. Keep them as strings:
  * Intl formats a decimal string exactly. Formats follow the interface language.
  */
+import type { Language } from "../api/generated";
 import { currentLanguage, numberFormat } from "./locale";
 
 const EUR: Intl.NumberFormatOptions = { style: "currency", currency: "EUR" };
 
 export function formatEur(amount: string): string {
-  return numberFormat(EUR).format(amount as Intl.StringNumericLiteral);
+  return formatEurIn(amount, currentLanguage());
+}
+
+/** As formatEur, in a given language: a document's, which may not be the interface's. */
+export function formatEurIn(amount: string, language: Language): string {
+  return numberFormat(EUR, language).format(amount as Intl.StringNumericLiteral);
 }
 
 /** "1 500,5" or "1500.50" -> "1500.50"; null if not a whole number of cents. */
@@ -63,7 +69,44 @@ type Num = string | number;
 
 /** "1621.04" -> "1 621 €" (fr) or "€1,621" (en): for overviews, where cents are noise. */
 export function formatEurWhole(amount: Num): string {
-  return numberFormat(WHOLE_EUR).format(amount as Intl.StringNumericLiteral);
+  return formatEurWholeIn(amount, currentLanguage());
+}
+
+/** As formatEurWhole, in a given language. */
+export function formatEurWholeIn(amount: Num, language: Language): string {
+  return numberFormat(WHOLE_EUR, language).format(amount as Intl.StringNumericLiteral);
+}
+
+const ONE_DECIMAL: Intl.NumberFormatOptions = {
+  minimumFractionDigits: 1,
+  maximumFractionDigits: 1,
+};
+
+/** A percentage the API already rounded to a tenth: "34.0" -> "34.0 %" ("34,0 %" in French). */
+export function formatTenthPercentIn(percent: Num, language: Language): string {
+  return withPercentSign(
+    numberFormat(ONE_DECIMAL, language).format(percent as Intl.StringNumericLiteral),
+    language,
+  );
+}
+
+const UP_TO_HUNDREDTHS: Intl.NumberFormatOptions = { maximumFractionDigits: 2 };
+
+/** A rate the API gives as a percentage to the hundredth: "3.50" -> "3.5 %". */
+export function formatRatePercentIn(percent: Num, language: Language): string {
+  return withPercentSign(
+    numberFormat(UP_TO_HUNDREDTHS, language).format(percent as Intl.StringNumericLiteral),
+    language,
+  );
+}
+
+function withPercentSign(number: string, language: Language): string {
+  return language === "fr" ? `${number}\u00a0%` : `${number} %`;
+}
+
+/** A number to a tenth: "6.0" -> "6.0" ("6,0" in French). */
+export function formatTenthIn(value: Num, language: Language): string {
+  return numberFormat(ONE_DECIMAL, language).format(value as Intl.StringNumericLiteral);
 }
 
 const COMPACT_EUR: Intl.NumberFormatOptions = {

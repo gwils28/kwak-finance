@@ -62,7 +62,7 @@ test("each member enters their retirement and anyone the household's settings", 
     "GET /api/retirement/run": () => Response.json({ problem: "no_member", plan: null }),
   });
   const user = userEvent.setup();
-  render(<TestApp path="/wealth/retirement" />);
+  render(<TestApp path="/wealth/projection/retirement" />);
 
   expect(await screen.findByRole("heading", { name: "Retirement" })).toBeVisible();
   expect(await screen.findByText(/Enter your birth month, your retirement/)).toBeVisible();
@@ -172,7 +172,7 @@ test("the plan answers first: the standard of living, the share covered, how lon
     "GET /api/retirement": () => Response.json(retirement),
     "GET /api/retirement/run": () => Response.json({ problem: null, plan }),
   });
-  render(<TestApp path="/wealth/retirement" />);
+  render(<TestApp path="/wealth/projection/retirement" />);
 
   const living = await screen.findByLabelText("Standard of living from Dec 2026, 9 in 10");
   expect(within(living).getByText("€1,300 a month")).toBeVisible();
@@ -211,7 +211,7 @@ test("a horizon below 85 and declared savings turned negative are flagged, in Fr
     "GET /api/retirement": () => Response.json(retirement),
     "GET /api/retirement/run": () => Response.json({ problem: null, plan: declared }),
   });
-  render(<TestApp path="/wealth/retirement" />);
+  render(<TestApp path="/wealth/projection/retirement" />);
 
   expect(
     await screen.findByText(
