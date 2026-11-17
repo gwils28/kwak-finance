@@ -292,3 +292,34 @@
     font-variant-numeric: tabular-nums;
   }
 }
+
+/* Printing (the audit document, F-AUD-1): A4, page numbers, the light palette whatever the theme,
+   and the sections kept whole where they fit. */
+@media print {
+  @page {
+    size: A4;
+    margin: 16mm 14mm;
+    @bottom-right {
+      content: counter(page) " / " counter(pages);
+      font-size: 9pt;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --color-bg: var(--color-neutral-50);
+    --color-surface: var(--color-neutral-50);
+    --color-fg: var(--color-neutral-900);
+    --color-muted: var(--color-neutral-500);
+    --color-border: var(--color-neutral-200);
+    --color-accent: var(--color-primary-600);
+    --color-negative: var(--color-danger-700);
+  }
+
+  body {
+    background: var(--color-bg);
+  }
+
+  .print-whole {
+    break-inside: avoid-page;
+  }
+}

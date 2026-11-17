@@ -15,7 +15,7 @@ import { useI18n } from "./i18n";
  * Three spaces, each with its tabs: spending (the everyday pages), wealth, apart since it is
  * followed monthly rather than daily, and goals. The overview, a summary of the whole app, is the app's
  * name; the household pages (accounts, categories, members…) are in the account menu. A new
- * page adds its tab to its space.
+ * page adds its tab to its space. Retirement is a sub-tab of the projection (`ProjectionTabs`).
  */
 const SPACES = {
   spending: [
@@ -28,7 +28,6 @@ const SPACES = {
     { to: "/wealth", label: "wealthTracking", exact: true },
     { to: "/wealth/analysis", label: "wealthAnalysis", exact: false },
     { to: "/wealth/projection", label: "wealthProjection", exact: false },
-    { to: "/wealth/retirement", label: "wealthRetirement", exact: false },
   ],
   // The pyramid's tab stays marked on each goal's page.
   goals: [
@@ -112,7 +111,7 @@ export function AppLayout() {
   return (
     <div className="flex min-h-screen flex-col">
       {/* Above the tables' sticky headers (z-30), so the account menu opens over them. */}
-      <header className="sticky top-0 z-40 border-b border-border bg-surface/95 backdrop-blur">
+      <header className="sticky top-0 z-40 print:hidden border-b border-border bg-surface/95 backdrop-blur">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-8 px-4 md:h-14 md:flex-nowrap">
           <Link
             to="/"
@@ -165,6 +164,15 @@ export function AppLayout() {
           )}
           <div className="ml-auto flex items-center gap-3">
             <Link
+              to="/audit"
+              className="flex items-center gap-1.5 rounded-md px-2 py-1.5 text-sm hover:text-accent"
+              activeProps={{ className: "text-accent" }}
+              inactiveProps={{ className: "text-muted" }}
+            >
+              <Icon name="file" className="size-5" />
+              <span className="hidden sm:inline">{t.nav.audit}</span>
+            </Link>
+            <Link
               to="/guide"
               className="flex items-center gap-1.5 rounded-md px-2 py-1.5 text-sm hover:text-accent"
               activeProps={{ className: "text-accent" }}
@@ -186,7 +194,7 @@ export function AppLayout() {
         </div>
       </header>
       {user.demo && <DemoBanner demo={demo} />}
-      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-10">
+      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-10 print:max-w-none print:p-0">
         <Outlet />
       </main>
       <Footer />

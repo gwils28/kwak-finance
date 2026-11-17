@@ -1,4 +1,4 @@
-import type { RegulatedType } from "../api/generated";
+import type { RegulatedType, TaxEnvelope } from "../api/generated";
 
 export const wealthEn = {
   title: "Wealth",
@@ -46,6 +46,20 @@ export const wealthEn = {
   } satisfies Record<RegulatedType, string>,
   regulatedHelp:
     "A regulated account has a deposit ceiling, which the goals analysis watches. It is a person's own, so a joint line cannot have one.",
+  envelope: "Tax envelope",
+  envelopeNone: "None",
+  envelopes: {
+    pea: "PEA",
+    pea_pme: "PEA-PME",
+    life_insurance: "Life insurance",
+    capitalisation: "Capitalisation contract",
+    per: "PER",
+    cto: "Securities account (CTO)",
+    employee_savings: "Employee savings (PEE, PERCOL)",
+  } satisfies Record<TaxEnvelope, string>,
+  openingYear: "Opened in",
+  envelopeHelp:
+    "The audit document shows the envelope and its age: a life insurance's tax treatment changes at 8 years, a PEA's at 5.",
   closedFrom: "Closed from",
   closedHelp: "Sold or repaid: the line keeps its history and leaves the months after.",
   reopen: "Reopen",
@@ -276,6 +290,20 @@ export const wealthFr: typeof wealthEn = {
   },
   regulatedHelp:
     "Un livret réglementé a un plafond de dépôts, que l'analyse des objectifs surveille. Il est personnel : une ligne commune ne peut pas en avoir.",
+  envelope: "Enveloppe fiscale",
+  envelopeNone: "Aucune",
+  envelopes: {
+    pea: "PEA",
+    pea_pme: "PEA-PME",
+    life_insurance: "Assurance vie",
+    capitalisation: "Contrat de capitalisation",
+    per: "PER",
+    cto: "Compte-titres ordinaire (CTO)",
+    employee_savings: "Épargne salariale (PEE, PERCOL)",
+  },
+  openingYear: "Ouvert en",
+  envelopeHelp:
+    "Le document d'audit affiche l'enveloppe et son âge : la fiscalité d'une assurance vie change à 8 ans, celle d'un PEA à 5.",
   closedFrom: "Clôturée à partir de",
   closedHelp: "Vendue ou remboursée : la ligne garde son historique et quitte les mois suivants.",
   reopen: "Rouvrir",

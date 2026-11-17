@@ -1,3 +1,4 @@
+import type { Language } from "../api/generated";
 import { dateFormat } from "./locale";
 
 const DATE: Intl.DateTimeFormatOptions = { dateStyle: "medium" };
@@ -12,6 +13,11 @@ export function todayIso(): string {
 /** An instant in the browser's time zone: "14 Oct 2026, 22:15" (en), "14 oct. 2026, 22:15" (fr). */
 export function formatDateTime(iso: string): string {
   return dateFormat({ dateStyle: "medium", timeStyle: "short" }).format(new Date(iso));
+}
+
+/** As formatDateTime, in a given language: a document's. */
+export function formatDateTimeIn(iso: string, language: Language): string {
+  return dateFormat({ dateStyle: "medium", timeStyle: "short" }, language).format(new Date(iso));
 }
 
 /** "2026-01-08" -> "8 Jan 2026" (en) or "8 janv. 2026" (fr). A calendar date, not a UTC instant. */

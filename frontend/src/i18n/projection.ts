@@ -69,7 +69,7 @@ export const projectionEn = {
   income: (median: string, low: string, rate: string) =>
     `About ${median} a month in half of the outcomes, ${low} in nine in ten, at a ${rate} withdrawal rate.`,
   incomeCaveat:
-    "A rule of thumb from US history, for holdings mostly in shares paying out over about 30 years: lower for a longer drawdown (3 to 3.5 % over 40 years or more) or mostly savings accounts; before tax and social charges on the gains withdrawn; loan payments still running then not deducted; the home not counted. Not a promise: the Retirement tab works it out.",
+    "A rule of thumb from US history, for holdings mostly in shares paying out over about 30 years: lower for a longer drawdown (3 to 3.5 % over 40 years or more) or mostly savings accounts; before tax and social charges on the gains withdrawn; loan payments still running then not deducted; the home not counted. Not a promise: the Retirement sub-tab works it out.",
   withdrawalRate: "Withdrawal rate (% a year)",
   invalidRate: "The withdrawal rate is from 2 % to 5 %.",
   partToday: "Today",
@@ -227,7 +227,7 @@ export const projectionFr: typeof projectionEn = {
   income: (median, low, rate) =>
     `Environ ${median} par mois dans la moitié des cas, ${low} dans 9 cas sur 10, en retirant ${rate} par an.`,
   incomeCaveat:
-    "Un repère tiré de l'historique américain, pour un patrimoine surtout en actions retiré sur environ 30 ans : plus bas pour un retrait plus long (3 à 3,5 % sur 40 ans ou plus) ou surtout en livrets ; avant impôts et prélèvements sociaux sur les gains retirés ; sans déduire les mensualités de prêt encore en cours ; la résidence non comptée. Pas une promesse : l'onglet Retraite fait le calcul.",
+    "Un repère tiré de l'historique américain, pour un patrimoine surtout en actions retiré sur environ 30 ans : plus bas pour un retrait plus long (3 à 3,5 % sur 40 ans ou plus) ou surtout en livrets ; avant impôts et prélèvements sociaux sur les gains retirés ; sans déduire les mensualités de prêt encore en cours ; la résidence non comptée. Pas une promesse : le sous-onglet Retraite fait le calcul.",
   withdrawalRate: "Taux de retrait (% par an)",
   invalidRate: "Le taux de retrait va de 2 % à 5 %.",
   partToday: "Aujourd'hui",

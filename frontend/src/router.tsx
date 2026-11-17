@@ -10,6 +10,7 @@ import {
 import { AppLayout } from "./AppLayout";
 import { ActivityPage } from "./activity/ActivityPage";
 import type { Scope } from "./api/generated";
+import { AuditPage } from "./audit/AuditPage";
 import { LoginPage } from "./auth/LoginPage";
 import { meQuery } from "./auth/session";
 import { ForecastPage } from "./forecast/ForecastPage";
@@ -133,10 +134,19 @@ const wealthProjectionRoute = createRoute({
   component: WealthProjectionPage,
 });
 
+// Retirement is a sub-tab of the projection; its old address still leads there.
 const wealthRetirementRoute = createRoute({
   getParentRoute: () => appRoute,
-  path: "/wealth/retirement",
+  path: "/wealth/projection/retirement",
   component: WealthRetirementPage,
+});
+
+const oldRetirementRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: "/wealth/retirement",
+  beforeLoad: () => {
+    throw redirect({ to: "/wealth/projection/retirement", replace: true });
+  },
 });
 
 const goalsRoute = createRoute({
@@ -171,6 +181,12 @@ const activityRoute = createRoute({
   getParentRoute: () => appRoute,
   path: "/activity",
   component: ActivityPage,
+});
+
+const auditRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: "/audit",
+  component: AuditPage,
 });
 
 const guideRoute = createRoute({
@@ -212,6 +228,7 @@ const routeTree = rootRoute.addChildren([
     wealthAnalysisRoute,
     wealthProjectionRoute,
     wealthRetirementRoute,
+    oldRetirementRoute,
     goalsRoute,
     goalAnalysisRoute,
     goalRoute,
@@ -219,6 +236,7 @@ const routeTree = rootRoute.addChildren([
     forecastRoute,
     membersRoute,
     activityRoute,
+    auditRoute,
     guideRoute,
   ]),
   loginRoute,

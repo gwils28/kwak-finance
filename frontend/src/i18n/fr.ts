@@ -1,4 +1,5 @@
 import { activityFr } from "./activity";
+import { auditFr } from "./audit";
 import { authFr, navFr } from "./auth";
 import { commonFr, errorsFr } from "./common";
 import { dashboardFr } from "./dashboard";
@@ -31,6 +32,7 @@ export const fr: Messages = {
   reports: reportsFr,
   forecast: forecastFr,
   activity: activityFr,
+  audit: auditFr,
   demo: demoFr,
   wealth: wealthFr,
   projection: projectionFr,

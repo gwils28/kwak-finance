@@ -8,6 +8,7 @@ import {
   type RegulatedType,
   removeWealthValue,
   setWealthValue,
+  type TaxEnvelope,
   updateWealthLine,
   updateWealthMonth,
   type Visibility,
@@ -416,6 +417,64 @@ function RegulatedSelect({
   );
 }
 
+const ENVELOPES: TaxEnvelope[] = [
+  "pea",
+  "pea_pme",
+  "life_insurance",
+  "capitalisation",
+  "per",
+  "cto",
+  "employee_savings",
+];
+
+/** An asset line's tax envelope and opening year (F-WLT-2), for the audit document. */
+function EnvelopeFields({
+  envelope,
+  year,
+  onEnvelope,
+  onYear,
+}: {
+  envelope: TaxEnvelope | null;
+  year: string;
+  onEnvelope: (v: TaxEnvelope | null) => void;
+  onYear: (v: string) => void;
+}) {
+  const { t } = useI18n();
+  const ids = { envelope: useId(), year: useId() };
+  return (
+    <>
+      <label htmlFor={ids.envelope} className={labelClass}>
+        {t.wealth.envelope}
+        <select
+          id={ids.envelope}
+          className={fieldClass}
+          value={envelope ?? ""}
+          onChange={(e) => onEnvelope((e.target.value || null) as TaxEnvelope | null)}
+        >
+          <option value="">{t.wealth.envelopeNone}</option>
+          {ENVELOPES.map((x) => (
+            <option key={x} value={x}>
+              {t.wealth.envelopes[x]}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label htmlFor={ids.year} className={labelClass}>
+        {t.wealth.openingYear}
+        <input
+          id={ids.year}
+          type="number"
+          min={1900}
+          max={new Date().getFullYear()}
+          className={`${fieldClass} w-28`}
+          value={year}
+          onChange={(e) => onYear(e.target.value)}
+        />
+      </label>
+    </>
+  );
+}
+
 function AddLine({ onDone }: { onDone: () => void }) {
   const { t } = useI18n();
   const [category, setCategory] = useState("");
@@ -486,6 +545,12 @@ function EditLineForm({ line, onDone }: { line: WealthLineOut; onDone: () => voi
   const [visibility, setVisibility] = useState<Visibility>(line.visibility);
   const [closedFrom, setClosedFrom] = useState(line.closed_from ?? "");
   const [regulated, setRegulated] = useState<RegulatedType | null>(line.regulated_type);
+  const [envelope, setEnvelope] = useState<TaxEnvelope | null>(line.tax_envelope ?? null);
+  const [openingYear, setOpeningYear] = useState(
+    line.opening_year ? String(line.opening_year) : "",
+  );
+  const categories = useCategories();
+  const isAsset = categories.data?.find((c) => c.id === category)?.kind === "asset";
   const isOwner = line.owner_id === user.id;
   // A regulated account is its owner's to name; moving the line out of savings accounts or
   // making it joint clears it.
@@ -501,6 +566,12 @@ function EditLineForm({ line, onDone }: { line: WealthLineOut; onDone: () => voi
           category_id: category,
           ...(isOwner ? { visibility } : {}),
           closed_from: isMonth(closedFrom) ? closedFrom : null,
+          ...(categories.data
+            ? {
+                tax_envelope: isAsset && !(regulable && regulated) ? envelope : null,
+                opening_year: isAsset && /^\d{4}$/.test(openingYear) ? Number(openingYear) : null,
+              }
+            : {}),
           ...(isOwner && allowed !== undefined
             ? { regulated_type: regulable ? regulated : null }
             : {}),
@@ -549,6 +620,14 @@ function EditLineForm({ line, onDone }: { line: WealthLineOut; onDone: () => voi
         <CategorySelect value={category} onChange={setCategory} />
         {isOwner && <VisibilitySelect value={visibility} onChange={setVisibility} />}
         {regulable && <RegulatedSelect value={regulated} onChange={setRegulated} />}
+        {isAsset && !(regulable && regulated) && (
+          <EnvelopeFields
+            envelope={envelope}
+            year={openingYear}
+            onEnvelope={setEnvelope}
+            onYear={setOpeningYear}
+          />
+        )}
         <label htmlFor={closedId} className={labelClass}>
           {t.wealth.closedFrom}
           <input
@@ -568,6 +647,7 @@ function EditLineForm({ line, onDone }: { line: WealthLineOut; onDone: () => voi
       </div>
       <p className="text-xs text-muted">{t.wealth.closedHelp}</p>
       {regulable && <p className="text-xs text-muted">{t.wealth.regulatedHelp}</p>}
+      {isAsset && <p className="text-xs text-muted">{t.wealth.envelopeHelp}</p>}
       {isOwner && <p className="text-xs text-muted">{t.wealth.deleteHelp}</p>}
     </Frame>
   );

@@ -106,7 +106,7 @@ test("the sign-in page opens with the logo and the app's name", async () => {
   );
 });
 
-test("the wealth space has its own tabs: tracking, analysis, projection and retirement", async () => {
+test("the wealth space has its own tabs: tracking, analysis and projection", async () => {
   fakeApi({
     "GET /api/auth/me": () => Response.json(owner),
     "PATCH /api/auth/me": (body) => Response.json({ ...owner, ...(body as object) }),
@@ -127,13 +127,52 @@ test("the wealth space has its own tabs: tracking, analysis, projection and reti
     within(main)
       .getAllByRole("link")
       .map((tab) => tab.textContent),
-  ).toEqual(["Monthly tracking", "Analysis", "Projection", "Retirement"]);
+  ).toEqual(["Monthly tracking", "Analysis", "Projection"]);
   expect(within(main).getByRole("link", { name: "Analysis" })).toHaveAttribute(
     "aria-current",
     "page",
   );
   expect(within(main).getByRole("link", { name: "Monthly tracking" })).not.toHaveAttribute(
     "aria-current",
+  );
+});
+
+test("retirement is a sub-tab of the projection, which stays marked", async () => {
+  fakeApi({
+    "GET /api/auth/me": () => Response.json(owner),
+    "PATCH /api/auth/me": (body) => Response.json({ ...owner, ...(body as object) }),
+  });
+  render(<TestApp path="/wealth/projection/retirement" />);
+
+  const main = await screen.findByRole("navigation", { name: "Main" });
+  expect(within(main).getByRole("link", { name: "Projection" })).toHaveAttribute(
+    "aria-current",
+    "page",
+  );
+  const sub = screen.getByRole("navigation", { name: "Projection views" });
+  expect(
+    within(sub)
+      .getAllByRole("link")
+      .map((tab) => tab.textContent),
+  ).toEqual(["Simulator", "Retirement"]);
+  expect(within(sub).getByRole("link", { name: "Retirement" })).toHaveAttribute(
+    "aria-current",
+    "page",
+  );
+  expect(within(sub).getByRole("link", { name: "Simulator" })).not.toHaveAttribute("aria-current");
+});
+
+test("the old retirement address leads to the projection's sub-tab", async () => {
+  fakeApi({
+    "GET /api/auth/me": () => Response.json(owner),
+    "PATCH /api/auth/me": (body) => Response.json({ ...owner, ...(body as object) }),
+  });
+  render(<TestApp path="/wealth/retirement" />);
+
+  const sub = await screen.findByRole("navigation", { name: "Projection views" });
+  expect(within(sub).getByRole("link", { name: "Retirement" })).toHaveAttribute(
+    "aria-current",
+    "page",
   );
 });
 
