@@ -106,11 +106,15 @@ test("the sign-in page opens with the logo and the app's name", async () => {
   );
 });
 
-test("the wealth space has its own tabs: tracking, analysis and projection", async () => {
-  fakeApi({
+function bareApi() {
+  return fakeApi({
     "GET /api/auth/me": () => Response.json(owner),
     "PATCH /api/auth/me": (body) => Response.json({ ...owner, ...(body as object) }),
   });
+}
+
+test("the wealth space has its own tabs, retirement and the audit among them", async () => {
+  bareApi();
   render(<TestApp path="/wealth/analysis" />);
 
   const spaces = await screen.findByRole("navigation", { name: "Spaces" });
@@ -127,7 +131,7 @@ test("the wealth space has its own tabs: tracking, analysis and projection", asy
     within(main)
       .getAllByRole("link")
       .map((tab) => tab.textContent),
-  ).toEqual(["Monthly tracking", "Analysis", "Projection"]);
+  ).toEqual(["Monthly tracking", "Analysis", "Projection", "Retirement", "Audit"]);
   expect(within(main).getByRole("link", { name: "Analysis" })).toHaveAttribute(
     "aria-current",
     "page",
@@ -137,43 +141,30 @@ test("the wealth space has its own tabs: tracking, analysis and projection", asy
   );
 });
 
-test("retirement is a sub-tab of the projection, which stays marked", async () => {
-  fakeApi({
-    "GET /api/auth/me": () => Response.json(owner),
-    "PATCH /api/auth/me": (body) => Response.json({ ...owner, ...(body as object) }),
-  });
-  render(<TestApp path="/wealth/projection/retirement" />);
+test.each([
+  ["/wealth/retirement", "Retirement"],
+  ["/wealth/projection/retirement", "Retirement"],
+  ["/wealth/audit", "Audit"],
+  ["/audit", "Audit"],
+])("%s opens the wealth tab %s, marked", async (path, tab) => {
+  bareApi();
+  render(<TestApp path={path} />);
 
   const main = await screen.findByRole("navigation", { name: "Main" });
-  expect(within(main).getByRole("link", { name: "Projection" })).toHaveAttribute(
+  expect(within(main).getByRole("link", { name: tab })).toHaveAttribute("aria-current", "page");
+  expect(within(main).getByRole("link", { name: "Projection" })).not.toHaveAttribute(
     "aria-current",
-    "page",
   );
-  const sub = screen.getByRole("navigation", { name: "Projection views" });
-  expect(
-    within(sub)
-      .getAllByRole("link")
-      .map((tab) => tab.textContent),
-  ).toEqual(["Simulator", "Retirement"]);
-  expect(within(sub).getByRole("link", { name: "Retirement" })).toHaveAttribute(
-    "aria-current",
-    "page",
-  );
-  expect(within(sub).getByRole("link", { name: "Simulator" })).not.toHaveAttribute("aria-current");
+  // The projection no longer has views of its own.
+  expect(screen.queryByRole("navigation", { name: "Projection views" })).toBeNull();
 });
 
-test("the old retirement address leads to the projection's sub-tab", async () => {
-  fakeApi({
-    "GET /api/auth/me": () => Response.json(owner),
-    "PATCH /api/auth/me": (body) => Response.json({ ...owner, ...(body as object) }),
-  });
-  render(<TestApp path="/wealth/retirement" />);
+test("the audit is a wealth tab, no longer next to the guide", async () => {
+  api();
+  render(<TestApp path="/spending?month=2026-10" />);
 
-  const sub = await screen.findByRole("navigation", { name: "Projection views" });
-  expect(within(sub).getByRole("link", { name: "Retirement" })).toHaveAttribute(
-    "aria-current",
-    "page",
-  );
+  await screen.findByRole("navigation", { name: "Main" });
+  expect(screen.queryByRole("link", { name: "Audit" })).toBeNull();
 });
 
 test("the goals space has its pyramid and its analysis", async () => {

@@ -280,7 +280,7 @@ What the next twelve months of spending could look like: each category's income,
 
 A document that sums up the household's finances and wealth for one reader, built on demand from what the household entered: for a **banker** (a mortgage application), a **wealth advisor** (CGP), an **accountant or notary**, or an **AI chat** asked for an audit and advice. It states facts and the app's own results with their limits, never advice written by the app, and says so. Nothing is stored: the document is rebuilt from today's data each time.
 
-- F-AUD-1: **The page**, *Audit*, reached from the header (§7): a form, then the document under it, rebuilt as the form changes. The form sets:
+- F-AUD-1: **The page**, *Audit*, the last tab of the wealth space: a form, then the document under it, rebuilt as the form changes. The form sets:
   - the **audience**: banker, wealth advisor, accountant or notary, AI chat;
   - the **scope**: *household*, *mine* or *joint*, as the wealth page (F-WLT-1): only the lines the viewer sees, a member's private lines never in another member's document;
   - the **period** summarised for income and spending: a start and an end month, complete months only (the end month the last complete one by default, the start twelve months before, or the first month holding a line when the history is shorter, which the document says), 1 to 60 months;
