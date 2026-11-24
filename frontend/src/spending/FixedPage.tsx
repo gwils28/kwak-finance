@@ -103,62 +103,67 @@ export function FixedPage() {
               </tr>
             </thead>
             <tbody>
-              {items.data.map((item) => (
-                <tr
-                  key={item.id}
-                  className={`border-t border-border ${item.paused ? "text-muted" : ""}`}
-                >
-                  <td className="px-2 py-2">{item.label}</td>
-                  <td className="px-2 py-2">{nameOf(item.category_id)}</td>
-                  <td className="px-2 py-2 text-right font-mono tabular-nums">
-                    {formatEur(negate(item.amount))}
-                  </td>
-                  <td className="px-2 py-2">
-                    {f.frequencies[item.frequency]} {f.dayOf(item.day)} ·{" "}
-                    {f.since(monthLabel(item.first_month))}
-                    {item.last_month && ` · ${f.until(monthLabel(item.last_month))}`}
-                  </td>
-                  <td className="px-2 py-2">{item.paused ? f.paused : f.active}</td>
-                  <td className="px-2 py-2">
-                    <div className="flex justify-end gap-2">
-                      {deleting === item.id ? (
-                        <>
-                          <span className="self-center text-xs">{f.deleteAsk}</span>
-                          <Button className="py-1" onClick={() => void remove(item)}>
-                            {f.deleteConfirm}
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            className="py-1"
-                            onClick={() => setDeleting(null)}
-                          >
-                            {t.common.cancel}
-                          </Button>
-                        </>
-                      ) : (
-                        <>
-                          <Button
-                            variant="ghost"
-                            className="py-1"
-                            aria-label={`${f.edit} ${item.label}`}
-                            onClick={() => setEditing(item)}
-                          >
-                            {f.edit}
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            className="py-1"
-                            aria-label={`${t.common.delete} ${item.label}`}
-                            onClick={() => setDeleting(item.id)}
-                          >
-                            {t.common.delete}
-                          </Button>
-                        </>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
+              {items.data.map((item) => {
+                const ended = item.last_month !== null && item.last_month < thisMonth();
+                return (
+                  <tr
+                    key={item.id}
+                    className={`border-t border-border ${item.paused || ended ? "text-muted" : ""}`}
+                  >
+                    <td className="px-2 py-2">{item.label}</td>
+                    <td className="px-2 py-2">{nameOf(item.category_id)}</td>
+                    <td className="px-2 py-2 text-right font-mono tabular-nums">
+                      {formatEur(negate(item.amount))}
+                    </td>
+                    <td className="px-2 py-2">
+                      {f.frequencies[item.frequency]} {f.dayOf(item.day)} ·{" "}
+                      {f.since(monthLabel(item.first_month))}
+                      {item.last_month && ` · ${f.until(monthLabel(item.last_month))}`}
+                    </td>
+                    <td className="px-2 py-2">
+                      {ended ? f.ended : item.paused ? f.paused : f.active}
+                    </td>
+                    <td className="px-2 py-2">
+                      <div className="flex justify-end gap-2">
+                        {deleting === item.id ? (
+                          <>
+                            <span className="self-center text-xs">{f.deleteAsk}</span>
+                            <Button className="py-1" onClick={() => void remove(item)}>
+                              {f.deleteConfirm}
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              className="py-1"
+                              onClick={() => setDeleting(null)}
+                            >
+                              {t.common.cancel}
+                            </Button>
+                          </>
+                        ) : (
+                          <>
+                            <Button
+                              variant="ghost"
+                              className="py-1"
+                              aria-label={`${f.edit} ${item.label}`}
+                              onClick={() => setEditing(item)}
+                            >
+                              {f.edit}
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              className="py-1"
+                              aria-label={`${t.common.delete} ${item.label}`}
+                              onClick={() => setDeleting(item.id)}
+                            >
+                              {t.common.delete}
+                            </Button>
+                          </>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

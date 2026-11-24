@@ -13,7 +13,7 @@ import {
 import { Button, ErrorAlert } from "../components/ui";
 import { useI18n } from "../i18n";
 import { numberFormat } from "../lib/locale";
-import { formatEurWhole, formatPercent, formatRate } from "../lib/money";
+import { formatEurWhole, formatPercent, formatProgress, formatRate } from "../lib/money";
 import { monthLabel, shiftMonth } from "../lib/months";
 import { GOALS_KEY } from "./shared";
 
@@ -209,7 +209,7 @@ function useSaid(point: PointOut, data: GoalAnalysisOut): Said {
             options: [a.capstoneMonthly(eur(f.monthly), Number(f.months ?? 3))],
             link: subjectLink,
           }
-        : { fact: a.capstoneFund(formatPercent(text(f.progress) ?? "0"), amount) };
+        : { fact: a.capstoneFund(formatProgress(text(f.progress) ?? "0"), amount) };
     case "left_over":
       return {
         fact: a.leftOver(amount),

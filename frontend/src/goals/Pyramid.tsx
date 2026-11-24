@@ -1,7 +1,7 @@
 import { useId } from "react";
 import type { GoalsOut, Tier } from "../api/generated";
 import { useI18n } from "../i18n";
-import { formatEurWhole, formatPercent } from "../lib/money";
+import { formatEurWhole, formatProgress } from "../lib/money";
 import { PYRAMID, TIERS, tierColour } from "./shared";
 
 /**
@@ -247,7 +247,7 @@ export function Pyramid({ data }: { data: GoalsOut }) {
   const label = (tier: Tier) => {
     const p = byTier.get(tier);
     if (p?.progress == null) return g.noGoalInTier;
-    const value = formatPercent(p.progress);
+    const value = formatProgress(p.progress);
     return proPart(tier) === null ? value : `${value} · ${g.ofWhichPro}`;
   };
   const locked = !data.capstone.unlocked;
@@ -264,7 +264,7 @@ export function Pyramid({ data }: { data: GoalsOut }) {
     ...(gate.precaution === null
       ? [g.gateNoPrecaution]
       : Number(gate.precaution) < 1
-        ? [g.gatePrecaution(formatPercent(gate.precaution))]
+        ? [g.gatePrecaution(formatProgress(gate.precaution))]
         : []),
     ...(gate.ahead < gate.needed ? [g.gateAhead(gate.ahead, gate.counted, gate.needed)] : []),
   ];

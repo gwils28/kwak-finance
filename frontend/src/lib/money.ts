@@ -135,6 +135,13 @@ export function formatPercent(ratio: Num): string {
   return numberFormat(PERCENT).format(ratio as Intl.StringNumericLiteral);
 }
 
+/** A progress towards a target: as formatPercent, but held at 99 % below the target, so
+ * 12,450 € of 12,500 € never reads a "100 %" that says it is reached. */
+export function formatProgress(ratio: Num): string {
+  const value = Number(ratio);
+  return formatPercent(value < 1 && value >= 0.995 ? "0.99" : ratio);
+}
+
 /** A signed ratio: "0.2" -> "+20 %". */
 export function formatPercentSigned(ratio: Num): string {
   return numberFormat(SIGNED_PERCENT).format(ratio as Intl.StringNumericLiteral);
