@@ -9,6 +9,28 @@ import { type Cell, type Draft, firstMissing, incomeIds, type SplitDraft } from 
 import { byKind, labelsQuery } from "./queries";
 
 const SPLIT = "__split";
+/**
+ * Below 640 px the grid's rows become cards (the same cells, laid out again): the label and
+ * the amount first, the date and the category under them, the row's actions at the end.
+ */
+export const CARD = {
+  table: "max-sm:block",
+  head: "max-sm:hidden",
+  body: "max-sm:block",
+  row: "max-sm:grid max-sm:grid-cols-[1.25rem_minmax(0,1fr)_7.5rem_auto] max-sm:items-center max-sm:gap-x-1 max-sm:py-2",
+  lead: "max-sm:col-start-1 max-sm:row-start-1 max-sm:w-auto",
+  label: "max-sm:col-start-2 max-sm:row-start-1",
+  amount: "max-sm:col-start-3 max-sm:row-start-1 max-sm:w-auto max-sm:font-semibold",
+  side: "max-sm:col-start-4 max-sm:row-start-1",
+  below: "max-sm:col-span-full max-sm:row-start-3",
+  date: "max-sm:col-start-2 max-sm:row-start-2 max-sm:w-auto max-sm:text-xs max-sm:text-muted",
+  category: "max-sm:col-span-2 max-sm:col-start-3 max-sm:row-start-2 max-sm:w-auto max-sm:text-xs",
+  full: "max-sm:block",
+} as const;
+
+/** On a phone the empty row has no column headers above it: its fields show their edges. */
+const NEW_CELL = "max-sm:border-border";
+
 const CELL =
   "w-full rounded border border-transparent bg-transparent px-2 py-1 hover:border-border focus:border-accent focus:bg-surface focus-visible:outline-none";
 
@@ -215,12 +237,12 @@ export function LineRow({
     <>
       <tr
         ref={row}
-        className={`border-t border-border align-middle transition-colors ${look}`}
+        className={`border-t border-border align-middle transition-colors ${CARD.row} ${look}`}
         data-dirty={dirty || undefined}
         onKeyDown={onKeyDown}
       >
-        <td className="w-8 px-1 text-center">{lead}</td>
-        <td className="w-40 py-1">
+        <td className={`w-8 px-1 text-center ${CARD.lead}`}>{lead}</td>
+        <td className={`w-40 py-1 ${CARD.date}`}>
           <input
             ref={(el) => {
               cells.current.day = el;
@@ -232,12 +254,13 @@ export function LineRow({
             className={CELL}
           />
         </td>
-        <td className="py-1">
+        <td className={`py-1 ${CARD.label}`}>
           <input
             ref={(el) => {
               cells.current.label = el;
             }}
             aria-label={g.label}
+            placeholder={variant === "new" ? g.label : undefined}
             value={draft.label}
             maxLength={100}
             list={listId}
@@ -246,7 +269,7 @@ export function LineRow({
               setLabelTyped(true);
               set({ label: e.target.value });
             }}
-            className={CELL}
+            className={`${CELL} ${variant === "new" ? NEW_CELL : ""}`}
           />
           <datalist id={listId}>
             {suggestions.data?.map((s) => (
@@ -254,18 +277,19 @@ export function LineRow({
             ))}
           </datalist>
         </td>
-        <td className="relative w-32 py-1">
+        <td className={`relative w-32 py-1 ${CARD.amount}`}>
           <input
             ref={(el) => {
               cells.current.amount = el;
             }}
             aria-label={g.amount}
+            placeholder={variant === "new" ? g.amount : undefined}
             inputMode="decimal"
             value={draft.amount}
             onChange={(e) => set({ amount: e.target.value })}
             onFocus={() => setAmountFocused(true)}
             onBlur={() => setAmountFocused(false)}
-            className={`${CELL} text-right font-mono tabular-nums ${shownAmount === null ? "" : "text-transparent"}`}
+            className={`${CELL} text-right font-mono tabular-nums ${shownAmount === null ? "" : "text-transparent"} ${variant === "new" ? NEW_CELL : ""}`}
           />
           {shownAmount !== null && (
             <span
@@ -276,7 +300,7 @@ export function LineRow({
             </span>
           )}
         </td>
-        <td className="w-48 py-1">
+        <td className={`w-48 py-1 ${CARD.category}`}>
           <select
             ref={(el) => {
               cells.current.category = el;
@@ -293,7 +317,10 @@ export function LineRow({
             <option value={SPLIT}>{g.split}</option>
           </select>
         </td>
-        <td className="py-1 pl-2 whitespace-nowrap">
+        {/* Save and cancel, or a fixed expense's buttons, take a line of their own on a card. */}
+        <td
+          className={`py-1 pl-2 whitespace-nowrap ${dirty || variant === "fixed" ? CARD.below : CARD.side}`}
+        >
           <div className="flex items-center justify-end gap-2">
             {dirty && variant !== "fixed" && (
               <>
@@ -331,9 +358,9 @@ export function LineRow({
         />
       )}
       {error && (
-        <tr>
-          <td />
-          <td colSpan={5} role="alert" className="pb-2 text-sm text-negative">
+        <tr className={CARD.full}>
+          <td className="max-sm:hidden" />
+          <td colSpan={5} role="alert" className={`pb-2 text-sm text-negative ${CARD.full}`}>
             {error}
           </td>
         </tr>
@@ -377,9 +404,9 @@ function SplitRow({
     });
 
   return (
-    <tr onKeyDown={onKeyDown}>
-      <td />
-      <td colSpan={5} className="pb-2">
+    <tr onKeyDown={onKeyDown} className={CARD.full}>
+      <td className="max-sm:hidden" />
+      <td colSpan={5} className={`pb-2 ${CARD.full}`}>
         <fieldset className="flex flex-col gap-1 rounded-md border border-border p-2 text-sm">
           <legend className="px-1 text-muted">{s.title}</legend>
           {split.parts.map((part, index) => (
