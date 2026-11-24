@@ -151,13 +151,14 @@ function api(respond: (body: { audience: string; language: string }) => AuditOut
   });
 }
 
-test("the header leads to the banker's document, printed and logged", async () => {
+test("the wealth tab leads to the banker's document, printed and logged", async () => {
   const calls = api(() => auditOut());
   const print = vi.fn();
   vi.stubGlobal("print", print);
-  render(<TestApp path="/" />);
+  render(<TestApp path="/wealth" />);
   const user = userEvent.setup();
-  await user.click(await screen.findByRole("link", { name: "Audit" }));
+  const tabs = await screen.findByRole("navigation", { name: "Main" });
+  await user.click(within(tabs).getByRole("link", { name: "Audit" }));
 
   const doc = await screen.findByRole("article");
   expect(
@@ -204,7 +205,7 @@ test("the AI chat gets an anonymised Markdown document with its prompt", async (
       household: { name: null, members: [{ label: { group: "member", key: "A" }, age: 34 }] },
     }),
   );
-  render(<TestApp path="/audit" />);
+  render(<TestApp path="/wealth/audit" />);
   const user = userEvent.setup();
   await user.click(await screen.findByRole("radio", { name: "An AI chat" }));
   expect(screen.getByRole("checkbox", { name: "Members by name" })).not.toBeChecked();

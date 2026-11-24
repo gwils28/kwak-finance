@@ -15,7 +15,8 @@ import { useI18n } from "./i18n";
  * Three spaces, each with its tabs: spending (the everyday pages), wealth, apart since it is
  * followed monthly rather than daily, and goals. The overview, a summary of the whole app, is the app's
  * name; the household pages (accounts, categories, members…) are in the account menu. A new
- * page adds its tab to its space. Retirement is a sub-tab of the projection (`ProjectionTabs`).
+ * page adds its tab to its space. The tabs sit on a bar of their own under the header, at every
+ * width, so a space with many tabs never squeezes the header.
  */
 const SPACES = {
   spending: [
@@ -28,6 +29,8 @@ const SPACES = {
     { to: "/wealth", label: "wealthTracking", exact: true },
     { to: "/wealth/analysis", label: "wealthAnalysis", exact: false },
     { to: "/wealth/projection", label: "wealthProjection", exact: false },
+    { to: "/wealth/retirement", label: "wealthRetirement", exact: false },
+    { to: "/wealth/audit", label: "audit", exact: false },
   ],
   // The pyramid's tab stays marked on each goal's page.
   goals: [
@@ -71,7 +74,7 @@ const SPACE =
   "rounded-full px-3 py-1 text-sm font-medium whitespace-nowrap transition-colors focus-visible:outline-2 focus-visible:outline-accent";
 
 const TAB =
-  "flex shrink-0 items-center border-b-2 py-3 text-sm font-medium whitespace-nowrap hover:text-fg md:py-0";
+  "flex shrink-0 items-center border-b-2 py-2.5 text-sm font-medium whitespace-nowrap hover:text-fg";
 
 /** Header shared by every signed-in page. */
 export function AppLayout() {
@@ -112,17 +115,22 @@ export function AppLayout() {
     <div className="flex min-h-screen flex-col">
       {/* Above the tables' sticky headers (z-30), so the account menu opens over them. */}
       <header className="sticky top-0 z-40 print:hidden border-b border-border bg-surface/95 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-8 px-4 md:h-14 md:flex-nowrap">
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-4 px-4 sm:h-14 sm:flex-nowrap lg:gap-x-8">
           <Link
             to="/"
-            className="flex h-14 items-center gap-2 font-display text-xl font-black tracking-tight"
+            aria-label={t.common.appName}
+            className="flex h-14 shrink-0 items-center gap-2 font-display text-xl font-black tracking-tight whitespace-nowrap"
           >
             <Logo />
-            {t.common.appName}
+            {/* The name only where there is room for it beside the spaces. */}
+            <span aria-hidden="true" className="hidden lg:inline">
+              {t.common.appName}
+            </span>
           </Link>
           <nav
             aria-label={t.nav.spacesLabel}
-            className="flex items-center gap-1 rounded-full border border-border p-0.5"
+            // On a phone the spaces take a row of their own, under the logo and the menu.
+            className="order-last mb-2 flex w-full items-center justify-center gap-1 rounded-full border border-border p-0.5 sm:order-none sm:mb-0 sm:w-auto"
           >
             {SWITCH.map(({ key, to, label }) => (
               <Link
@@ -140,10 +148,32 @@ export function AppLayout() {
               </Link>
             ))}
           </nav>
-          {place !== null && (
+          <div className="ml-auto flex shrink-0 items-center gap-3">
+            <Link
+              to="/guide"
+              className="flex items-center gap-1.5 rounded-md px-2 py-1.5 text-sm hover:text-accent"
+              activeProps={{ className: "text-accent" }}
+              inactiveProps={{ className: "text-muted" }}
+            >
+              <Icon name="help" className="size-5" />
+              <span className="hidden lg:inline">{t.nav.guide}</span>
+            </Link>
+            <span aria-hidden="true" className="h-6 w-px bg-border" />
+            <AccountMenu
+              name={user.display_name}
+              email={user.email}
+              inDemo={user.demo}
+              onDemo={user.demo ? demo.leave : demo.open}
+              onLanguageChange={saveLanguage}
+              onSignOut={signOut}
+            />
+          </div>
+        </div>
+        {place !== null && (
+          <div className="border-t border-border">
             <nav
               aria-label={t.nav.mainLabel}
-              className="-mx-4 order-last flex w-[calc(100%+2rem)] gap-6 self-stretch overflow-x-auto border-t border-border px-4 md:order-none md:mx-0 md:w-auto md:border-t-0 md:px-0"
+              className="mx-auto flex max-w-6xl gap-6 overflow-x-auto px-4 [scrollbar-width:none]"
             >
               {SPACES[place].map(({ to, label, exact }) => {
                 // The router marks the exact page only; the tab marks itself on its own pages.
@@ -161,37 +191,8 @@ export function AppLayout() {
                 );
               })}
             </nav>
-          )}
-          <div className="ml-auto flex items-center gap-3">
-            <Link
-              to="/audit"
-              className="flex items-center gap-1.5 rounded-md px-2 py-1.5 text-sm hover:text-accent"
-              activeProps={{ className: "text-accent" }}
-              inactiveProps={{ className: "text-muted" }}
-            >
-              <Icon name="file" className="size-5" />
-              <span className="hidden sm:inline">{t.nav.audit}</span>
-            </Link>
-            <Link
-              to="/guide"
-              className="flex items-center gap-1.5 rounded-md px-2 py-1.5 text-sm hover:text-accent"
-              activeProps={{ className: "text-accent" }}
-              inactiveProps={{ className: "text-muted" }}
-            >
-              <Icon name="help" className="size-5" />
-              <span className="hidden sm:inline">{t.nav.guide}</span>
-            </Link>
-            <span aria-hidden="true" className="h-6 w-px bg-border" />
-            <AccountMenu
-              name={user.display_name}
-              email={user.email}
-              inDemo={user.demo}
-              onDemo={user.demo ? demo.leave : demo.open}
-              onLanguageChange={saveLanguage}
-              onSignOut={signOut}
-            />
           </div>
-        </div>
+        )}
       </header>
       {user.demo && <DemoBanner demo={demo} />}
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-10 print:max-w-none print:p-0">

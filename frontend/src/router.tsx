@@ -134,18 +134,18 @@ const wealthProjectionRoute = createRoute({
   component: WealthProjectionPage,
 });
 
-// Retirement is a sub-tab of the projection; its old address still leads there.
+// Retirement and the audit are wealth tabs; their former addresses still lead there.
 const wealthRetirementRoute = createRoute({
   getParentRoute: () => appRoute,
-  path: "/wealth/projection/retirement",
+  path: "/wealth/retirement",
   component: WealthRetirementPage,
 });
 
 const oldRetirementRoute = createRoute({
   getParentRoute: () => appRoute,
-  path: "/wealth/retirement",
+  path: "/wealth/projection/retirement",
   beforeLoad: () => {
-    throw redirect({ to: "/wealth/projection/retirement", replace: true });
+    throw redirect({ to: "/wealth/retirement", replace: true });
   },
 });
 
@@ -185,8 +185,16 @@ const activityRoute = createRoute({
 
 const auditRoute = createRoute({
   getParentRoute: () => appRoute,
-  path: "/audit",
+  path: "/wealth/audit",
   component: AuditPage,
+});
+
+const oldAuditRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: "/audit",
+  beforeLoad: () => {
+    throw redirect({ to: "/wealth/audit", replace: true });
+  },
 });
 
 const guideRoute = createRoute({
@@ -237,6 +245,7 @@ const routeTree = rootRoute.addChildren([
     membersRoute,
     activityRoute,
     auditRoute,
+    oldAuditRoute,
     guideRoute,
   ]),
   loginRoute,
