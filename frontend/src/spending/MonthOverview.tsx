@@ -59,7 +59,7 @@ export function MonthOverview({ month, isOwner }: { month: string; isOwner: bool
       <Figures summary={summary.data} />
       <MonthSoFar summary={summary.data} isOwner={isOwner} />
       <SavingsSoFar summary={summary.data} />
-      <ToConfirm month={month} projectedRest={summary.data.projected_rest} />
+      <ToConfirm month={month} />
       <div className="grid gap-6 lg:grid-cols-2">
         <Top summary={summary.data} />
         <SpendingPace
@@ -127,12 +127,15 @@ function Figures({ summary }: { summary: SpendingMonthOut }) {
           <p>{o.projectedRest(formatEurSigned(summary.projected_rest))}</p>
         )}
       </Tile>
+      {/* What income was not spent is not a savings rate: the share actually saved stands next to it. */}
       <Tile
-        label={t.dashboard.savingsRate}
+        label={o.notSpent}
         value={f.savings_rate === null ? "—" : formatPercent(f.savings_rate)}
       >
         <p className="text-muted">
-          {f.savings_rate === null ? t.dashboard.noIncome : o.savingsRateHelp}
+          {f.savings_rate === null
+            ? t.dashboard.noIncome
+            : o.notSpentHelp(formatPercent(Number(f.saved) / Number(f.income)))}
         </p>
       </Tile>
     </div>
@@ -142,8 +145,13 @@ function Figures({ summary }: { summary: SpendingMonthOut }) {
 /** The month so far (F-BUD-2): each category with a target, highest share used first. */
 function MonthSoFar({ summary, isOwner }: { summary: SpendingMonthOut; isOwner: boolean }) {
   const { t } = useI18n();
+  const tg = t.dashboard.targets;
+  const [all, setAll] = useState(false);
   const lines = summary.progress.lines;
-  const hasPace = lines.some((line) => line.pace !== null);
+  const atRisk = lines.filter((line) => line.status !== "on_track");
+  const shown = all ? lines : atRisk;
+  // Every target of the month shares the same pace: it is told once, under the bars.
+  const pace = lines.find((line) => line.pace !== null)?.pace ?? null;
   return (
     <section aria-label={t.dashboard.targets.titleOf(monthLabel(summary.month))} className={BOX}>
       <div className="flex flex-wrap items-baseline justify-between gap-2">
@@ -159,12 +167,35 @@ function MonthSoFar({ summary, isOwner }: { summary: SpendingMonthOut; isOwner: 
         </p>
       ) : (
         <>
-          <ul className="flex flex-col gap-3">
-            {lines.map((line) => (
-              <ProgressLine key={line.category_id} line={line} month={summary.month} />
-            ))}
-          </ul>
-          {hasPace && <p className="text-xs text-muted">{t.dashboard.targets.paceLegend}</p>}
+          {shown.length === 0 ? (
+            <p className="text-sm">
+              <span aria-hidden="true">{ICON.on_track} </span>
+              {tg.allOnTrack}
+            </p>
+          ) : (
+            <ul className="flex flex-col gap-3">
+              {shown.map((line) => (
+                <ProgressLine key={line.category_id} line={line} month={summary.month} />
+              ))}
+            </ul>
+          )}
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            {pace !== null && shown.length > 0 ? (
+              <p className="text-xs text-muted">{tg.paceLegend(formatPercent(pace))}</p>
+            ) : (
+              <span />
+            )}
+            {atRisk.length < lines.length && (
+              <button
+                type="button"
+                aria-expanded={all}
+                onClick={() => setAll(!all)}
+                className="text-sm text-accent hover:underline"
+              >
+                {all ? tg.onlyAtRisk : tg.seeAll(lines.length)}
+              </button>
+            )}
+          </div>
         </>
       )}
     </section>
@@ -215,14 +246,10 @@ function ProgressLine({ line, month }: { line: SpendingProgressLineOut; month: s
           {tg.status[line.status]}
           {line.share !== null && ` · ${tg.used(formatPercent(line.share))}`}
         </span>
-        <span className="text-muted">
-          {/* No pace for a one-off category, nor for a month other than this one. */}
-          {line.pace !== null
-            ? tg.pace(formatPercent(line.pace))
-            : month === thisMonth()
-              ? tg.oneOff
-              : null}
-        </span>
+        {/* No pace for a one-off category, nor for a month other than this one. */}
+        {line.pace === null && month === thisMonth() && (
+          <span className="text-muted">{tg.oneOff}</span>
+        )}
       </div>
     </li>
   );
@@ -297,8 +324,8 @@ function SavingsLine({ line, month }: { line: SpendingSavingsLineOut; month: str
   );
 }
 
-/** F-FIX-4: the month's fixed expenses still to confirm, and the rest once they are paid. */
-function ToConfirm({ month, projectedRest }: { month: string; projectedRest: string }) {
+/** F-FIX-4: the month's fixed expenses still to confirm; the rest once they are paid is in the figures. */
+function ToConfirm({ month }: { month: string }) {
   const { t } = useI18n();
   const c = t.overview.toConfirm;
   const queryClient = useQueryClient();
@@ -364,7 +391,6 @@ function ToConfirm({ month, projectedRest }: { month: string; projectedRest: str
         </ul>
       )}
       <ErrorAlert message={error} />
-      <p className="text-sm font-medium">{c.projected(formatEurSigned(projectedRest))}</p>
     </section>
   );
 }

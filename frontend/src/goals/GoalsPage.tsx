@@ -51,7 +51,12 @@ export function GoalsPage() {
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="text-3xl font-black tracking-tight">{g.title}</h1>
-          <p className="max-w-2xl text-sm text-muted">{g.intro}</p>
+          <p className="max-w-2xl text-sm text-muted">
+            {g.intro}{" "}
+            <Link to="/guide" hash="goals" className="text-accent hover:underline">
+              {g.learnMore}
+            </Link>
+          </p>
         </div>
         <div className="flex flex-wrap items-end gap-3">
           <ScopeSelect

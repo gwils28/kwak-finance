@@ -345,6 +345,18 @@ test("the goals page shows the pyramid, the month's effort and each goal by tier
   expect(closed).toHaveTextContent("Archived · tracked until Aug 2026");
 });
 
+test("the goals page opens on one sentence, the rest in the guide", async () => {
+  api();
+  render(<TestApp path="/goals" />);
+
+  const intro = await screen.findByText(/^Amounts to gather by a date, in a pyramid/);
+  expect(intro.textContent).toMatch(/^[^.]*\. Learn more$/);
+  expect(within(intro).getByRole("link", { name: "Learn more" })).toHaveAttribute(
+    "href",
+    "/guide#goals",
+  );
+});
+
 test("a card is edited, archived or cancelled in place", async () => {
   const calls = api();
   render(<TestApp path="/goals" />);
