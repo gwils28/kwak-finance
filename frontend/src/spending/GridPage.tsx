@@ -309,6 +309,7 @@ export function GridPage() {
                     <span
                       role="img"
                       aria-label={t.spending.lastEntryMarker}
+                      title={t.spending.lastEntryMarker}
                       className="text-accent"
                     >
                       ●
@@ -419,7 +420,11 @@ function Occurrence({
       categories={categories}
       onSave={onConfirm}
       actions={
-        <Button variant="ghost" className="py-1" onClick={() => void toggle(true)}>
+        <Button
+          variant="ghost"
+          className="py-1 whitespace-nowrap"
+          onClick={() => void toggle(true)}
+        >
           {f.skip}
         </Button>
       }

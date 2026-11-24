@@ -24,7 +24,7 @@ export const goalAnalysisEn = {
   more: (n: number) => (n === 1 ? "1 more point" : `${n} more points`),
   fewer: "Show less",
   snooze: "Remind me next month",
-  dismiss: "Hide until it worsens",
+  dismiss: "Hide unless it worsens",
   showHidden: "Show hidden points again",
   hideFailed: "Could not hide this point.",
   severity: {
@@ -268,7 +268,7 @@ export const goalAnalysisFr: typeof goalAnalysisEn = {
   more: (n) => (n === 1 ? "1 autre point" : `${n} autres points`),
   fewer: "Afficher moins",
   snooze: "Me le rappeler le mois prochain",
-  dismiss: "Masquer jusqu'à ce que ça empire",
+  dismiss: "Masquer sauf aggravation",
   showHidden: "Réafficher les points masqués",
   hideFailed: "Impossible de masquer ce point.",
   severity: {

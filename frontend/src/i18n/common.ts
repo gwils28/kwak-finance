@@ -147,7 +147,8 @@ export const API_MESSAGES_FR: Record<string, string> = {
     "une dépense fixe est dépensée ou mise de côté : un montant négatif",
   "its last month cannot come before its first":
     "son dernier mois ne peut pas précéder son premier",
-  "only an expense category can be one-off": "seule une catégorie de dépense peut être ponctuelle",
+  "only an expense category can be one-off":
+    "seule une catégorie de dépense peut être payée en une fois",
   "no such fixed expense": "dépense fixe inconnue",
   "a part cannot be zero": "une part ne peut pas être nulle",
   "a split needs at least two parts": "une ventilation a besoin d'au moins deux parts",

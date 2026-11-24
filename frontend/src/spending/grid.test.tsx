@@ -53,9 +53,9 @@ test("the month's lines are listed with its figures, a split line with its parts
   expect(within(split).getByLabelText("Rest: Category")).toHaveValue(home.id);
   expect(within(split).getByText("takes the rest: €57.40")).toBeInTheDocument();
   // The line entered last is marked, and the header says when.
-  expect(
-    within(rowOf("Supermarket")).getByRole("img", { name: "Line entered last" }),
-  ).toBeVisible();
+  const marker = within(rowOf("Supermarket")).getByRole("img", { name: "Line entered last" });
+  expect(marker).toBeVisible();
+  expect(marker).toHaveAttribute("title", "Line entered last");
   expect(screen.getByText(/Last entry: .*16\/10.*entered on 16\/10/)).toBeInTheDocument();
   expect(screen.getByText("2 lines")).toBeInTheDocument();
 });

@@ -417,7 +417,10 @@ function LastLines({ month }: { month: string }) {
     id === null ? t.spending.split.title : (categories.data?.find((c) => c.id === id)?.name ?? "");
   return (
     <section aria-label={l.title} className={BOX}>
-      <h2 className="font-semibold">{l.title}</h2>
+      <div>
+        <h2 className="font-semibold">{l.title}</h2>
+        <p className="text-xs text-muted">{l.order}</p>
+      </div>
       {latest.length === 0 ? (
         <p className="text-sm text-muted">{l.none}</p>
       ) : (

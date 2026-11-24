@@ -108,12 +108,12 @@ export const spendingEn = {
   categoriesPage: {
     title: "Spending categories",
     intro:
-      "One level of categories. Expense categories hold what is spent; savings categories what is put aside, which never counts as spending; income categories what comes in (salaries, benefits, refunds), whose lines make up the month's income. A one-off category (rent, a subscription) is paid once in the month: the month so far never warns about it.",
+      "One level of categories. Expense categories hold what is spent; savings categories what is put aside, which never counts as spending; income categories what comes in (salaries, benefits, refunds), whose lines make up the month's income. A category paid once a month (rent, a subscription) is paid in one go: the month so far never warns about it.",
     expenses: "Expense categories",
     savings: "Savings categories",
     income: "Income categories",
     name: "Name",
-    oneOff: "One-off",
+    oneOff: "Paid once a month",
     rename: (name: string) => `Rename ${name}`,
     add: "Add a category",
     kind: "Kind",
@@ -195,7 +195,7 @@ export const spendingFr: typeof spendingEn = {
     toConfirm: "À confirmer",
     toConfirmCaption: "Dépenses fixes dues ce mois-ci",
     confirm: "Confirmer",
-    skip: "Sauter ce mois-ci",
+    skip: "Ignorer ce mois-ci",
     skipped: "Sautée ce mois-ci",
     unskip: "Annuler",
   },
@@ -237,12 +237,12 @@ export const spendingFr: typeof spendingEn = {
   categoriesPage: {
     title: "Catégories de dépenses",
     intro:
-      "Un seul niveau de catégories. Les catégories de dépense reçoivent ce qui est dépensé ; les catégories d'épargne ce qui est mis de côté, qui ne compte jamais comme dépense ; les catégories de revenus ce qui rentre (salaires, aides, remboursements), dont les lignes forment les revenus du mois. Une catégorie ponctuelle (loyer, abonnement) est payée une fois dans le mois : le mois en cours n'alerte jamais à son sujet.",
+      "Un seul niveau de catégories. Les catégories de dépense reçoivent ce qui est dépensé ; les catégories d'épargne ce qui est mis de côté, qui ne compte jamais comme dépense ; les catégories de revenus ce qui rentre (salaires, aides, remboursements), dont les lignes forment les revenus du mois. Une catégorie payée en une fois (loyer, abonnement) l'est une fois chaque mois : le mois en cours n'alerte jamais à son sujet.",
     expenses: "Catégories de dépense",
     savings: "Catégories d'épargne",
     income: "Catégories de revenus",
     name: "Nom",
-    oneOff: "Ponctuelle",
+    oneOff: "Payée en une fois",
     rename: (name) => `Renommer ${name}`,
     add: "Ajouter une catégorie",
     kind: "Type",

@@ -132,8 +132,8 @@ test("the categories are grouped by kind, renamed in place, one-off for expenses
   const expenses = await screen.findByRole("region", { name: "Expense categories" });
   expect(within(expenses).getAllByRole("listitem")).toHaveLength(3);
   const savings = screen.getByRole("region", { name: "Savings categories" });
-  expect(within(savings).queryByLabelText("One-off")).toBeNull();
-  expect(within(expenses).getAllByLabelText("One-off")[0]).toBeChecked();
+  expect(within(savings).queryByLabelText("Paid once a month")).toBeNull();
+  expect(within(expenses).getAllByLabelText("Paid once a month")[0]).toBeChecked();
 
   const user = userEvent.setup();
   const name = screen.getByLabelText("Rename Groceries");

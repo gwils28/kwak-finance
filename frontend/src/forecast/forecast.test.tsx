@@ -206,7 +206,7 @@ test("the forecast follows the language", async () => {
 
   expect(await screen.findByRole("heading", { name: "Prévision" })).toBeVisible();
   expect(await screen.findByLabelText("Le reste, oct. 2026 à sept. 2027")).toBeVisible();
-  expect(screen.getByRole("heading", { name: "Face aux objectifs" })).toBeVisible();
+  expect(screen.getByRole("heading", { name: "Face aux cibles" })).toBeVisible();
   const methods = screen.getByRole("table", { name: "Sur quoi repose la prévision" });
   expect(within(methods).getByText("0,81")).toBeInTheDocument();
 });
