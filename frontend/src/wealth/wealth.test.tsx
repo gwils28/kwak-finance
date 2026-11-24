@@ -200,6 +200,10 @@ test("the matrix groups lines by category, carried values marked", async () => {
   api();
   render(<TestApp path="/wealth" />);
   const table = await screen.findByRole("table", { name: "Wealth by month" });
+  expect(within(table).getByRole("columnheader", { name: "Dec 2026" })).toHaveAttribute(
+    "aria-current",
+    "date",
+  );
   const rows = within(table)
     .getAllByRole("row")
     .map((r) => plain(r.textContent));
