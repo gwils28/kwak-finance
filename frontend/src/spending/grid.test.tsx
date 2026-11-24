@@ -378,3 +378,17 @@ test("a delete that fails says so", async () => {
   await userEvent.setup().click(screen.getByRole("button", { name: "Delete Bakery" }));
   expect(await screen.findByRole("alert")).toHaveTextContent("No such line.");
 });
+
+test("on a phone each line is a card: the table and its rows carry the card layout", async () => {
+  api();
+  render(<TestApp path={PATH} />);
+
+  const table = await grid();
+  // The layout itself is CSS (below 640 px); the cells stay the same inputs, labelled.
+  expect(table).toHaveClass("max-sm:block");
+  expect(table.querySelector("thead")).toHaveClass("max-sm:hidden");
+  const row = rowOf("Bakery");
+  expect(row).toHaveClass("max-sm:grid");
+  expect(within(row).getByLabelText("Label").closest("td")).toHaveClass("max-sm:row-start-1");
+  expect(within(row).getByLabelText("Date").closest("td")).toHaveClass("max-sm:row-start-2");
+});

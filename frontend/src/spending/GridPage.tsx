@@ -28,7 +28,7 @@ import {
   lineBody,
   negate,
 } from "./draft";
-import { LineRow } from "./LineRow";
+import { CARD, LineRow } from "./LineRow";
 import { QuickLine } from "./QuickLine";
 import {
   linesQuery,
@@ -178,26 +178,33 @@ export function GridPage() {
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex flex-wrap items-center gap-2">
-          <h1 className="mr-2 text-3xl font-black tracking-tight">{t.spending.title}</h1>
-          <Button
-            variant="ghost"
-            aria-label={t.spending.previousMonth}
-            aria-keyshortcuts="Alt+PageUp"
-            title={t.spending.monthKeys}
-            onClick={() => goTo(shiftMonth(month, -1))}
-          >
-            ‹
-          </Button>
-          <h2 className="min-w-32 text-center text-xl font-bold capitalize">{monthLabel(month)}</h2>
-          <Button
-            variant="ghost"
-            aria-label={t.spending.nextMonth}
-            aria-keyshortcuts="Alt+PageDown"
-            title={t.spending.monthKeys}
-            onClick={() => goTo(shiftMonth(month, 1))}
-          >
-            ›
-          </Button>
+          <h1 className="mr-2 text-2xl font-black tracking-tight sm:text-3xl">
+            {t.spending.title}
+          </h1>
+          {/* The month and its arrows hold together on one line, even on a phone. */}
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              aria-label={t.spending.previousMonth}
+              aria-keyshortcuts="Alt+PageUp"
+              title={t.spending.monthKeys}
+              onClick={() => goTo(shiftMonth(month, -1))}
+            >
+              ‹
+            </Button>
+            <h2 className="min-w-28 text-center text-lg font-bold whitespace-nowrap capitalize sm:min-w-32 sm:text-xl">
+              {monthLabel(month)}
+            </h2>
+            <Button
+              variant="ghost"
+              aria-label={t.spending.nextMonth}
+              aria-keyshortcuts="Alt+PageDown"
+              title={t.spending.monthKeys}
+              onClick={() => goTo(shiftMonth(month, 1))}
+            >
+              ›
+            </Button>
+          </div>
           {month !== current && (
             <Button variant="ghost" onClick={() => goTo(current)}>
               {t.spending.thisMonth}
@@ -280,8 +287,11 @@ export function GridPage() {
 
       {/* Positioned, so the sr-only header text is clipped with the table, not widening the page. */}
       <div className="relative overflow-x-auto">
-        <table className="w-full min-w-[44rem] text-sm" aria-label={g.caption(monthLabel(month))}>
-          <thead>
+        <table
+          className={`w-full text-sm sm:min-w-[44rem] ${CARD.table}`}
+          aria-label={g.caption(monthLabel(month))}
+        >
+          <thead className={CARD.head}>
             <tr className="text-left text-muted">
               <th className="w-8" />
               <th className="px-2 py-2 font-medium">{g.date}</th>
@@ -294,11 +304,11 @@ export function GridPage() {
             </tr>
           </thead>
           {pending.length > 0 && (
-            <tbody aria-label={t.spending.fixed.toConfirmCaption}>
-              <tr>
+            <tbody aria-label={t.spending.fixed.toConfirmCaption} className={CARD.body}>
+              <tr className={CARD.full}>
                 <th
                   colSpan={6}
-                  className="px-2 pt-3 pb-1 text-left text-xs font-semibold text-muted uppercase"
+                  className={`px-2 pt-3 pb-1 text-left text-xs font-semibold text-muted uppercase ${CARD.full}`}
                 >
                   {t.spending.fixed.toConfirm}
                 </th>
@@ -315,7 +325,7 @@ export function GridPage() {
               ))}
             </tbody>
           )}
-          <tbody>
+          <tbody className={CARD.body}>
             {shown.map((line) => (
               <LineRow
                 key={line.id}
@@ -356,7 +366,7 @@ export function GridPage() {
               />
             ))}
           </tbody>
-          <tbody aria-label={g.newRow}>
+          <tbody aria-label={g.newRow} className={CARD.body}>
             <LineRow
               key={`${month}-${newRow.key}`}
               variant="new"
@@ -411,15 +421,15 @@ function Occurrence({
 
   if (occurrence.status === "skipped") {
     return (
-      <tr className="border-t border-border text-muted">
-        <td />
-        <td className="px-2 py-1">{formatDate(occurrence.due)}</td>
-        <td className="px-2 py-1 line-through">{occurrence.label}</td>
-        <td className="px-2 py-1 text-right font-mono tabular-nums line-through">
+      <tr className={`border-t border-border text-muted ${CARD.row}`}>
+        <td className="max-sm:hidden" />
+        <td className={`px-2 py-1 ${CARD.date}`}>{formatDate(occurrence.due)}</td>
+        <td className={`px-2 py-1 line-through ${CARD.label}`}>{occurrence.label}</td>
+        <td className={`px-2 py-1 text-right font-mono tabular-nums line-through ${CARD.amount}`}>
           {formatEur(negate(occurrence.amount))}
         </td>
-        <td className="px-2 py-1">{f.skipped}</td>
-        <td className="px-2 py-1 text-right">
+        <td className={`px-2 py-1 ${CARD.category}`}>{f.skipped}</td>
+        <td className={`px-2 py-1 text-right ${CARD.below}`}>
           <Button variant="ghost" className="py-1" onClick={() => void toggle(false)}>
             {f.unskip}
           </Button>
