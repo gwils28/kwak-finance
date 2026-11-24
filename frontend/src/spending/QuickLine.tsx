@@ -79,7 +79,8 @@ export function QuickLine({
     }
   };
 
-  const line = typed && understood.data ? understood.data : null;
+  // Cleared text clears the preview at once, without waiting for the debounce.
+  const line = text.trim() && typed && understood.data ? understood.data : null;
   const category = categories.find((c) => c.id === line?.category_id);
 
   return (

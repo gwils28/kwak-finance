@@ -5,7 +5,7 @@ import { detailSentence } from "../auth/errors";
 import { Button } from "../components/ui";
 import { useI18n } from "../i18n";
 import { formatEur, fromCents, parseEurInput, toCents } from "../lib/money";
-import { type Cell, type Draft, firstMissing, type SplitDraft } from "./draft";
+import { type Cell, type Draft, firstMissing, incomeIds, type SplitDraft } from "./draft";
 import { byKind, labelsQuery } from "./queries";
 
 const SPLIT = "__split";
@@ -72,13 +72,24 @@ type Props = {
   /** Before the date: the last-entry marker, a status… */
   lead?: ReactNode;
   actions?: ReactNode;
+  /** The line just added: brought into view and marked. */
+  highlight?: boolean;
 };
 
 /**
  * One row of the grid, every cell editable in place (F-ENT-1). Enter saves it once complete,
  * Escape puts it back as it was; a split line opens its parts below it (F-LIN-4).
  */
-export function LineRow({ initial, categories, variant, onSave, focus, lead, actions }: Props) {
+export function LineRow({
+  initial,
+  categories,
+  variant,
+  onSave,
+  focus,
+  lead,
+  actions,
+  highlight = false,
+}: Props) {
   const { t } = useI18n();
   const g = t.spending.grid;
   const [base, setBase] = useState(initial);
@@ -87,6 +98,11 @@ export function LineRow({ initial, categories, variant, onSave, focus, lead, act
   const [labelTyped, setLabelTyped] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [amountFocused, setAmountFocused] = useState(false);
+  const row = useRef<HTMLTableRowElement>(null);
+  useEffect(() => {
+    if (highlight) row.current?.scrollIntoView?.({ block: "nearest", behavior: "smooth" });
+  }, [highlight]);
   // Enter repeats faster than a save returns: one save at a time, or the line comes twice.
   const inFlight = useRef(false);
   const cells = useRef<Partial<Record<Cell, HTMLInputElement | HTMLSelectElement | null>>>({});
@@ -189,12 +205,17 @@ export function LineRow({ initial, categories, variant, onSave, focus, lead, act
   };
 
   const greyed = variant === "fixed" && !dirty;
-  const look = `${greyed ? "text-muted italic" : ""} ${dirty ? "bg-accent/10" : ""}`;
+  const look = `${greyed ? "text-muted italic" : ""} ${dirty || highlight ? "bg-accent/10" : ""}`;
+  // Out of the amount cell, the amount reads as money; an income keeps its sign and its colour.
+  const parsed = amountFocused ? null : parseEurInput(draft.amount);
+  const income = incomeIds(categories).has(draft.split ? draft.split.rest : draft.category);
+  const shownAmount = parsed === null ? null : income ? `+${formatEur(parsed)}` : formatEur(parsed);
 
   return (
     <>
       <tr
-        className={`border-t border-border align-middle ${look}`}
+        ref={row}
+        className={`border-t border-border align-middle transition-colors ${look}`}
         data-dirty={dirty || undefined}
         onKeyDown={onKeyDown}
       >
@@ -233,7 +254,7 @@ export function LineRow({ initial, categories, variant, onSave, focus, lead, act
             ))}
           </datalist>
         </td>
-        <td className="w-32 py-1">
+        <td className="relative w-32 py-1">
           <input
             ref={(el) => {
               cells.current.amount = el;
@@ -242,8 +263,18 @@ export function LineRow({ initial, categories, variant, onSave, focus, lead, act
             inputMode="decimal"
             value={draft.amount}
             onChange={(e) => set({ amount: e.target.value })}
-            className={`${CELL} text-right font-mono tabular-nums`}
+            onFocus={() => setAmountFocused(true)}
+            onBlur={() => setAmountFocused(false)}
+            className={`${CELL} text-right font-mono tabular-nums ${shownAmount === null ? "" : "text-transparent"}`}
           />
+          {shownAmount !== null && (
+            <span
+              aria-hidden="true"
+              className={`pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 font-mono tabular-nums ${income ? "text-positive" : ""}`}
+            >
+              {shownAmount}
+            </span>
+          )}
         </td>
         <td className="w-48 py-1">
           <select

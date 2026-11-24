@@ -169,6 +169,32 @@ test("the quick line saves a complete line straight away", async () => {
     }),
   );
   expect(screen.getByLabelText("Quick line")).toHaveValue("");
+  // What was understood goes with the text; the line added is said, and can be taken back.
+  expect(screen.queryByText(/21 Oct 2026 · boulangerie/)).toBeNull();
+  expect(await screen.findByText("“boulangerie” added.")).toBeVisible();
+  await user.click(screen.getByRole("button", { name: "Undo" }));
+  await vi.waitFor(() =>
+    expect(calls.some((c) => c.route === "DELETE /api/spending/lines/l9")).toBe(true),
+  );
+});
+
+test("an amount reads as money until it is edited, an income with its sign", async () => {
+  const pay = { ...bakery, id: "l5", label: "Pay", amount: "2500.00", category_id: salaries.id };
+  fakeApi({
+    "GET /api/auth/me": () => Response.json(owner),
+    ...spendingHandlers([bakery, supermarket, pay]),
+  });
+  render(<TestApp path={PATH} />);
+  await grid();
+
+  const amount = within(rowOf("Bakery")).getByLabelText("Amount");
+  expect(amount).toHaveValue("12.50");
+  expect(within(rowOf("Bakery")).getByText("€12.50")).toBeInTheDocument();
+  const income = within(rowOf("Pay")).getByText("+€2,500.00");
+  expect(income).toHaveClass("text-positive");
+  // While it is edited, the cell shows what is typed, nothing over it.
+  await userEvent.setup().click(amount);
+  expect(within(rowOf("Bakery")).queryByText("€12.50")).toBeNull();
 });
 
 test("an incomplete quick line goes into the empty row, the missing cell focused", async () => {
@@ -233,7 +259,11 @@ test("a deleted line can be put back from the message", async () => {
   await grid();
 
   const user = userEvent.setup();
-  await user.click(screen.getByRole("button", { name: "Delete Bakery" }));
+  const remove = screen.getByRole("button", { name: "Delete Bakery" });
+  // A quiet icon on each row, its word in its title.
+  expect(remove.textContent).toBe("");
+  expect(remove).toHaveAttribute("title", "Delete");
+  await user.click(remove);
   expect(await screen.findByText("“Bakery” deleted.")).toBeVisible();
   await user.click(screen.getByRole("button", { name: "Undo" }));
 

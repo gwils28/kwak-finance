@@ -172,21 +172,34 @@ export function GoalCard({
         </Button>
         {/* A permanent goal stays in view: it can be cancelled, not archived. */}
         {(goal.permanent ? (["cancelled"] as const) : (["archived", "cancelled"] as const)).map(
-          (as) => (
-            <Button
-              key={as}
-              variant="ghost"
-              aria-label={as === "archived" ? g.archiveOf(goal.name) : g.cancelOf(goal.name)}
-              disabled={close.isPending}
-              onClick={() =>
-                as === "archived" && toRenew && goal.status !== "reached"
-                  ? setAsking(true)
-                  : close.mutate({ as })
-              }
-            >
-              {as === "archived" ? g.archive : g.cancelGoal}
-            </Button>
-          ),
+          (as) =>
+            as === "cancelled" ? (
+              // Abandoning is the quiet action, set apart at the end of the row.
+              <button
+                key={as}
+                type="button"
+                aria-label={g.cancelOf(goal.name)}
+                disabled={close.isPending}
+                onClick={() => close.mutate({ as })}
+                className="ml-auto rounded-md px-2 py-2 text-sm text-muted underline-offset-2 hover:text-negative hover:underline disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-accent"
+              >
+                {g.cancelGoal}
+              </button>
+            ) : (
+              <Button
+                key={as}
+                variant="ghost"
+                aria-label={g.archiveOf(goal.name)}
+                disabled={close.isPending}
+                onClick={() =>
+                  as === "archived" && toRenew && goal.status !== "reached"
+                    ? setAsking(true)
+                    : close.mutate({ as })
+                }
+              >
+                {g.archive}
+              </Button>
+            ),
         )}
       </div>
       {asking && (
