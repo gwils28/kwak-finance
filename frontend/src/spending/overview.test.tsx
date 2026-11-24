@@ -130,7 +130,7 @@ test("a savings objective reached, in French", async () => {
   const section = await screen.findByRole("region", { name: /^Cibles d'épargne, / });
   expect(section).toHaveTextContent("Cibles du mois : épargne");
   expect(section).toHaveTextContent("150 € au-delà");
-  expect(section).toHaveTextContent("Atteint · 130 % de l'objectif");
+  expect(section).toHaveTextContent("Atteint · 130 % de la cible");
 });
 
 test("without any savings objective, the section says where to set one", async () => {
@@ -186,6 +186,8 @@ test("the top categories and the last lines entered close the month", async () =
   expect(items[0]).toHaveTextContent("Supermarket");
   expect(items[0]).toHaveTextContent("Split");
   expect(items[1]).toHaveTextContent("Bakery");
+  // Sorted by when they were entered, not by their date: the list says so.
+  expect(last).toHaveTextContent("Newest entered first");
 });
 
 test("a household with nothing entered is pointed to the lines", async () => {

@@ -29,6 +29,7 @@ export const overviewEn = {
   },
   lastLines: {
     title: "Last lines entered",
+    order: "Newest entered first",
     none: "No line this month yet.",
     open: "Open the lines",
   },
@@ -49,11 +50,11 @@ export const overviewFr: typeof overviewEn = {
   savingsTargets: {
     title: "Cibles du mois : épargne",
     titleOf: (month) => `Cibles d'épargne, ${month}`,
-    none: "Aucune catégorie d'épargne n'a d'objectif mensuel ce mois-ci.",
+    none: "Aucune catégorie d'épargne n'a de cible mensuelle ce mois-ci.",
     savedOf: (saved, objective) => `${saved} épargnés sur ${objective}`,
     toGo: (amount) => `reste ${amount}`,
     beyond: (amount) => `${amount} au-delà`,
-    share: (share) => `${share} de l'objectif`,
+    share: (share) => `${share} de la cible`,
     status: { reached: "Atteint", in_progress: "En cours" },
   },
   toConfirm: {
@@ -64,6 +65,7 @@ export const overviewFr: typeof overviewEn = {
   },
   lastLines: {
     title: "Dernières lignes saisies",
+    order: "Les plus récemment saisies d'abord",
     none: "Aucune ligne ce mois-ci pour l'instant.",
     open: "Ouvrir les lignes",
   },
