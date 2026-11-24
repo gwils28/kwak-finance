@@ -204,7 +204,13 @@ function Matrix({ first, last }: { first: string; last: string }) {
           )}
         </td>
         {r.cells.map((cell) => (
-          <MatrixCell key={cell.month} cell={cell} name={r.name} categoryId={r.category_id} />
+          <MatrixCell
+            key={cell.month}
+            cell={cell}
+            name={r.name}
+            categoryId={r.category_id}
+            rowTarget={r.target}
+          />
         ))}
       </tr>
     );
@@ -309,13 +315,22 @@ function MatrixCell({
   cell,
   name,
   categoryId,
+  rowTarget,
 }: {
   cell: SpendingCellOut;
   name: string;
   categoryId: string | null;
+  /** The target shown in the row's target column (today's). */
+  rowTarget: string | null;
 }) {
   const { t } = useI18n();
   const b = t.spendingBudget;
+  // The gap is measured against that month's target: say it when it is not the column's,
+  // or "103 € · -7 €" next to a 95 € target would read as a sign error.
+  const otherTarget =
+    cell.target !== null && (rowTarget === null || Number(cell.target) !== Number(rowTarget))
+      ? b.monthTarget(formatEurWhole(cell.target))
+      : null;
   const content = (
     <>
       <span className="block font-semibold">{formatEurWhole(cell.spent)}</span>
@@ -325,6 +340,7 @@ function MatrixCell({
           {cell.gap_ratio !== null && ` · ${formatPercentSigned(cell.gap_ratio)}`}
         </span>
       )}
+      {otherTarget && <span className="block text-xs opacity-80">{otherTarget}</span>}
       {cell.status !== "none" && <span className="sr-only">{b.status[cell.status]}</span>}
     </>
   );
@@ -336,7 +352,7 @@ function MatrixCell({
           search={{ month: cell.month, category: categoryId }}
           aria-label={`${b.openCell(name, monthLabel(cell.month))} · ${formatEurWhole(cell.spent)}${
             cell.status === "none" ? "" : ` · ${b.status[cell.status]}`
-          }`}
+          }${otherTarget ? ` · ${otherTarget}` : ""}`}
           title={cell.status === "none" ? undefined : b.status[cell.status]}
           className="block rounded px-1 py-1 hover:underline"
         >

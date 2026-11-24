@@ -13,7 +13,7 @@ import { detailSentence } from "../auth/errors";
 import { meQuery } from "../auth/session";
 import { Button, ErrorAlert } from "../components/ui";
 import { useI18n } from "../i18n";
-import { formatEurSigned, formatEurWhole, formatPercent } from "../lib/money";
+import { formatEurSigned, formatEurWhole, formatProgress } from "../lib/money";
 import { monthLabel, shiftMonth, thisMonth } from "../lib/months";
 import { Envelopes } from "./Envelopes";
 import { estimateText, paceSentence } from "./GoalCard";
@@ -170,7 +170,7 @@ function Tiles({ goal }: { goal: GoalOut }) {
       <Tile
         label={g.tiles.value}
         value={formatEurWhole(goal.value)}
-        note={g.ofTheTarget(formatPercent(goal.progress))}
+        note={g.ofTheTarget(formatProgress(goal.progress))}
       />
       <Tile
         label={g.tiles.remaining}

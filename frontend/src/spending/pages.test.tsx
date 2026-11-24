@@ -45,6 +45,19 @@ test("the fixed expenses are listed with their frequency", async () => {
   expect(row).toHaveTextContent("Active");
 });
 
+test("a fixed expense past its last month reads ended, not active", async () => {
+  api({
+    "GET /api/spending/fixed": () =>
+      Response.json([{ ...rentItem, id: "f-old", label: "Childminder", last_month: "2025-06" }]),
+  });
+  render(<TestApp path="/spending/fixed" />);
+
+  const table = await screen.findByRole("table", { name: "Fixed expenses" });
+  const row = within(table).getAllByRole("row")[1] as HTMLElement;
+  expect(row).toHaveTextContent("Ended");
+  expect(row).not.toHaveTextContent("Active");
+});
+
 test("English days of the month take their ordinal", () => {
   expect(en.spending.fixedPage.dayOf(1)).toBe("on the 1st");
   expect(en.spending.fixedPage.dayOf(11)).toBe("on the 11th");

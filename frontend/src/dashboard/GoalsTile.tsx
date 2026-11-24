@@ -4,7 +4,7 @@ import type { Scope } from "../api/generated";
 import { goalsQuery } from "../goals/GoalsPage";
 import { TIERS, tierColour } from "../goals/shared";
 import { useI18n } from "../i18n";
-import { formatEurWhole, formatPercent } from "../lib/money";
+import { formatEurWhole, formatProgress } from "../lib/money";
 
 /**
  * The three tiers' progress and the emergency fund's warning (F-GOAL-9), in the overview's
@@ -37,7 +37,7 @@ export function GoalsTile({ scope }: { scope: Scope }) {
               <span className="flex justify-between gap-2">
                 <span>{g.tiers[tier]}</span>
                 <span className="tabular font-semibold">
-                  {p?.progress == null ? g.noGoalInTier : formatPercent(p.progress)}
+                  {p?.progress == null ? g.noGoalInTier : formatProgress(p.progress)}
                 </span>
               </span>
               <span aria-hidden="true" className="h-2 overflow-hidden rounded-full bg-budget-on-bg">

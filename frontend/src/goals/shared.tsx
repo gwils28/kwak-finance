@@ -1,6 +1,6 @@
 import { type GoalOut, type GoalStatus, goalLines, type Tier } from "../api/generated";
 import { useI18n } from "../i18n";
-import { formatEurWhole, formatPercent } from "../lib/money";
+import { formatEurWhole, formatProgress } from "../lib/money";
 
 /** The tiers by priority: the foundation, then the nearest deadlines first, pleasure last. */
 export const TIERS: Tier[] = ["precaution", "short", "medium", "long", "pleasure"];
@@ -102,7 +102,7 @@ export function Gauge({ goal }: { goal: GoalOut }) {
   const label = t.goals.gauge(
     formatEurWhole(goal.value),
     formatEurWhole(goal.target),
-    formatPercent(goal.progress),
+    formatProgress(goal.progress),
   );
   return (
     <>

@@ -149,6 +149,23 @@ test("the matrix shows each category's month against its target, coloured and sa
   expect(within(table).getByRole("row", { name: /^Total received/ })).toHaveTextContent("€3,000");
 });
 
+test("a month judged against another target than today's says which one", async () => {
+  const groceriesRow = matrix.rows[0];
+  api({
+    "GET /api/spending/matrix": () =>
+      Response.json({
+        ...matrix,
+        rows: [{ ...groceriesRow, cells: [cell("103.00", "110.00", "under", "-7.00")] }],
+      }),
+  });
+  render(<TestApp path="/budget" />);
+
+  const table = await screen.findByRole("table", { name: "Spending by category and month" });
+  const link = within(table).getByRole("link", { name: /Groceries, .*: open its lines/ });
+  expect(link).toHaveTextContent("target €110");
+  expect(link).toHaveAccessibleName(/target €110/);
+});
+
 test("a target is set from a month on", async () => {
   const calls = api({
     [`PUT /api/spending/targets/${groceries.id}/${current}`]: (body) =>

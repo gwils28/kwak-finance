@@ -5,7 +5,7 @@ import { type ClosedAs, type GoalOut, type GoalPlanOut, updateGoal } from "../ap
 import { detailSentence } from "../auth/errors";
 import { Button, ErrorAlert } from "../components/ui";
 import { useI18n } from "../i18n";
-import { formatEurWhole, formatPercent } from "../lib/money";
+import { formatEurWhole, formatProgress } from "../lib/money";
 import { monthLabel, shiftMonth } from "../lib/months";
 import { GoalForm } from "./GoalForm";
 import {
@@ -119,7 +119,7 @@ export function GoalCard({
           <strong>{formatEurWhole(goal.value)}</strong>{" "}
           <span className="text-muted">/ {formatEurWhole(goal.target)}</span>
         </span>
-        <strong className="tabular">{formatPercent(goal.progress)}</strong>
+        <strong className="tabular">{formatProgress(goal.progress)}</strong>
       </p>
       <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
         {precaution ? (

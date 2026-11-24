@@ -28,6 +28,8 @@ export const spendingBudgetEn = {
   saved: "Saved",
   rest: "Rest",
   openCell: (name: string, month: string) => `${name}, ${month}: open its lines`,
+  /** In a month cell, when that month's target is not the one in the target column. */
+  monthTarget: (amount: string) => `target ${amount}`,
   status: {
     under: "under target",
     on: "on target",
@@ -101,6 +103,7 @@ export const spendingBudgetFr: typeof spendingBudgetEn = {
   saved: "Épargné",
   rest: "Reste",
   openCell: (name, month) => `${name}, ${month} : ouvrir ses lignes`,
+  monthTarget: (amount) => `cible ${amount}`,
   status: {
     under: "sous la cible",
     on: "dans la cible",

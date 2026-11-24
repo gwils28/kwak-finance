@@ -93,6 +93,7 @@ export const spendingEn = {
     lastMonth: "Until (optional)",
     paused: "Paused",
     active: "Active",
+    ended: "Ended",
     status: "Status",
     actions: "Actions",
     frequencies: { monthly: "Every month", quarterly: "Every quarter", yearly: "Every year" },
@@ -217,6 +218,7 @@ export const spendingFr: typeof spendingEn = {
     lastMonth: "Jusqu'à (facultatif)",
     paused: "En pause",
     active: "Active",
+    ended: "Terminée",
     status: "État",
     actions: "Actions",
     frequencies: {

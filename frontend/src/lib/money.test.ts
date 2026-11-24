@@ -7,6 +7,7 @@ import {
   formatEurSigned,
   formatEurWhole,
   formatPercent,
+  formatProgress,
   formatRate,
   formatRateSigned,
   fromCents,
@@ -43,6 +44,13 @@ test("whole, signed and percent formats follow the language", () => {
   expect(
     [formatEurWhole("1621.04"), formatEurSigned("12"), formatPercent("0.3564")].map(plain),
   ).toEqual(["1 621 €", "+12 €", "36 %"]);
+});
+
+test("progress never reads 100 % before the target is reached", () => {
+  expect(formatProgress("0.996")).toBe("99%");
+  expect(formatProgress("0.5167")).toBe("52%");
+  expect(formatProgress("1")).toBe("100%");
+  expect(formatProgress("1.25")).toBe("125%");
 });
 
 test("an amount fills an input with the language's decimal separator", () => {
