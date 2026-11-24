@@ -12,6 +12,7 @@ import {
   unskipOccurrence,
 } from "../api/generated";
 import { detailSentence } from "../auth/errors";
+import { Icon } from "../components/icons";
 import { Button, ErrorAlert } from "../components/ui";
 import { useI18n } from "../i18n";
 import { formatDate, formatInstantDay, formatShortDay, todayIso } from "../lib/dates";
@@ -74,6 +75,13 @@ export function GridPage() {
     draft: null,
   });
   const [notice, setNotice] = useState<Notice | null>(null);
+  // The line just added is brought into view and marked a moment.
+  const [justAdded, setJustAdded] = useState<string | null>(null);
+  useEffect(() => {
+    if (justAdded === null) return;
+    const timer = setTimeout(() => setJustAdded(null), 3000);
+    return () => clearTimeout(timer);
+  }, [justAdded]);
   const [failure, setFailure] = useState<string | null>(null);
   const busy = useRef(false);
   const day = defaultDay(month, todayIso(), sessionDay);
@@ -104,14 +112,23 @@ export function GridPage() {
   const create = async (draft: Draft, fixedId: string | null = null) => {
     const body = lineBody(draft, income, fixedId);
     if (!body) return;
-    await createLine({ body, throwOnError: true });
+    const { data: added } = await createLine({ body, throwOnError: true });
     setSessionDay(draft.day);
     const where = draft.day.slice(0, 7);
-    setNotice(
-      where === month
-        ? null
-        : { text: t.spending.quick.savedElsewhere(monthLabel(where)), month: where },
-    );
+    if (where === month) {
+      setJustAdded(added.id);
+      setNotice({
+        text: g.added(added.label),
+        undo: () =>
+          attempt(async () => {
+            await deleteLine({ path: { line_id: added.id }, throwOnError: true });
+            setNotice(null);
+            await refreshSpending(queryClient);
+          }),
+      });
+    } else {
+      setNotice({ text: t.spending.quick.savedElsewhere(monthLabel(where)), month: where });
+    }
     await refreshSpending(queryClient);
   };
 
@@ -261,7 +278,8 @@ export function GridPage() {
         </p>
       )}
 
-      <div className="overflow-x-auto">
+      {/* Positioned, so the sr-only header text is clipped with the table, not widening the page. */}
+      <div className="relative overflow-x-auto">
         <table className="w-full min-w-[44rem] text-sm" aria-label={g.caption(monthLabel(month))}>
           <thead>
             <tr className="text-left text-muted">
@@ -304,6 +322,7 @@ export function GridPage() {
                 variant="line"
                 initial={draftOf(line, income)}
                 categories={categories.data}
+                highlight={line.id === justAdded}
                 lead={
                   line.id === last?.id ? (
                     <span
@@ -324,14 +343,15 @@ export function GridPage() {
                   await refreshSpending(queryClient);
                 }}
                 actions={
-                  <Button
-                    variant="ghost"
-                    className="py-1"
+                  <button
+                    type="button"
                     aria-label={`${t.common.delete} ${line.label}`}
+                    title={t.common.delete}
                     onClick={() => void remove(line)}
+                    className="rounded p-1.5 text-muted hover:bg-border hover:text-negative focus-visible:outline-2 focus-visible:outline-accent"
                   >
-                    {t.common.delete}
-                  </Button>
+                    <Icon name="trash" className="size-4" />
+                  </button>
                 }
               />
             ))}

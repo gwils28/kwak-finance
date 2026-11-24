@@ -335,12 +335,12 @@ test("the goals page shows the pyramid, the month's effort and each goal by tier
   expect(within(fund).getByText("Fill first")).toBeInTheDocument();
   expect(fund).toHaveTextContent("Filled byJan 2027");
 
-  // archived and cancelled goals stay hidden until asked for
+  // archived and abandoned goals stay hidden until asked for
   expect(screen.queryByRole("link", { name: "Voiture" })).toBeNull();
   await userEvent
     .setup()
-    .click(screen.getByRole("button", { name: "Show archived and cancelled goals (1)" }));
-  const closed = screen.getByRole("region", { name: "Archived and cancelled goals" });
+    .click(screen.getByRole("button", { name: "Show archived and abandoned goals (1)" }));
+  const closed = screen.getByRole("region", { name: "Archived and abandoned goals" });
   expect(within(closed).getByRole("link", { name: "Voiture" })).toBeInTheDocument();
   expect(closed).toHaveTextContent("Archived · tracked until Aug 2026");
 });
@@ -368,7 +368,11 @@ test("a card is edited, archived or cancelled in place", async () => {
       closed_as: "archived",
     }),
   );
-  expect(screen.getByRole("button", { name: "Cancel the goal Voyage au Japon" })).toBeEnabled();
+  // Abandoning is the quiet action, apart from editing and archiving.
+  const abandon = screen.getByRole("button", { name: "Abandon the goal Voyage au Japon" });
+  expect(abandon).toBeEnabled();
+  expect(abandon).toHaveTextContent("Abandon the goal");
+  expect(abandon).toHaveClass("ml-auto");
   // a permanent goal stays in view: it is never archived
   const fund = screen.getByRole("article", { name: "Épargne de précaution" });
   expect(fund).toHaveTextContent("Permanent");

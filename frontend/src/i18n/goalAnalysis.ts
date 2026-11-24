@@ -93,8 +93,8 @@ export const goalAnalysisEn = {
   noGain: (goal: string) => `${goal} has not gained anything in six months.`,
   noGainOptions: (required: string | null) =>
     required
-      ? `One option is to relaunch it (${required} a month keeps the date), to postpone it or to cancel it.`
-      : "One option is to relaunch it, to postpone it or to cancel it.",
+      ? `One option is to relaunch it (${required} a month keeps the date), to postpone it or to abandon it.`
+      : "One option is to relaunch it, to postpone it or to abandon it.",
   openGoal: "Open the goal",
   years: (months: number) => {
     const n = Math.round(months / 12);
@@ -336,8 +336,8 @@ export const goalAnalysisFr: typeof goalAnalysisEn = {
   noGain: (goal) => `${goal} n'a rien gagné depuis six mois.`,
   noGainOptions: (required) =>
     required
-      ? `Une option est de le relancer (${required} par mois permettent de tenir la date), de le repousser ou de l'annuler.`
-      : "Une option est de le relancer, de le repousser ou de l'annuler.",
+      ? `Une option est de le relancer (${required} par mois permettent de tenir la date), de le repousser ou de l'abandonner.`
+      : "Une option est de le relancer, de le repousser ou de l'abandonner.",
   openGoal: "Ouvrir l'objectif",
   years: (months) => {
     const n = Math.round(months / 12);
