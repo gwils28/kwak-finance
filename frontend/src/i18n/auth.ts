@@ -71,6 +71,9 @@ export const navEn = {
   audit: "Audit",
   mainLabel: "Main",
   spacesLabel: "Spaces",
+  sectionsLabel: "Sections",
+  /** The overview, in the phone bar where a long name would wrap. */
+  home: "Home",
   spending: "Spending",
   lines: "Lines",
   wealthTracking: "Monthly tracking",
@@ -98,6 +101,8 @@ export const navFr: typeof navEn = {
   audit: "Audit",
   mainLabel: "Principale",
   spacesLabel: "Espaces",
+  sectionsLabel: "Rubriques",
+  home: "Accueil",
   spending: "Dépenses",
   lines: "Lignes",
   wealthTracking: "Suivi mensuel",

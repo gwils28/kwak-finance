@@ -36,6 +36,7 @@ export const guideEn = {
       paragraphs: [
         "Four steps take you from an empty app to a working budget, and the “Getting started” list on the overview ticks them off as you go: enter this month's income as lines, enter your first expenses, add your fixed expenses and set your monthly targets; then set your emergency fund, and invite the rest of the household if you share your finances.",
         "After that, a session once a week or once a month is enough: open Spending, confirm the fixed expenses waiting at the top of the month, type what you spent since last time (the header says where you stopped), and look at the month's figures.",
+        "On a phone, a bar at the bottom of the screen leads to Home (the overview), Spending, Wealth and Goals; each space's tabs stay under the header. In the demo, its banner folds into one line: “Details” opens it.",
       ],
       link: { to: "/", label: "Open the overview" },
     },
@@ -207,6 +208,7 @@ export const guideFr: typeof guideEn = {
       paragraphs: [
         "Quatre étapes mènent d'une application vide à un budget qui fonctionne, et la liste « Bien démarrer » de la vue d'ensemble les coche au fur et à mesure : saisir les revenus du mois en lignes, saisir vos premières dépenses, ajouter vos dépenses fixes et fixer vos cibles mensuelles ; ensuite, constituer votre épargne de précaution, et inviter le reste du foyer si vous partagez vos finances.",
         "Ensuite, une séance par semaine ou par mois suffit : ouvrez Dépenses, confirmez les dépenses fixes qui attendent en haut du mois, tapez ce que vous avez dépensé depuis la dernière fois (l'en-tête dit où vous vous êtes arrêté) et regardez les chiffres du mois.",
+        "Sur téléphone, une barre en bas de l'écran mène à l'Accueil (la vue d'ensemble), aux Dépenses, au Patrimoine et aux Objectifs ; les onglets de chaque espace restent sous l'en-tête. Dans la démo, son bandeau se replie sur une ligne : « Détails » l'ouvre.",
       ],
       link: { to: "/", label: "Ouvrir la vue d'ensemble" },
     },

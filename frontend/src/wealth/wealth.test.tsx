@@ -143,7 +143,8 @@ function api(extra: Record<string, Handler> = {}, data: object = matrix) {
 test("the wealth tab shows net worth and its change", async () => {
   api();
   render(<TestApp path="/" />);
-  await userEvent.setup().click(await screen.findByRole("link", { name: "Wealth" }));
+  const spaces = await screen.findByRole("navigation", { name: "Spaces" });
+  await userEvent.setup().click(within(spaces).getByRole("link", { name: "Wealth" }));
 
   const net = await screen.findByRole("region", { name: "Net worth" });
   expect(plain(net.textContent)).toContain("€8,400");
