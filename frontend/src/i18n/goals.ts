@@ -3,7 +3,8 @@ import type { AidSource, ClosedAs, GoalStatus, ProType, Tier } from "../api/gene
 export const goalsEn = {
   title: "Goals",
   intro:
-    "Amounts to gather by a date, in a pyramid: the emergency fund as its foundation, filled first, then three tiers by deadline: the short term (up to a year), the medium term (over a year, up to five) and the long term (beyond five years), and at the top a golden capstone for what you want just for the pleasure of it, unlocked once the rest is in order. Each goal is funded by your wealth lines, so it moves when you update your wealth each month.",
+    "Amounts to gather by a date, in a pyramid funded by your wealth lines: the emergency fund first, then the short, medium and long term, and a golden capstone for pleasure.",
+  learnMore: "Learn more",
   newGoal: "New goal",
   settings: "Effort settings",
   loadFailed: "Could not load your goals.",
@@ -312,7 +313,8 @@ export const goalsEn = {
 export const goalsFr: typeof goalsEn = {
   title: "Objectifs",
   intro:
-    "Des montants à réunir pour une date, en pyramide : l'épargne de précaution comme socle, servie en premier, puis trois étages selon l'échéance : le court terme (jusqu'à un an), le moyen terme (plus d'un an, jusqu'à cinq) et le long terme (au-delà de cinq ans), et au sommet une pointe dorée pour ce qui vous ferait simplement plaisir, débloquée une fois le reste en ordre. Chaque objectif est financé par vos lignes de patrimoine : il avance quand vous mettez votre patrimoine à jour chaque mois.",
+    "Des montants à réunir pour une date, en pyramide financée par vos lignes de patrimoine : l'épargne de précaution d'abord, puis le court, le moyen et le long terme, et une pointe dorée pour le plaisir.",
+  learnMore: "En savoir plus",
   newGoal: "Nouvel objectif",
   settings: "Réglages de l'effort",
   loadFailed: "Impossible de charger vos objectifs.",

@@ -77,7 +77,13 @@ test("the month's figures say how spending moved and what is left", async () => 
   const rest = screen.getByRole("region", { name: "Rest" });
   expect(rest).toHaveTextContent("+€2,700");
   expect(rest).toHaveTextContent("+€1,750 once the fixed expenses below are paid");
-  expect(screen.getByRole("region", { name: "Savings rate" })).toHaveTextContent("97%");
+  // One "rest" only: the fixed expenses still to come are told in the same tile.
+  expect(screen.getAllByText(/\+€1,750/)).toHaveLength(1);
+  // The share not spent is not called a savings rate: what was saved has its own share.
+  expect(screen.queryByRole("region", { name: "Savings rate" })).toBeNull();
+  const notSpent = screen.getByRole("region", { name: "Not spent" });
+  expect(notSpent).toHaveTextContent("97%");
+  expect(notSpent).toHaveTextContent("Share of income not spent · 7% put in savings");
 });
 
 test("the month so far shows each target's progress and opens its lines", async () => {
@@ -87,7 +93,9 @@ test("the month so far shows each target's progress and opens its lines", async 
   const section = await screen.findByRole("region", { name: /^Spending targets, / });
   expect(section).toHaveTextContent("€43 of €50 · €8 left");
   expect(section).toHaveTextContent("Watch · 85% used");
-  expect(section).toHaveTextContent("Pace: 71% of the month gone");
+  // The pace is the same for every target: told once, under the bars.
+  expect(section).toHaveTextContent("The line marks how much of the month has gone by: 71%.");
+  expect(section).not.toHaveTextContent("Pace:");
   expect(
     within(section).getByRole("link", { name: "Lines of Groceries this month" }),
   ).toHaveAttribute("href", `/spending?month=${month}&category=${groceries.id}`);
@@ -150,6 +158,64 @@ test("without any savings objective, the section says where to set one", async (
   );
 });
 
+test("only the targets at risk are listed, the others one click away", async () => {
+  api({
+    "GET /api/spending/month": (_body, url) => {
+      const summary = summaryOf(url.searchParams.get("month") ?? month);
+      const calm = {
+        ...summary.progress.lines[0],
+        category_id: "c-home",
+        name: "Home",
+        spent: "10.00",
+        remaining: "90.00",
+        target: "100.00",
+        share: "0.1000",
+        status: "on_track",
+      };
+      return Response.json({
+        ...summary,
+        progress: { ...summary.progress, lines: [...summary.progress.lines, calm] },
+      });
+    },
+  });
+  render(<TestApp path="/" />);
+
+  const section = await screen.findByRole("region", { name: /^Spending targets, / });
+  expect(section).toHaveTextContent("Groceries");
+  expect(section).not.toHaveTextContent("Home");
+  const user = userEvent.setup();
+  const all = within(section).getByRole("button", { name: "See all (2)" });
+  expect(all).toHaveAttribute("aria-expanded", "false");
+  await user.click(all);
+  expect(section).toHaveTextContent("Home");
+  expect(within(section).getByRole("button", { name: "Only those at risk" })).toHaveAttribute(
+    "aria-expanded",
+    "true",
+  );
+});
+
+test("when every target is on track, the overview says so", async () => {
+  api({
+    "GET /api/spending/month": (_body, url) => {
+      const summary = summaryOf(url.searchParams.get("month") ?? month);
+      const lines = summary.progress.lines.map((line) => ({
+        ...line,
+        spent: "10.00",
+        remaining: "40.00",
+        share: "0.2000",
+        status: "on_track" as const,
+      }));
+      return Response.json({ ...summary, progress: { ...summary.progress, lines } });
+    },
+  });
+  render(<TestApp path="/" />);
+
+  const section = await screen.findByRole("region", { name: /^Spending targets, / });
+  expect(section).toHaveTextContent("Every target is on track.");
+  expect(section).not.toHaveTextContent("Groceries");
+  expect(within(section).getByRole("button", { name: "See all (1)" })).toBeInTheDocument();
+});
+
 test("a fixed expense still to confirm is confirmed from the overview", async () => {
   const calls = api({
     "POST /api/spending/lines": (body) =>
@@ -160,7 +226,7 @@ test("a fixed expense still to confirm is confirmed from the overview", async ()
   const section = await screen.findByRole("region", { name: "Fixed expenses to confirm" });
   expect(section).toHaveTextContent("Rent");
   expect(section).toHaveTextContent("€950.00");
-  expect(section).toHaveTextContent("Rest at the end of the month: +€1,750");
+  expect(section).not.toHaveTextContent("Rest");
   await userEvent.setup().click(within(section).getByRole("button", { name: "Confirm Rent" }));
 
   await vi.waitFor(() =>
@@ -263,6 +329,7 @@ test("a past month's targets show no pace, and no one-off note either", async ()
   fireEvent.change(await screen.findByLabelText("Month"), { target: { value: "2026-01" } });
   const section = await screen.findByRole("region", { name: "Spending targets, Jan 2026" });
   expect(section).toHaveTextContent("Groceries");
+  expect(section).not.toHaveTextContent("has gone by");
   expect(section).not.toHaveTextContent("Paid once in the month");
   expect(section).not.toHaveTextContent("Pace:");
   // A past month is not "this month so far".
