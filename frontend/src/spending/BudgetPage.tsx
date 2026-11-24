@@ -11,6 +11,7 @@ import {
 } from "../api/generated";
 import { detailSentence } from "../auth/errors";
 import { InView } from "../components/InView";
+import { useScrollToCurrent } from "../components/scrollToCurrent";
 import { SCROLL_FRAME, STICKY_CORNER, STICKY_LEFT, STICKY_TOP } from "../components/stickyTable";
 import { Button, ErrorAlert } from "../components/ui";
 import { useI18n } from "../i18n";
@@ -163,6 +164,10 @@ function Matrix({ first, last }: { first: string; last: string }) {
     target: string | null;
   } | null>(null);
   const [notice, setNotice] = useState("");
+  const current = thisMonth();
+  const frame = useScrollToCurrent<HTMLDivElement>(
+    matrix.data && categories.data ? `${first}:${last}` : null,
+  );
 
   if (matrix.isError) return <ErrorAlert message={t.errors.generic} />;
   if (!matrix.data || !categories.data) return <p>{t.common.loading}</p>;
@@ -265,7 +270,7 @@ function Matrix({ first, last }: { first: string; last: string }) {
           {notice}
         </p>
       )}
-      <div className={SCROLL_FRAME}>
+      <div ref={frame} className={SCROLL_FRAME}>
         <table className="w-full text-sm" aria-label={b.caption}>
           <thead>
             <tr>
@@ -277,6 +282,7 @@ function Matrix({ first, last }: { first: string; last: string }) {
                 <th
                   key={m}
                   scope="col"
+                  aria-current={m === current ? "date" : undefined}
                   className={`${STICKY_TOP} px-2 py-2 text-right whitespace-nowrap capitalize`}
                 >
                   {monthLabel(m)}

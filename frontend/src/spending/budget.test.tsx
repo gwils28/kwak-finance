@@ -2,7 +2,7 @@ import { fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, expect, test, vi } from "vitest";
 import type { SpendingMatrixOut, SpendingYearOut } from "../api/generated";
-import { thisMonth } from "../lib/months";
+import { monthLabel, thisMonth } from "../lib/months";
 import { fakeApi, owner } from "../test/fakeApi";
 import { TestApp } from "../test/TestApp";
 import { groceries, salaries, savingsCategory, spendingCategories } from "./fixtures";
@@ -147,6 +147,12 @@ test("the matrix shows each category's month against its target, coloured and sa
   expect(salary).toHaveTextContent("€3,000");
   expect(within(salary).queryByRole("button")).toBeNull();
   expect(within(table).getByRole("row", { name: /^Total received/ })).toHaveTextContent("€3,000");
+  // The table opens on the current month, marked.
+  expect(within(table).getByRole("columnheader", { name: monthLabel(current) })).toHaveAttribute(
+    "aria-current",
+    "date",
+  );
+  expect(table.querySelectorAll("[aria-current]")).toHaveLength(1);
 });
 
 test("a month judged against another target than today's says which one", async () => {

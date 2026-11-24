@@ -22,6 +22,7 @@ import {
 import { detailSentence } from "../auth/errors";
 import { meQuery } from "../auth/session";
 import { InView } from "../components/InView";
+import { useScrollToCurrent } from "../components/scrollToCurrent";
 import { SCROLL_FRAME, STICKY_CORNER, STICKY_LEFT, STICKY_TOP } from "../components/stickyTable";
 import { Button, ErrorAlert, TextField } from "../components/ui";
 import { GOALS_KEY, goalLinesQuery } from "../goals/shared";
@@ -95,6 +96,9 @@ export function WealthPage() {
   );
 }
 
+/** On a phone, long line names wrap so that the sticky column leaves room for a month. */
+const ROW_HEAD = "min-w-32 max-w-40 sm:max-w-none sm:whitespace-nowrap";
+
 function Matrix({ matrix, onOpen }: { matrix: WealthMatrixOut; onOpen: (panel: Panel) => void }) {
   const { t } = useI18n();
   const { data: user } = useSuspenseQuery(meQuery);
@@ -105,12 +109,11 @@ function Matrix({ matrix, onOpen }: { matrix: WealthMatrixOut; onOpen: (panel: P
   });
   const num = "whitespace-nowrap px-3 py-2 text-right tabular";
   const months = matrix.months;
+  const current = thisMonth();
+  const frame = useScrollToCurrent<HTMLDivElement>(`${months[0]}:${months.at(-1)}`);
   const totals = (label: string, values: (string | null)[], strong = false) => (
     <tr className={strong ? "border-t-2 border-border font-bold" : ""}>
-      <th
-        scope="row"
-        className={`${STICKY_LEFT} whitespace-nowrap px-3 py-2 text-left font-semibold`}
-      >
+      <th scope="row" className={`${STICKY_LEFT} ${ROW_HEAD} px-3 py-2 text-left font-semibold`}>
         {label}
       </th>
       {values.map((v, i) => (
@@ -122,7 +125,7 @@ function Matrix({ matrix, onOpen }: { matrix: WealthMatrixOut; onOpen: (panel: P
     </tr>
   );
   return (
-    <div className={SCROLL_FRAME}>
+    <div ref={frame} className={SCROLL_FRAME}>
       <table aria-label={t.wealth.matrix} className="w-full text-sm">
         <thead className="text-left text-muted">
           <tr>
@@ -133,6 +136,7 @@ function Matrix({ matrix, onOpen }: { matrix: WealthMatrixOut; onOpen: (panel: P
               <th
                 key={m}
                 scope="col"
+                aria-current={m === current ? "date" : undefined}
                 className={`${STICKY_TOP} whitespace-nowrap px-3 py-2 text-right font-medium`}
               >
                 {monthLabel(m)}
@@ -150,7 +154,7 @@ function Matrix({ matrix, onOpen }: { matrix: WealthMatrixOut; onOpen: (panel: P
               <tr>
                 <th
                   scope="row"
-                  className={`${STICKY_LEFT} whitespace-nowrap px-3 py-2 text-left font-bold`}
+                  className={`${STICKY_LEFT} ${ROW_HEAD} px-3 py-2 text-left font-bold`}
                 >
                   <span
                     aria-hidden="true"
@@ -170,7 +174,7 @@ function Matrix({ matrix, onOpen }: { matrix: WealthMatrixOut; onOpen: (panel: P
                 <tr key={line.id}>
                   <th
                     scope="row"
-                    className={`${STICKY_LEFT} whitespace-nowrap py-2 pr-3 pl-8 text-left font-normal`}
+                    className={`${STICKY_LEFT} ${ROW_HEAD} py-2 pr-3 pl-8 text-left font-normal`}
                     style={{ borderLeft: `4px solid ${wealthColour(c.colour)}` }}
                   >
                     <button
