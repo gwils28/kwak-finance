@@ -79,6 +79,17 @@ test("the banner leads back to the household", async () => {
   expect(calls.some((c) => c.route === "POST /api/demo/leave")).toBe(true);
 });
 
+test("on a phone the banner folds its explanation behind a toggle", async () => {
+  api(true);
+  render(<TestApp path="/spending?month=2026-10" />);
+
+  const banner = await screen.findByRole("region", { name: "You are in the demo" });
+  const toggle = within(banner).getByRole("button", { name: "Details" });
+  expect(toggle).toHaveAttribute("aria-expanded", "false");
+  await userEvent.setup().click(toggle);
+  expect(toggle).toHaveAttribute("aria-expanded", "true");
+});
+
 test("resetting the demo asks first", async () => {
   const calls = api(true);
   render(<TestApp path="/spending?month=2026-10" />);

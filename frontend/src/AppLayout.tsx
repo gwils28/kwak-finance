@@ -41,6 +41,14 @@ const SPACES = {
 
 type Space = keyof typeof SPACES;
 
+/** On a phone, the bar at the bottom: the overview, then each space's most used page. */
+const PHONE_BAR = [
+  { key: null, to: "/", label: "home", icon: "home" },
+  { key: "spending", to: "/spending", label: "spending", icon: "wallet" },
+  { key: "wealth", to: "/wealth", label: "wealth", icon: "trend" },
+  { key: "goals", to: "/goals", label: "goals", icon: "target" },
+] as const;
+
 /** Where each switch leads: the space's most used page. */
 const SWITCH = [
   { key: "spending", to: "/spending", label: "spending" },
@@ -112,10 +120,11 @@ export function AppLayout() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col">
+    // On a phone, room at the bottom for the bar, so it never covers the footer.
+    <div className="flex min-h-screen flex-col pb-16 sm:pb-0 print:pb-0">
       {/* Above the tables' sticky headers (z-30), so the account menu opens over them. */}
       <header className="sticky top-0 z-40 print:hidden border-b border-border bg-surface/95 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-4 px-4 sm:h-14 sm:flex-nowrap lg:gap-x-8">
+        <div className="mx-auto flex h-14 max-w-6xl items-center gap-x-4 px-4 lg:gap-x-8">
           <Link
             to="/"
             aria-label={t.common.appName}
@@ -129,8 +138,8 @@ export function AppLayout() {
           </Link>
           <nav
             aria-label={t.nav.spacesLabel}
-            // On a phone the spaces take a row of their own, under the logo and the menu.
-            className="order-last mb-2 flex w-full items-center justify-center gap-1 rounded-full border border-border p-0.5 sm:order-none sm:mb-0 sm:w-auto"
+            // On a phone the spaces are in the bar at the bottom instead.
+            className="hidden items-center gap-1 rounded-full border border-border p-0.5 sm:flex"
           >
             {SWITCH.map(({ key, to, label }) => (
               <Link
@@ -199,6 +208,28 @@ export function AppLayout() {
         <Outlet />
       </main>
       <Footer />
+      <nav
+        aria-label={t.nav.sectionsLabel}
+        className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-4 border-t border-border bg-surface/95 pb-[env(safe-area-inset-bottom)] backdrop-blur sm:hidden print:hidden"
+      >
+        {PHONE_BAR.map(({ key, to, label, icon }) => {
+          const here = key === null ? pathname === "/" : place === key;
+          return (
+            <Link
+              key={to}
+              to={to}
+              activeOptions={{ exact: true }}
+              aria-current={here ? "true" : undefined}
+              className={`flex flex-col items-center gap-0.5 py-2 text-xs font-medium whitespace-nowrap ${
+                here ? "text-accent" : "text-muted"
+              }`}
+            >
+              <Icon name={icon} className="size-5" />
+              {t.nav[label]}
+            </Link>
+          );
+        })}
+      </nav>
     </div>
   );
 }

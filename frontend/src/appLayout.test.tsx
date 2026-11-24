@@ -37,6 +37,26 @@ test("the main tabs lead to the everyday pages, the current one marked", async (
   expect(within(spaces).getByRole("link", { name: "Goals" })).toHaveAttribute("href", "/goals");
 });
 
+test("on a phone, a bar at the bottom leads to the overview and the three spaces", async () => {
+  api();
+  render(<TestApp path="/budget" />);
+
+  const bar = await screen.findByRole("navigation", { name: "Sections" });
+  const links = within(bar).getAllByRole("link");
+  expect(links.map((link) => link.textContent)).toEqual(["Home", "Spending", "Wealth", "Goals"]);
+  expect(links.map((link) => link.getAttribute("href"))).toEqual([
+    "/",
+    "/spending",
+    "/wealth",
+    "/goals",
+  ]);
+  expect(within(bar).getByRole("link", { name: "Spending" })).toHaveAttribute(
+    "aria-current",
+    "true",
+  );
+  expect(within(bar).getByRole("link", { name: "Home" })).not.toHaveAttribute("aria-current");
+});
+
 test("the guide stands apart from the main tabs", async () => {
   api();
   render(<TestApp path="/spending?month=2026-10" />);

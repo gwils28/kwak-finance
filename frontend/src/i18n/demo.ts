@@ -11,6 +11,7 @@ export const demoEn = {
     "Every change made in the demo, by any member, will be lost, and the demo generated again from today.",
   confirm: "Reset",
   cancel: "Cancel",
+  details: "Details",
 };
 
 export const demoFr: typeof demoEn = {
@@ -25,4 +26,5 @@ export const demoFr: typeof demoEn = {
     "Toutes les modifications faites dans la démo, par n'importe quel membre, seront perdues, et la démo générée à nouveau à partir d'aujourd'hui.",
   confirm: "Réinitialiser",
   cancel: "Annuler",
+  details: "Détails",
 };

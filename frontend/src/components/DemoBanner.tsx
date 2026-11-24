@@ -51,26 +51,45 @@ export function DemoBanner({ demo }: { demo: ReturnType<typeof useDemoSwitch> })
   const { t } = useI18n();
   const d = t.demo;
   const [confirming, setConfirming] = useState(false);
+  // On a phone the banner is one line until opened; from sm up it is always open.
+  const [open, setOpen] = useState(false);
   const title = useId();
+  const more = useId();
 
   return (
     <section
       aria-labelledby={title}
       className="border-b border-secondary-300 bg-secondary-50 text-sm text-secondary-900 dark:border-secondary-800 dark:bg-secondary-900 dark:text-secondary-50"
     >
-      <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-3">
+      <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-2 sm:py-3">
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-          <p className="min-w-0 flex-1 basis-80">
+          <p className="min-w-0 flex-1 sm:basis-80">
             <strong id={title} className="font-semibold">
               {d.banner}
             </strong>{" "}
-            <span>{d.explain}</span>
+            <span id={more} className={open ? "" : "hidden sm:inline"}>
+              {d.explain}
+            </span>
           </p>
+          <button
+            type="button"
+            aria-expanded={open}
+            aria-controls={more}
+            onClick={() => setOpen(!open)}
+            className="text-sm font-medium underline sm:hidden"
+          >
+            {d.details}
+          </button>
           <div className="flex flex-wrap gap-2">
             <Button onClick={demo.leave} disabled={demo.pending}>
               {d.leave}
             </Button>
-            <Button variant="ghost" onClick={() => setConfirming(true)} disabled={demo.pending}>
+            <Button
+              variant="ghost"
+              onClick={() => setConfirming(true)}
+              disabled={demo.pending}
+              className={open ? "" : "hidden sm:inline-block"}
+            >
               {d.reset}
             </Button>
           </div>
