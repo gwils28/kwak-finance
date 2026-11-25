@@ -56,7 +56,7 @@ export function Trajectory({ detail }: { detail: GoalDetailOut }) {
               x={PAD.left - 8}
               y={y(v) + 4}
               textAnchor="end"
-              className="tabular fill-muted text-[11px]"
+              className="tabular-nums fill-muted text-[11px]"
             >
               {formatEurWhole(String(v))}
             </text>

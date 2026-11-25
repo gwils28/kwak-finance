@@ -171,7 +171,7 @@ function AdjustForm({
           id={ids.amount}
           inputMode="decimal"
           required
-          className={`${fieldClass} w-32 tabular`}
+          className={`${fieldClass} w-32 tabular-nums`}
           value={amount}
           onChange={(e) => setAmount(e.target.value)}
         />

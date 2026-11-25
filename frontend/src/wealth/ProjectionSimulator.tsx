@@ -40,7 +40,7 @@ const RUN_KEY = ["projection", "run"];
 const DEBOUNCE_MS = 350;
 const DEFAULT_YEARS = 20;
 const VOLATILE = 0.4;
-const field = "w-full rounded-md border border-border bg-surface px-2 py-1 text-right tabular";
+const field = "w-full rounded-md border border-border bg-surface px-2 py-1 text-right tabular-nums";
 
 type Row = { key: number; categoryId: string; amount: string; indexed: boolean; ret: string };
 type WhatIfDraft = {
@@ -754,7 +754,7 @@ function Contributions({
       {(parsed.length > 0 || measured) && (
         <p className="flex items-baseline justify-between border-t border-border pt-2 text-sm">
           <span>{p.total}</span>
-          <span className="tabular font-semibold">
+          <span className="tabular-nums font-semibold">
             {p.perMonth(formatEurWhole(measured ? (savings?.capacity ?? "0") : total))}
           </span>
         </p>
@@ -831,7 +831,7 @@ function Answer({
     <div className={`flex flex-col gap-3 transition-opacity ${stale ? "opacity-70" : ""}`}>
       <div className="text-center">
         <p className="text-sm text-muted">{p.medianIn(p.years(years))}</p>
-        <p className="font-display text-4xl font-black tracking-tight tabular sm:text-5xl">
+        <p className="font-display text-4xl font-black tracking-tight tabular-nums sm:text-5xl">
           {formatEurHundreds(h.median)}
         </p>
         <p className="text-sm text-muted">
@@ -853,7 +853,7 @@ function Answer({
               inputMode="decimal"
               value={rate}
               onChange={(e) => setRate(e.target.value)}
-              className="w-20 rounded-md border border-border bg-surface px-2 py-1 text-right tabular"
+              className="w-20 rounded-md border border-border bg-surface px-2 py-1 text-right tabular-nums"
             />
             {!rateValid && <span className="text-negative">{p.invalidRate}</span>}
             <span>{p.incomeCaveat}</span>
@@ -871,7 +871,7 @@ function Answer({
               className="h-2 w-2 rounded-full"
               style={{ background: colour }}
             />
-            {name} <span className="tabular font-semibold">{formatEurHundreds(value)}</span>
+            {name} <span className="tabular-nums font-semibold">{formatEurHundreds(value)}</span>
           </li>
         ))}
       </ul>
@@ -909,7 +909,7 @@ function Answer({
         ).map(([label, value]) => (
           <div key={label}>
             <dt className="text-xs text-muted">{label}</dt>
-            <dd className="tabular font-semibold">{formatEurHundreds(value)}</dd>
+            <dd className="tabular-nums font-semibold">{formatEurHundreds(value)}</dd>
           </div>
         ))}
       </dl>
@@ -977,7 +977,9 @@ function Reach({
       ) : (
         <>
           <p className="flex items-baseline gap-3">
-            <span className="font-display text-4xl font-black tabular">{chanceText(chance)}</span>
+            <span className="font-display text-4xl font-black tabular-nums">
+              {chanceText(chance)}
+            </span>
             {status && (
               <span
                 className={`text-sm font-semibold ${n !== null && n >= 0.5 ? "text-positive" : "text-warning"}`}

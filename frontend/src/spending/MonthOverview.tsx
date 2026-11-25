@@ -83,8 +83,8 @@ function Tile({ label, value, children }: { label: string; value: string; childr
       className="flex flex-col gap-1 rounded-lg border border-border bg-surface p-4"
     >
       <h2 className="text-sm text-muted">{label}</h2>
-      <p className="text-2xl font-semibold">{value}</p>
-      {children && <div className="text-xs">{children}</div>}
+      <p className="big-figure">{value}</p>
+      {children && <div className="text-[13px]">{children}</div>}
     </section>
   );
 }
@@ -184,7 +184,7 @@ function MonthSoFar({ summary, isOwner }: { summary: SpendingMonthOut; isOwner: 
           )}
           <div className="flex flex-wrap items-baseline justify-between gap-2">
             {pace !== null && shown.length > 0 ? (
-              <p className="text-xs text-muted">{tg.paceLegend(formatPercent(pace))}</p>
+              <p className="text-[13px] text-muted">{tg.paceLegend(formatPercent(pace))}</p>
             ) : (
               <span />
             )}
@@ -222,7 +222,7 @@ function ProgressLine({ line, month }: { line: SpendingProgressLineOut; month: s
         >
           {line.name}
         </Link>
-        <span className="tabular text-muted">
+        <span className="tabular-nums text-muted">
           {tg.spentOf(formatEurWhole(line.spent), formatEurWhole(line.target))}
           {" · "}
           {over
@@ -243,7 +243,7 @@ function ProgressLine({ line, month }: { line: SpendingProgressLineOut; month: s
           />
         )}
       </div>
-      <div className="flex flex-wrap justify-between gap-x-3 text-xs">
+      <div className="flex flex-wrap justify-between gap-x-3 text-[13px]">
         <span className={line.status === "on_track" ? "text-muted" : "font-semibold"}>
           <span aria-hidden="true">{ICON[line.status]} </span>
           {tg.status[line.status]}
@@ -302,7 +302,7 @@ function SavingsLine({ line, month }: { line: SpendingSavingsLineOut; month: str
         >
           {line.name}
         </Link>
-        <span className="tabular text-muted">
+        <span className="tabular-nums text-muted">
           {s.savedOf(formatEurWhole(line.saved), formatEurWhole(line.objective))}
           {Number(line.remaining) !== 0 &&
             ` · ${
@@ -318,7 +318,7 @@ function SavingsLine({ line, month }: { line: SpendingSavingsLineOut; month: str
           style={{ width: `${filled * 100}%` }}
         />
       </div>
-      <span className={`text-xs ${reached ? "font-semibold" : "text-muted"}`}>
+      <span className={`text-[13px] ${reached ? "font-semibold" : "text-muted"}`}>
         <span aria-hidden="true">{reached ? "✓" : "…"} </span>
         {s.status[line.status]}
         {line.share !== null && ` · ${s.share(formatPercent(line.share))}`}
@@ -379,7 +379,7 @@ function ToConfirm({ month }: { month: string }) {
               <span className="text-muted">
                 {categories.data?.find((cat) => cat.id === o.category_id)?.name}
               </span>
-              <span className="tabular w-24 text-right">{formatEur(negate(o.amount))}</span>
+              <span className="tabular-nums w-24 text-right">{formatEur(negate(o.amount))}</span>
               <Button
                 variant="ghost"
                 className="py-1"
@@ -418,9 +418,9 @@ function Top({ summary }: { summary: SpendingMonthOut }) {
               >
                 {nameOf(c.category_id)}
               </Link>
-              <span className="tabular font-semibold">{formatEurWhole(c.spent)}</span>
+              <span className="tabular-nums font-semibold">{formatEurWhole(c.spent)}</span>
               {c.share !== null && (
-                <span className="tabular w-12 text-right text-muted">
+                <span className="tabular-nums w-12 text-right text-muted">
                   {formatPercent(c.share)}
                   <span className="sr-only"> {t.dashboard.ofSpending}</span>
                 </span>
@@ -448,7 +448,7 @@ function LastLines({ month }: { month: string }) {
     <section aria-label={l.title} className={BOX}>
       <div>
         <h2 className="font-semibold">{l.title}</h2>
-        <p className="text-xs text-muted">{l.order}</p>
+        <p className="text-[13px] text-muted">{l.order}</p>
       </div>
       {latest.length === 0 ? (
         <p className="text-sm text-muted">{l.none}</p>
@@ -459,7 +459,7 @@ function LastLines({ month }: { month: string }) {
               <span className="w-28 text-muted">{formatDate(line.day)}</span>
               <span className="flex-1 truncate">{line.label}</span>
               <span className="text-muted">{nameOf(line.category_id)}</span>
-              <span className="tabular w-24 text-right">
+              <span className="tabular-nums w-24 text-right">
                 {formatEur(typedOf(line.amount, isIncomeLine(line, income)))}
               </span>
             </li>

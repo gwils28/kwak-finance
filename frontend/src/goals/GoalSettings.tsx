@@ -116,7 +116,7 @@ function SettingsForm({
             <input
               id={amountId}
               inputMode="decimal"
-              className={`${fieldClass} tabular`}
+              className={`${fieldClass} tabular-nums`}
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
             />

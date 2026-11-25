@@ -57,6 +57,17 @@ test("on a phone, a bar at the bottom leads to the overview and the three spaces
   expect(within(bar).getByRole("link", { name: "Home" })).not.toHaveAttribute("aria-current");
 });
 
+test("a skip link, first on the page, jumps to the main content", async () => {
+  api();
+  render(<TestApp path="/budget" />);
+
+  const skip = await screen.findByRole("link", { name: "Skip to content" });
+  expect(skip).toHaveAttribute("href", "#main");
+  expect(document.querySelector("main")).toHaveAttribute("id", "main");
+  await userEvent.setup().tab();
+  expect(skip).toHaveFocus();
+});
+
 test("the guide stands apart from the main tabs", async () => {
   api();
   render(<TestApp path="/spending?month=2026-10" />);

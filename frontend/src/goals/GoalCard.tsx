@@ -3,6 +3,7 @@ import { Link } from "@tanstack/react-router";
 import { type ReactNode, useState } from "react";
 import { type ClosedAs, type GoalOut, type GoalPlanOut, updateGoal } from "../api/generated";
 import { detailSentence } from "../auth/errors";
+import { Icon } from "../components/icons";
 import { Button, ErrorAlert } from "../components/ui";
 import { useI18n } from "../i18n";
 import { formatEurWhole, formatProgress } from "../lib/money";
@@ -104,9 +105,11 @@ export function GoalCard({
           <Link
             to="/goals/$goalId"
             params={{ goalId: goal.id }}
-            className="hover:text-accent hover:underline"
+            // A chevron says the title opens the goal's page.
+            className="group inline-flex items-center gap-1 hover:text-accent hover:underline"
           >
             {goal.name}
+            <Icon name="chevron" className="size-4 -rotate-90 text-muted group-hover:text-accent" />
           </Link>
         </h3>
         <StatusChip status={goal.status} />
@@ -115,11 +118,11 @@ export function GoalCard({
       <ProBadge goal={goal} />
       <Gauge goal={goal} />
       <p className="flex justify-between text-sm">
-        <span className="tabular">
+        <span className="tabular-nums">
           <strong>{formatEurWhole(goal.value)}</strong>{" "}
           <span className="text-muted">/ {formatEurWhole(goal.target)}</span>
         </span>
-        <strong className="tabular">{formatProgress(goal.progress)}</strong>
+        <strong className="tabular-nums">{formatProgress(goal.progress)}</strong>
       </p>
       <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
         {precaution ? (

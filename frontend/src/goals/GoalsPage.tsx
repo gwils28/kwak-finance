@@ -147,7 +147,7 @@ export function GoalsPage() {
                       }}
                     />
                   </div>
-                  <span className="text-sm tabular">
+                  <span className="text-sm tabular-nums">
                     {g.ofTarget(formatEurWhole(p?.value ?? "0"), formatEurWhole(p?.target ?? "0"))}
                   </span>
                 </div>
@@ -195,7 +195,7 @@ export function GoalsPage() {
                         goal.closed_as ? g.closedAs[goal.closed_as] : "",
                         goal.closed_from ? monthLabel(shiftMonth(goal.closed_from, -1)) : "",
                       )}{" "}
-                      · <span className="tabular">{formatEurWhole(goal.value)}</span>
+                      · <span className="tabular-nums">{formatEurWhole(goal.value)}</span>
                     </span>
                   </li>
                 ))}

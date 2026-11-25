@@ -86,7 +86,7 @@ export function YearView({ year }: { year: number }) {
             className="flex flex-col gap-1 rounded-lg border border-border bg-surface p-4"
           >
             <span className="text-sm text-muted">{label}</span>
-            <span className="tabular text-lg font-semibold">{value}</span>
+            <span className="tabular-nums text-lg font-semibold">{value}</span>
           </div>
         ))}
       </section>

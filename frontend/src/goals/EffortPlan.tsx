@@ -36,7 +36,9 @@ export function EffortPlan({ data }: { data: GoalsOut }) {
           {plan.capacity_set ? g.capacitySet : g.capacityComputed}
         </p>
       </div>
-      <p className="text-3xl font-semibold tabular">{g.perMonth(formatEurWhole(plan.capacity))}</p>
+      <p className="text-3xl font-semibold tabular-nums">
+        {g.perMonth(formatEurWhole(plan.capacity))}
+      </p>
       {rows.length === 0 ? (
         <p className="text-sm">{g.nothingToShare}</p>
       ) : (

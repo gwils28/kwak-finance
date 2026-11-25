@@ -122,6 +122,13 @@ export function AppLayout() {
   return (
     // On a phone, room at the bottom for the bar, so it never covers the footer.
     <div className="flex min-h-screen flex-col pb-16 sm:pb-0 print:pb-0">
+      {/* First stop for the keyboard: hidden until focused. */}
+      <a
+        href="#main"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:rounded-md focus:bg-accent focus:px-3 focus:py-2 focus:text-bg"
+      >
+        {t.nav.skipToContent}
+      </a>
       {/* Above the tables' sticky headers (z-30), so the account menu opens over them. */}
       <header className="sticky top-0 z-40 print:hidden border-b border-border bg-surface/95 backdrop-blur">
         <div className="mx-auto flex h-14 max-w-6xl items-center gap-x-4 px-4 lg:gap-x-8">
@@ -204,7 +211,11 @@ export function AppLayout() {
         )}
       </header>
       {user.demo && <DemoBanner demo={demo} />}
-      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-10 print:max-w-none print:p-0">
+      <main
+        id="main"
+        tabIndex={-1}
+        className="mx-auto w-full max-w-6xl flex-1 px-4 py-10 outline-none print:max-w-none print:p-0"
+      >
         <Outlet />
       </main>
       <Footer />

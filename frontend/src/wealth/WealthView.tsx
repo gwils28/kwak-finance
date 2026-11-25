@@ -211,7 +211,7 @@ function Tile({ label, value, children }: { label: string; value: string; childr
       className="flex flex-col gap-1 rounded-lg border border-border bg-surface p-4"
     >
       <h2 className="text-sm text-muted">{label}</h2>
-      <p className="tabular text-2xl font-semibold">{value}</p>
+      <p className="big-figure">{value}</p>
       {children && <div className="text-xs text-muted">{children}</div>}
     </section>
   );

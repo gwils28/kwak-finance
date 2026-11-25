@@ -111,7 +111,7 @@ function Tip({ month, lines }: { month: string; lines: TipLine[] }) {
             )}
             {line.name}
           </span>
-          <span className="tabular font-medium">{formatEurHundreds(line.value)}</span>
+          <span className="tabular-nums font-medium">{formatEurHundreds(line.value)}</span>
         </p>
       ))}
     </div>
@@ -358,11 +358,11 @@ export function CategoriesChart({
                     <p className="mb-1 font-semibold">{row.name}</p>
                     <p className="flex justify-between gap-4">
                       {p.categoryToday}
-                      <span className="tabular">{formatEurHundreds(row.today)}</span>
+                      <span className="tabular-nums">{formatEurHundreds(row.today)}</span>
                     </p>
                     <p className="flex justify-between gap-4">
                       {p.categoryHorizon}
-                      <span className="tabular">{formatEurHundreds(row.horizon)}</span>
+                      <span className="tabular-nums">{formatEurHundreds(row.horizon)}</span>
                     </p>
                   </div>
                 );

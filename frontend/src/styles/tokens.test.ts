@@ -49,3 +49,21 @@ test("spending category colours survive the build in both themes", () => {
   // Grey in both themes: the dark one keeps the light one's.
   expect(spendKeys(block(':root[data-theme="dark"] {'))).toEqual(keys.slice(0, 6));
 });
+
+const rule = (selector: string) => {
+  const start = tokens.indexOf(`${selector} {`);
+  expect(start, `${selector} not found`).toBeGreaterThanOrEqual(0);
+  return tokens.slice(start, tokens.indexOf("}", start));
+};
+
+test("form controls take the accent and the page keeps its scrollbar gutter", () => {
+  expect(rule("  html")).toMatch(/scrollbar-gutter:\s*stable/);
+  expect(rule("  html")).toMatch(/accent-color:\s*var\(--color-accent\)/);
+});
+
+test("Plex Mono is kept for table amounts: other figures use the sans with tabular numerals", () => {
+  expect(rule(".tabular")).toContain("var(--font-mono)");
+  const figure = rule(".big-figure");
+  expect(figure).toContain("tabular-nums");
+  expect(figure).not.toContain("--font-mono");
+});

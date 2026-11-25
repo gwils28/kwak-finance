@@ -709,7 +709,7 @@ function EditValue({
       <TextField
         label={t.wealth.amount}
         inputMode="decimal"
-        className="tabular w-40"
+        className="tabular-nums w-40"
         value={amount}
         onChange={(e) => setAmount(e.target.value)}
       />
@@ -800,7 +800,7 @@ function UpdateForm({
               <TextField
                 label={`${l.name} (${l.category_name})`}
                 inputMode="decimal"
-                className="tabular"
+                className="tabular-nums"
                 value={values[l.line_id] ?? ""}
                 onChange={(e) => {
                   setValues({ ...values, [l.line_id]: e.target.value });

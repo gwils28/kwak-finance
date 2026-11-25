@@ -642,7 +642,7 @@ def behind_notices(goals: Sequence[GoalFacts]) -> list[Notice]:
         out.append(
             Notice(
                 Rule.BEHIND,
-                _soon(g),
+                Severity.WARNING,  # a delay is a warning, whatever the deadline (#217)
                 goal=g.id,
                 amount=max(ZERO, -(now.months[-1].gap or ZERO)),
                 deadline=g.deadline,

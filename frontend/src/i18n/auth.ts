@@ -72,6 +72,7 @@ export const navEn = {
   mainLabel: "Main",
   spacesLabel: "Spaces",
   sectionsLabel: "Sections",
+  skipToContent: "Skip to content",
   /** The overview, in the phone bar where a long name would wrap. */
   home: "Home",
   spending: "Spending",
@@ -102,6 +103,7 @@ export const navFr: typeof navEn = {
   mainLabel: "Principale",
   spacesLabel: "Espaces",
   sectionsLabel: "Rubriques",
+  skipToContent: "Aller au contenu",
   home: "Accueil",
   spending: "Dépenses",
   lines: "Lignes",

@@ -500,7 +500,7 @@ def test_behind_on_volatile_lines_mentions_the_market() -> None:
         volatility="0.16",
     )
     (notice,) = behind_notices([goal])
-    assert notice.severity is Severity.INFO
+    assert notice.severity is Severity.WARNING  # a delay is a warning, even 25 months ahead
     assert notice.figures["market"] is True
 
 
