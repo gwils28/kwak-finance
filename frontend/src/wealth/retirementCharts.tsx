@@ -74,6 +74,22 @@ function Tip({ month, lines }: { month: string; lines: TipLine[] }) {
 }
 
 /**
+ * Which side of its line a timeline marker's label sits, from the marker's position (0 to 1):
+ * right of it in the first half, left of it in the second, so a label never runs past the
+ * chart's right edge on a narrow screen (#227).
+ */
+export function markSide(fraction: number): "after" | "before" {
+  return fraction < 0.5 ? "after" : "before";
+}
+
+/** How far a year label shifts back from its tick: centred, kept inside near the edges. */
+export function tickShift(fraction: number): "0%" | "-50%" | "-100%" {
+  if (fraction < 0.05) return "0%";
+  if (fraction > 0.95) return "-100%";
+  return "-50%";
+}
+
+/**
  * Each member's working months then pension to the horizon, today, each retirement and the
  * horizon marked (F-RET-4).
  */
@@ -82,19 +98,19 @@ export function Timeline({ plan }: { plan: RetirementPlanOut }) {
   const r = t.retirement;
   const start = Number(plan.this_month.slice(0, 4)) - 6;
   const end = Number(plan.horizon.slice(0, 4)) + 1;
-  const at = (month: string) => `${(100 * (year(month) - start)) / (end - start)}%`;
+  const share = (month: string) => (year(month) - start) / (end - start);
+  const at = (month: string) => `${100 * share(month)}%`;
   const until = (month: string) => `calc(100% - ${at(month)})`;
   const decades = [];
   for (let y = start; y <= end; y++) if (y % 10 === 0) decades.push(y);
-  const marks: { month: string; label: string; place: "now" | "mid" | "end"; low?: boolean }[] = [
-    { month: plan.this_month, label: r.today, place: "now" },
+  const marks: { month: string; label: string; low?: boolean }[] = [
+    { month: plan.this_month, label: r.today },
   ];
   plan.people.forEach((p, k) => {
     if (p.retirement > plan.this_month) {
       marks.push({
         month: p.retirement,
         label: r.retiresAt(p.name, p.age_at_retirement),
-        place: "mid",
         low: k % 2 === 0,
       });
     }
@@ -102,7 +118,6 @@ export function Timeline({ plan }: { plan: RetirementPlanOut }) {
   marks.push({
     month: plan.horizon,
     label: r.horizonAt(plan.youngest, plan.youngest_age_at_horizon),
-    place: "end",
   });
   return (
     <div role="img" aria-label={r.lifeChart} className="flex flex-col gap-2 text-xs">
@@ -145,7 +160,9 @@ export function Timeline({ plan }: { plan: RetirementPlanOut }) {
           <span
             key={m.label}
             className={`absolute border-l border-dashed border-neutral-500 pl-1 whitespace-nowrap ${
-              m.place === "end" ? "-translate-x-full border-r border-l-0 pr-1 pl-0" : ""
+              markSide(share(m.month)) === "before"
+                ? "-translate-x-full border-r border-l-0 pr-1 pl-0"
+                : ""
             }`}
             style={{ left: at(m.month), top: m.low ? "1.25rem" : 0 }}
           >
@@ -156,8 +173,11 @@ export function Timeline({ plan }: { plan: RetirementPlanOut }) {
           {decades.map((y) => (
             <span
               key={y}
-              className="absolute -translate-x-1/2 tabular"
-              style={{ left: `${(100 * (y - start)) / (end - start)}%` }}
+              className="absolute tabular"
+              style={{
+                left: `${(100 * (y - start)) / (end - start)}%`,
+                transform: `translateX(${tickShift((y - start) / (end - start))})`,
+              }}
             >
               {y}
             </span>
@@ -276,6 +296,12 @@ export function FanChart({ plan }: { plan: RetirementPlanOut }) {
       />
     );
   };
+  // A marker past the middle writes its label left of its line, so it stays inside on phones.
+  const labelAt = (month: string) => {
+    const i = data.findIndex((d) => d.month === month);
+    const fraction = i < 0 ? 0 : i / Math.max(1, data.length - 1);
+    return markSide(fraction) === "after" ? "insideTopLeft" : "insideTopRight";
+  };
   return (
     <div className="h-72" role="img" aria-label={r.fanChart}>
       <ResponsiveContainer width="100%" height="100%">
@@ -331,7 +357,12 @@ export function FanChart({ plan }: { plan: RetirementPlanOut }) {
             x={plan.retired}
             stroke={R.marker}
             strokeDasharray="2 3"
-            label={{ value: r.retires, position: "insideTopLeft", fill: R.muted, fontSize: 11 }}
+            label={{
+              value: r.retires,
+              position: labelAt(plan.retired),
+              fill: R.muted,
+              fontSize: 11,
+            }}
           />
           {later.map((p, k) => (
             <ReferenceLine
@@ -341,7 +372,7 @@ export function FanChart({ plan }: { plan: RetirementPlanOut }) {
               strokeDasharray="2 3"
               label={{
                 value: r.pensionOf(p.name),
-                position: "insideTopLeft",
+                position: labelAt(p.pension_month),
                 fill: R.muted,
                 fontSize: 11,
                 dy: 14 * (k + 1),

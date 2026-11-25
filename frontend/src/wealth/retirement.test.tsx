@@ -3,6 +3,17 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, expect, test } from "vitest";
 import { fakeApi, owner } from "../test/fakeApi";
 import { TestApp } from "../test/TestApp";
+import { markSide, tickShift } from "./retirementCharts";
+
+test("timeline labels stay inside the chart: right of the line first, left of it past the middle", () => {
+  expect(markSide(0.12)).toBe("after");
+  expect(markSide(0.49)).toBe("after");
+  expect(markSide(0.5)).toBe("before");
+  expect(markSide(0.98)).toBe("before");
+  expect(tickShift(0)).toBe("0%");
+  expect(tickShift(0.5)).toBe("-50%");
+  expect(tickShift(1)).toBe("-100%");
+});
 
 afterEach(() => {
   delete document.documentElement.dataset.theme;
