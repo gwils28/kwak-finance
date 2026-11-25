@@ -7,6 +7,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { type RetirementPlanOut, runRetirement } from "../api/generated";
 import { Callout, Chip, Fold, Jump, Tile, Tiles } from "../components/analysis";
+import { LoadingCards, Refreshing } from "../components/Loading";
 import { ErrorAlert } from "../components/ui";
 import { Card, DataTable } from "../dashboard/charts";
 import { useI18n } from "../i18n";
@@ -41,15 +42,14 @@ export function RetirementPlan() {
   const query = useQuery({
     queryKey: RETIREMENT_RUN_KEY,
     queryFn: async () => (await runRetirement({ throwOnError: true })).data,
+    // Kept for a day: coming back shows the last plan at once while it is recomputed.
+    gcTime: 24 * 60 * 60_000,
   });
   return (
     <div className="flex flex-col gap-4">
       <p className="max-w-3xl text-muted">{r.intro}</p>
-      {query.isPending && (
-        <p role="status" className="text-muted">
-          {r.loading}
-        </p>
-      )}
+      {query.isPending && <LoadingCards sentence={r.loading} why={r.loadingWhy} />}
+      {query.data && query.isFetching && <Refreshing sentence={r.recomputing} />}
       {query.isError && <ErrorAlert message={t.errors.generic} />}
       {query.data?.problem && (
         <p className="rounded-lg border border-border bg-surface p-4">

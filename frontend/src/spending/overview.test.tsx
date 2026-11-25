@@ -86,6 +86,16 @@ test("the month's figures say how spending moved and what is left", async () => 
   expect(notSpent).toHaveTextContent("Share of income not spent · 7% put in savings");
 });
 
+test("while the month loads, the overview shows the shape of its figures, not a bare word", async () => {
+  api({ "GET /api/spending/month": () => new Promise<Response>(() => {}) as never });
+  render(<TestApp path="/" />);
+
+  const status = await screen.findByRole("status", { name: "Loading" });
+  expect(within(status).getByText("Loading the month's spending…")).toBeVisible();
+  expect(within(status).getByRole("progressbar")).toBeInTheDocument();
+  expect(screen.queryByText("Loading…")).toBeNull();
+});
+
 test("the month so far shows each target's progress and opens its lines", async () => {
   api();
   render(<TestApp path="/" />);

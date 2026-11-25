@@ -293,6 +293,30 @@
   }
 }
 
+/* A long computation (the forecast, the retirement plan): an indeterminate bar sliding along,
+   still and full width for those who ask for less motion. */
+@keyframes loading-slide {
+  from {
+    left: -35%;
+  }
+  to {
+    left: 100%;
+  }
+}
+
+.loading-bar {
+  animation: loading-slide 1.4s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .loading-bar {
+    animation: none;
+    left: 0;
+    width: 100%;
+    opacity: 0.5;
+  }
+}
+
 /* Printing (the audit document, F-AUD-1): A4, page numbers, the light palette whatever the theme,
    and the sections kept whole where they fit. */
 @media print {

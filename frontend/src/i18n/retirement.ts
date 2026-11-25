@@ -4,6 +4,8 @@ export const retirementEn = {
   intro:
     "What standard of living the household could keep once retired: the pensions entered below, and what the wealth can pay each month, against the retirement spending.",
   loading: "Running the plan…",
+  loadingWhy: "It takes a few seconds: thousands of possible futures are drawn for the wealth.",
+  recomputing: "Recomputing the plan with your changes…",
   problems: {
     no_wealth: "No wealth line in this scope: enter the wealth first.",
     no_member:
@@ -131,6 +133,9 @@ export const retirementFr: typeof retirementEn = {
   intro:
     "Le niveau de vie que le foyer pourrait garder une fois retraité : les pensions saisies plus bas, et ce que le patrimoine peut verser chaque mois, face aux dépenses de retraite.",
   loading: "Calcul du plan…",
+  loadingWhy:
+    "Cela prend quelques secondes : des milliers d'avenirs possibles sont tirés pour le patrimoine.",
+  recomputing: "Nouveau calcul du plan avec vos changements…",
   problems: {
     no_wealth: "Aucune ligne de patrimoine dans ce périmètre : saisissez d'abord le patrimoine.",
     no_member:

@@ -9,6 +9,7 @@ import {
   type SpendingSavingsLineOut,
 } from "../api/generated";
 import { detailSentence } from "../auth/errors";
+import { LoadingCards } from "../components/Loading";
 import { Button, ErrorAlert } from "../components/ui";
 import { SpendingPace } from "../dashboard/charts";
 import { useI18n } from "../i18n";
@@ -43,7 +44,9 @@ export function MonthOverview({ month, isOwner }: { month: string; isOwner: bool
   const lines = useQuery(linesQuery(month));
 
   if (summary.isError) return <ErrorAlert message={t.dashboard.loadFailed} />;
-  if (!summary.data || !lines.data) return <p className="text-sm text-muted">{t.common.loading}</p>;
+  if (!summary.data || !lines.data) {
+    return <LoadingCards sentence={t.dashboard.loadingMonth} tiles={4} cards={2} />;
+  }
   if (lines.data.last_entry === null) {
     return (
       <section className="rounded-lg border border-border bg-surface p-6">

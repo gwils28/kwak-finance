@@ -225,3 +225,38 @@ test("a horizon below 85 and declared savings turned negative are flagged, in Fr
     ),
   ).toBeVisible();
 });
+
+test("on a first load, the plan shows its shape while it is computed", async () => {
+  fakeApi({
+    "GET /api/auth/me": () => Response.json(owner),
+    "GET /api/retirement": () => Response.json(retirement),
+    "GET /api/retirement/run": () => new Promise<Response>(() => {}),
+  });
+  render(<TestApp path="/wealth/retirement" />);
+
+  const status = await screen.findByRole("status", { name: "Loading" });
+  expect(within(status).getByText("Running the plan…")).toBeVisible();
+  expect(within(status).getByRole("progressbar")).toBeInTheDocument();
+});
+
+test("while the settings are saved, the plan stays shown and says it is recomputed", async () => {
+  let hang = false;
+  fakeApi({
+    "GET /api/auth/me": () => Response.json(owner),
+    "GET /api/retirement": () => Response.json(retirement),
+    "PATCH /api/retirement/settings": () => Response.json(retirement),
+    "GET /api/retirement/run": () =>
+      hang ? new Promise<Response>(() => {}) : Response.json({ problem: null, plan }),
+  });
+  const user = userEvent.setup();
+  render(<TestApp path="/wealth/retirement" />);
+
+  const living = "Standard of living from Dec 2026, 9 in 10";
+  expect(await screen.findByLabelText(living)).toBeVisible();
+  hang = true;
+  await user.click(screen.getByRole("button", { name: "Save the settings" }));
+
+  const status = await screen.findByRole("status", { name: "Updating" });
+  expect(within(status).getByText("Recomputing the plan with your changes…")).toBeVisible();
+  expect(screen.getByLabelText(living)).toBeVisible();
+});
