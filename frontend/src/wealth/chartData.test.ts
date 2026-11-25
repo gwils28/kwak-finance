@@ -1,6 +1,6 @@
 import { expect, test } from "vitest";
 import type { WealthMatrixLineOut, WealthMatrixOut } from "../api/generated";
-import { allocation, bridge, history, mosaic, squarify } from "./chartData";
+import { allocation, bridge, fittedAxis, history, netWorth, shownInFilter } from "./chartData";
 
 const ME = "me";
 
@@ -98,33 +98,6 @@ test("the allocation can be read for any month shown", () => {
   expect(january.categories[0]?.lines.map((l) => l.name)).toEqual(["Livret A"]);
 });
 
-const area = (r: { w: number; h: number }) => r.w * r.h;
-
-test("squarify tiles the rectangle, each area proportional to its value", () => {
-  const values = [6, 6, 4, 3, 2, 2, 1];
-  const tiles = squarify(values, { x: 0, y: 0, w: 600, h: 400 });
-  expect(tiles).toHaveLength(7);
-  const total = 600 * 400;
-  tiles.forEach((tile, i) => {
-    expect(area(tile) / total).toBeCloseTo((values[i] ?? 0) / 24, 6);
-    expect(tile.x).toBeGreaterThanOrEqual(-1e-9);
-    expect(tile.y).toBeGreaterThanOrEqual(-1e-9);
-    expect(tile.x + tile.w).toBeLessThanOrEqual(600 + 1e-9);
-    expect(tile.y + tile.h).toBeLessThanOrEqual(400 + 1e-9);
-  });
-  // Squarified: no sliver thinner than a tenth of its length here.
-  for (const tile of tiles)
-    expect(Math.min(tile.w, tile.h) / Math.max(tile.w, tile.h)).toBeGreaterThan(0.1);
-  expect(squarify([], { x: 0, y: 0, w: 10, h: 10 })).toEqual([]);
-});
-
-test("the mosaic tiles the categories, largest first, each as large as its value", () => {
-  const tiles = mosaic(allocation(matrix), { x: 0, y: 0, w: 600, h: 400 });
-  expect(tiles.map((t) => t.category.name)).toEqual(["Stocks", "Savings accounts"]);
-  expect(area(tiles[0]?.rect ?? { w: 0, h: 0 }) / (600 * 400)).toBeCloseTo(0.75, 6);
-  expect(area(tiles[1]?.rect ?? { w: 0, h: 0 }) / (600 * 400)).toBeCloseTo(0.25, 6);
-});
-
 test("history stacks the assets above zero and the debts below, with net worth", () => {
   expect(history(matrix)).toEqual([
     { month: "2026-01", "c-savings": 1000, "c-stocks": 5000, "c-debts": -2000, net: 4000 },
@@ -142,4 +115,54 @@ test("the bridge goes from the first net worth to the last, one step per categor
     { key: "end", kind: "end", from: 0, to: 5000, delta: 5000 },
   ]);
   expect(bridge({ ...matrix, months: ["2026-02"] })).toBeNull();
+});
+
+test("net worth can leave categories out, an asset taken off, a debt never counted twice", () => {
+  expect(netWorth(matrix)).toEqual([
+    { month: "2026-01", net: 4000 },
+    { month: "2026-02", net: 5000 },
+  ]);
+  expect(netWorth(matrix, new Set(["c-stocks"]))).toEqual([
+    { month: "2026-01", net: -1000 },
+    { month: "2026-02", net: 500 },
+  ]);
+});
+
+test("the net worth axis fits the values with round steps, never forced to zero", () => {
+  expect(fittedAxis([8000, 7750, 8400])).toEqual({
+    domain: [7600, 8600],
+    ticks: [7600, 7800, 8000, 8200, 8400, 8600],
+  });
+  // A flat line still gets an axis around it.
+  const flat = fittedAxis([5000, 5000]);
+  expect(flat.domain[0]).toBeLessThan(5000);
+  expect(flat.domain[1]).toBeGreaterThan(5000);
+  // Negative values too.
+  const low = fittedAxis([-1000, 500]);
+  expect(low.domain[0]).toBeLessThanOrEqual(-1000);
+  expect(low.domain[1]).toBeGreaterThanOrEqual(500);
+  expect(fittedAxis([])).toEqual({ domain: [0, 1], ticks: [0, 1] });
+});
+
+test("the filter hides the categories holding nothing over the months shown, unless left out", () => {
+  const all = [
+    { id: "c-savings" },
+    { id: "c-gold" },
+    { id: "c-stocks" },
+    { id: "c-debts" },
+    { id: "c-crypto" },
+  ];
+  // Gold holds nothing; crypto is not in the matrix because it is left out.
+  expect(shownInFilter(all, matrix, ["c-crypto"]).map((c) => c.id)).toEqual([
+    "c-savings",
+    "c-stocks",
+    "c-debts",
+    "c-crypto",
+  ]);
+  // Not in the matrix and not left out (a category added since): kept.
+  expect(shownInFilter(all, matrix, []).map((c) => c.id)).toContain("c-crypto");
+  // Left out while empty: still shown, so it can be ticked again.
+  expect(shownInFilter(all, matrix, ["c-gold"]).map((c) => c.id)).toContain("c-gold");
+  // No matrix yet: every category.
+  expect(shownInFilter(all, undefined, [])).toHaveLength(5);
 });

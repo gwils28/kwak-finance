@@ -43,74 +43,6 @@ export function allocation(m: WealthMatrixOut, month = lastIndex(m)): Allocation
   return { total, categories };
 }
 
-export type Rect = { x: number; y: number; w: number; h: number };
-
-/**
- * Squarified treemap (Bruls, Huizing, van Wijk): tiles `rect` with one rectangle per value, in
- * the given order (largest first reads best), each as close to a square as the row allows.
- */
-export function squarify(values: number[], rect: Rect): Rect[] {
-  const total = values.reduce((sum, v) => sum + v, 0);
-  if (values.length === 0 || total <= 0) return values.map(() => ({ ...rect, w: 0, h: 0 }));
-  const scale = (rect.w * rect.h) / total;
-  const areas = values.map((v) => v * scale);
-  const out: Rect[] = [];
-  let free = { ...rect };
-  let start = 0;
-  const worst = (row: number[], side: number) => {
-    const sum = row.reduce((a, b) => a + b, 0);
-    const max = Math.max(...row);
-    const min = Math.min(...row);
-    return Math.max((side * side * max) / (sum * sum), (sum * sum) / (side * side * min));
-  };
-  while (start < areas.length) {
-    const side = Math.min(free.w, free.h);
-    let end = start + 1;
-    while (
-      end < areas.length &&
-      worst(areas.slice(start, end + 1), side) <= worst(areas.slice(start, end), side)
-    )
-      end += 1;
-    const row = areas.slice(start, end);
-    const sum = row.reduce((a, b) => a + b, 0);
-    if (free.w >= free.h) {
-      // A column along the left side.
-      const width = free.h > 0 ? sum / free.h : 0;
-      let y = free.y;
-      for (const a of row) {
-        const h = width > 0 ? a / width : 0;
-        out.push({ x: free.x, y, w: width, h });
-        y += h;
-      }
-      free = { x: free.x + width, y: free.y, w: free.w - width, h: free.h };
-    } else {
-      // A row along the top.
-      const height = free.w > 0 ? sum / free.w : 0;
-      let x = free.x;
-      for (const a of row) {
-        const w = height > 0 ? a / height : 0;
-        out.push({ x, y: free.y, w, h: height });
-        x += w;
-      }
-      free = { x: free.x, y: free.y + height, w: free.w, h: free.h - height };
-    }
-    start = end;
-  }
-  return out;
-}
-
-export type MosaicTile = { category: CategorySlice; rect: Rect };
-
-/** The allocation as a mosaic: one tile per category, from the largest. */
-export function mosaic({ categories }: Allocation, rect: Rect): MosaicTile[] {
-  const sorted = [...categories].sort((a, b) => b.value - a.value);
-  const tiles = squarify(
-    sorted.map((c) => c.value),
-    rect,
-  );
-  return sorted.map((category, i) => ({ category, rect: tiles[i] as Rect }));
-}
-
 export type HistoryRow = { month: string; net: number } & Record<string, number | string>;
 
 /** One row per month: each category that ever holds something (debts below zero), net worth. */
@@ -161,4 +93,65 @@ export function bridge(m: WealthMatrixOut): BridgeStep[] | null {
   const end = Number(m.net[last] ?? 0);
   steps.push({ key: "end", kind: "end", from: 0, to: end, delta: end });
   return steps;
+}
+
+export type NetWorthPoint = { month: string; net: number };
+
+/**
+ * Net worth each month, the assets of the categories in `without` taken off (the main home,
+ * say, which can flatten every other move).
+ */
+export function netWorth(
+  m: WealthMatrixOut,
+  without: ReadonlySet<string> = new Set(),
+): NetWorthPoint[] {
+  const off = m.categories.filter((c) => c.kind === "asset" && without.has(c.id));
+  return m.months.map((month, i) => ({
+    month,
+    net: off.reduce((net, c) => net - Number(c.subtotals[i] ?? 0), Number(m.net[i] ?? 0)),
+  }));
+}
+
+/** 1, 2 or 5 times a power of ten, the closest above `raw`. */
+function roundStep(raw: number): number {
+  const power = 10 ** Math.floor(Math.log10(raw));
+  const unit = raw / power;
+  return (unit <= 1 ? 1 : unit <= 2 ? 2 : unit <= 5 ? 5 : 10) * power;
+}
+
+export type Axis = { domain: [number, number]; ticks: number[] };
+
+/**
+ * An axis fitted to the values, not to zero, in about four round steps with a margin: a
+ * change of a few percent stays visible.
+ */
+export function fittedAxis(values: number[]): Axis {
+  if (values.length === 0) return { domain: [0, 1], ticks: [0, 1] };
+  const low = Math.min(...values);
+  const high = Math.max(...values);
+  const span = high - low || Math.abs(high) / 10 || 1;
+  const step = roundStep(span / 4);
+  const margin = step / 4;
+  const start = Math.floor((low - margin) / step) * step;
+  const end = Math.ceil((high + margin) / step) * step;
+  const ticks: number[] = [];
+  for (let v = start; v <= end + step / 2; v += step) ticks.push(Math.round(v * 100) / 100);
+  return { domain: [start, end], ticks };
+}
+
+/**
+ * The categories the filter offers: those holding something over the months shown, those left
+ * out (to tick them again), and those the matrix does not list; every one before it loads.
+ */
+export function shownInFilter<T extends { id: string }>(
+  categories: T[],
+  m: WealthMatrixOut | undefined,
+  excluded: string[],
+): T[] {
+  if (!m) return categories;
+  const listed = new Map(m.categories.map((c) => [c.id, c]));
+  return categories.filter((c) => {
+    const row = listed.get(c.id);
+    return !row || excluded.includes(c.id) || row.subtotals.some((v) => Number(v) !== 0);
+  });
 }

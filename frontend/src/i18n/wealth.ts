@@ -215,7 +215,9 @@ export const wealthEn = {
   charts: {
     history: "Net worth over time",
     historyHelp:
-      "Each category's total at the end of each month, debts below zero; the line is net worth.",
+      "Net worth at the end of each month, on a scale fitted to it: the axis does not start at zero. The table gives each category's total, debts below zero.",
+    withoutHome: "Without real estate",
+    netWithoutHome: "Net worth without real estate",
     historyTable: "Wealth by category and month",
     net: "Net worth",
     month: "Month",
@@ -224,12 +226,7 @@ export const wealthEn = {
       `What you own in ${month}: categories inside, their lines outside. Point at a ring to read it.`,
     allocationTable: "Allocation by category and line",
     sunburst: "Allocation by category and line",
-    monthShown: "Month shown in the allocation and the mosaic",
-    mosaic: "Mosaic",
-    mosaicHelp: (month: string) =>
-      `What you own in ${month}, each category as a tile as large as its value.`,
-    mosaicLabel: "Mosaic of the categories by value",
-    mosaicTable: "Categories by value",
+    monthShown: "Month shown in the allocation",
     bridge: "What moved net worth",
     bridgeHelp: (start: string, from: string, end: string, to: string, change: string) =>
       `Net worth went from ${start} in ${from} to ${end} in ${to} (${change}): each category's contribution; a debt repaid lifts it.`,
@@ -462,7 +459,9 @@ export const wealthFr: typeof wealthEn = {
   charts: {
     history: "Patrimoine dans le temps",
     historyHelp:
-      "Le total de chaque catégorie à la fin de chaque mois, les dettes sous zéro ; la ligne est le patrimoine net.",
+      "Le patrimoine net à la fin de chaque mois, sur une échelle ajustée : l'axe ne part pas de zéro. Le tableau donne le total de chaque catégorie, les dettes sous zéro.",
+    withoutHome: "Sans l'immobilier",
+    netWithoutHome: "Patrimoine net sans l'immobilier",
     historyTable: "Patrimoine par catégorie et par mois",
     net: "Patrimoine net",
     month: "Mois",
@@ -471,12 +470,7 @@ export const wealthFr: typeof wealthEn = {
       `Ce que vous possédez en ${month} : les catégories au centre, leurs lignes autour. Pointez un anneau pour le lire.`,
     allocationTable: "Répartition par catégorie et par ligne",
     sunburst: "Répartition par catégorie et par ligne",
-    monthShown: "Mois affiché dans la répartition et la mosaïque",
-    mosaic: "Mosaïque",
-    mosaicHelp: (month) =>
-      `Ce que vous possédez en ${month}, chaque catégorie en tuile aussi grande que sa valeur.`,
-    mosaicLabel: "Mosaïque des catégories par valeur",
-    mosaicTable: "Catégories par valeur",
+    monthShown: "Mois affiché dans la répartition",
     bridge: "Ce qui a fait bouger le patrimoine",
     bridgeHelp: (start, from, end, to, change) =>
       `Le patrimoine net est passé de ${start} en ${from} à ${end} en ${to} (${change}) : la contribution de chaque catégorie ; une dette remboursée le fait monter.`,

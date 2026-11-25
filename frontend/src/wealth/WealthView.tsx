@@ -15,6 +15,7 @@ import { Button, ErrorAlert } from "../components/ui";
 import { useI18n } from "../i18n";
 import { formatEurSigned, formatEurWhole, formatPercent, formatPercentSigned } from "../lib/money";
 import { isMonth, monthLabel, thisMonth } from "../lib/months";
+import { shownInFilter } from "./chartData";
 import { wealthColour } from "./colours";
 
 const fieldClass = "rounded-md border border-border bg-surface px-3 py-2";
@@ -54,7 +55,10 @@ export function useWealthView() {
   return { scope, setScope, period, setPeriod, draft, setDraft, excluded, setExcluded, matrix };
 }
 
-/** Which categories the analysis counts: one box each, all ticked by default (F-WLT-6). */
+/**
+ * Which categories the analysis counts: one box each, all ticked by default (F-WLT-6); those
+ * holding nothing over the months shown are not offered.
+ */
 export function CategoryFilter({ view }: { view: WealthView }) {
   const { t } = useI18n();
   const { excluded, setExcluded } = view;
@@ -75,7 +79,7 @@ export function CategoryFilter({ view }: { view: WealthView }) {
     <fieldset className="flex flex-col gap-2">
       <legend className="mb-2 text-sm font-medium">{t.wealth.filterLegend}</legend>
       <div className="flex flex-wrap items-center gap-2">
-        {rows.map((c) => {
+        {shownInFilter(rows, view.matrix.data, excluded).map((c) => {
           const shown = !excluded.includes(c.id);
           return (
             <label

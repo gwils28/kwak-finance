@@ -244,6 +244,14 @@ test("the money flows mark the spending over its targets, in colour and in words
   expect(rows).toContain("OutUnallocated€8,80029%");
 });
 
+test("the money flows come first, the totals after them", async () => {
+  api();
+  render(<TestApp path="/reports" />);
+  const flows = await screen.findByRole("region", { name: "Money flows" });
+  const totals = screen.getByRole("region", { name: "Totals" });
+  expect(flows.compareDocumentPosition(totals) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+});
+
 test("the spending chart has its table, the largest category first", async () => {
   api();
   render(<TestApp path="/reports" />);
