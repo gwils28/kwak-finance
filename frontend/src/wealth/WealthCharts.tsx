@@ -253,7 +253,7 @@ function Allocation({ matrix, index }: { matrix: WealthMatrixOut; index: number 
                     style={{ background: wealthColour(cat.colour) }}
                   />
                   <span className="flex-1">{cat.name}</span>
-                  <span className="tabular text-muted">{formatPercent(cat.share)}</span>
+                  <span className="tabular-nums text-muted">{formatPercent(cat.share)}</span>
                 </li>
               ))}
             </ul>
