@@ -11,6 +11,7 @@ import {
   type SpendingCategoryOut,
 } from "../api/generated";
 import { detailSentence } from "../auth/errors";
+import { EmptyState } from "../components/EmptyState";
 import { HelpLink } from "../components/HelpLink";
 import { InView } from "../components/InView";
 import { Button, ErrorAlert } from "../components/ui";
@@ -90,7 +91,7 @@ export function FixedPage() {
         </p>
       )}
       {items.data.length === 0 ? (
-        <p className="text-muted">{f.empty}</p>
+        <EmptyState icon="file" message={f.empty} hint={f.emptyHint} guide="fixed" />
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full min-w-[40rem] text-sm" aria-label={f.caption}>

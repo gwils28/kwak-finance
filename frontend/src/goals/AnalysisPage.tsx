@@ -1,6 +1,7 @@
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { goalAnalysis, type Scope } from "../api/generated";
+import { EmptyState } from "../components/EmptyState";
 import { HelpLink } from "../components/HelpLink";
 import { ScopeSelect } from "../components/ScopeSelect";
 import { ErrorAlert } from "../components/ui";
@@ -67,7 +68,7 @@ export function AnalysisPage({ initialScope = "household" }: { initialScope?: Sc
           </p>
           <Points data={data} scope={scope} />
           {none ? (
-            <p className="text-sm">{a.empty}</p>
+            <EmptyState icon="target" message={a.empty} guide="goals" />
           ) : (
             <>
               <Forward

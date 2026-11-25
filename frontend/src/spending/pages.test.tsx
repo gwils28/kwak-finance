@@ -45,6 +45,18 @@ test("the fixed expenses are listed with their frequency", async () => {
   expect(row).toHaveTextContent("Active");
 });
 
+test("no fixed expense yet: an empty state leads to the guide", async () => {
+  api({ "GET /api/spending/fixed": () => Response.json([]) });
+  render(<TestApp path="/spending/fixed" />);
+
+  expect(await screen.findByText("No fixed expenses yet.")).toBeInTheDocument();
+  expect(screen.getByText(/Each one you add will appear here/)).toBeInTheDocument();
+  expect(screen.getByRole("link", { name: "Read about it in the guide" })).toHaveAttribute(
+    "href",
+    "/guide#fixed",
+  );
+});
+
 test("a fixed expense past its last month reads ended, not active", async () => {
   api({
     "GET /api/spending/fixed": () =>

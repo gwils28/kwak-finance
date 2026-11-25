@@ -2,11 +2,8 @@ import { type GoalOut, type GoalStatus, goalLines, type Tier } from "../api/gene
 import { useI18n } from "../i18n";
 import { formatEurWhole, formatProgress } from "../lib/money";
 
-/** The tiers by priority: the foundation, then the nearest deadlines first, pleasure last. */
-export const TIERS: Tier[] = ["precaution", "short", "medium", "long", "pleasure"];
-
 /** The order of the pyramid, from its foundation up: the long term at the base, the short term
- * at the top, under the golden capstone. */
+ * at the top, under the golden capstone. Every list of the tiers reads in this order. */
 export const PYRAMID: Tier[] = ["precaution", "long", "medium", "short", "pleasure"];
 
 export const GOALS_KEY = ["goals"];

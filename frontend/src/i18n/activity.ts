@@ -27,6 +27,8 @@ export const activityEn = {
   address: "Address",
   removedMember: "A former member",
   empty: "Nothing logged yet.",
+  emptyHint:
+    "Sign-ins, invitations, household settings and deletions will appear here, newest first.",
   previous: "Newer",
   next: "Older",
   page: (first: number, last: number, total: number) => `${first}–${last} of ${total}`,
@@ -96,6 +98,8 @@ export const activityFr: typeof activityEn = {
   address: "Adresse",
   removedMember: "Un ancien membre",
   empty: "Rien n'est encore enregistré.",
+  emptyHint:
+    "Les connexions, les invitations, les réglages du foyer et les suppressions apparaîtront ici, les plus récentes en premier.",
   previous: "Plus récentes",
   next: "Plus anciennes",
   page: (first, last, total) => `${first}–${last} sur ${total}`,
