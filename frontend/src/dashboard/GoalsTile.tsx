@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import type { Scope } from "../api/generated";
 import { goalsQuery } from "../goals/GoalsPage";
-import { TIERS, tierColour } from "../goals/shared";
+import { PYRAMID, tierColour } from "../goals/shared";
 import { useI18n } from "../i18n";
 import { formatEurWhole, formatProgress } from "../lib/money";
 
@@ -30,7 +30,7 @@ export function GoalsTile({ scope }: { scope: Scope }) {
         </Link>
       </div>
       <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-        {TIERS.map((tier) => {
+        {PYRAMID.map((tier) => {
           const p = data.pyramid.find((x) => x.tier === tier);
           return (
             <li key={tier} className="flex flex-col gap-1 text-sm">

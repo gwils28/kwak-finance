@@ -83,6 +83,8 @@ export const spendingEn = {
     add: "Add a fixed expense",
     edit: "Change",
     empty: "No fixed expenses yet.",
+    emptyHint:
+      "Each one you add will appear here, then wait at the top of its month's grid until you confirm it.",
     caption: "Fixed expenses",
     label: "Label",
     category: "Category",
@@ -209,6 +211,8 @@ export const spendingFr: typeof spendingEn = {
     add: "Ajouter une dépense fixe",
     edit: "Modifier",
     empty: "Aucune dépense fixe pour l'instant.",
+    emptyHint:
+      "Chacune apparaîtra ici, puis attendra en haut de la grille de son mois que vous la confirmiez.",
     caption: "Dépenses fixes",
     label: "Libellé",
     category: "Catégorie",

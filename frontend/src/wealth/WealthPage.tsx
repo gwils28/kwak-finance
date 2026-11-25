@@ -21,6 +21,7 @@ import {
 } from "../api/generated";
 import { detailSentence } from "../auth/errors";
 import { meQuery } from "../auth/session";
+import { EmptyState } from "../components/EmptyState";
 import { HelpLink } from "../components/HelpLink";
 import { InView } from "../components/InView";
 import { useScrollToCurrent } from "../components/scrollToCurrent";
@@ -94,7 +95,7 @@ export function WealthPage() {
       {matrix.isError && <ErrorAlert message={t.wealth.loadFailed} />}
       {matrix.isPending && <p className="text-sm text-muted">{t.common.loading}</p>}
       {data && !empty && <Summary matrix={data} />}
-      {data && empty && <p className="text-sm">{t.wealth.empty}</p>}
+      {data && empty && <EmptyState icon="trend" message={t.wealth.empty} guide="wealth" />}
       {data && !empty && <Matrix matrix={data} onOpen={setPanel} />}
     </div>
   );

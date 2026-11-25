@@ -126,6 +126,14 @@ test("an empty log says so", async () => {
   api(owner, { items: [], total: 0 });
   render(<TestApp path="/activity" />);
   expect(await screen.findByText("Nothing logged yet.")).toBeInTheDocument();
+  // An empty state says what will appear and leads to the guide's section.
+  expect(
+    screen.getByText(/Sign-ins, invitations, household settings and deletions will appear here/),
+  ).toBeInTheDocument();
+  expect(screen.getByRole("link", { name: "Read about it in the guide" })).toHaveAttribute(
+    "href",
+    "/guide#members",
+  );
 });
 
 test("in French, the log speaks French", async () => {

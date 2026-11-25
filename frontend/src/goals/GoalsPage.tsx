@@ -3,6 +3,7 @@ import { Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { listGoals, type Scope } from "../api/generated";
 import { meQuery } from "../auth/session";
+import { EmptyState } from "../components/EmptyState";
 import { HelpLink } from "../components/HelpLink";
 import { ScopeSelect } from "../components/ScopeSelect";
 import { Button, ErrorAlert } from "../components/ui";
@@ -15,7 +16,7 @@ import { GoalCard } from "./GoalCard";
 import { GoalForm } from "./GoalForm";
 import { GoalSettings } from "./GoalSettings";
 import { Pyramid } from "./Pyramid";
-import { GOALS_KEY, TIERS, tierColour } from "./shared";
+import { GOALS_KEY, PYRAMID, tierColour } from "./shared";
 
 const labelClass = "flex flex-col gap-1 text-sm font-medium";
 const fieldClass = "rounded-md border border-border bg-surface px-3 py-2";
@@ -108,15 +109,14 @@ export function GoalsPage() {
         </div>
       )}
       {data && data.goals.length === 0 && data.closed.length === 0 && (
-        <div className="flex flex-col gap-2 rounded-lg border border-border bg-surface p-4 text-sm">
-          <p>{g.empty}</p>
+        <EmptyState icon="target" message={g.empty} guide="goals">
           <p className="text-muted">
             {g.emptyWealth}{" "}
             <Link to="/wealth" className="text-accent hover:underline">
               {g.openWealth}
             </Link>
           </p>
-        </div>
+        </EmptyState>
       )}
       {data && data.goals.length > 0 && (
         <>
@@ -124,7 +124,7 @@ export function GoalsPage() {
             <Pyramid data={data} />
             <EffortPlan data={data} />
           </div>
-          {TIERS.map((tier) => {
+          {PYRAMID.map((tier) => {
             const goals = data.goals.filter((goal) => goal.tier === tier);
             if (goals.length === 0) return null;
             const p = data.pyramid.find((x) => x.tier === tier);

@@ -2,7 +2,7 @@ import { useId } from "react";
 import type { GoalsOut, Tier } from "../api/generated";
 import { useI18n } from "../i18n";
 import { formatEurWhole, formatProgress } from "../lib/money";
-import { PYRAMID, TIERS, tierColour } from "./shared";
+import { PYRAMID, tierColour } from "./shared";
 
 /**
  * The pyramid (F-GOAL-7) as a stone monument: three tiers of block courses on a Roman column,
@@ -15,7 +15,8 @@ import { PYRAMID, TIERS, tierColour } from "./shared";
 
 const WIDTH = 500;
 const HEIGHT = 480;
-const LABEL_X = 338;
+/** The gap between a tier's edge and its label. */
+const LABEL_GAP = 14;
 const LIGHT = "var(--color-neutral-50)";
 const DARK = "var(--color-neutral-900)";
 const STONE = "var(--color-goal-stone)";
@@ -233,8 +234,8 @@ export function Pyramid({ data }: { data: GoalsOut }) {
   const uid = useId().replace(/:/g, "");
   const id = (name: string) => `${uid}-${name}`;
   const byTier = new Map(data.pyramid.map((p) => [p.tier, p]));
-  const counts = new Map(TIERS.map((tier) => [tier, 0]));
-  const pros = new Map(TIERS.map((tier) => [tier, 0]));
+  const counts = new Map(PYRAMID.map((tier) => [tier, 0]));
+  const pros = new Map(PYRAMID.map((tier) => [tier, 0]));
   for (const goal of data.goals) {
     counts.set(goal.tier, (counts.get(goal.tier) ?? 0) + 1);
     if (goal.pro_type !== null) pros.set(goal.tier, (pros.get(goal.tier) ?? 0) + 1);
@@ -249,6 +250,26 @@ export function Pyramid({ data }: { data: GoalsOut }) {
     if (p?.progress == null) return g.noGoalInTier;
     const value = formatProgress(p.progress);
     return proPart(tier) === null ? value : `${value} · ${g.ofWhichPro}`;
+  };
+  /** The progress drawn big next to a tier, or null when the tier has no goal. */
+  const percent = (tier: Tier) => {
+    const p = byTier.get(tier)?.progress;
+    return p == null ? null : formatProgress(p);
+  };
+  /** A tier's amounts, shown on hover and read with its progress. */
+  const amounts = (tier: Tier) => {
+    const p = byTier.get(tier);
+    return p?.progress == null
+      ? null
+      : g.ofTarget(formatEurWhole(p.value), formatEurWhole(p.target));
+  };
+  const spoken = (tier: Tier, value: string) => {
+    const money = amounts(tier);
+    return `${g.tiers[tier]}: ${money === null ? value : `${value}, ${money}`}`;
+  };
+  const hover = (tier: Tier) => {
+    const money = amounts(tier);
+    return money === null ? undefined : `${g.tiers[tier]}: ${money}`;
   };
   const locked = !data.capstone.unlocked;
   const fundLevel = COLUMN_BOTTOM - (COLUMN_BOTTOM - COLUMN_TOP) * progress("precaution");
@@ -286,8 +307,8 @@ export function Pyramid({ data }: { data: GoalsOut }) {
         viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
         className="mx-auto w-full max-w-md"
         role="img"
-        aria-label={TIERS.map(
-          (tier) => `${g.tiers[tier]}: ${tier === "pleasure" ? capLabel() : label(tier)}`,
+        aria-label={PYRAMID.map((tier) =>
+          spoken(tier, tier === "pleasure" ? capLabel() : label(tier)),
         ).join(", ")}
       >
         <defs>
@@ -423,7 +444,8 @@ export function Pyramid({ data }: { data: GoalsOut }) {
           y={shaftMid}
           fromX={AX + SHAFT_BOTTOM_HALF + 10}
           name={g.tierShort.precaution}
-          value={label("precaution")}
+          value={percent("precaution")}
+          title={hover("precaution")}
         />
 
         {/* The pyramid: block courses on two faces, each tier filled from the bottom. */}
@@ -500,9 +522,10 @@ export function Pyramid({ data }: { data: GoalsOut }) {
                 y={mid}
                 fromX={AX + half(mid) + 8}
                 name={g.tierShort[tier]}
-                value={label(tier)}
+                value={percent(tier)}
+                title={hover(tier)}
+                pro={proPart(tier) !== null}
               />
-              {proPart(tier) !== null && <SvgBriefcase x={LABEL_X + 100} y={mid - 16} />}
             </g>
           );
         })}
@@ -556,8 +579,13 @@ export function Pyramid({ data }: { data: GoalsOut }) {
           <Label
             y={AY + (CAP_BOTTOM - AY) * 0.6}
             fromX={AX + half(AY + (CAP_BOTTOM - AY) * 0.6) + 8}
-            name={g.tierShort.pleasure}
-            value={capLabel()}
+            name={
+              locked && byTier.get("pleasure")?.progress != null
+                ? `${g.tierShort.pleasure} · ${g.status.locked}`
+                : g.tierShort.pleasure
+            }
+            value={percent("pleasure")}
+            title={hover("pleasure")}
           />
         </g>
       </svg>
@@ -565,7 +593,7 @@ export function Pyramid({ data }: { data: GoalsOut }) {
         {locked ? g.capstoneLocked(missing) : g.capstoneUnlocked}
       </p>
       <ul className="flex flex-col gap-1 text-sm">
-        {[...PYRAMID].reverse().map((tier) => {
+        {PYRAMID.map((tier) => {
           const p = byTier.get(tier);
           return (
             <li key={tier} className="flex flex-wrap justify-between gap-2">
@@ -721,34 +749,51 @@ function Padlock({ x, y }: { x: number; y: number }) {
   );
 }
 
-/** A tier's name and progress to the right, joined to it by a dotted leader. */
+/**
+ * A tier's progress, big, right next to its edge, its name above, joined by a short leader;
+ * its amounts on hover. A tier with no goal says so, quietly.
+ */
 function Label({
   y,
   fromX,
   name,
   value,
+  title,
+  pro = false,
 }: {
   y: number;
   fromX: number;
   name: string;
-  value: string;
+  value: string | null;
+  title?: string;
+  pro?: boolean;
 }) {
+  const { t } = useI18n();
+  const x = fromX + LABEL_GAP;
   return (
     <g>
+      {title && <title>{title}</title>}
       <line
         x1={fromX}
-        x2={LABEL_X - 8}
+        x2={x - 4}
         y1={y}
         y2={y}
         stroke="var(--color-border)"
-        strokeDasharray="2 4"
+        strokeDasharray="2 3"
       />
-      <text x={LABEL_X} y={y - 3} className="fill-fg text-[13px] font-semibold">
+      <text x={x} y={y - 8} className="fill-muted text-[13px] font-semibold">
         {name}
       </text>
-      <text x={LABEL_X} y={y + 14} className="tabular fill-muted text-[13px]">
-        {value}
-      </text>
+      {value === null ? (
+        <text x={x} y={y + 12} className="fill-muted text-[15px]">
+          {t.goals.noGoalInTier}
+        </text>
+      ) : (
+        <text x={x} y={y + 14} className="tabular fill-fg text-[22px] font-bold">
+          {value}
+        </text>
+      )}
+      {pro && value !== null && <SvgBriefcase x={x + value.length * 13 + 8} y={y - 2} />}
     </g>
   );
 }

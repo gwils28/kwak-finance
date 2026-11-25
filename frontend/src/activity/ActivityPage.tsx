@@ -2,6 +2,7 @@ import { keepPreviousData, useQuery, useSuspenseQuery } from "@tanstack/react-qu
 import { useId, useState } from "react";
 import { type AuditEntryOut, type AuditKind, activityLog, listMembers } from "../api/generated";
 import { meQuery } from "../auth/session";
+import { EmptyState } from "../components/EmptyState";
 import { HelpLink } from "../components/HelpLink";
 import { Button, ErrorAlert } from "../components/ui";
 import { useI18n } from "../i18n";
@@ -124,7 +125,14 @@ export function ActivityPage() {
       </div>
       {log.isError && <ErrorAlert message={t.activity.loadFailed} />}
       {log.isPending && <p className="text-sm text-muted">{t.common.loading}</p>}
-      {log.data && log.data.items.length === 0 && <p className="text-sm">{t.activity.empty}</p>}
+      {log.data && log.data.items.length === 0 && (
+        <EmptyState
+          icon="history"
+          message={t.activity.empty}
+          hint={t.activity.emptyHint}
+          guide="members"
+        />
+      )}
       {log.data && log.data.items.length > 0 && (
         <>
           <div className="overflow-x-auto rounded-lg border border-border bg-surface">

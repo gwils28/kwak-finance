@@ -300,16 +300,27 @@ test("the goals page shows the pyramid, the month's effort and each goal by tier
   );
   expect(
     screen.getByRole("img", {
-      name: "Emergency fund: 84%, Short term: No goal, Medium term: 47%, Long term: No goal, Pleasure: No goal",
+      name: "Emergency fund: 84%, €12,400 of €14,700, Long term: No goal, Medium term: 47%, €4,000 of €8,500, Short term: No goal, Pleasure: No goal",
     }),
   ).toBeInTheDocument();
-  // the long term is the pyramid's base and the short term its top, as the legend reads
+  // one order everywhere, the pyramid's from its foundation: the emergency fund, the long term
+  // at the base, the short term at the top, the capstone last
+  const order = ["Emergency fund", "Long term", "Medium term", "Short term", "Pleasure"];
   const pyramid = screen.getByRole("region", { name: "The pyramid" });
   expect(
     within(pyramid)
       .getAllByRole("listitem")
       .map((li) => plain(li.textContent)?.split(" · ")[0]),
-  ).toEqual(["Pleasure", "Short term", "Medium term", "Long term", "Emergency fund"]);
+  ).toEqual(order);
+  // each tier's progress sits next to it, its amounts on hover
+  const titles = [...pyramid.querySelectorAll("svg title")].map((x) => plain(x.textContent));
+  expect(titles).toContain("Medium term: €4,000 of €8,500");
+  expect(
+    screen
+      .getAllByRole("heading", { level: 2 })
+      .map((h) => h.textContent)
+      .filter((name) => order.includes(name ?? "")),
+  ).toEqual(["Emergency fund", "Medium term"]);
 
   const effort = screen.getByRole("table", { name: "Effort by goal" });
   const rows = within(effort)
@@ -585,7 +596,7 @@ test("the golden capstone holds the pleasure goals, locked until the rest is in 
 
   const pyramid = await screen.findByRole("region", { name: "The pyramid" });
   expect(
-    within(pyramid).getByRole("img", { name: /, Pleasure: Locked · 33%$/ }),
+    within(pyramid).getByRole("img", { name: /, Pleasure: Locked · 33%, €60 of €180$/ }),
   ).toBeInTheDocument();
   expect(plain(pyramid.textContent)).toContain(
     "Pleasure goals unlock once the emergency fund is full and at least 3 in 4 goals with a deadline are ahead. Still missing: emergency fund at 84%, 2 of 4 goals ahead (3 needed).",
@@ -611,7 +622,9 @@ test("an unlocked capstone says so", async () => {
   });
   render(<TestApp path="/goals" />);
   const pyramid = await screen.findByRole("region", { name: "The pyramid" });
-  expect(within(pyramid).getByRole("img", { name: /, Pleasure: 33%$/ })).toBeInTheDocument();
+  expect(
+    within(pyramid).getByRole("img", { name: /, Pleasure: 33%, €60 of €180$/ }),
+  ).toBeInTheDocument();
   expect(pyramid).toHaveTextContent(
     "Pleasure goals are unlocked: they take what the other goals leave of this month's effort.",
   );
@@ -682,6 +695,11 @@ test("the overview shows the three tiers and the emergency fund's warning", asyn
 
   const tile = await screen.findByRole("region", { name: "Goals" });
   expect(plain(tile.textContent)).toContain("Emergency fund84%");
+  expect(
+    within(tile)
+      .getAllByRole("listitem")
+      .map((li) => li.firstElementChild?.firstElementChild?.textContent),
+  ).toEqual(["Emergency fund", "Long term", "Medium term", "Short term", "Pleasure"]);
   expect(plain(tile.textContent)).toContain("Your emergency fund is short of €2,300.");
   expect(within(tile).getByRole("link", { name: "Open your goals" })).toHaveAttribute(
     "href",
