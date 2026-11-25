@@ -1,4 +1,5 @@
 import { useQueryClient } from "@tanstack/react-query";
+import { HelpLink } from "../components/HelpLink";
 import { useI18n } from "../i18n";
 import { RetirementForm } from "./RetirementForm";
 import { RETIREMENT_RUN_KEY, RetirementPlan } from "./RetirementPlan";
@@ -9,7 +10,10 @@ export function WealthRetirementPage() {
   const queryClient = useQueryClient();
   return (
     <div className="flex flex-col gap-4">
-      <h1 className="text-3xl font-black tracking-tight">{t.wealth.retirementTitle}</h1>
+      <div className="flex items-center gap-1">
+        <h1 className="text-3xl font-black tracking-tight">{t.wealth.retirementTitle}</h1>
+        <HelpLink section="wealth" />
+      </div>
       <RetirementPlan />
       <RetirementForm
         onSaved={() => void queryClient.invalidateQueries({ queryKey: RETIREMENT_RUN_KEY })}

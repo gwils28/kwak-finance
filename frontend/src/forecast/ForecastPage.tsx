@@ -13,6 +13,7 @@ import {
   getForecast,
 } from "../api/generated";
 import { Callout, Chip, Fold, Jump, Tile, Tiles, WordTable } from "../components/analysis";
+import { HelpLink } from "../components/HelpLink";
 import { LoadingCards, Refreshing } from "../components/Loading";
 import { ErrorAlert } from "../components/ui";
 import { Card, DataTable } from "../dashboard/charts";
@@ -47,7 +48,10 @@ export function ForecastPage() {
   });
   return (
     <div className="flex flex-col gap-4">
-      <h1 className="text-3xl font-black tracking-tight">{f.title}</h1>
+      <div className="flex items-center gap-1">
+        <h1 className="text-3xl font-black tracking-tight">{f.title}</h1>
+        <HelpLink section="forecast" />
+      </div>
       <p className="max-w-3xl text-muted">{f.intro}</p>
       {query.isPending && <LoadingCards sentence={f.loading} why={f.loadingWhy} />}
       {query.data && query.isFetching && <Refreshing sentence={f.refreshing} />}

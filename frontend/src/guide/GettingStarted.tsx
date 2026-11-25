@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Link, type LinkProps } from "@tanstack/react-router";
 import { useId, useState } from "react";
 import { listMembers } from "../api/generated";
+import { Icon } from "../components/icons";
 import { Button } from "../components/ui";
 import { goalsQuery } from "../goals/GoalsPage";
 import { useI18n } from "../i18n";
@@ -16,24 +17,37 @@ import {
 } from "../spending/queries";
 
 const HIDDEN_KEY = "kwak-getting-started-hidden";
+const FOLDED_KEY = "kwak-getting-started-folded";
 
-function readHidden(): boolean {
+function readFlag(key: string): boolean {
   try {
-    return localStorage.getItem(HIDDEN_KEY) === "1";
+    return localStorage.getItem(key) === "1";
   } catch {
     return false;
   }
 }
 
+function writeFlag(key: string, on: boolean) {
+  try {
+    if (on) localStorage.setItem(key, "1");
+    else localStorage.removeItem(key);
+  } catch {
+    // Storage refused (private window): the choice lasts until the next visit only.
+  }
+}
+
 /**
  * The overview's "Getting started" list. Each step ticks itself from the household's data;
- * the list goes away once every step is done, or when hidden (a per-browser choice).
+ * the list goes away once every step is done, or when hidden; it can also fold to its title
+ * and progress (both per-browser choices).
  */
 export function GettingStarted() {
   const { t } = useI18n();
   const c = t.guide.checklist;
   const titleId = useId();
-  const [hidden, setHidden] = useState(readHidden);
+  const listId = useId();
+  const [hidden, setHidden] = useState(() => readFlag(HIDDEN_KEY));
+  const [folded, setFolded] = useState(() => readFlag(FOLDED_KEY));
   const month = thisMonth();
   // The month's income is its income lines (F-INC-1).
   const summary = useQuery({ ...summaryQuery(month), enabled: !hidden });
@@ -99,12 +113,12 @@ export function GettingStarted() {
   if (done === steps.length) return null;
 
   const hide = () => {
-    try {
-      localStorage.setItem(HIDDEN_KEY, "1");
-    } catch {
-      // Storage refused (private window): hidden until the next visit only.
-    }
+    writeFlag(HIDDEN_KEY, true);
     setHidden(true);
+  };
+  const toggleFold = () => {
+    writeFlag(FOLDED_KEY, !folded);
+    setFolded(!folded);
   };
 
   return (
@@ -120,6 +134,17 @@ export function GettingStarted() {
           <p className="text-sm text-muted">{c.progress(done, steps.length)}</p>
         </div>
         <div className="flex items-center gap-3">
+          <Button
+            variant="ghost"
+            onClick={toggleFold}
+            aria-expanded={!folded}
+            aria-controls={folded ? undefined : listId}
+          >
+            <span className="inline-flex items-center gap-1">
+              <Icon name="chevron" className={`h-4 w-4 ${folded ? "" : "rotate-180"}`} />
+              {folded ? c.expand : c.collapse}
+            </span>
+          </Button>
           <Link to="/guide" className="text-sm text-accent hover:underline">
             {c.readGuide}
           </Link>
@@ -128,37 +153,39 @@ export function GettingStarted() {
           </Button>
         </div>
       </div>
-      <ol className="grid gap-2 sm:grid-cols-2 lg:grid-cols-6">
-        {steps.map((step, i) => (
-          <li
-            key={step.key}
-            aria-label={c.steps[step.key]}
-            data-done={step.done}
-            className={`flex items-start gap-2 rounded-md border px-3 py-2 text-sm ${
-              step.done ? "border-border text-muted" : "border-accent"
-            }`}
-          >
-            <span
-              aria-hidden="true"
-              className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
-                step.done ? "bg-budget-under-bg text-budget-under-fg" : "border border-accent"
+      {!folded && (
+        <ol id={listId} className="grid gap-2 sm:grid-cols-2 lg:grid-cols-6">
+          {steps.map((step, i) => (
+            <li
+              key={step.key}
+              aria-label={c.steps[step.key]}
+              data-done={step.done}
+              className={`flex items-start gap-2 rounded-md border px-3 py-2 text-sm ${
+                step.done ? "border-border text-muted" : "border-accent"
               }`}
             >
-              {step.done ? "✓" : i + 1}
-            </span>
-            {step.done ? (
-              <span>
-                <span className="line-through">{c.steps[step.key]}</span>
-                <span className="sr-only"> · {c.done}</span>
+              <span
+                aria-hidden="true"
+                className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
+                  step.done ? "bg-budget-under-bg text-budget-under-fg" : "border border-accent"
+                }`}
+              >
+                {step.done ? "✓" : i + 1}
               </span>
-            ) : (
-              <Link {...step.link} className="font-medium hover:text-accent hover:underline">
-                {c.steps[step.key]}
-              </Link>
-            )}
-          </li>
-        ))}
-      </ol>
+              {step.done ? (
+                <span>
+                  <span className="line-through">{c.steps[step.key]}</span>
+                  <span className="sr-only"> · {c.done}</span>
+                </span>
+              ) : (
+                <Link {...step.link} className="font-medium hover:text-accent hover:underline">
+                  {c.steps[step.key]}
+                </Link>
+              )}
+            </li>
+          ))}
+        </ol>
+      )}
     </section>
   );
 }

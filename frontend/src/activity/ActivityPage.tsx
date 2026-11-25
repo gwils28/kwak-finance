@@ -2,6 +2,7 @@ import { keepPreviousData, useQuery, useSuspenseQuery } from "@tanstack/react-qu
 import { useId, useState } from "react";
 import { type AuditEntryOut, type AuditKind, activityLog, listMembers } from "../api/generated";
 import { meQuery } from "../auth/session";
+import { HelpLink } from "../components/HelpLink";
 import { Button, ErrorAlert } from "../components/ui";
 import { useI18n } from "../i18n";
 import { formatDate, formatDateTime } from "../lib/dates";
@@ -76,7 +77,10 @@ export function ActivityPage() {
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-black tracking-tight">{t.activity.title}</h1>
+          <div className="flex items-center gap-1">
+            <h1 className="text-3xl font-black tracking-tight">{t.activity.title}</h1>
+            <HelpLink section="members" />
+          </div>
           <p className="max-w-2xl text-sm text-muted">
             {isOwner ? t.activity.introOwner : t.activity.introMember}
           </p>

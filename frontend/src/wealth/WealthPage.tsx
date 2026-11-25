@@ -21,6 +21,7 @@ import {
 } from "../api/generated";
 import { detailSentence } from "../auth/errors";
 import { meQuery } from "../auth/session";
+import { HelpLink } from "../components/HelpLink";
 import { InView } from "../components/InView";
 import { useScrollToCurrent } from "../components/scrollToCurrent";
 import { SCROLL_FRAME, STICKY_CORNER, STICKY_LEFT, STICKY_TOP } from "../components/stickyTable";
@@ -64,7 +65,10 @@ export function WealthPage() {
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-black tracking-tight">{t.wealth.title}</h1>
+          <div className="flex items-center gap-1">
+            <h1 className="text-3xl font-black tracking-tight">{t.wealth.title}</h1>
+            <HelpLink section="wealth" />
+          </div>
           <p className="max-w-2xl text-sm text-muted">{t.wealth.intro}</p>
         </div>
         <div className="flex flex-wrap items-end gap-3">

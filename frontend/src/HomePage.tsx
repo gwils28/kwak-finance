@@ -2,6 +2,7 @@ import { useSuspenseQuery } from "@tanstack/react-query";
 import { useId, useState } from "react";
 import type { Scope } from "./api/generated";
 import { meQuery } from "./auth/session";
+import { HelpLink } from "./components/HelpLink";
 import { ScopeSelect } from "./components/ScopeSelect";
 import { GoalsTile } from "./dashboard/GoalsTile";
 import { NetWorth } from "./dashboard/NetWorth";
@@ -26,7 +27,10 @@ export function HomePage() {
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
-        <h1 className="text-3xl font-black tracking-tight">{t.dashboard.title}</h1>
+        <div className="flex items-center gap-1">
+          <h1 className="text-3xl font-black tracking-tight">{t.dashboard.title}</h1>
+          <HelpLink section="overview" />
+        </div>
         <div className="flex flex-wrap items-end gap-3">
           <label htmlFor={ids.month} className="flex flex-col gap-1 text-sm font-medium">
             {t.dashboard.month}

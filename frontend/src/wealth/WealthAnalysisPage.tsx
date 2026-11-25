@@ -1,3 +1,4 @@
+import { HelpLink } from "../components/HelpLink";
 import { ErrorAlert } from "../components/ui";
 import { useI18n } from "../i18n";
 import { WealthCharts } from "./WealthCharts";
@@ -14,7 +15,10 @@ export function WealthAnalysisPage() {
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-black tracking-tight">{t.wealth.analysisTitle}</h1>
+          <div className="flex items-center gap-1">
+            <h1 className="text-3xl font-black tracking-tight">{t.wealth.analysisTitle}</h1>
+            <HelpLink section="wealth" />
+          </div>
           <p className="max-w-2xl text-sm text-muted">{t.wealth.analysisIntro}</p>
         </div>
         <div className="flex flex-wrap items-end gap-3">
