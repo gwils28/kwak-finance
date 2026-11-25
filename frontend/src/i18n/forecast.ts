@@ -5,6 +5,9 @@ export const forecastEn = {
   intro:
     "What the next twelve months of spending could look like, from the household's own history: the fixed expenses due are known, the rest is forecast by the method that erred least on the months already entered, with a band of likely values.",
   loading: "Forecasting the next twelve months…",
+  loadingWhy:
+    "It takes a few seconds: each category is forecast by several methods, each tried first on the months already entered.",
+  refreshing: "Updating the forecast with your latest entries…",
   notEnough: (n: number, needed: number) =>
     `A forecast needs ${needed} complete months of spending; there are ${n} so far. Open the demo from the account menu to try it.`,
   sections: "Sections",
@@ -215,6 +218,9 @@ export const forecastFr: typeof forecastEn = {
   intro:
     "À quoi pourraient ressembler les douze prochains mois, d'après l'historique du foyer : les dépenses fixes à venir sont connues, le reste est prévu par la méthode qui s'est le moins trompée sur les mois déjà saisis, avec une fourchette de valeurs probables.",
   loading: "Prévision des douze prochains mois…",
+  loadingWhy:
+    "Cela prend quelques secondes : chaque catégorie est prévue par plusieurs méthodes, chacune essayée d'abord sur les mois déjà saisis.",
+  refreshing: "Mise à jour de la prévision avec vos dernières saisies…",
   notEnough: (n, needed) =>
     `Une prévision demande ${needed} mois complets de dépenses ; il y en a ${n} pour l'instant. Ouvrez la démo depuis le menu du compte pour l'essayer.`,
   sections: "Sections",

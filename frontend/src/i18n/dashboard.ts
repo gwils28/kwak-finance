@@ -6,6 +6,7 @@ export const dashboardEn = {
   mine: "Only mine",
   joint: "Joint",
   loadFailed: "Could not load the overview.",
+  loadingMonth: "Loading the month's spending…",
   empty: "Nothing entered yet: enter your income and your first lines to see your figures.",
   goToLines: "Enter your lines",
   spent: "Spent",
@@ -63,6 +64,7 @@ export const dashboardFr: typeof dashboardEn = {
   mine: "Seulement les miens",
   joint: "En commun",
   loadFailed: "Impossible de charger la vue d'ensemble.",
+  loadingMonth: "Chargement des dépenses du mois…",
   empty:
     "Rien de saisi pour l'instant : saisissez vos revenus et vos premières lignes pour voir vos chiffres.",
   goToLines: "Saisir vos lignes",

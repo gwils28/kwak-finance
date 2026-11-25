@@ -13,6 +13,7 @@ import {
   getForecast,
 } from "../api/generated";
 import { Callout, Chip, Fold, Jump, Tile, Tiles, WordTable } from "../components/analysis";
+import { LoadingCards, Refreshing } from "../components/Loading";
 import { ErrorAlert } from "../components/ui";
 import { Card, DataTable } from "../dashboard/charts";
 import { useI18n } from "../i18n";
@@ -41,16 +42,15 @@ export function ForecastPage() {
     queryKey: FORECAST_KEY,
     queryFn: async () => (await getForecast({ throwOnError: true })).data,
     staleTime: 5 * 60_000,
+    // Kept for a day: coming back shows the last forecast at once while it is recomputed.
+    gcTime: 24 * 60 * 60_000,
   });
   return (
     <div className="flex flex-col gap-4">
       <h1 className="text-3xl font-black tracking-tight">{f.title}</h1>
       <p className="max-w-3xl text-muted">{f.intro}</p>
-      {query.isPending && (
-        <p role="status" className="text-muted">
-          {f.loading}
-        </p>
-      )}
+      {query.isPending && <LoadingCards sentence={f.loading} why={f.loadingWhy} />}
+      {query.data && query.isFetching && <Refreshing sentence={f.refreshing} />}
       {query.isError && <ErrorAlert message={t.errors.generic} />}
       {query.data && !query.data.forecast && (
         <p className="rounded-lg border border-border bg-surface p-4">

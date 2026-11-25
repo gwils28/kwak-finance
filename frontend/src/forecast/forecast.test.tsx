@@ -210,3 +210,17 @@ test("the forecast follows the language", async () => {
   const methods = screen.getByRole("table", { name: "Sur quoi repose la prévision" });
   expect(within(methods).getByText("0,81")).toBeInTheDocument();
 });
+
+test("while it computes, the forecast says what it does and shows the shape to come", async () => {
+  fakeApi({
+    "GET /api/auth/me": () => Response.json(owner),
+    "GET /api/forecast": () => new Promise<Response>(() => {}),
+  });
+  render(<TestApp path="/forecast" />);
+
+  const status = await screen.findByRole("status", { name: "Loading" });
+  expect(within(status).getByText("Forecasting the next twelve months…")).toBeVisible();
+  expect(within(status).getByText(/It takes a few seconds: each category/)).toBeVisible();
+  expect(within(status).getByRole("progressbar")).not.toHaveAttribute("aria-valuenow");
+  expect(status).toHaveAttribute("aria-busy", "true");
+});
