@@ -54,7 +54,7 @@ export function HomePage() {
           </div>
         </div>
       </div>
-      <p className="-mt-3 text-xs text-muted">{t.overview.scopeHint}</p>
+      <p className="-mt-3 text-[13px] text-muted">{t.overview.scopeHint}</p>
       <GettingStarted />
       <NetWorth month={month} scope={scope} />
       <GoalsTile scope={scope} />

@@ -693,7 +693,7 @@ export function RiskChart({ data }: { data: GoalAnalysisOut }) {
                 x={RISK_PAD.left - 8}
                 y={y(v) + 4}
                 textAnchor="end"
-                className="tabular fill-muted text-[11px]"
+                className="tabular-nums fill-muted text-[11px]"
               >
                 {formatPercent(v)}
               </text>
@@ -705,7 +705,7 @@ export function RiskChart({ data }: { data: GoalAnalysisOut }) {
               x={x(m)}
               y={bottom + 18}
               textAnchor={m === 0 ? "start" : m === RISK_MONTHS ? "end" : "middle"}
-              className="tabular fill-muted text-[11px]"
+              className="tabular-nums fill-muted text-[11px]"
             >
               {m === RISK_MONTHS ? `${m}+` : m}
             </text>

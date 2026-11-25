@@ -29,8 +29,8 @@ export function NetWorth({ month, scope }: { month: string; scope: Scope }) {
     >
       <div className="flex flex-col gap-1">
         <h2 className="text-sm text-muted">{t.dashboard.netWorth}</h2>
-        <p className="text-3xl font-semibold">{formatEurWhole(net)}</p>
-        <p className="text-xs">
+        <p className="text-3xl font-semibold tabular-nums">{formatEurWhole(net)}</p>
+        <p className="text-[13px]">
           {change === null
             ? t.wealth.nothingBefore
             : t.wealth.versusLastMonth(

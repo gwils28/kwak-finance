@@ -275,6 +275,13 @@
     --color-goal-pro-mark: var(--color-primary-600);
   }
 
+  /* Native checkboxes and radios take the palette's green; the gutter stays reserved so the
+     page does not shift when a scrollbar appears. */
+  html {
+    accent-color: var(--color-accent);
+    scrollbar-gutter: stable;
+  }
+
   body {
     background: var(--color-bg);
     color: var(--color-fg);
@@ -287,8 +294,17 @@
     font-family: var(--font-display);
   }
 
+  /* Plex Mono for amounts in table columns only (spec §7). */
   .tabular {
     font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* The one style of a tile's headline figure, in the sans with tabular numerals. */
+  .big-figure {
+    font-size: var(--text-2xl);
+    line-height: var(--text-2xl--line-height);
+    font-weight: 600;
     font-variant-numeric: tabular-nums;
   }
 }

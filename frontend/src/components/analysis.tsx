@@ -63,7 +63,7 @@ export function Tile({
       }`}
     >
       <p className="text-xs font-medium text-muted">{label}</p>
-      <p className="tabular text-2xl font-bold">{value}</p>
+      <p className="big-figure">{value}</p>
       {chips && <div className="flex flex-wrap gap-1">{chips}</div>}
       {children}
       {note && <p className="text-sm text-muted">{note}</p>}

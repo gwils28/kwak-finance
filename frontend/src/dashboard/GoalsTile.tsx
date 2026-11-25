@@ -36,7 +36,7 @@ export function GoalsTile({ scope }: { scope: Scope }) {
             <li key={tier} className="flex flex-col gap-1 text-sm">
               <span className="flex justify-between gap-2">
                 <span>{g.tiers[tier]}</span>
-                <span className="tabular font-semibold">
+                <span className="tabular-nums font-semibold">
                   {p?.progress == null ? g.noGoalInTier : formatProgress(p.progress)}
                 </span>
               </span>

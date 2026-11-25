@@ -484,7 +484,7 @@ function MonthFigures({ month }: { month: string }) {
         <div key={key} className={tile}>
           <span className="text-sm text-muted">{label}</span>
           <span
-            className={`font-mono text-lg tabular-nums ${
+            className={`text-lg tabular-nums ${
               key === "rest" && figures?.rest.startsWith("-") ? "text-negative" : ""
             }`}
           >

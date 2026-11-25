@@ -155,7 +155,7 @@ function Tile({ label, value, note }: { label: string; value: string; note: stri
   return (
     <div className="flex flex-col gap-1 rounded-lg border border-border bg-surface p-4">
       <h2 className="text-sm text-muted">{label}</h2>
-      <p className="text-2xl font-semibold tabular">{value}</p>
+      <p className="big-figure">{value}</p>
       <p className="text-xs text-muted">{note}</p>
     </div>
   );

@@ -211,7 +211,7 @@ function MineForm({
                 id={id}
                 aria-describedby={hint}
                 inputMode="decimal"
-                className={`${fieldClass} tabular`}
+                className={`${fieldClass} tabular-nums`}
                 value={earnings}
                 onChange={(e) => setEarnings(e.target.value)}
               />
@@ -236,7 +236,7 @@ function MineForm({
               id={id}
               aria-describedby={hint}
               inputMode="decimal"
-              className={`${fieldClass} tabular sm:w-60`}
+              className={`${fieldClass} tabular-nums sm:w-60`}
               value={pension}
               onChange={(e) => setPension(e.target.value)}
             />
@@ -363,7 +363,7 @@ function SettingsForm({ data, onSaved }: { data: RetirementOut; onSaved: Saved }
                 <input
                   id={id}
                   inputMode="decimal"
-                  className={`${fieldClass} tabular`}
+                  className={`${fieldClass} tabular-nums`}
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
                 />
@@ -375,7 +375,7 @@ function SettingsForm({ data, onSaved }: { data: RetirementOut; onSaved: Saved }
                 <input
                   id={id}
                   inputMode="numeric"
-                  className={`${fieldClass} tabular`}
+                  className={`${fieldClass} tabular-nums`}
                   value={share}
                   onChange={(e) => setShare(e.target.value)}
                 />
@@ -388,7 +388,7 @@ function SettingsForm({ data, onSaved }: { data: RetirementOut; onSaved: Saved }
                 id={id}
                 aria-describedby={hint}
                 inputMode="decimal"
-                className={`${fieldClass} tabular`}
+                className={`${fieldClass} tabular-nums`}
                 value={indexation}
                 onChange={(e) => setIndexation(e.target.value)}
               />
@@ -400,7 +400,7 @@ function SettingsForm({ data, onSaved }: { data: RetirementOut; onSaved: Saved }
                 id={id}
                 aria-describedby={hint}
                 inputMode="numeric"
-                className={`${fieldClass} tabular`}
+                className={`${fieldClass} tabular-nums`}
                 value={horizon}
                 onChange={(e) => setHorizon(e.target.value)}
               />

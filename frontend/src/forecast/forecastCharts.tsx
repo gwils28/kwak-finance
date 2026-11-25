@@ -103,7 +103,7 @@ function Tip({ title, lines }: { title: string; lines: TipLine[] }) {
             />
             {line.name}
           </span>
-          <span className="tabular font-medium">{line.value}</span>
+          <span className="tabular-nums font-medium">{line.value}</span>
         </p>
       ))}
     </div>
@@ -333,7 +333,7 @@ function PercentScale({ top, step }: { top: number; step: number }) {
       {ticks.map((v) => (
         <span
           key={v}
-          className="absolute -translate-x-1/2 tabular"
+          className="absolute -translate-x-1/2 tabular-nums"
           style={{ left: `${(100 * v) / top}%` }}
         >
           {formatPercent(v / 100)}
@@ -375,7 +375,7 @@ export function TargetsChart({ items }: { items: ForecastAgainstOut[] }) {
                 {STATUS_ICON[status]}
               </span>{" "}
               {a.name}{" "}
-              <span className="text-xs text-muted tabular">
+              <span className="text-xs text-muted tabular-nums">
                 {formatEurWhole(a.point)} / {formatEurWhole(a.target)}
               </span>
             </span>
@@ -464,7 +464,7 @@ export function YearChart({ items }: { items: ForecastAgainstOut[] }) {
               )}
               <Hundred top={top} />
               <span
-                className="absolute top-0.5 pl-1 text-xs font-semibold tabular"
+                className="absolute top-0.5 pl-1 text-xs font-semibold tabular-nums"
                 style={{ left: at(Math.max(point, share(a.band.high, a.target))) }}
               >
                 {formatPercent(Number(a.point) / Number(a.target))}
@@ -505,7 +505,7 @@ export function IncomeChart({ items }: { items: ForecastIncomeOut[] }) {
               />
             )}
             <span
-              className="absolute top-0.5 pl-1 text-xs font-semibold tabular"
+              className="absolute top-0.5 pl-1 text-xs font-semibold tabular-nums"
               style={{ left: at(i.band.high > i.band.point ? i.band.high : i.band.point) }}
             >
               {formatEurWhole(i.band.point)}
@@ -551,7 +551,7 @@ export function ReliabilityChart({ rows, bias }: { rows: ForecastReliabilityOut[
                 }}
               />
               <span
-                className={`absolute top-0 pl-1 text-xs ${gain ? "tabular" : ""}`}
+                className={`absolute top-0 pl-1 text-xs ${gain ? "tabular-nums" : ""}`}
                 style={{ left: `${(100 * gain * 100) / 125}%` }}
               >
                 {gain ? `−${formatPercent(gain)}` : f.same}
