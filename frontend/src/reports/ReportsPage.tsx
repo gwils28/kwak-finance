@@ -225,7 +225,7 @@ function Figure({
   return (
     <div className="flex flex-col gap-1">
       <dt className="text-sm text-muted">{label}</dt>
-      <dd className="tabular text-base font-semibold">
+      <dd className="tabular-nums text-base font-semibold">
         {signed ? formatEurSigned(value) : formatEurWhole(value)}
       </dd>
       {change !== undefined && (
@@ -265,7 +265,9 @@ function Summary({ report }: { report: SpendingReportOut }) {
         {now.savings_rate !== null && (
           <div className="flex flex-col gap-1">
             <dt className="text-sm text-muted">{t.reports.savingsRate}</dt>
-            <dd className="tabular text-base font-semibold">{formatPercent(now.savings_rate)}</dd>
+            <dd className="tabular-nums text-base font-semibold">
+              {formatPercent(now.savings_rate)}
+            </dd>
           </div>
         )}
       </dl>

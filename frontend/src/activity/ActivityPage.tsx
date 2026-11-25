@@ -174,7 +174,7 @@ export function ActivityPage() {
             >
               {t.activity.previous}
             </Button>
-            <span className="tabular text-muted">
+            <span className="tabular-nums text-muted">
               {t.activity.page(offset + 1, Math.min(offset + PAGE, total), total)}
             </span>
             <Button

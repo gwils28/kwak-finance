@@ -608,7 +608,7 @@ export function Pyramid({ data }: { data: GoalsOut }) {
                   ? g.tierGoalsPro(counts.get(tier) ?? 0, pros.get(tier) ?? 0)
                   : g.tierGoals(counts.get(tier) ?? 0)}
               </span>
-              <span className="tabular">
+              <span className="tabular-nums">
                 {g.ofTarget(formatEurWhole(p?.value ?? "0"), formatEurWhole(p?.target ?? "0"))}
               </span>
             </li>
@@ -789,7 +789,7 @@ function Label({
           {t.goals.noGoalInTier}
         </text>
       ) : (
-        <text x={x} y={y + 14} className="tabular fill-fg text-[22px] font-bold">
+        <text x={x} y={y + 14} className="tabular-nums fill-fg text-[22px] font-bold">
           {value}
         </text>
       )}

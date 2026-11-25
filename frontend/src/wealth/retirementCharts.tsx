@@ -66,7 +66,7 @@ function Tip({ month, lines }: { month: string; lines: TipLine[] }) {
             />
             {line.name}
           </span>
-          <span className="tabular font-medium">{formatEurHundreds(line.value)}</span>
+          <span className="tabular-nums font-medium">{formatEurHundreds(line.value)}</span>
         </p>
       ))}
     </div>
