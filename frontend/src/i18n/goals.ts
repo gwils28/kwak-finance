@@ -197,10 +197,21 @@ export const goalsEn = {
   isPermanent: "Permanent",
   isPermanentHint:
     "It stays in view once reached and needs no deadline. Any other goal is archived by itself once reached.",
-  isPleasure: "This is a pleasure goal",
+  typeLegend: "Type of goal",
+  types: {
+    precaution: "Emergency fund",
+    project: "Dated project",
+    pleasure: "Pleasure",
+    professional: "Professional",
+  },
+  typeHints: {
+    precaution: "Kept apart for the unexpected: the pyramid's foundation.",
+    project: "An amount to gather by a date, in the tier of its deadline.",
+    pleasure: "Just for the pleasure of it, in the golden capstone.",
+    professional: "For your work or your career, marked with a briefcase.",
+  },
   isPleasureHint:
     "Something you want just for the pleasure of it (a record player, a fine bottle): no deadline, in the golden capstone, funded only once the emergency fund is full and most goals are ahead.",
-  isPrecaution: "This is an emergency fund",
   isPrecautionHint:
     "Kept apart for the unexpected and always permanent: the foundation of the pyramid. You can have several, alone or with the household (an emergency fund on a savings account, a survival kitty in cash at home).",
   fillFirst: "To fill first",
@@ -210,11 +221,11 @@ export const goalsEn = {
     "It stays in the foundation but waits its turn like a permanent goal: neither the warning nor the pleasure goals wait for it. Cash at home earns nothing, and home insurance often leaves cash out or caps it low: check your contract.",
   start: "Tracked from",
   startHint: "An earlier month counts the progress already made.",
-  visibility: "Who sees it",
+  visibility: "Visibility",
   visibilities: {
-    shared: "The household (mine)",
-    private: "Only me",
-    joint: "The household's (joint)",
+    shared: "Mine, visible to the household",
+    private: "Mine, visible to me only",
+    joint: "The household's, joint",
   },
   fundings: "Funded by",
   fundingsHint:
@@ -228,7 +239,6 @@ export const goalsEn = {
   save: "Save",
   create: "Create the goal",
   // Professional goals (F-GOAL-11)
-  isProfessional: "This is a professional goal",
   isProfessionalHint:
     "For your work or your career: equipment (an office chair, a computer), a training, a business, a career change, a move. It sits in the tier of its deadline, marked with a briefcase.",
   professional: "Professional",
@@ -504,10 +514,21 @@ export const goalsFr: typeof goalsEn = {
   isPermanent: "Permanent",
   isPermanentHint:
     "Il reste affiché une fois atteint et n'a pas besoin d'échéance. Tout autre objectif s'archive de lui-même une fois atteint.",
-  isPleasure: "C'est un objectif plaisir",
+  typeLegend: "Type d'objectif",
+  types: {
+    precaution: "Épargne de précaution",
+    project: "Projet daté",
+    pleasure: "Plaisir",
+    professional: "Professionnel",
+  },
+  typeHints: {
+    precaution: "Mise de côté pour les imprévus : le socle de la pyramide.",
+    project: "Un montant à réunir pour une date, dans l'étage de son échéance.",
+    pleasure: "Juste pour le plaisir, dans la pointe dorée.",
+    professional: "Pour votre travail ou votre carrière, marqué d'une mallette.",
+  },
   isPleasureHint:
     "Une envie, juste pour se faire plaisir (une platine vinyle, une belle bouteille) : sans échéance, dans la pointe dorée, financée seulement une fois l'épargne de précaution pleine et la plupart des objectifs en avance.",
-  isPrecaution: "C'est une épargne de précaution",
   isPrecautionHint:
     "Mise de côté pour les imprévus et toujours permanente : le socle de la pyramide. Vous pouvez en avoir plusieurs, seul ou avec le foyer (un fonds d'urgence sur un livret, une tirelire de survie en espèces chez vous).",
   fillFirst: "À combler en priorité",
@@ -517,11 +538,11 @@ export const goalsFr: typeof goalsEn = {
     "Elle reste dans le socle mais attend son tour comme un objectif permanent : ni l'alerte ni les objectifs plaisir ne l'attendent. Des espèces chez soi ne rapportent rien, et l'assurance habitation exclut souvent les espèces ou les plafonne bas : vérifiez votre contrat.",
   start: "Suivi à partir de",
   startHint: "Un mois plus ancien compte le chemin déjà parcouru.",
-  visibility: "Qui le voit",
+  visibility: "Visibilité",
   visibilities: {
-    shared: "Le foyer (à moi)",
-    private: "Moi seulement",
-    joint: "Celui du foyer (commun)",
+    shared: "À moi, visible du foyer",
+    private: "À moi, visible de moi seul",
+    joint: "Au foyer, commun",
   },
   fundings: "Financé par",
   fundingsHint:
@@ -535,7 +556,6 @@ export const goalsFr: typeof goalsEn = {
   save: "Enregistrer",
   create: "Créer l'objectif",
   // Objectifs professionnels (F-GOAL-11)
-  isProfessional: "C'est un objectif professionnel",
   isProfessionalHint:
     "Pour votre travail ou votre carrière : du matériel (un fauteuil de bureau, un ordinateur), une formation, une entreprise, une reconversion, un déménagement. Il se place dans l'étage de son échéance, marqué d'une mallette.",
   professional: "Professionnel",

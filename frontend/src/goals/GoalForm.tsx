@@ -30,6 +30,9 @@ const fieldClass = "rounded-md border border-border bg-surface px-3 py-2";
 const labelClass = "flex flex-col gap-1 text-sm font-medium";
 const hintClass = "font-normal text-muted";
 const VISIBILITIES: Visibility[] = ["shared", "private", "joint"];
+
+type Kind = "precaution" | "project" | "pleasure" | "professional";
+const KINDS: Kind[] = ["precaution", "project", "pleasure", "professional"];
 const MONTHS = Array.from({ length: 12 }, (_, i) => i + 1);
 const PRO_TYPES: ProType[] = ["equipment", "training", "business", "career_change", "move"];
 const SOURCES: AidSource[] = ["cpf", "employer", "france_travail", "honour_loan", "other"];
@@ -49,11 +52,9 @@ export function GoalForm({ goal, onDone }: { goal?: GoalOut; onDone: () => void 
     deadline: useId(),
     start: useId(),
     who: useId(),
-    precaution: useId(),
+    kind: useId(),
     fillFirst: useId(),
     permanent: useId(),
-    pleasure: useId(),
-    professional: useId(),
     proType: useId(),
     cost: useId(),
     renew: useId(),
@@ -71,13 +72,22 @@ export function GoalForm({ goal, onDone }: { goal?: GoalOut; onDone: () => void 
     ...goalLinesQuery,
     select: (rows) => new Map(rows.map((row) => [row.line_id, row.free])),
   });
-  const [precaution, setPrecaution] = useState(goal?.precaution ?? false);
+  // One type per goal (F-GOAL-1, 10, 11): permanent is an option of a dated project.
+  const [kind, setKind] = useState<Kind>(() =>
+    (goal?.pro_type ?? null) !== null
+      ? "professional"
+      : goal?.pleasure
+        ? "pleasure"
+        : goal?.precaution
+          ? "precaution"
+          : "project",
+  );
+  const precaution = kind === "precaution";
   // Only a precaution goal can wait its turn, a survival kitty say (F-GOAL-1).
   const [fillFirst, setFillFirst] = useState(goal?.fill_first ?? true);
   const [isPermanent, setPermanent] = useState(goal?.permanent ?? false);
-  const [pleasure, setPleasure] = useState(goal?.pleasure ?? false);
-  // A goal has one kind: a professional goal is neither permanent, the precaution nor pleasure.
-  const [professional, setProfessional] = useState((goal?.pro_type ?? null) !== null);
+  const pleasure = kind === "pleasure";
+  const professional = kind === "professional";
   const [proType, setProType] = useState<ProType>(goal?.pro_type ?? "equipment");
   const [cost, setCost] = useState(goal?.cost ? amountInputShort(goal.cost) : "");
   const [aids, setAids] = useState<Aid[]>(
@@ -91,8 +101,8 @@ export function GoalForm({ goal, onDone }: { goal?: GoalOut; onDone: () => void 
   const [renew, setRenew] = useState((goal?.renew_years ?? null) !== null);
   const [renewYears, setRenewYears] = useState(goal?.renew_years ?? 4);
   // The emergency fund is always permanent; a pleasure goal never, and has no deadline.
-  const permanent = !pleasure && !professional && (precaution || isPermanent);
-  const isPrecaution = precaution && !pleasure && !professional;
+  const permanent = precaution || (kind === "project" && isPermanent);
+  const isPrecaution = precaution;
   const sources = SOURCES.filter((s) => s !== "cpf" || CPF_TYPES.includes(proType));
   const [name, setName] = useState(goal?.name ?? "");
   const [target, setTarget] = useState(goal ? amountInputShort(goal.target) : "");
@@ -210,22 +220,48 @@ export function GoalForm({ goal, onDone }: { goal?: GoalOut; onDone: () => void 
       className="flex max-w-2xl flex-col gap-4 rounded-lg border border-border bg-surface p-4"
     >
       <h2 className="text-lg font-bold">{goal ? g.formEdit : g.formNew}</h2>
-      <div className="flex flex-col gap-1 text-sm">
-        <label htmlFor={ids.precaution} className="flex items-center gap-2 font-medium">
-          <input
-            id={ids.precaution}
-            type="checkbox"
-            aria-describedby={`${ids.precaution}-hint`}
-            checked={isPrecaution}
-            disabled={pleasure || professional}
-            onChange={(e) => setPrecaution(e.target.checked)}
-          />
-          {g.isPrecaution}
-        </label>
-        <p id={`${ids.precaution}-hint`} className={hintClass}>
-          {g.isPrecautionHint}
+      <fieldset className="flex flex-col gap-2 text-sm">
+        <legend id={ids.kind} className="mb-1 font-medium">
+          {g.typeLegend}
+        </legend>
+        <div role="radiogroup" aria-labelledby={ids.kind} className="grid gap-2 sm:grid-cols-2">
+          {KINDS.map((k) => (
+            <label
+              key={k}
+              className={`flex cursor-pointer flex-col gap-0.5 rounded-md border p-3 ${
+                kind === k ? "border-accent bg-accent/10" : "border-border hover:border-accent"
+              }`}
+            >
+              <span className="flex items-center gap-2 font-medium">
+                <input
+                  type="radio"
+                  name={ids.kind}
+                  value={k}
+                  aria-label={g.types[k]}
+                  aria-describedby={`${ids.kind}-${k}`}
+                  checked={kind === k}
+                  onChange={() => setKind(k)}
+                />
+                {k === "professional" && <Briefcase />}
+                {g.types[k]}
+              </span>
+              <span id={`${ids.kind}-${k}`} className="text-xs text-muted">
+                {g.typeHints[k]}
+              </span>
+            </label>
+          ))}
+        </div>
+        <p className={hintClass}>
+          {
+            {
+              precaution: g.isPrecautionHint,
+              project: null,
+              pleasure: g.isPleasureHint,
+              professional: g.isProfessionalHint,
+            }[kind]
+          }
         </p>
-      </div>
+      </fieldset>
       {isPrecaution && (
         <div className="ml-6 flex flex-col gap-1 text-sm">
           <label htmlFor={ids.fillFirst} className="flex items-center gap-2 font-medium">
@@ -243,55 +279,23 @@ export function GoalForm({ goal, onDone }: { goal?: GoalOut; onDone: () => void 
           </p>
         </div>
       )}
-      <div className="flex flex-col gap-1 text-sm">
-        <label htmlFor={ids.permanent} className="flex items-center gap-2 font-medium">
-          <input
-            id={ids.permanent}
-            type="checkbox"
-            aria-describedby={`${ids.permanent}-hint`}
-            checked={permanent}
-            disabled={precaution || pleasure || professional}
-            onChange={(e) => setPermanent(e.target.checked)}
-          />
-          {g.isPermanent}
-        </label>
-        <p id={`${ids.permanent}-hint`} className={hintClass}>
-          {g.isPermanentHint}
-        </p>
-      </div>
-      <div className="flex flex-col gap-1 text-sm">
-        <label htmlFor={ids.pleasure} className="flex items-center gap-2 font-medium">
-          <input
-            id={ids.pleasure}
-            type="checkbox"
-            aria-describedby={`${ids.pleasure}-hint`}
-            checked={pleasure}
-            disabled={precaution || professional}
-            onChange={(e) => setPleasure(e.target.checked)}
-          />
-          {g.isPleasure}
-        </label>
-        <p id={`${ids.pleasure}-hint`} className={hintClass}>
-          {g.isPleasureHint}
-        </p>
-      </div>
-      <div className="flex flex-col gap-1 text-sm">
-        <label htmlFor={ids.professional} className="flex items-center gap-2 font-medium">
-          <input
-            id={ids.professional}
-            type="checkbox"
-            aria-describedby={`${ids.professional}-hint`}
-            checked={professional}
-            disabled={isPrecaution || pleasure}
-            onChange={(e) => setProfessional(e.target.checked)}
-          />
-          <Briefcase />
-          {g.isProfessional}
-        </label>
-        <p id={`${ids.professional}-hint`} className={hintClass}>
-          {g.isProfessionalHint}
-        </p>
-      </div>
+      {kind === "project" && (
+        <div className="ml-6 flex flex-col gap-1 text-sm">
+          <label htmlFor={ids.permanent} className="flex items-center gap-2 font-medium">
+            <input
+              id={ids.permanent}
+              type="checkbox"
+              checked={isPermanent}
+              aria-describedby={`${ids.permanent}-hint`}
+              onChange={(e) => setPermanent(e.target.checked)}
+            />
+            {g.isPermanent}
+          </label>
+          <p id={`${ids.permanent}-hint`} className={hintClass}>
+            {g.isPermanentHint}
+          </p>
+        </div>
+      )}
       <label htmlFor={ids.name} className={labelClass}>
         {g.name}
         <input

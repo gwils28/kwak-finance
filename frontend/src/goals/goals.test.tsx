@@ -443,10 +443,27 @@ test("a new emergency fund takes the proposal and its wealth lines, never a debt
   await user.click(within(form).getByRole("checkbox", { name: "Permanent" }));
   expect(within(form).getByLabelText("Deadline")).not.toBeRequired();
   await user.click(within(form).getByRole("checkbox", { name: "Permanent" }));
-  await user.click(within(form).getByRole("checkbox", { name: "This is an emergency fund" }));
-  // the emergency fund is always permanent
-  expect(within(form).getByRole("checkbox", { name: "Permanent" })).toBeChecked();
-  expect(within(form).getByRole("checkbox", { name: "Permanent" })).toBeDisabled();
+  // One type per goal, chosen once: a dated project by default.
+  const types = within(form).getByRole("radiogroup", { name: "Type of goal" });
+  expect(
+    within(types)
+      .getAllByRole("radio")
+      .map((r) => r.getAttribute("value")),
+  ).toEqual(["precaution", "project", "pleasure", "professional"]);
+  expect(within(types).getByRole("radio", { name: "Dated project" })).toBeChecked();
+  // Who sees it says who owns it and who sees it, in plain words.
+  expect(
+    [...(within(form).getByLabelText("Visibility") as HTMLSelectElement).options].map(
+      (o) => o.textContent,
+    ),
+  ).toEqual([
+    "Mine, visible to the household",
+    "Mine, visible to me only",
+    "The household's, joint",
+  ]);
+  await user.click(within(form).getByRole("radio", { name: "Emergency fund" }));
+  // the emergency fund is always permanent: no box to tick
+  expect(within(form).queryByRole("checkbox", { name: "Permanent" })).toBeNull();
   expect(within(form).getByLabelText("Deadline")).not.toBeRequired();
   await user.type(within(form).getByLabelText("Name"), "Précaution");
   await user.selectOptions(within(form).getByLabelText("Months of fixed expenses"), "4");
@@ -523,7 +540,7 @@ test("a survival kitty waits its turn: no proposal, a warning on cash, a permane
   await user.click(screen.getByRole("button", { name: "New goal" }));
   const form = screen.getByRole("form", { name: "New goal" });
   expect(within(form).queryByRole("checkbox", { name: "To fill first" })).toBeNull();
-  await user.click(within(form).getByRole("checkbox", { name: "This is an emergency fund" }));
+  await user.click(within(form).getByRole("radio", { name: "Emergency fund" }));
   const first = within(form).getByRole("checkbox", { name: "To fill first" });
   expect(first).toBeChecked();
   expect(within(form).getByLabelText("Months of fixed expenses")).toBeInTheDocument();
@@ -548,9 +565,9 @@ test("a goal that is no emergency fund is always to fill first, whatever the box
   const user = userEvent.setup();
   await user.click(await screen.findByRole("button", { name: "New goal" }));
   const form = screen.getByRole("form", { name: "New goal" });
-  await user.click(within(form).getByRole("checkbox", { name: "This is an emergency fund" }));
+  await user.click(within(form).getByRole("radio", { name: "Emergency fund" }));
   await user.click(within(form).getByRole("checkbox", { name: "To fill first" }));
-  await user.click(within(form).getByRole("checkbox", { name: "This is an emergency fund" }));
+  await user.click(within(form).getByRole("radio", { name: "Dated project" }));
   await user.click(within(form).getByRole("checkbox", { name: "Permanent" }));
   await user.type(within(form).getByLabelText("Name"), "Fonds travaux");
   await user.type(within(form).getByLabelText("Target"), "3000");
@@ -610,10 +627,10 @@ test("a pleasure goal has no deadline and is neither permanent nor the emergency
   const user = userEvent.setup();
   await user.click(await screen.findByRole("button", { name: "New goal" }));
   const form = screen.getByRole("form", { name: "New goal" });
-  await user.click(within(form).getByRole("checkbox", { name: "This is a pleasure goal" }));
+  await user.click(within(form).getByRole("radio", { name: "Pleasure" }));
   expect(within(form).queryByLabelText("Deadline")).toBeNull();
-  expect(within(form).getByRole("checkbox", { name: "Permanent" })).toBeDisabled();
-  expect(within(form).getByRole("checkbox", { name: "This is an emergency fund" })).toBeDisabled();
+  expect(within(form).queryByRole("checkbox", { name: "Permanent" })).toBeNull();
+  expect(within(form).getByRole("radio", { name: "Emergency fund" })).not.toBeChecked();
   await user.type(within(form).getByLabelText("Name"), "Gants de boxe");
   await user.type(within(form).getByLabelText("Target"), "180");
   await user.click(within(form).getByRole("button", { name: "Create the goal" }));
@@ -811,10 +828,10 @@ test("a new professional goal sends its cost, what others pay and its renewal", 
   const user = userEvent.setup();
   await user.click(await screen.findByRole("button", { name: "New goal" }));
   const form = screen.getByRole("form", { name: "New goal" });
-  await user.click(within(form).getByRole("checkbox", { name: /This is a professional goal/ }));
+  await user.click(within(form).getByRole("radio", { name: "Professional" }));
   // one kind only
-  expect(within(form).getByRole("checkbox", { name: "This is an emergency fund" })).toBeDisabled();
-  expect(within(form).getByRole("checkbox", { name: "Permanent" })).toBeDisabled();
+  expect(within(form).getByRole("radio", { name: "Emergency fund" })).not.toBeChecked();
+  expect(within(form).queryByRole("checkbox", { name: "Permanent" })).toBeNull();
   expect(within(form).queryByLabelText("Target")).toBeNull();
 
   await user.type(within(form).getByLabelText("Name"), "Certification");
@@ -853,7 +870,7 @@ test("equipment is renewed every few years, and the CPF never pays for it", asyn
   const user = userEvent.setup();
   await user.click(await screen.findByRole("button", { name: "New goal" }));
   const form = screen.getByRole("form", { name: "New goal" });
-  await user.click(within(form).getByRole("checkbox", { name: /This is a professional goal/ }));
+  await user.click(within(form).getByRole("radio", { name: "Professional" }));
   await user.type(within(form).getByLabelText("Name"), "Fauteuil");
   await user.type(within(form).getByLabelText("Cost"), "650");
   await user.click(within(form).getByRole("button", { name: "Add an amount" }));
