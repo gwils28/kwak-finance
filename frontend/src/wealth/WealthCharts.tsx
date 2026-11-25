@@ -1,31 +1,31 @@
 /**
- * The wealth charts (F-WLT-6), drawn from the matrix on screen: net worth over time, the
- * allocation of a chosen month as a sunburst and as a mosaic, and what moved net worth.
- * Categories keep their `wealth-*` colour everywhere; every chart has its table, and the sunburst
- * and the mosaic read the pointed or focused mark out in words.
+ * The wealth charts (F-WLT-6), drawn from the matrix on screen: net worth over time on its own
+ * scale, the allocation of a chosen month as a sunburst, and what moved net worth. Categories
+ * keep their `wealth-*` colour everywhere; every chart has its table, and the sunburst reads
+ * the pointed or focused mark out in words.
  */
+import { useQuery } from "@tanstack/react-query";
 import { useId, useState } from "react";
 import {
   Bar,
   BarChart,
   CartesianGrid,
   Cell,
-  ComposedChart,
   LabelList,
-  Legend,
   Line,
+  LineChart,
   ReferenceLine,
   ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
 } from "recharts";
-import type { WealthMatrixOut } from "../api/generated";
-import { AXIS, Card, DataTable, GRID, legendText, TOOLTIP } from "../dashboard/charts";
+import { listWealthCategories, type WealthMatrixOut } from "../api/generated";
+import { AXIS, Card, DataTable, GRID, TOOLTIP } from "../dashboard/charts";
 import { useI18n } from "../i18n";
 import { formatEurSigned, formatEurWhole, formatPercent } from "../lib/money";
 import { monthLabel } from "../lib/months";
-import { allocation, bridge, history, mosaic } from "./chartData";
+import { allocation, bridge, fittedAxis, history, netWorth } from "./chartData";
 import { wealthColour } from "./colours";
 
 const SURFACE = "var(--color-surface)";
@@ -56,10 +56,7 @@ export function WealthCharts({ matrix }: { matrix: WealthMatrixOut }) {
           ))}
         </select>
       </label>
-      <div className="grid gap-4 lg:grid-cols-2">
-        <Allocation matrix={matrix} index={index} />
-        <Mosaic matrix={matrix} index={index} />
-      </div>
+      <Allocation matrix={matrix} index={index} />
       <Bridge matrix={matrix} />
     </div>
   );
@@ -67,67 +64,86 @@ export function WealthCharts({ matrix }: { matrix: WealthMatrixOut }) {
 
 const axisEur = (v: number) => formatEurWhole(v);
 
+/** The real-estate categories (their preset), which can flatten every other move. */
+function useRealEstate(): Set<string> {
+  const categories = useQuery({
+    queryKey: ["wealth", "categories"],
+    queryFn: async () => (await listWealthCategories({ throwOnError: true })).data,
+  });
+  return new Set(
+    (categories.data ?? []).filter((c) => c.preset === "real-estate").map((c) => c.id),
+  );
+}
+
+/**
+ * Net worth as a line on an axis fitted to it, not to zero, so a change of a few percent shows;
+ * real estate can be taken off. The table keeps each category's total.
+ */
 function History({ matrix }: { matrix: WealthMatrixOut }) {
   const { t } = useI18n();
   const c = t.wealth.charts;
+  const id = useId();
+  const [withoutHome, setWithoutHome] = useState(false);
+  const realEstate = useRealEstate();
+  const held = matrix.categories.filter((cat) => cat.subtotals.some((v) => Number(v) !== 0));
+  const homes = new Set(
+    held.filter((cat) => cat.kind === "asset" && realEstate.has(cat.id)).map((cat) => cat.id),
+  );
+  const off = withoutHome && homes.size > 0;
+  const points = netWorth(matrix, off ? homes : new Set());
   const rows = history(matrix);
-  const held = matrix.categories.filter((cat) => cat.id in (rows[0] ?? {}));
-  const names = new Map(held.map((cat) => [cat.id, cat.name]));
-  const order = new Map(held.map((cat, i) => [cat.id, i]));
+  const axis = fittedAxis(points.map((p) => p.net));
+  const label = off ? c.netWithoutHome : c.net;
   return (
     <Card title={c.history} subtitle={c.historyHelp}>
+      {homes.size > 0 && (
+        <label htmlFor={id} className="flex w-fit items-center gap-2 text-sm">
+          <input
+            id={id}
+            type="checkbox"
+            checked={withoutHome}
+            onChange={(e) => setWithoutHome(e.target.checked)}
+          />
+          {c.withoutHome}
+        </label>
+      )}
       <div className="h-72">
         <ResponsiveContainer width="100%" height="100%">
-          <ComposedChart
-            data={rows}
-            stackOffset="sign"
-            margin={{ top: 8, right: 16, bottom: 0, left: 8 }}
-          >
+          <LineChart data={points} margin={{ top: 8, right: 16, bottom: 0, left: 8 }}>
             <CartesianGrid vertical={false} stroke={GRID} />
             <XAxis dataKey="month" tickFormatter={monthLabel} {...AXIS} />
-            <YAxis tickFormatter={axisEur} width={84} {...AXIS} />
+            <YAxis
+              tickFormatter={axisEur}
+              width={84}
+              domain={axis.domain}
+              ticks={axis.ticks}
+              allowDataOverflow
+              {...AXIS}
+            />
             <Tooltip
               {...TOOLTIP}
-              // Text in the text colour, in the stack's order (the matrix's), net worth last.
               itemStyle={{ color: FG }}
-              itemSorter={(item) => order.get(String(item.dataKey)) ?? order.size}
               labelFormatter={(m) => monthLabel(String(m))}
-              formatter={(v, name) => [formatEurWhole(Number(v)), names.get(String(name)) ?? c.net]}
+              formatter={(v) => [formatEurWhole(Number(v)), label]}
             />
-            <Legend
-              itemSorter={null}
-              formatter={(id: string) => legendText(names.get(id) ?? c.net)}
-              wrapperStyle={{ fontSize: 12 }}
-            />
-            {held.map((cat) => (
-              <Bar
-                key={cat.id}
-                dataKey={cat.id}
-                stackId="wealth"
-                fill={wealthColour(cat.colour)}
-                stroke={SURFACE}
-                strokeWidth={1}
-                isAnimationActive={false}
-              />
-            ))}
             <Line
               dataKey="net"
-              name="net"
+              name={label}
               stroke={FG}
               strokeWidth={2}
               dot={{ r: 4, fill: FG, stroke: SURFACE, strokeWidth: 2 }}
               isAnimationActive={false}
             />
-          </ComposedChart>
+          </LineChart>
         </ResponsiveContainer>
       </div>
       <DataTable
         label={c.historyTable}
-        head={[c.month, ...held.map((cat) => cat.name), c.net]}
-        rows={rows.map((row) => [
+        head={[c.month, label, ...held.map((cat) => cat.name)]}
+        rows={rows.map((row, i) => [
           monthLabel(row.month),
+          formatEurWhole(points[i]?.net ?? 0),
           ...held.map((cat) => formatEurWhole(Number(row[cat.id]))),
-          formatEurWhole(row.net),
         ])}
       />
     </Card>
@@ -255,119 +271,6 @@ function Allocation({ matrix, index }: { matrix: WealthMatrixOut; index: number 
                 formatEurWhole(l.value),
                 formatPercent(l.share),
               ]),
-            ])}
-          />
-        </>
-      )}
-    </Card>
-  );
-}
-
-/** Characters that fit in `width` at 12px, about. */
-const clip = (text: string, width: number) => {
-  const max = Math.floor(width / CHAR);
-  return text.length > max ? `${text.slice(0, Math.max(max - 1, 1))}…` : text;
-};
-
-/** Characters' width at 12px, about: sizes a label's backing. */
-const CHAR = 6.6;
-
-/**
- * A tile's name and value, in the text colour on a pill of the surface: legible on any hue in
- * both themes, where text straight on the colour would not be.
- */
-function MosaicLabel({
-  x,
-  y,
-  width,
-  lines,
-}: {
-  x: number;
-  y: number;
-  width: number;
-  lines: [string, string];
-}) {
-  const [name, value] = lines.map((text) => clip(text, width - 10));
-  const wide = Math.min(width, Math.max(name?.length ?? 0, value?.length ?? 0) * CHAR + 12);
-  return (
-    <g pointerEvents="none">
-      <rect x={x} y={y} width={wide} height={34} rx={4} fill={SURFACE} fillOpacity={0.88} />
-      <text x={x + 6} y={y + 14} fontSize={12} fontWeight={600} fill={FG}>
-        {name}
-        <tspan x={x + 6} dy={15} fontWeight={400} fill="var(--color-muted)">
-          {value}
-        </tspan>
-      </text>
-    </g>
-  );
-}
-
-/** The allocation as a mosaic (a treemap): one tile per category, as large as its value. */
-function Mosaic({ matrix, index }: { matrix: WealthMatrixOut; index: number }) {
-  const { t } = useI18n();
-  const c = t.wealth.charts;
-  const [pointed, setPointed] = useState<Pointed>(null);
-  const ids = { mosaic: useId() };
-  const shown = allocation(matrix, index);
-  const month = monthLabel(matrix.months[index] ?? "");
-  // About its drawn size beside the sunburst, so 12px text stays 12px.
-  const W = 520;
-  const H = 360;
-  const tiles = mosaic(shown, { x: 0, y: 0, w: W, h: H });
-  const describe = (name: string, value: number, share: number) =>
-    `${name}: ${formatEurWhole(value)} · ${formatPercent(share)}`;
-  return (
-    <Card title={c.mosaic} subtitle={c.mosaicHelp(month)}>
-      {shown.total <= 0 ? (
-        <p className="text-sm text-muted">{c.noAssets}</p>
-      ) : (
-        <>
-          <svg viewBox={`0 0 ${W} ${H}`} aria-labelledby={ids.mosaic} className="w-full">
-            <title id={ids.mosaic}>{c.mosaicLabel}</title>
-            {tiles.map(({ category, rect: r }) => {
-              const w = Math.max(r.w - 4, 0);
-              const h = Math.max(r.h - 4, 0);
-              return (
-                <g key={category.id}>
-                  <rect
-                    x={r.x + 2}
-                    y={r.y + 2}
-                    width={w}
-                    height={h}
-                    rx={4}
-                    fill={wealthColour(category.colour)}
-                    opacity={pointed && pointed.id !== category.id ? 0.4 : 1}
-                    {...markProps(
-                      category.id,
-                      describe(category.name, category.value, category.share),
-                      setPointed,
-                    )}
-                  />
-                  {w > 64 && h > 40 && (
-                    <MosaicLabel
-                      x={r.x + 7}
-                      y={r.y + 7}
-                      width={w - 10}
-                      lines={[
-                        category.name,
-                        `${formatEurWhole(category.value)} · ${formatPercent(category.share)}`,
-                      ]}
-                    />
-                  )}
-                </g>
-              );
-            })}
-          </svg>
-          <p aria-live="polite" className="min-h-5 text-sm">
-            {pointed?.text}
-          </p>
-          <DataTable
-            label={c.mosaicTable}
-            head={[c.category, c.value, c.share]}
-            rows={tiles.map(({ category }) => [
-              category.name,
-              formatEurWhole(category.value),
-              formatPercent(category.share),
             ])}
           />
         </>

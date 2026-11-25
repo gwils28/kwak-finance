@@ -683,13 +683,14 @@ test("the monthly tracking page has no category filter", async () => {
   ).not.toBeInTheDocument();
 });
 
-test("the charts read the matrix: allocation, mosaic, and what moved net worth", async () => {
+test("the charts read the matrix: net worth, allocation, and what moved net worth", async () => {
   api();
   render(<TestApp path="/wealth/analysis" />);
   const user = userEvent.setup();
   expect(await screen.findByRole("region", { name: "Net worth over time" })).toBeInTheDocument();
 
-  // The sunburst reads the pointed ring out.
+  // One allocation chart: the rings, no mosaic repeating them.
+  expect(screen.queryByRole("region", { name: "Mosaic" })).not.toBeInTheDocument();
   const allocation = screen.getByRole("region", { name: "Allocation" });
   await user.hover(within(allocation).getByRole("img", { name: "Stocks: €10,600 · 93%" }));
   expect(within(allocation).getByText("Stocks: €10,600 · 93%")).toBeInTheDocument();
@@ -697,20 +698,12 @@ test("the charts read the matrix: allocation, mosaic, and what moved net worth",
     within(allocation).getByRole("img", { name: "PEA Fortuneo: €10,600 · 93%" }),
   ).toBeInTheDocument();
 
-  // The mosaic gives each category a tile.
-  const mosaic = screen.getByRole("region", { name: "Mosaic" });
-  expect(
-    within(mosaic).getByRole("img", { name: "Current accounts: €800 · 7%" }),
-  ).toBeInTheDocument();
-  expect(within(mosaic).queryByRole("img", { name: /PEA Fortuneo/ })).not.toBeInTheDocument();
-
-  // Both read the month chosen, the last one by default.
-  await user.selectOptions(
-    screen.getByLabelText("Month shown in the allocation and the mosaic"),
-    "2026-10",
-  );
+  // It reads the month chosen, the last one by default.
+  await user.selectOptions(screen.getByLabelText("Month shown in the allocation"), "2026-10");
   expect(within(allocation).getByText(/What you own in Oct 2026/)).toBeInTheDocument();
-  expect(within(mosaic).getByRole("img", { name: "Stocks: €10,000 · 91%" })).toBeInTheDocument();
+  expect(
+    within(allocation).getByRole("img", { name: "Stocks: €10,000 · 91%" }),
+  ).toBeInTheDocument();
 
   // The bridge goes from October's net worth to December's.
   const bridge = within(screen.getByRole("region", { name: "What moved net worth" })).getByRole(
@@ -863,4 +856,66 @@ test("in French, the lines already updated this month are counted and marked", a
   expect(await screen.findByText("2 lignes sur 3 mises à jour ce mois-ci.")).toBeVisible();
   expect(screen.getAllByText("Mise à jour ce mois-ci")).toHaveLength(2);
   expect(screen.getByText("À mettre à jour")).toBeVisible();
+});
+
+test("the filter leaves out the categories that hold nothing over the months shown", async () => {
+  api();
+  render(<TestApp path="/wealth/analysis" />);
+  const filter = await screen.findByRole("group", { name: "Categories in the analysis" });
+  await vi.waitFor(() =>
+    expect(
+      within(filter).queryByRole("checkbox", { name: "Savings accounts" }),
+    ).not.toBeInTheDocument(),
+  );
+  expect(within(filter).getByRole("checkbox", { name: "Stocks" })).toBeInTheDocument();
+});
+
+const home = category("c-home", "Real estate", "real-estate");
+const withHome: WealthMatrixOut = {
+  ...matrix,
+  categories: [
+    ...matrix.categories,
+    {
+      ...home,
+      subtotals: ["300000.00", "300000.00", "300000.00"],
+      share: "0.9600",
+      lines: [],
+    },
+  ],
+  gross: ["311000.00", "310750.00", "311400.00"],
+  net: ["308000.00", "307750.00", "308400.00"],
+};
+
+test("net worth is a line on its own scale, real estate can be left out of it", async () => {
+  fakeApi({
+    "GET /api/auth/me": () => Response.json(owner),
+    "GET /api/accounts": () => Response.json([]),
+    "GET /api/wealth/categories": () => Response.json([...categories, home]),
+    "GET /api/wealth/lines": () => Response.json(lines),
+    "GET /api/wealth/matrix": () => Response.json(withHome),
+  });
+  render(<TestApp path="/wealth/analysis" />);
+  const user = userEvent.setup();
+  const history = await screen.findByRole("region", { name: "Net worth over time" });
+  const without = await within(history).findByRole("checkbox", { name: "Without real estate" });
+  expect(without).not.toBeChecked();
+  const net = () =>
+    within(within(history).getByRole("table", { hidden: true }))
+      .getAllByRole("row", { hidden: true })
+      .map((r) => plain(r.textContent));
+  expect(net()[0]).toContain("Net worth");
+  expect(net()[3]).toContain("€308,400");
+
+  await user.click(without);
+  expect(net()[0]).toContain("Net worth without real estate");
+  expect(net()[3]).toContain("€8,400");
+});
+
+test("without real estate held, net worth offers no such option", async () => {
+  api();
+  render(<TestApp path="/wealth/analysis" />);
+  const history = await screen.findByRole("region", { name: "Net worth over time" });
+  expect(
+    within(history).queryByRole("checkbox", { name: "Without real estate" }),
+  ).not.toBeInTheDocument();
 });

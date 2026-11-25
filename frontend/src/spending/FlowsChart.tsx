@@ -9,8 +9,7 @@ import type { SpendingFlowOut } from "../api/generated";
 import { Card, DataTable, TOOLTIP } from "../dashboard/charts";
 import { useI18n } from "../i18n";
 import { formatEurWhole, formatPercent } from "../lib/money";
-
-type Role = "income" | "spent" | "overspent" | "saved" | "deficit" | "other";
+import { type FlowEntry as Entry, flowGraph, type FlowRole as Role } from "./flowGraph";
 
 const FILL: Record<Role, string> = {
   income: "var(--color-flow-in)",
@@ -21,15 +20,6 @@ const FILL: Record<Role, string> = {
   other: "var(--color-flow-other)",
 };
 const ORDER: Role[] = ["income", "spent", "overspent", "saved", "deficit", "other"];
-
-type Entry = {
-  key: string;
-  label: string;
-  side: "in" | "out";
-  role: Role;
-  amount: number;
-  over: boolean;
-};
 
 function roleOf(f: SpendingFlowOut): Role {
   if (f.kind === "deficit") return "deficit";
@@ -69,21 +59,16 @@ export function FlowsChart({ flows }: { flows: SpendingFlowOut[] }) {
   const left = bySize("in");
   const right = bySize("out");
   const total = left.reduce((sum, e) => sum + e.amount, 0);
-  const hub = left.length;
-  const data = {
-    nodes: [...left, { key: "hub", label: w.hub, role: "hub", amount: total }, ...right],
-    links: [
-      ...left.map((e, i) => ({ source: i, target: hub, value: e.amount, role: e.role })),
-      ...right.map((e, i) => ({ source: hub, target: hub + 1 + i, value: e.amount, role: e.role })),
-    ],
-  };
+  const { hub, ...data } = flowGraph(left, right, w.hub);
+  // A single source is the hub: it keeps its colour and its label on the left.
+  const single = left.length === 1;
   const height = Math.max(240, Math.max(left.length, right.length) * 44 + 40);
   const shown = [...left, ...right];
 
   const Node = ({ x, y, width, height: h, payload, index }: SankeyNodeProps) => {
     const node = payload as unknown as Entry;
-    const isLeft = index < hub;
-    const isHub = index === hub;
+    const isLeft = index < hub || (single && index === hub);
+    const isHub = index === hub && !single;
     return (
       <g>
         {/* The hub is neither a flow nor in the legend: a neutral fill. */}

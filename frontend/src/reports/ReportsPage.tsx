@@ -193,6 +193,8 @@ function Report({ report }: { report: SpendingReportOut }) {
       {report.first_month && report.first_month === report.start && (
         <p className="text-sm text-muted">{t.reports.firstMonth(monthLabel(report.first_month))}</p>
       )}
+      {/* The flows tell the period at a glance; the totals, also on the overview, follow. */}
+      <FlowsChart flows={report.flows} />
       <Summary report={report} />
       {report.rows.length === 0 ? (
         <p className="text-sm">{t.reports.nothing}</p>
@@ -203,7 +205,6 @@ function Report({ report }: { report: SpendingReportOut }) {
         </>
       )}
       {report.months > 1 && <OverMonths report={report} />}
-      <FlowsChart flows={report.flows} />
     </>
   );
 }
@@ -224,7 +225,7 @@ function Figure({
   return (
     <div className="flex flex-col gap-1">
       <dt className="text-sm text-muted">{label}</dt>
-      <dd className="tabular text-xl font-bold">
+      <dd className="tabular text-base font-semibold">
         {signed ? formatEurSigned(value) : formatEurWhole(value)}
       </dd>
       {change !== undefined && (
@@ -243,14 +244,11 @@ function Summary({ report }: { report: SpendingReportOut }) {
   // Not compared: no change to show at all, rather than "nothing the period before".
   const change = (value: string | null) => (report.compared ? value : undefined);
   return (
-    <section
-      aria-labelledby={id}
-      className="flex flex-col gap-4 rounded-lg border border-border bg-surface p-4"
-    >
-      <h2 id={id} className="text-lg font-bold">
+    <section aria-labelledby={id} className="flex flex-col gap-2">
+      <h2 id={id} className="text-sm font-semibold text-muted">
         {t.reports.summary}
       </h2>
-      <dl className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+      <dl className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
         <Figure
           label={t.reports.income}
           value={now.income}
@@ -267,7 +265,7 @@ function Summary({ report }: { report: SpendingReportOut }) {
         {now.savings_rate !== null && (
           <div className="flex flex-col gap-1">
             <dt className="text-sm text-muted">{t.reports.savingsRate}</dt>
-            <dd className="tabular text-xl font-bold">{formatPercent(now.savings_rate)}</dd>
+            <dd className="tabular text-base font-semibold">{formatPercent(now.savings_rate)}</dd>
           </div>
         )}
       </dl>
