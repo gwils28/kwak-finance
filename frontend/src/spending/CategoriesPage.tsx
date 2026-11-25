@@ -10,6 +10,7 @@ import {
 } from "../api/generated";
 import { detailSentence } from "../auth/errors";
 import { meQuery } from "../auth/session";
+import { HelpLink } from "../components/HelpLink";
 import { Button, ErrorAlert } from "../components/ui";
 import { useI18n } from "../i18n";
 import { byKind, refreshSpending, spendingCategoriesQuery } from "./queries";
@@ -43,7 +44,10 @@ export function CategoriesPage() {
 
   return (
     <div className="flex max-w-3xl flex-col gap-6">
-      <h1 className="text-3xl font-black tracking-tight">{c.title}</h1>
+      <div className="flex items-center gap-1">
+        <h1 className="text-3xl font-black tracking-tight">{c.title}</h1>
+        <HelpLink section="categories" />
+      </div>
       <p className="text-muted">{c.intro}</p>
       {notice && (
         <p className="rounded-md border border-accent px-3 py-2 text-sm" aria-live="polite">

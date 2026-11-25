@@ -3,6 +3,7 @@ import { Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { listGoals, type Scope } from "../api/generated";
 import { meQuery } from "../auth/session";
+import { HelpLink } from "../components/HelpLink";
 import { ScopeSelect } from "../components/ScopeSelect";
 import { Button, ErrorAlert } from "../components/ui";
 import { useI18n } from "../i18n";
@@ -50,7 +51,10 @@ export function GoalsPage() {
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-black tracking-tight">{g.title}</h1>
+          <div className="flex items-center gap-1">
+            <h1 className="text-3xl font-black tracking-tight">{g.title}</h1>
+            <HelpLink section="goals" />
+          </div>
           <p className="max-w-2xl text-sm text-muted">
             {g.intro}{" "}
             <Link to="/guide" hash="goals" className="text-accent hover:underline">

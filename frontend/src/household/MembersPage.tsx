@@ -9,6 +9,7 @@ import {
 } from "../api/generated";
 import { apiErrorMessage } from "../auth/errors";
 import { meQuery } from "../auth/session";
+import { HelpLink } from "../components/HelpLink";
 import { Button, ErrorAlert, TextField } from "../components/ui";
 import { useI18n } from "../i18n";
 import { formatDate } from "../lib/dates";
@@ -33,7 +34,10 @@ export function MembersPage() {
   return (
     <div className="flex flex-col gap-10">
       <section>
-        <h1 className="text-3xl font-black tracking-tight">{t.household.members}</h1>
+        <div className="flex items-center gap-1">
+          <h1 className="text-3xl font-black tracking-tight">{t.household.members}</h1>
+          <HelpLink section="members" />
+        </div>
         {members.isPending && <p className="mt-4 text-sm text-muted">{t.common.loading}</p>}
         {members.isError && <ErrorAlert message={t.household.loadFailed} />}
         {members.data && (

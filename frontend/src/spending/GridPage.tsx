@@ -12,6 +12,7 @@ import {
   unskipOccurrence,
 } from "../api/generated";
 import { detailSentence } from "../auth/errors";
+import { HelpLink } from "../components/HelpLink";
 import { Icon } from "../components/icons";
 import { Button, ErrorAlert } from "../components/ui";
 import { useI18n } from "../i18n";
@@ -181,6 +182,7 @@ export function GridPage() {
           <h1 className="mr-2 text-2xl font-black tracking-tight sm:text-3xl">
             {t.spending.title}
           </h1>
+          <HelpLink section="lines" />
           {/* The month and its arrows hold together on one line, even on a phone. */}
           <div className="flex items-center gap-2">
             <Button

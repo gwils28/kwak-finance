@@ -17,8 +17,24 @@ export type GuidePage =
   | "/forecast"
   | "/members"
   | "/activity";
+/** The guide's sections, each an anchor of /guide that a page's "?" opens. */
+export type GuideSectionId =
+  | "start"
+  | "lines"
+  | "fixed"
+  | "categories"
+  | "budget"
+  | "year"
+  | "overview"
+  | "wealth"
+  | "goals"
+  | "reports"
+  | "forecast"
+  | "audit"
+  | "members"
+  | "demo";
 export type GuideSection = {
-  id: string;
+  id: GuideSectionId;
   title: string;
   paragraphs: string[];
   link?: { to: GuidePage; label: string };
@@ -29,12 +45,15 @@ export const guideEn = {
   intro:
     "Kwak Finance keeps your household's spending, budget, wealth and goals in one place, on your own computer. This guide walks through each page. The app's name, at the top left, leads to the overview, the summary of the whole app. Next to it, “Spending”, “Wealth” and “Goals” switch between three spaces: the everyday pages (lines, budget, reports, forecast), the wealth (monthly tracking, analysis, projection, retirement, audit) and your financial goals (pyramid, analysis), each with its tabs. Categories, members, the activity log, the demo, language and theme are in the menu under your name, next to this guide. To install, start or update the app, see “How to run the app” at the bottom of every page.",
   contents: "Contents",
+  /** The "?" next to a page's title, to the guide's section about it. */
+  help: (section: string) => `Help: ${section}`,
   sections: [
     {
       id: "start",
       title: "Getting started",
       paragraphs: [
-        "Four steps take you from an empty app to a working budget, and the “Getting started” list on the overview ticks them off as you go: enter this month's income as lines, enter your first expenses, add your fixed expenses and set your monthly targets; then set your emergency fund, and invite the rest of the household if you share your finances.",
+        "Four steps take you from an empty app to a working budget, and the “Getting started” list on the overview ticks them off as you go: enter this month's income as lines, enter your first expenses, add your fixed expenses and set your monthly targets; then set your emergency fund, and invite the rest of the household if you share your finances. The list stays at the top of the overview until every step is done: “Collapse” folds it to its title and progress, “Expand” opens it again, and “Hide” removes it from this browser.",
+        "Every page has a “?” next to its title: it opens this guide at the section about that page.",
         "After that, a session once a week or once a month is enough: open Spending, confirm the fixed expenses waiting at the top of the month, type what you spent since last time (the header says where you stopped), and look at the month's figures.",
         "On a phone, a bar at the bottom of the screen leads to Home (the overview), Spending, Wealth and Goals; each space's tabs stay under the header. In the demo, its banner folds into one line: “Details” opens it.",
       ],
@@ -183,6 +202,8 @@ export const guideEn = {
     title: "Getting started",
     progress: (done: number, total: number) => `${done} of ${total} done`,
     hide: "Hide",
+    collapse: "Collapse",
+    expand: "Expand",
     readGuide: "Read the guide",
     steps: {
       income: "Enter this month's income as lines",
@@ -201,12 +222,14 @@ export const guideFr: typeof guideEn = {
   intro:
     "Kwak Finance réunit les dépenses, le budget, le patrimoine et les objectifs de votre foyer, sur votre propre ordinateur. Ce guide parcourt chaque page. Le nom de l'application, en haut à gauche, mène à la vue d'ensemble, le résumé de toute l'application. À côté, « Dépenses », « Patrimoine » et « Objectifs » passent d'un espace à l'autre : les pages du quotidien (lignes, budget, rapports, prévision), le patrimoine (suivi mensuel, analyse, projection, retraite, audit) et vos objectifs financiers (pyramide, analyse), chacun avec ses onglets. Les catégories, les membres, le journal d'activité, la démo, la langue et le thème sont dans le menu à votre nom, à côté de ce guide. Pour installer, lancer ou mettre à jour l'application, voyez « Lancer et arrêter l'application » en bas de chaque page.",
   contents: "Sommaire",
+  help: (section) => `Aide : ${section}`,
   sections: [
     {
       id: "start",
       title: "Bien démarrer",
       paragraphs: [
-        "Quatre étapes mènent d'une application vide à un budget qui fonctionne, et la liste « Bien démarrer » de la vue d'ensemble les coche au fur et à mesure : saisir les revenus du mois en lignes, saisir vos premières dépenses, ajouter vos dépenses fixes et fixer vos cibles mensuelles ; ensuite, constituer votre épargne de précaution, et inviter le reste du foyer si vous partagez vos finances.",
+        "Quatre étapes mènent d'une application vide à un budget qui fonctionne, et la liste « Bien démarrer » de la vue d'ensemble les coche au fur et à mesure : saisir les revenus du mois en lignes, saisir vos premières dépenses, ajouter vos dépenses fixes et fixer vos cibles mensuelles ; ensuite, constituer votre épargne de précaution, et inviter le reste du foyer si vous partagez vos finances. La liste reste en haut de la vue d'ensemble tant qu'une étape reste à faire : « Replier » la réduit à son titre et à sa progression, « Déplier » la rouvre, et « Masquer » la retire de ce navigateur.",
+        "Chaque page a un « ? » à côté de son titre : il ouvre ce guide à la section qui parle de cette page.",
         "Ensuite, une séance par semaine ou par mois suffit : ouvrez Dépenses, confirmez les dépenses fixes qui attendent en haut du mois, tapez ce que vous avez dépensé depuis la dernière fois (l'en-tête dit où vous vous êtes arrêté) et regardez les chiffres du mois.",
         "Sur téléphone, une barre en bas de l'écran mène à l'Accueil (la vue d'ensemble), aux Dépenses, au Patrimoine et aux Objectifs ; les onglets de chaque espace restent sous l'en-tête. Dans la démo, son bandeau se replie sur une ligne : « Détails » l'ouvre.",
       ],
@@ -355,12 +378,14 @@ export const guideFr: typeof guideEn = {
     title: "Bien démarrer",
     progress: (done, total) => `${done} sur ${total} faites`,
     hide: "Masquer",
+    collapse: "Replier",
+    expand: "Déplier",
     readGuide: "Lire le guide",
     steps: {
       income: "Saisir les revenus du mois en lignes",
       line: "Saisir vos premières lignes",
       fixed: "Ajouter vos dépenses fixes",
-      plan: "Fixer vos objectifs mensuels",
+      plan: "Fixer vos cibles mensuelles",
       goal: "Constituer votre épargne de précaution",
       invite: "Inviter votre foyer (facultatif)",
     },

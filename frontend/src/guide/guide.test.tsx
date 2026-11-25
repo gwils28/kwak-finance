@@ -197,3 +197,50 @@ test("the guide reads in French", async () => {
   ).toBeInTheDocument();
   expect(screen.getByRole("region", { name: "Saisir les lignes" })).toBeInTheDocument();
 });
+
+test("the checklist folds to its title, and stays folded", async () => {
+  api({});
+  const user = userEvent.setup();
+  const { unmount } = render(<TestApp path="/" />);
+
+  const region = await checklist();
+  const fold = within(region).getByRole("button", { name: "Collapse" });
+  expect(fold).toHaveAttribute("aria-expanded", "true");
+  await user.click(fold);
+  expect(within(region).queryByRole("list")).toBeNull();
+  expect(region).toHaveTextContent("0 of 6 done");
+
+  unmount();
+  render(<TestApp path="/" />);
+  const again = await checklist();
+  expect(within(again).queryByRole("list")).toBeNull();
+  const unfold = within(again).getByRole("button", { name: "Expand" });
+  expect(unfold).toHaveAttribute("aria-expanded", "false");
+  await user.click(unfold);
+  expect(within(again).getByRole("list")).toBeInTheDocument();
+});
+
+test("each page's title has a help link to its guide section", async () => {
+  api({});
+  const { unmount } = render(<TestApp path="/" />);
+  expect(await screen.findByRole("link", { name: "Help: Overview" })).toHaveAttribute(
+    "href",
+    "/guide#overview",
+  );
+  unmount();
+
+  render(<TestApp path="/spending/fixed" />);
+  expect(await screen.findByRole("link", { name: "Help: Fixed expenses" })).toHaveAttribute(
+    "href",
+    "/guide#fixed",
+  );
+});
+
+test("the help links read in French", async () => {
+  api({});
+  render(<TestApp path="/" language="fr" />);
+  expect(await screen.findByRole("link", { name: "Aide : Vue d'ensemble" })).toHaveAttribute(
+    "href",
+    "/guide#overview",
+  );
+});

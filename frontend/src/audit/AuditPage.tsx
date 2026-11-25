@@ -13,6 +13,7 @@ import {
   type Scope,
 } from "../api/generated";
 import { meQuery } from "../auth/session";
+import { HelpLink } from "../components/HelpLink";
 import { Button, ErrorAlert } from "../components/ui";
 import { LANGUAGE_NAMES, MESSAGES, useI18n } from "../i18n";
 import { parseEurInput, parsePercentInput } from "../lib/money";
@@ -204,7 +205,10 @@ export function AuditPage() {
   return (
     <div className="flex flex-col gap-6">
       <div className="print:hidden">
-        <h1 className="text-3xl font-black tracking-tight">{t.nav.audit}</h1>
+        <div className="flex items-center gap-1">
+          <h1 className="text-3xl font-black tracking-tight">{t.nav.audit}</h1>
+          <HelpLink section="audit" />
+        </div>
         <p className="mt-2 max-w-3xl text-muted">{a.intro}</p>
       </div>
 

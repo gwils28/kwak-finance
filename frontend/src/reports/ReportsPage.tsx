@@ -18,6 +18,7 @@ import {
   type SpendingReportRowOut,
   spendingReport,
 } from "../api/generated";
+import { HelpLink } from "../components/HelpLink";
 import { ErrorAlert } from "../components/ui";
 import {
   ACCENT,
@@ -119,7 +120,10 @@ export function ReportsPage({ initial }: { initial?: Period }) {
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-black tracking-tight">{t.reports.title}</h1>
+          <div className="flex items-center gap-1">
+            <h1 className="text-3xl font-black tracking-tight">{t.reports.title}</h1>
+            <HelpLink section="reports" />
+          </div>
           <p className="text-sm text-muted">{t.reports.intro}</p>
         </div>
         <div className="flex flex-wrap gap-3">

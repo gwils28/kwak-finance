@@ -11,6 +11,7 @@ import {
   type SpendingCategoryOut,
 } from "../api/generated";
 import { detailSentence } from "../auth/errors";
+import { HelpLink } from "../components/HelpLink";
 import { InView } from "../components/InView";
 import { Button, ErrorAlert } from "../components/ui";
 import { useI18n } from "../i18n";
@@ -55,7 +56,10 @@ export function FixedPage() {
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <h1 className="text-3xl font-black tracking-tight">{f.title}</h1>
+        <div className="flex items-center gap-1">
+          <h1 className="text-3xl font-black tracking-tight">{f.title}</h1>
+          <HelpLink section="fixed" />
+        </div>
         <div className="flex flex-wrap gap-3">
           <Link
             to="/spending"
